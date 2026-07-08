@@ -11,8 +11,9 @@ RUN npm config set registry https://registry.npmmirror.com/
 COPY server/package.json server/package-lock.json* ./
 
 # 有 lock 用 npm ci（版本锁定），否则 fallback 到 npm install
+# --no-fund/--no-audit 跳过资金提示和安全审计，加速安装
 # 注意：monorepo server 子项目可能没有自己的 lock 文件（用根目录统一的）
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+RUN if [ -f package-lock.json ]; then npm ci --no-fund --no-audit; else npm install --no-fund --no-audit; fi
 
 # 复制源码并编译
 COPY server/tsconfig.json ./
@@ -31,7 +32,7 @@ RUN npm config set registry https://registry.npmmirror.com/
 COPY server/package.json server/package-lock.json* ./
 
 # 有 lock 用 npm ci（版本锁定），否则 fallback 到 npm install
-RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev --no-fund --no-audit; else npm install --omit=dev --no-fund --no-audit; fi
 
 # 复制编译产物
 COPY --from=builder /app/dist ./dist
