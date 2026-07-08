@@ -3,8 +3,13 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# ★ 使用国内 npm 镜像（淘宝），加速依赖安装
+RUN npm config set registry https://registry.npmmirror.com/
+
+# 有 package-lock.json 用 npm ci（版本锁定），否则 fallback 到 npm install
+# 注意：monorepo 的 client 子项目可能没有自己的 lock 文件
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 COPY tsconfig.json tsconfig.*.json ./
 COPY vite.config.ts ./
