@@ -9,7 +9,10 @@ RUN npm config set registry https://registry.npmmirror.com/
 
 # 先复制 package 文件，利用 Docker 层缓存加速依赖安装
 COPY server/package.json server/package-lock.json* ./
-RUN npm ci
+
+# 有 lock 用 npm ci（版本锁定），否则 fallback 到 npm install
+# 注意：monorepo server 子项目可能没有自己的 lock 文件（用根目录统一的）
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # 复制源码并编译
 COPY server/tsconfig.json ./
@@ -26,7 +29,9 @@ RUN npm config set registry https://registry.npmmirror.com/
 
 # 仅安装生产依赖
 COPY server/package.json server/package-lock.json* ./
-RUN npm ci --omit=dev
+
+# 有 lock 用 npm ci（版本锁定），否则 fallback 到 npm install
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
 
 # 复制编译产物
 COPY --from=builder /app/dist ./dist
