@@ -1,0 +1,39 @@
+# 依赖（构建期会重新安装）
+node_modules
+
+# 构建产物
+dist
+build
+
+# 日志
+*.log
+npm-debug.log*
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 编辑器 / 操作系统
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# 测试覆盖率
+coverage
+.nyc_output
+
+# 文档
+*.md
+docs
+
+# Git
+.git
+.github
+.gitignore
+
+# Docker 自身
+Dockerfile*
+docker-compose*.yml
+.dockerignore
