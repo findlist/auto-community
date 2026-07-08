@@ -4,6 +4,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# ★ 使用国内 npm 镜像（淘宝），加速依赖安装
+RUN npm config set registry https://registry.npmmirror.com/
+
 # 先复制 package 文件，利用 Docker 层缓存加速依赖安装
 COPY server/package.json server/package-lock.json* ./
 RUN npm ci
@@ -17,6 +20,9 @@ RUN npm run build
 FROM node:20-alpine AS runner
 
 WORKDIR /app
+
+# ★ 使用国内 npm 镜像
+RUN npm config set registry https://registry.npmmirror.com/
 
 # 仅安装生产依赖
 COPY server/package.json server/package-lock.json* ./
