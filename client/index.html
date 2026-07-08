@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>邻里圈</title>
+    <!-- 高德地图 JS SDK：需要在环境变量中配置 AMAP_KEY，此处使用占位符 -->
+    <!-- 实际部署时，建议将 key 动态注入或通过后端代理调用 -->
+    <script type="text/javascript">
+      window._AMAP_KEY = ''; // 由后端 API 动态获取或环境变量注入
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

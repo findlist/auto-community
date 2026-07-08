@@ -1,0 +1,277 @@
+import { query, transaction, SqlParam } from '../config/database';
+import { NotFoundError, BadRequestError, ConflictError } from '../utils/errors';
+import { toUserResponse, UserRow } from './auth.service';
+import { userCache } from './cache.service';
+import { encryptIdCard, hashIdCard } from '../utils/crypto';
+import { validateImageUrl } from '../utils/sanitize';
+
+// 积分流水 DB Row：与 credit_transactions 表结构对齐
+interface CreditTransactionRow {
+  id: string;
+  user_id: string;
+  type: string;
+  amount: number;
+  balance_after: number;
+  reference_id: string | null;
+  reference_type: string | null;
+  description: string | null;
+  created_at: Date;
+}
+
+// 用户认证状态查询行：submitVerification 中校验当前状态用
+interface UserVerifyStatusRow {
+  verify_status: string | null;
+}
+
+// 认证申请查重行：submitVerification 中检查身份证号是否已被其他用户占用
+interface VerificationRequestExistsRow {
+  user_id: string;
+}
+
+// 认证详情查询行：getVerificationStatus 的 users LEFT JOIN verification_requests 结果
+interface VerificationDetailRow {
+  verify_status: string | null;
+  verify_submitted_at: Date | null;
+  request_id: string | null;
+  real_name: string | null;
+  request_status: string | null;
+  reject_reason: string | null;
+  created_at: Date | null;
+  reviewed_at: Date | null;
+}
+
+function toCreditTransaction(row: CreditTransactionRow) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    type: row.type,
+    amount: row.amount,
+    balanceAfter: row.balance_after,
+    referenceId: row.reference_id,
+    referenceType: row.reference_type,
+    description: row.description,
+    createdAt: row.created_at,
+  };
+}
+
+async function getProfile(userId: string) {
+  const { rows } = await query<UserRow>(
+    `SELECT id, phone, nickname, avatar, credit_balance, time_balance, reputation_score, created_at
+     FROM users WHERE id = $1 AND deleted_at IS NULL`,
+    [userId],
+  );
+  if (rows.length === 0) throw new NotFoundError('用户');
+  // 本人查询：isSelf=true，返回解密后的完整手机号
+  return toUserResponse(rows[0], true);
+}
+
+async function updateProfile(userId: string, data: { nickname?: string; avatar?: string }) {
+  // 头像 URL 校验：与图片字段保持一致，支持 /uploads/ 相对路径与 HTTPS 白名单域名
+  // 设计原因：本地上传返回 /uploads/ 相对路径，旧 isURL 校验会拒绝；统一走 validateImageUrl
+  if (data.avatar !== undefined && data.avatar !== null && data.avatar !== '') {
+    validateImageUrl(data.avatar);
+  }
+
+  const fields: string[] = [];
+  // SQL 参数数组：收紧为 SqlParam[]，避免误传函数/Symbol 等非 SQL 友好类型
+  const values: SqlParam[] = [];
+  let paramIndex = 1;
+
+  if (data.nickname !== undefined) {
+    fields.push(`nickname = $${paramIndex++}`);
+    values.push(data.nickname);
+  }
+  if (data.avatar !== undefined) {
+    fields.push(`avatar = $${paramIndex++}`);
+    values.push(data.avatar);
+  }
+
+  fields.push('updated_at = NOW()');
+  values.push(userId);
+
+  const { rows } = await query<UserRow>(
+    `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex} AND deleted_at IS NULL RETURNING *`,
+    values,
+  );
+  if (rows.length === 0) throw new NotFoundError('用户');
+
+  // 用户信息更新后清除缓存
+  await userCache.invalidate(userId);
+
+  // 本人更新资料：isSelf=true，返回完整手机号
+  return toUserResponse(rows[0], true);
+}
+
+async function getUserById(userId: string) {
+  // 使用缓存：先查缓存，未命中时查数据库并缓存结果
+  return userCache.get(userId, async () => {
+    const { rows } = await query<UserRow>(
+      `SELECT id, phone, nickname, avatar, reputation_score, created_at
+       FROM users WHERE id = $1 AND deleted_at IS NULL`,
+      [userId],
+    );
+    if (rows.length === 0) throw new NotFoundError('用户');
+    // 他人查询：isSelf=false（默认），返回脱敏手机号
+    return toUserResponse(rows[0]);
+  });
+}
+
+async function getCreditHistory(userId: string, page: number, pageSize: number) {
+  const offset = (page - 1) * pageSize;
+
+  const [countResult, listResult] = await Promise.all([
+    query<{ count: string }>(`SELECT COUNT(*) FROM credit_transactions WHERE user_id = $1`, [userId]),
+    query<CreditTransactionRow>(
+      `SELECT * FROM credit_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+      [userId, pageSize, offset],
+    ),
+  ]);
+
+  const total = parseInt(countResult.rows[0].count, 10);
+
+  return {
+    list: listResult.rows.map(toCreditTransaction),
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
+
+async function getTimeHistory(userId: string, page: number, pageSize: number) {
+  const offset = (page - 1) * pageSize;
+
+  const [countResult, listResult] = await Promise.all([
+    query<{ count: string }>(
+      `SELECT COUNT(*) FROM credit_transactions WHERE user_id = $1 AND type IN ('time_earn', 'time_spend')`,
+      [userId],
+    ),
+    query<CreditTransactionRow>(
+      `SELECT * FROM credit_transactions
+       WHERE user_id = $1 AND type IN ('time_earn', 'time_spend')
+       ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+      [userId, pageSize, offset],
+    ),
+  ]);
+
+  const total = parseInt(countResult.rows[0].count, 10);
+
+  return {
+    list: listResult.rows.map(toCreditTransaction),
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
+
+// ===================== 实名认证 =====================
+
+// 身份证号格式校验：18位，最后一位可以是数字或X
+function validateIdCard(idCard: string): boolean {
+  return /^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/.test(idCard);
+}
+
+// 提交实名认证申请
+async function submitVerification(userId: string, realName: string, idCard: string) {
+  // 校验身份证号格式
+  if (!validateIdCard(idCard)) {
+    throw new BadRequestError('身份证号格式不正确');
+  }
+
+  // 校验真实姓名长度
+  if (!realName || realName.length < 2 || realName.length > 100) {
+    throw new BadRequestError('真实姓名长度需在2-100字符之间');
+  }
+
+  // 检查用户是否已有认证记录
+  const userResult = await query<UserVerifyStatusRow>(
+    'SELECT verify_status FROM users WHERE id = $1 AND deleted_at IS NULL',
+    [userId],
+  );
+  if (userResult.rows.length === 0) {
+    throw new NotFoundError('用户');
+  }
+
+  const currentStatus = userResult.rows[0].verify_status;
+  if (currentStatus === 'approved') {
+    throw new BadRequestError('您已完成实名认证');
+  }
+  if (currentStatus === 'pending') {
+    throw new BadRequestError('您的认证申请正在审核中，请耐心等待');
+  }
+
+  // 计算身份证号哈希，检查是否已被其他用户认证
+  const idCardHash = hashIdCard(idCard);
+  const existingResult = await query<VerificationRequestExistsRow>(
+    'SELECT user_id FROM verification_requests WHERE id_card_hash = $1 AND status IN (\'pending\', \'approved\')',
+    [idCardHash],
+  );
+  if (existingResult.rows.length > 0) {
+    throw new ConflictError('该身份证号已被其他用户认证');
+  }
+
+  // 加密身份证号
+  const idCardEncrypted = encryptIdCard(idCard);
+
+  // 创建认证申请记录并更新用户状态
+  await transaction(async (client) => {
+    await client.query(
+      `INSERT INTO verification_requests (user_id, real_name, id_card_encrypted, id_card_hash, status)
+       VALUES ($1, $2, $3, $4, 'pending')`,
+      [userId, realName, idCardEncrypted, idCardHash],
+    );
+
+    await client.query(
+      'UPDATE users SET verify_status = \'pending\', verify_submitted_at = NOW() WHERE id = $1',
+      [userId],
+    );
+  });
+
+  // 清除用户缓存
+  await userCache.invalidate(userId);
+
+  return { status: 'pending', message: '实名认证申请已提交，请等待审核' };
+}
+
+// 获取用户认证状态
+async function getVerificationStatus(userId: string) {
+  const { rows } = await query<VerificationDetailRow>(
+    `SELECT u.verify_status, u.verify_submitted_at,
+            vr.id as request_id, vr.real_name, vr.status as request_status,
+            vr.reject_reason, vr.created_at, vr.reviewed_at
+     FROM users u
+     LEFT JOIN verification_requests vr ON u.id = vr.user_id AND vr.status != 'rejected' OR vr.status = 'rejected' AND u.verify_status = 'rejected'
+     WHERE u.id = $1 AND u.deleted_at IS NULL
+     ORDER BY vr.created_at DESC LIMIT 1`,
+    [userId],
+  );
+
+  if (rows.length === 0) {
+    throw new NotFoundError('用户');
+  }
+
+  const row = rows[0];
+  return {
+    verifyStatus: row.verify_status || null,
+    submittedAt: row.verify_submitted_at || null,
+    request: row.request_id ? {
+      id: row.request_id,
+      realName: row.real_name,
+      status: row.request_status,
+      rejectReason: row.reject_reason || null,
+      createdAt: row.created_at,
+      reviewedAt: row.reviewed_at || null,
+    } : null,
+  };
+}
+
+export const userService = {
+  getProfile,
+  updateProfile,
+  getUserById,
+  getCreditHistory,
+  getTimeHistory,
+  submitVerification,
+  getVerificationStatus,
+};

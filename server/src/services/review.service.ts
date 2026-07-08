@@ -1,0 +1,125 @@
+import { query } from '../config/database';
+import { BadRequestError } from '../utils/errors';
+
+/**
+ * reviews 表行类型
+ * rating 为 string：pg DECIMAL 默认解析为 string，parseFloat(row.rating) 安全转换
+ * content 为 string | null：评价内容可选（用户可能只打分不留言）
+ */
+interface ReviewRow {
+  id: string;
+  reviewer_id: string;
+  reviewed_id: string;
+  order_id: string;
+  order_type: string;
+  rating: string;
+  content: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+/**
+ * 评价列表查询行：extends ReviewRow + LEFT JOIN users 引入的评价人信息
+ * JOIN 字段定义为 optional + nullable：createReview 的 INSERT RETURNING * 不含这些字段，
+ * getReviewsByUser 的 LEFT JOIN 可能返回 NULL（用户被删除时），两种场景兼容同一接口
+ */
+interface ReviewListRow extends ReviewRow {
+  reviewer_nickname?: string | null;
+  reviewer_avatar?: string | null;
+}
+
+function toReview(row: ReviewListRow) {
+  return {
+    id: row.id,
+    reviewerId: row.reviewer_id,
+    reviewedId: row.reviewed_id,
+    orderId: row.order_id,
+    orderType: row.order_type,
+    rating: parseFloat(row.rating),
+    content: row.content,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    reviewer: row.reviewer_nickname ? {
+      id: row.reviewer_id,
+      nickname: row.reviewer_nickname,
+      avatar: row.reviewer_avatar,
+    } : undefined,
+  };
+}
+
+async function createReview(
+  reviewerId: string,
+  reviewedId: string,
+  orderId: string,
+  orderType: string,
+  rating: number,
+  content?: string,
+) {
+  if (rating < 1 || rating > 5) {
+    throw new BadRequestError('评分必须在1-5之间');
+  }
+
+  const existResult = await query<{ count: string }>(
+    'SELECT COUNT(*) FROM reviews WHERE reviewer_id = $1 AND order_id = $2',
+    [reviewerId, orderId],
+  );
+  if (parseInt(existResult.rows[0].count) > 0) {
+    throw new BadRequestError('已评价过此订单');
+  }
+
+  const result = await query<ReviewListRow>(
+    `INSERT INTO reviews (reviewer_id, reviewed_id, order_id, order_type, rating, content)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [reviewerId, reviewedId, orderId, orderType, rating, content || null],
+  );
+
+  return toReview(result.rows[0]);
+}
+
+async function calculateReputation(userId: string) {
+  const result = await query<{ avg_rating: string }>(
+    `SELECT COALESCE(AVG(rating), 5.0) as avg_rating FROM (
+       SELECT rating FROM reviews WHERE reviewed_id = $1 ORDER BY created_at DESC LIMIT 50
+     ) recent`,
+    [userId],
+  );
+
+  const avgRating = parseFloat(result.rows[0].avg_rating);
+
+  await query('UPDATE users SET reputation_score = $1 WHERE id = $2', [avgRating, userId]);
+
+  return avgRating;
+}
+
+async function getReviewsByUser(userId: string, page: number = 1, pageSize: number = 10) {
+  const offset = (page - 1) * pageSize;
+
+  const [dataResult, countResult] = await Promise.all([
+    query<ReviewListRow>(
+      `SELECT r.*, u.nickname AS reviewer_nickname, u.avatar AS reviewer_avatar
+       FROM reviews r
+       LEFT JOIN users u ON r.reviewer_id = u.id
+       WHERE r.reviewed_id = $1
+       ORDER BY r.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, pageSize, offset],
+    ),
+    query<{ count: string }>('SELECT COUNT(*) FROM reviews WHERE reviewed_id = $1', [userId]),
+  ]);
+
+  const total = parseInt(countResult.rows[0].count);
+
+  return {
+    list: dataResult.rows.map(toReview),
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
+
+export const reviewService = {
+  createReview,
+  calculateReputation,
+  getReviewsByUser,
+};

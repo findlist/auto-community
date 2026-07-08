@@ -1,0 +1,235 @@
+import { useState, useEffect, useCallback } from "react";
+import MetricsChart from "@/components/MetricsChart";
+import {
+  getMetricsDashboard,
+  getMetricTrend,
+  type DashboardMetric,
+  type MetricTrendItem,
+} from "@/api/admin";
+
+// 核心指标配置
+const METRIC_CONFIG = {
+  emergency_response_time: {
+    label: "应急响应时间",
+    unit: "秒",
+    color: "#ef4444",
+    icon: "🚨",
+    format: (v: number) => `${v.toFixed(1)}s`,
+  },
+  match_success_rate: {
+    label: "匹配成功率",
+    unit: "%",
+    color: "#22c55e",
+    icon: "🎯",
+    format: (v: number) => `${v.toFixed(1)}%`,
+  },
+  order_completion_rate: {
+    label: "订单完成率",
+    unit: "%",
+    color: "#3b82f6",
+    icon: "📦",
+    format: (v: number) => `${v.toFixed(1)}%`,
+  },
+  user_satisfaction_score: {
+    label: "用户满意度",
+    unit: "分",
+    color: "#f59e0b",
+    icon: "⭐",
+    format: (v: number) => `${v.toFixed(1)}分`,
+  },
+  ai_recommendation_accuracy: {
+    label: "AI推荐准确率",
+    unit: "%",
+    color: "#8b5cf6",
+    icon: "🤖",
+    format: (v: number) => `${v.toFixed(1)}%`,
+  },
+} as const;
+
+type MetricName = keyof typeof METRIC_CONFIG;
+
+export default function Metrics() {
+  const [dashboardData, setDashboardData] = useState<DashboardMetric[]>([]);
+  const [trendData, setTrendData] = useState<Record<string, MetricTrendItem[]>>({});
+  const [expandedMetric, setExpandedMetric] = useState<MetricName | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [trendLoading, setTrendLoading] = useState<Record<string, boolean>>({});
+
+  // 加载仪表盘数据
+  const loadDashboard = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await getMetricsDashboard();
+      setDashboardData(response.data || []);
+    } catch (error) {
+      console.error("加载仪表盘数据失败:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 加载趋势数据
+  const loadTrend = useCallback(async (metricName: MetricName, days: number = 7) => {
+    try {
+      setTrendLoading((prev) => ({ ...prev, [metricName]: true }));
+      const endDate = new Date().toISOString().split("T")[0];
+      const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+      const response = await getMetricTrend(metricName, startDate, endDate);
+      setTrendData((prev) => ({ ...prev, [metricName]: response.data || [] }));
+    } catch (error) {
+      console.error(`加载 ${metricName} 趋势数据失败:`, error);
+    } finally {
+      setTrendLoading((prev) => ({ ...prev, [metricName]: false }));
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  // 展开/收起指标详情
+  const handleToggleMetric = (metricName: MetricName) => {
+    if (expandedMetric === metricName) {
+      setExpandedMetric(null);
+    } else {
+      setExpandedMetric(metricName);
+      if (!trendData[metricName]) {
+        loadTrend(metricName);
+      }
+    }
+  };
+
+  // 时间范围变化
+  const handleTimeRangeChange = (metricName: MetricName, range: "7d" | "30d" | "90d") => {
+    const days = range === "7d" ? 7 : range === "30d" ? 30 : 90;
+    loadTrend(metricName, days);
+  };
+
+  // CSV 导出
+  const handleExportCSV = () => {
+    const headers = ["指标名称", "当前值", "标签"];
+    const rows = dashboardData.map((metric) => {
+      const config = METRIC_CONFIG[metric.name as MetricName];
+      return [
+        config?.label || metric.name,
+        config?.format(metric.value) || metric.value,
+        JSON.stringify(metric.tags),
+      ];
+    });
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `效果度量_${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // 获取指标当前值
+  const getMetricValue = (metricName: MetricName) => {
+    const metric = dashboardData.find((m) => m.name === metricName);
+    return metric?.value ?? 0;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-[var(--color-text-tertiary)]">加载中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 页面标题 */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+          效果度量
+        </h1>
+        <button
+          onClick={handleExportCSV}
+          className="px-4 py-2 text-sm font-medium text-white bg-[var(--color-primary-500)] rounded-lg hover:bg-[var(--color-primary-600)] transition-colors"
+        >
+          导出 CSV
+        </button>
+      </div>
+
+      {/* 指标卡片区域 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {(Object.keys(METRIC_CONFIG) as MetricName[]).map((metricName) => {
+          const config = METRIC_CONFIG[metricName];
+          const value = getMetricValue(metricName);
+          const isExpanded = expandedMetric === metricName;
+
+          return (
+            <button
+              key={metricName}
+              onClick={() => handleToggleMetric(metricName)}
+              className={`p-4 rounded-2xl border transition-all text-left ${
+                isExpanded
+                  ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] shadow-md"
+                  : "border-[var(--color-border)] bg-white hover:shadow-md"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">{config.icon}</span>
+                <span className="text-xs text-[var(--color-text-tertiary)]">
+                  {config.label}
+                </span>
+              </div>
+              <div
+                className="text-2xl font-bold"
+                style={{ color: config.color }}
+              >
+                {config.format(value)}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 图表区域 */}
+      {expandedMetric && (
+        <div className="animate-fadeIn">
+          {trendLoading[expandedMetric] ? (
+            <div className="flex items-center justify-center h-48 bg-white rounded-2xl border border-[var(--color-border)]">
+              <div className="text-[var(--color-text-tertiary)]">
+                加载趋势数据...
+              </div>
+            </div>
+          ) : (
+            <MetricsChart
+              title={METRIC_CONFIG[expandedMetric].label}
+              data={trendData[expandedMetric] || []}
+              color={METRIC_CONFIG[expandedMetric].color}
+              unit={METRIC_CONFIG[expandedMetric].unit}
+              onTimeRangeChange={(range) =>
+                handleTimeRangeChange(expandedMetric, range)
+              }
+            />
+          )}
+        </div>
+      )}
+
+      {/* 提示信息 */}
+      {!expandedMetric && (
+        <div className="text-center py-12 bg-white rounded-2xl border border-[var(--color-border)]">
+          <p className="text-[var(--color-text-tertiary)]">
+            点击上方指标卡片查看趋势图
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

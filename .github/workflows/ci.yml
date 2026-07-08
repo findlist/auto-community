@@ -1,0 +1,66 @@
+# 邻里圈 CI 流水线
+# 在 push/PR 到主分支时自动执行 lint、typecheck、test、build
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # 后端质量保障：lint / typecheck / test / build
+  server:
+    name: Server Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 拉取代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 安装 Node.js 20 运行时
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 3. 安装依赖（npm workspaces 在根目录统一安装）
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. 代码静态检查（不 lint migrations 目录）
+      - name: Run lint
+        run: npm run lint --workspace server
+
+      # 5. TypeScript 类型检查
+      - name: Run typecheck
+        run: npm run typecheck --workspace server
+
+      # 6. 执行单元测试
+      - name: Run tests
+        run: npm test --workspace server
+
+      # 7. 编译构建产物
+      - name: Build
+        run: npm run build --workspace server
+
+  # 前端构建验证（可选，确保 client 可正常构建）
+  client:
+    name: Client Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build --workspace client

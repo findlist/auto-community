@@ -1,0 +1,106 @@
+import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { writeAuditLog, AuditLogParams } from '../services/audit.service';
+import { logger } from '../utils/logger';
+
+// 需要脱敏的敏感字段（不区分大小写匹配）
+const SENSITIVE_FIELDS = ['password', 'phone', 'idcard', 'id_card', 'passwordhash', 'token', 'refreshtoken'];
+
+// 审计中间件配置
+interface AuditMiddlewareOptions {
+  // 资源类型，如 user/order/transaction
+  resourceType?: string;
+  // 从请求中提取资源 ID 的函数
+  getResourceId?: (req: Request) => string | undefined;
+  // 动态生成 action 名称（当同一接口处理多种操作时使用）
+  getAction?: (req: Request) => string;
+}
+
+/**
+ * 对请求体进行脱敏处理
+ * 将敏感字段的值替换为 ***，保留字段名以便排查问题
+ * 入参与返回用 unknown：请求体结构不定（可能是对象/字符串/Buffer），用 unknown 强制消费方类型收窄
+ */
+function sanitizeRequestBody(body: unknown): unknown {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return body;
+  }
+  // 类型收窄后 body 为 object，但为保留字段索引能力用 Record<string, unknown>
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(body as Record<string, unknown>)) {
+    // 字段名小写后命中敏感字段清单则脱敏
+    if (SENSITIVE_FIELDS.includes(key.toLowerCase())) {
+      sanitized[key] = '***';
+    } else {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+}
+
+/**
+ * 从响应体中提取错误信息
+ * 入参用 unknown：res.send 的 body 可能是 Buffer/string/object
+ */
+function extractErrorMessage(body: unknown): string | undefined {
+  if (!body) return undefined;
+  try {
+    const parsed = typeof body === 'string' ? JSON.parse(body) : body;
+    // parsed 可能是任意 JSON 结构，用类型断言访问 message/error 字段
+    const obj = parsed as { message?: string; error?: string };
+    return obj?.message || obj?.error;
+  } catch {
+    return typeof body === 'string' ? body.substring(0, 500) : undefined;
+  }
+}
+
+/**
+ * 审计日志中间件工厂
+ * 包装 res.send 捕获响应状态码与错误信息，异步写入审计日志（不阻塞响应）
+ *
+ * @param action 操作类型，如 LOGIN/TRANSFER/COMPLETE_ORDER
+ * @param options 资源类型与资源 ID 提取配置
+ */
+export function auditMiddleware(
+  action: string,
+  options?: AuditMiddlewareOptions,
+): RequestHandler {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    // 保存原始 res.send 引用，确保 this 指向正确
+    const originalSend = res.send.bind(res);
+
+    // 覆盖 res.send 以捕获响应内容
+    // body 用 unknown：Express res.send 接受任意类型（string/Buffer/object），用 unknown 强制内部类型收窄
+    res.send = function (body?: unknown): Response {
+      // 先恢复原始 send，避免后续调用重复触发审计
+      res.send = originalSend;
+
+      // 支持动态 action（同一接口处理多种操作时按请求体区分）
+      const actualAction = options?.getAction ? options.getAction(req) : action;
+
+      const statusCode = res.statusCode;
+      const status: 'success' | 'failed' = statusCode < 400 ? 'success' : 'failed';
+      const errorMessage = status === 'failed' ? extractErrorMessage(body) : undefined;
+
+      const auditParams: AuditLogParams = {
+        userId: req.user?.id,
+        action: actualAction,
+        resourceType: options?.resourceType,
+        resourceId: options?.getResourceId?.(req),
+        ip: req.ip || req.socket?.remoteAddress,
+        userAgent: req.get('user-agent'),
+        requestBody: sanitizeRequestBody(req.body),
+        status,
+        errorMessage,
+      };
+
+      // 异步写入审计日志，不阻塞响应；失败仅记录日志不抛出
+      writeAuditLog(auditParams).catch((err) => {
+        logger.error({ err, action: actualAction }, '审计日志写入异常');
+      });
+
+      return originalSend(body);
+    } as typeof res.send;
+
+    next();
+  };
+}

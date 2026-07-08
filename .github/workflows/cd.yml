@@ -1,0 +1,187 @@
+# 邻里圈 CD（持续部署）流水线
+# 触发条件：推送 main/master 分支自动构建镜像并部署到测试环境；打 v* 标签或手动批准后部署生产
+#
+# 部署前置条件（在 GitHub 仓库 Settings → Secrets and variables → Actions 配置）：
+#   - STAGING_HOST / PRODUCTION_HOST：目标服务器 IP 或域名
+#   - STAGING_USER / PRODUCTION_USER：SSH 登录用户
+#   - STAGING_SSH_KEY / PRODUCTION_SSH_KEY：SSH 私钥
+#   - STAGING_DEPLOY_PATH / PRODUCTION_DEPLOY_PATH：远程服务器上 docker-compose.prod.yml 所在目录
+#   - 服务器需预装 Docker + Docker Compose，并已放置 docker-compose.prod.yml（使用 image: ghcr.io/...）
+#   - 服务器需已登录 GHCR（echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin）
+name: CD
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  # 支持手动触发，便于临时发布或回滚
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '部署目标'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # ============ 构建并推送后端镜像 ============
+  build-server:
+    name: Build & Push Server Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 安装 QEMU 与 Buildx 以支持多架构镜像（amd64 + arm64），覆盖主流服务器与树莓派等设备
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 自动生成镜像标签：latest、commit sha、语义化版本（仅打 tag 时）
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/server
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push server image
+        uses: docker/build-push-action@v5
+        with:
+          # 构建上下文为项目根目录，因为 server/Dockerfile 需要复制 database/migrations
+          context: .
+          file: server/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # 利用 GitHub Actions 缓存加速重复构建
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============ 构建并推送前端镜像 ============
+  build-client:
+    name: Build & Push Client Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/client
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push client image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          file: client/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============ 部署到测试环境（自动） ============
+  # 推送 main/master 后自动执行，无需人工介入
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [build-server, build-client]
+    runs-on: ubuntu-latest
+    # 仅默认分支推送或手动选择 staging 时触发
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'staging')
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL || 'https://staging.example.com' }}
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          # 远程执行：拉取最新镜像 → 重启容器 → 清理旧镜像 → 健康检查
+          script: |
+            cd ${{ secrets.STAGING_DEPLOY_PATH }}
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f
+            # 等待服务启动并检查健康状态
+            sleep 5
+            docker compose ps
+
+  # ============ 部署到生产环境（需手动批准） ============
+  # 依赖测试环境部署成功；打 v* 版本标签或手动选择 production 时触发
+  # GitHub 会在此处暂停，等待拥有审批权限的人员在 Actions 页面点击批准
+  deploy-production:
+    name: Deploy to Production (Manual Approval)
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: |
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'production')
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL || 'https://linli-circle.example.com' }}
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          script: |
+            cd ${{ secrets.PRODUCTION_DEPLOY_PATH }}
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f
+            sleep 5
+            docker compose ps

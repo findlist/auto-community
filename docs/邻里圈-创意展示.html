@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邻里圈 - 社区互助生态平台</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF6B35;
+            --primary-dark: #E55A2B;
+            --secondary: #004E89;
+            --accent: #FFD166;
+            --bg-warm: #FFF8F0;
+            --bg-cool: #F0F7FF;
+            --text-dark: #2D3436;
+            --text-light: #636E72;
+            --success: #00B894;
+            --emergency: #FF4757;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-warm);
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #FF6B35 0%, #FF8E53 50%, #FFD166 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            animation: patternMove 20s linear infinite;
+        }
+
+        @keyframes patternMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 60px 60px; }
+        }
+
+        .hero-content {
+            text-align: center;
+            color: white;
+            z-index: 1;
+            padding: 2rem;
+        }
+
+        .hero-logo {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            text-shadow: 2px 4px 8px rgba(0,0,0,0.2);
+            letter-spacing: 0.1em;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            font-weight: 300;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .hero-tagline {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            border: 2px solid rgba(255,255,255,0.3);
+            animation: fadeInUp 1s ease-out 0.5s both;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--secondary);
+        }
+
+        .section-desc {
+            text-align: center;
+            color: var(--text-light);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 4rem;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .module-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+
+        .module-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+
+        .module-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .module-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+        }
+
+        .module-desc {
+            color: var(--text-light);
+            line-height: 1.8;
+        }
+
+        .stats-section {
+            background: linear-gradient(135deg, var(--secondary), #0066B3);
+            color: white;
+            padding: 6rem 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent), #FFEAA7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .pain-points {
+            background: var(--bg-cool);
+        }
+
+        .points-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+
+        .point-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+
+        .point-icon {
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .point-content h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        .point-content p {
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        .scenarios {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .scenario-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .scenario-item {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .scenario-emoji {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .scenario-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .scenario-desc {
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .tech-stack {
+            background: var(--bg-warm);
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .tech-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .tech-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tech-name {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .tech-desc {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-top: 0.3rem;
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary), #FF8E53);
+            color: white;
+            text-align: center;
+            padding: 6rem 2rem;
+        }
+
+        .cta-title {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+        }
+
+        .cta-desc {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: white;
+            color: var(--primary);
+            padding: 1.2rem 3rem;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .footer {
+            background: var(--text-dark);
+            color: white;
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+
+        .footer-text {
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .highlight {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .points-grid,
+            .scenario-list {
+                grid-template-columns: 1fr;
+            }
+
+            .tech-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-logo">🏘️</div>
+            <h1 class="hero-title">邻里圈</h1>
+            <p class="hero-subtitle">社区互助生态平台</p>
+            <div class="hero-tagline">✨ 一个平台，四种连接，重建有温度的邻里关系</div>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2 class="section-title">四大核心模块</h2>
+        <p class="section-desc">通过技能交换、美食分享、时间储蓄、应急互助，构建完整的社区互助生态</p>
+        <div class="modules-grid">
+            <div class="module-card">
+                <div class="module-icon">🔧</div>
+                <h3 class="module-name">技能交换</h3>
+                <p class="module-desc">让每个人的技能都有价值。修电脑、教吉他、辅导作业...用技能换技能，用技能换积分，建立邻里互助新方式。</p>
+            </div>
+            <div class="module-card">
+                <div class="module-icon">🍳</div>
+                <h3 class="module-name">共享厨房</h3>
+                <p class="module-desc">重建邻里烟火气。今天多包的饺子、拿手的红烧肉、拼单买海鲜...从"吃"开始，建立真实的邻里连接。</p>
+            </div>
+            <div class="module-card">
+                <div class="module-icon">⏰</div>
+                <h3 class="module-name">时间银行</h3>
+                <p class="module-desc">跨代互助养老新模式。年轻时存时间，年老时取时间。子女可为父母远程尽孝，让爱跨越时空。</p>
+            </div>
+            <div class="module-card">
+                <div class="module-icon">🚨</div>
+                <h3 class="module-name">应急邻里</h3>
+                <p class="module-desc">关键时刻靠邻居。深夜孩子发烧、水管爆裂、独居老人突发疾病...一键求助，300米内邻居即时响应。</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">4</div>
+                <div class="stat-label">核心模块</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">300m</div>
+                <div class="stat-label">响应范围</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">&lt;30min</div>
+                <div class="stat-label">平均响应</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">AI</div>
+                <div class="stat-label">智能匹配</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section pain-points">
+        <h2 class="section-title">解决的痛点</h2>
+        <p class="section-desc">城市化进程中，邻里关系正在消失，我们用技术重建连接</p>
+        <div class="points-grid">
+            <div class="point-card">
+                <div class="point-icon">😔</div>
+                <div class="point-content">
+                    <h3>孤独感加剧</h3>
+                    <p>独居青年、空巢老人缺乏社交，邻里之间互不认识，缺少归属感。</p>
+                </div>
+            </div>
+            <div class="point-card">
+                <div class="point-icon">💰</div>
+                <div class="point-content">
+                    <h3>资源浪费严重</h3>
+                    <p>每家每户重复购买工具、设备，闲置物品堆积，缺乏共享渠道。</p>
+                </div>
+            </div>
+            <div class="point-card">
+                <div class="point-icon">🆘</div>
+                <div class="point-content">
+                    <h3>互助需求难满足</h3>
+                    <p>紧急时刻需要邻居帮助，但缺乏连接渠道，远水解不了近渴。</p>
+                </div>
+            </div>
+            <div class="point-card">
+                <div class="point-icon">🎭</div>
+                <div class="point-content">
+                    <h3>技能价值未释放</h3>
+                    <p>很多人有技能却没有分享平台，能力闲置，无法帮助他人或变现。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section scenarios">
+        <h2 class="section-title" style="color: white;">典型使用场景</h2>
+        <p class="section-desc" style="color: rgba(255,255,255,0.8);">真实的邻里互助，从这些场景开始</p>
+        <div class="scenario-list">
+            <div class="scenario-item">
+                <div class="scenario-emoji">👨‍💻</div>
+                <div class="scenario-title">技能互助</div>
+                <div class="scenario-desc">小王帮李阿姨修电脑，获得50积分；用积分请张老师教吉他课。</div>
+            </div>
+            <div class="scenario-item">
+                <div class="scenario-emoji">🥟</div>
+                <div class="scenario-title">美食分享</div>
+                <div class="scenario-desc">张阿姨包了100个饺子，分享20份给邻居；5个家庭拼单买海鲜分摊运费。</div>
+            </div>
+            <div class="scenario-item">
+                <div class="scenario-emoji">👴</div>
+                <div class="scenario-title">时间储蓄</div>
+                <div class="scenario-desc">大学生陪王奶奶聊天2小时，存入时间币；转赠给外地父母兑换陪诊服务。</div>
+            </div>
+            <div class="scenario-item">
+                <div class="scenario-emoji">🏥</div>
+                <div class="scenario-title">紧急救助</div>
+                <div class="scenario-desc">深夜孩子发烧39度，一键求助；李女士5分钟赶到，开车送医。</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section tech-stack">
+        <h2 class="section-title">技术架构</h2>
+        <p class="section-desc">基于AI智能匹配，打造高效、安全、可扩展的社区互助平台</p>
+        <div class="tech-grid">
+            <div class="tech-item">
+                <div class="tech-icon">🤖</div>
+                <div class="tech-name">AI智能匹配</div>
+                <div class="tech-desc">语义理解 + 距离计算</div>
+            </div>
+            <div class="tech-item">
+                <div class="tech-icon">📍</div>
+                <div class="tech-name">LBS定位</div>
+                <div class="tech-desc">精准位置服务</div>
+            </div>
+            <div class="tech-item">
+                <div class="tech-icon">💬</div>
+                <div class="tech-name">实时通讯</div>
+                <div class="tech-desc">WebSocket即时消息</div>
+            </div>
+            <div class="tech-item">
+                <div class="tech-icon">🔒</div>
+                <div class="tech-name">安全保障</div>
+                <div class="tech-desc">实名认证 + 信誉体系</div>
+            </div>
+            <div class="tech-item">
+                <div class="tech-icon">📊</div>
+                <div class="tech-name">数据驱动</div>
+                <div class="tech-desc">智能推荐 + 风控</div>
+            </div>
+            <div class="tech-item">
+                <div class="tech-icon">☁️</div>
+                <div class="tech-name">云端部署</div>
+                <div class="tech-desc">高可用 + 弹性扩展</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <h2 class="cta-title">重建邻里连接</h2>
+        <p class="cta-desc">让每个人都能感受到社区的温度，让"远亲不如近邻"成为现实</p>
+        <a href="#" class="cta-button">了解详情</a>
+    </section>
+
+    <footer class="footer">
+        <p class="footer-text">邻里圈 - 社区互助生态平台 | TRAE AI 创造力大赛参赛作品</p>
+        <p class="footer-text" style="margin-top: 0.5rem;">用AI技术解决真实社会问题，让社区更有温度</p>
+    </footer>
+</body>
+</html>
