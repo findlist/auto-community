@@ -23,6 +23,26 @@
 
 ---
 
+## 🤖 Agent 自动维护
+
+本项目由 **TRAE AI Agent 自驱迭代** 自动维护，遵循专属定时任务规范进行无人值守的持续开发、健康校验与进度沉淀。
+
+- **规范文件**：[`docs/auto-iteration-spec.md`](./docs/auto-iteration-spec.md)（v1.3 最终稳定版）
+- **项目路径**：`e:\work/auto-community`（Monorepo 架构，所有操作仅限该目录）
+- **进度记忆**：`e:\work/auto-community\memory\` 目录，按日期存放 `topics.md` 跨轮次延续进度
+- **调度模式**：定时触发，单次调度上限 4 小时（3.5 小时强制收尾），每轮完成 1–2 个最小可交付单元
+- **六步闭环**：健康度预检 → 动态规划 → 小步编码 → 全量验收 → 计划复盘 → 进度沉淀
+- **健康校验**：后端 `npx tsc --noEmit && npx vitest run`，前端 `npm run build`，校验不通过禁止新功能开发
+- **全局优先级**：Phase1 收尾 → 项目健康故障修复 → Phase2 核心功能开发 → 技术债清理 → 样式精修 → 测试补全
+- **阶段锁定**：Phase 1 收尾任务未全部验收通过前，禁止启动 Phase 2 完整功能开发
+- **Git 规范**：每个最小修改单元通过后立即 `git add`（仅本次文件）→ `git commit` → `git push origin HEAD`，提交信息使用中文（`feat/fix/refactor/docs: 描述`），禁止 force push、reset --hard 等破坏性命令
+- **资源白名单**：仅可使用 `https://trae-api-cn.most.guru/api/ide/v1/text_to_image` 生成装饰/占位图，核心业务素材优先 SVG / CSS / 内置图标库
+- **运行风格**：默默干活，不主动通知用户；需用户介入的阻塞问题统一放在摘要「遗留问题」中
+
+> 定时任务指令优先级 > 规范默认值 > 开发规划文档（development-plan.md）。
+
+---
+
 ## 概览
 
 随着城市化进程加快，邻里关系逐渐疏远：独居青年与空巢老人缺乏社交、每家每户重复购买工具设备、紧急时刻需要邻居帮助却缺乏连接渠道、很多人有技能但没有分享的平台。
