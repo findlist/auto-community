@@ -156,7 +156,7 @@ router.get('/services/:id', optionalAuth, asyncHandler(async (req, res) => {
   success(res, result);
 }));
 
-router.post('/services', authenticate, createPostLimiter, asyncHandler(async (req: Request<Record<string, string>, any, CreateTimeServiceBody>, res: Response) => {
+router.post('/services', authenticate, createPostLimiter, asyncHandler(async (req: Request<Record<string, string>, unknown, CreateTimeServiceBody>, res: Response) => {
   const { type, category, title, description, duration_minutes, location, address, certification, images } = req.body;
   const result = await timeBankService.createService(req.user!.id, { type, category, title, description, duration_minutes, location, address, certification, images });
   aiService.storeEmbedding(result.id, 'time_service', `${title} ${description || ''}`).catch(() => {});
@@ -170,12 +170,12 @@ router.post('/services', authenticate, createPostLimiter, asyncHandler(async (re
     .catch(() => {});
 }));
 
-router.put('/services/:id', authenticate, asyncHandler(async (req: Request<Record<string, string>, any, UpdateTimeServiceBody>, res: Response) => {
+router.put('/services/:id', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateTimeServiceBody>, res: Response) => {
   const result = await timeBankService.updateService(req.params.id, req.user!.id, req.body);
   updated(res, result);
 }));
 
-router.post('/orders', authenticate, orderLimiter, asyncHandler(async (req: Request<Record<string, string>, any, CreateTimeOrderBody>, res: Response) => {
+router.post('/orders', authenticate, orderLimiter, asyncHandler(async (req: Request<Record<string, string>, unknown, CreateTimeOrderBody>, res: Response) => {
   const { service_id } = req.body;
   const result = await timeBankService.createOrder(req.user!.id, service_id);
   created(res, result);
@@ -187,7 +187,7 @@ router.get('/orders', authenticate, asyncHandler(async (req, res) => {
   paginated(res, result.list, result.total, result.page, result.pageSize);
 }));
 
-router.put('/orders/:id/status', authenticate, asyncHandler(async (req: Request<Record<string, string>, any, UpdateTimeOrderStatusBody>, res: Response) => {
+router.put('/orders/:id/status', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateTimeOrderStatusBody>, res: Response) => {
   const { action, actual_duration, rating, review } = req.body;
   if (action === 'complete') {
     // complete action 必须提供实际服务时长，运行时校验避免 undefined 传入 service 层
@@ -261,7 +261,7 @@ router.get('/account', authenticate, asyncHandler(async (req, res) => {
  *       429:
  *         description: 操作过于频繁
  */
-router.post('/transfer', authenticate, orderLimiter, auditMiddleware('TRANSFER', { resourceType: 'transaction' }), asyncHandler(async (req: Request<Record<string, string>, any, TransferTimeBody>, res: Response) => {
+router.post('/transfer', authenticate, orderLimiter, auditMiddleware('TRANSFER', { resourceType: 'transaction' }), asyncHandler(async (req: Request<Record<string, string>, unknown, TransferTimeBody>, res: Response) => {
   const { to_user_id, amount, remark } = req.body;
   const result = await timeBankService.transferTime(req.user!.id, to_user_id, amount, remark);
   success(res, result);
@@ -309,7 +309,7 @@ router.post('/transfer', authenticate, orderLimiter, auditMiddleware('TRANSFER',
  *       429:
  *         description: 操作过于频繁
  */
-router.post('/donate', authenticate, orderLimiter, auditMiddleware('DONATE', { resourceType: 'transaction' }), asyncHandler(async (req: Request<Record<string, string>, any, DonateTimeBody>, res: Response) => {
+router.post('/donate', authenticate, orderLimiter, auditMiddleware('DONATE', { resourceType: 'transaction' }), asyncHandler(async (req: Request<Record<string, string>, unknown, DonateTimeBody>, res: Response) => {
   const { to_user_id, amount, remark } = req.body;
   const result = await timeBankService.donateTime(req.user!.id, to_user_id, amount, remark);
   success(res, result);
@@ -324,7 +324,7 @@ router.get('/transactions', authenticate, asyncHandler(async (req, res) => {
   cursorPaginated(res, result.list, result.nextCursor, result.hasMore);
 }));
 
-router.post('/family', authenticate, asyncHandler(async (req: Request<Record<string, string>, any, CreateFamilyBindingBody>, res: Response) => {
+router.post('/family', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, CreateFamilyBindingBody>, res: Response) => {
   const { parent_phone, relationship } = req.body;
   const result = await timeBankService.createFamilyBinding(req.user!.id, parent_phone, relationship);
   created(res, result);
@@ -351,13 +351,13 @@ router.get('/family', authenticate, asyncHandler(async (req, res) => {
   success(res, result);
 }));
 
-router.post('/reviews', authenticate, asyncHandler(async (req: Request<Record<string, string>, any, CreateReviewBody>, res: Response) => {
+router.post('/reviews', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, CreateReviewBody>, res: Response) => {
   const { order_id, rating, content } = req.body;
   const result = await timeBankService.createReview(order_id, req.user!.id, rating, content);
   created(res, result);
 }));
 
-router.post('/disputes', authenticate, asyncHandler(async (req: Request<Record<string, string>, any, CreateDisputeBody>, res: Response) => {
+router.post('/disputes', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, CreateDisputeBody>, res: Response) => {
   const { order_id, reason, description, evidence } = req.body;
   const result = await timeBankService.createDispute(order_id, req.user!.id, reason, description, evidence);
   created(res, result);

@@ -67,6 +67,19 @@ interface TimeOrderRow extends QueryResultRow {
   updated_at: Date;
 }
 
+// time_accounts 表行类型：与数据库列结构对齐
+// 设计原因：原 Map<string, any> 导致 .balance 等字段访问失去类型保护，
+// 列重命名（如 balance → credit）不会触发编译期告警
+interface TimeAccountRow extends QueryResultRow {
+  id: string;
+  user_id: string;
+  balance: number;
+  total_earned: number;
+  total_spent: number;
+  created_at: Date;
+  updated_at: Date;
+}
+
 // SQL 参数联合类型复用 database.ts 的 SqlParam，避免本地定义与全局类型不一致
 // 设计原因：原本地 SqlParam 含 object 类型过宽（含函数、Symbol 等），改用全局统一类型
 
@@ -109,17 +122,17 @@ function toOrder(row: TimeOrderRow) {
   };
 }
 
-async function getOrCreateAccount(client: PoolClient, userId: string) {
+async function getOrCreateAccount(client: PoolClient, userId: string): Promise<TimeAccountRow> {
   // 事务内查询并加行锁，防止并发场景下余额丢失更新
   const result = await client.query('SELECT * FROM time_accounts WHERE user_id = $1 FOR UPDATE', [userId]);
-  if (result.rows.length > 0) return result.rows[0];
+  if (result.rows.length > 0) return result.rows[0] as TimeAccountRow;
 
   const insertResult = await client.query(
     `INSERT INTO time_accounts (user_id, balance, total_earned, total_spent)
      VALUES ($1, 0, 0, 0) RETURNING *`,
     [userId],
   );
-  return insertResult.rows[0];
+  return insertResult.rows[0] as TimeAccountRow;
 }
 
 /**
@@ -551,11 +564,12 @@ async function completeOrder(
 
     // 2. 按 id 排序获取 time_accounts 账户（getOrCreateAccount 内部对 time_accounts 行加 FOR UPDATE）
     const sortedAccountIds = [order.provider_id, order.requester_id].sort();
-    const accounts = new Map<string, any>();
+    const accounts = new Map<string, TimeAccountRow>();
     for (const uid of sortedAccountIds) {
       accounts.set(uid, await getOrCreateAccount(client, uid));
     }
-    const requesterAccount = accounts.get(order.requester_id);
+    // accounts 在上一行 for 循环中已写入该 key，getOrCreateAccount 保证返回值，故用非空断言
+    const requesterAccount = accounts.get(order.requester_id)!;
 
     // time_accounts 余额同样校验，保持双账本一致
     if (requesterAccount.balance < actualDuration) {
@@ -693,11 +707,12 @@ async function transferTime(fromUserId: string, toUserId: string, amount: number
 
     // 3. 按 id 排序获取 time_accounts 账户（getOrCreateAccount 内部对 time_accounts 行加 FOR UPDATE）
     const sortedUserIds = [fromUserId, toUserId].sort();
-    const accounts = new Map<string, any>();
+    const accounts = new Map<string, TimeAccountRow>();
     for (const uid of sortedUserIds) {
       accounts.set(uid, await getOrCreateAccount(client, uid));
     }
-    const fromAccount = accounts.get(fromUserId);
+    // accounts 在上一行 for 循环中已写入该 key，getOrCreateAccount 保证返回值，故用非空断言
+    const fromAccount = accounts.get(fromUserId)!;
 
     // time_accounts 余额同样校验，保持双账本一致
     if (fromAccount.balance < amount) throw new InsufficientCreditError('时间余额不足');
@@ -761,11 +776,12 @@ async function donateTime(fromUserId: string, toUserId: string, amount: number, 
 
     // 3. 按 id 排序获取 time_accounts 账户（getOrCreateAccount 内部对 time_accounts 行加 FOR UPDATE）
     const sortedUserIds = [fromUserId, toUserId].sort();
-    const accounts = new Map<string, any>();
+    const accounts = new Map<string, TimeAccountRow>();
     for (const uid of sortedUserIds) {
       accounts.set(uid, await getOrCreateAccount(client, uid));
     }
-    const fromAccount = accounts.get(fromUserId);
+    // accounts 在上一行 for 循环中已写入该 key，getOrCreateAccount 保证返回值，故用非空断言
+    const fromAccount = accounts.get(fromUserId)!;
 
     // time_accounts 余额同样校验，保持双账本一致
     if (fromAccount.balance < amount) throw new InsufficientCreditError('时间余额不足');

@@ -175,14 +175,14 @@ router.post('/requests', authenticate, createPostLimiter, validate([
   body('category').notEmpty().withMessage('请选择求助类别'),
   body('title').notEmpty().withMessage('请输入求助标题').isLength({ max: 100 }).withMessage('标题不超过100字'),
   body('description').notEmpty().withMessage('请输入求助描述'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, CreateRequestBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateRequestBody>, res: Response) => {
   const result = await emergencyService.createRequest(req.user!.id, req.body);
   success(res, result, '发布成功');
 }));
 
 router.post('/requests/:id/respond', authenticate, validate([
   body('message').notEmpty().withMessage('请输入响应留言'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, RespondRequestBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, RespondRequestBody>, res: Response) => {
   const { message, eta } = req.body;
   const result = await emergencyService.respondToRequest(req.user!.id, req.params.id, { message, eta });
   success(res, result, '响应成功');
@@ -190,7 +190,7 @@ router.post('/requests/:id/respond', authenticate, validate([
 
 router.put('/responses/:id/status', authenticate, validate([
   body('status').isIn(['arrived', 'completed']).withMessage('无效的状态值'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, UpdateResponseStatusBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateResponseStatusBody>, res: Response) => {
   const { status, rating, review } = req.body;
   // 服务完成时同时提供 rating 与 review 才构建评价数据，避免 review 为 undefined 传入 service 层
   const reviewData = status === 'completed' && rating && review ? { rating, review } : undefined;
@@ -202,7 +202,7 @@ router.put('/responses/:id/status', authenticate, validate([
 router.post('/false-reports', authenticate, createPostLimiter, validate([
   body('requestId').notEmpty().withMessage('请提供求助ID'),
   body('reason').notEmpty().withMessage('请输入举报原因'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, CreateFalseReportBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateFalseReportBody>, res: Response) => {
   const { requestId, reason } = req.body;
   const result = await emergencyService.createReport(req.user!.id, requestId, reason);
   success(res, result, '举报成功');
@@ -212,7 +212,7 @@ router.post('/false-reports', authenticate, createPostLimiter, validate([
 router.put('/false-reports/:id/resolve', authenticate, requireRole('admin'), validate([
   body('penalty').isIn(['warning', 'ban_7d', 'ban_30d', 'permanent']).withMessage('无效的处罚类型'),
   body('resolution').isLength({ min: 2, max: 500 }).withMessage('处理意见需在2-500字符之间'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, ResolveFalseReportBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResolveFalseReportBody>, res: Response) => {
   const { penalty, resolution } = req.body;
   const result = await emergencyService.resolveFalseReport(req.params.id, req.user!.id, penalty, resolution);
   success(res, result, '举报已处理');
@@ -240,7 +240,7 @@ router.get('/resources/:id', optionalAuth, asyncHandler(async (req: Request, res
 router.post('/resources', authenticate, requireRole('admin'), validate([
   body('type').notEmpty().withMessage('请选择资源类型'),
   body('name').notEmpty().withMessage('请输入资源名称').isLength({ max: 100 }).withMessage('名称不超过100字'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, ResourceMutationBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResourceMutationBody>, res: Response) => {
   const result = await emergencyResourceService.create(req.body);
   success(res, result, '创建成功');
 }));
@@ -249,7 +249,7 @@ router.post('/resources', authenticate, requireRole('admin'), validate([
 router.put('/resources/:id', authenticate, requireRole('admin'), validate([
   body('type').optional().notEmpty().withMessage('资源类型不能为空'),
   body('name').optional().notEmpty().withMessage('资源名称不能为空').isLength({ max: 100 }).withMessage('名称不超过100字'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, ResourceMutationBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResourceMutationBody>, res: Response) => {
   const result = await emergencyResourceService.update(req.params.id, req.body);
   success(res, result, '更新成功');
 }));

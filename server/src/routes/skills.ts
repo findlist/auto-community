@@ -131,7 +131,7 @@ router.post('/posts', authenticate, createPostLimiter, validate([
   body('type').isIn(['offer', 'request']).withMessage('type 必须为 offer 或 request'),
   body('category').notEmpty().withMessage('category 必填'),
   body('title').notEmpty().isLength({ max: 100 }).withMessage('title 必填且不超过100字符'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, CreateSkillPostBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateSkillPostBody>, res: Response) => {
   const post = await skillService.createPost(req.user!.id, req.body);
   aiService.storeEmbedding(post.id, 'skill', `${post.title} ${post.description}`).catch(() => {});
   created(res, post);
@@ -143,7 +143,7 @@ router.post('/posts', authenticate, createPostLimiter, validate([
     .catch(() => {});
 }));
 
-router.put('/posts/:id', authenticate, asyncHandler(async (req: Request<Record<string, string>, any, UpdateSkillPostBody>, res: Response) => {
+router.put('/posts/:id', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateSkillPostBody>, res: Response) => {
   const post = await skillService.updatePost(req.params.id, req.user!.id, req.body);
   success(res, post);
 }));
@@ -199,7 +199,7 @@ router.delete('/posts/:id', authenticate, asyncHandler(async (req: Request, res:
  */
 router.post('/orders', authenticate, orderLimiter, auditMiddleware('CREATE_ORDER', { resourceType: 'order' }), validate([
   body('post_id').isUUID().withMessage('post_id 必须为有效 UUID'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, CreateSkillOrderBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateSkillOrderBody>, res: Response) => {
   const order = await skillOrderService.createOrder(req.user!.id, req.body.post_id);
   created(res, order);
 }));
@@ -228,7 +228,7 @@ router.put('/orders/:id/status', authenticate, auditMiddleware('UPDATE_ORDER_STA
   },
 }), validate([
   body('status').isIn(['accepted', 'rejected', 'in_progress', 'completed', 'cancelled', 'disputed']).withMessage('无效的状态值'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, UpdateSkillOrderStatusBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateSkillOrderStatusBody>, res: Response) => {
   const { status, rating, review } = req.body;
   const userId = req.user!.id;
   const orderId = req.params.id;
@@ -263,7 +263,7 @@ router.post('/orders/:id/dispute', authenticate, auditMiddleware('DISPUTE_ORDER'
   getResourceId: (req) => req.params.id,
 }), validate([
   body('reason').notEmpty().withMessage('争议原因不能为空'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, DisputeOrderBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, DisputeOrderBody>, res: Response) => {
   const order = await skillOrderService.disputeOrder(req.params.id, req.user!.id, req.body.reason);
   success(res, order);
 }));
@@ -275,7 +275,7 @@ router.put('/orders/:id/resolve', authenticate, requireRole('admin'), auditMiddl
 }), validate([
   body('resolution').notEmpty().withMessage('处理结果说明不能为空'),
   body('action').isIn(['refund', 'continue', 'cancel']).withMessage('action 必须为 refund/continue/cancel'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, ResolveDisputeBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResolveDisputeBody>, res: Response) => {
   const { resolution, action } = req.body;
   const order = await skillOrderService.resolveDispute(req.params.id, req.user!.id, resolution, action);
   success(res, order);

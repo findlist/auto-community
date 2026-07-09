@@ -99,7 +99,7 @@ router.post('/register', authLimiter, auditMiddleware('REGISTER', { resourceType
   body('password').isLength({ min: 6 }).withMessage('密码至少6位'),
   body('nickname').isLength({ min: 2 }).withMessage('昵称至少2个字符'),
   body('privacyConsentVersion').notEmpty().withMessage('必须同意隐私政策')
-]), asyncHandler(async (req: Request<Record<string, string>, any, RegisterBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, RegisterBody>, res: Response) => {
   const { phone, password, nickname, privacyConsentVersion } = req.body;
   const result = await authService.register(phone, password, nickname, privacyConsentVersion);
   success(res, result, '注册成功');
@@ -151,7 +151,7 @@ router.post('/register', authLimiter, auditMiddleware('REGISTER', { resourceType
 router.post('/login', authLimiter, auditMiddleware('LOGIN', { resourceType: 'user' }), validate([
   body('phone').notEmpty().withMessage('请输入手机号'),
   body('password').notEmpty().withMessage('请输入密码')
-]), asyncHandler(async (req: Request<Record<string, string>, any, LoginBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, LoginBody>, res: Response) => {
   const { phone, password } = req.body;
   const result = await authService.login(phone, password);
   success(res, result, '登录成功');
@@ -195,7 +195,7 @@ router.post('/login', authLimiter, auditMiddleware('LOGIN', { resourceType: 'use
 // POST /refresh-token - 刷新令牌（限流：防止通过暴力刷新令牌规避安全策略）
 router.post('/refresh-token', authLimiter, validate([
   body('refreshToken').notEmpty().withMessage('请提供refreshToken')
-]), asyncHandler(async (req: Request<Record<string, string>, any, RefreshTokenBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, RefreshTokenBody>, res: Response) => {
   const { refreshToken } = req.body;
   const result = await authService.refreshToken(refreshToken);
   success(res, result, '刷新成功');
@@ -263,7 +263,7 @@ router.post('/logout', authenticate, auditMiddleware('LOGOUT', { resourceType: '
 // POST /forgot-password - 忘记密码，发送验证码
 router.post('/forgot-password', authLimiter, validate([
   body('phone').matches(/^1[3-9]\d{9}$/).withMessage('手机号格式不正确')
-]), asyncHandler(async (req: Request<Record<string, string>, any, ForgotPasswordBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, ForgotPasswordBody>, res: Response) => {
   const { phone } = req.body;
   await authService.forgotPassword(phone);
   success(res, null, '验证码已发送，请查收');
@@ -309,7 +309,7 @@ router.post('/reset-password', authLimiter, validate([
   body('phone').matches(/^1[3-9]\d{9}$/).withMessage('手机号格式不正确'),
   body('code').isLength({ min: 6, max: 6 }).withMessage('验证码为6位数字'),
   body('password').isLength({ min: 6 }).withMessage('密码至少6位')
-]), asyncHandler(async (req: Request<Record<string, string>, any, ResetPasswordBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResetPasswordBody>, res: Response) => {
   const { phone, code, password } = req.body;
   await authService.resetPassword(phone, code, password);
   success(res, null, '密码重置成功，请登录');
@@ -350,7 +350,7 @@ router.post('/reset-password', authLimiter, validate([
 router.post('/simple-reset-password', authLimiter, validate([
   body('phone').matches(/^1[3-9]\d{9}$/).withMessage('手机号格式不正确'),
   body('password').isLength({ min: 6 }).withMessage('密码至少6位')
-]), asyncHandler(async (req: Request<Record<string, string>, any, SimpleResetPasswordBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, SimpleResetPasswordBody>, res: Response) => {
   const { phone, password } = req.body;
   await authService.simpleResetPassword(phone, password);
   success(res, null, '密码重置成功，请登录');

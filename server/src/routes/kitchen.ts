@@ -92,7 +92,7 @@ router.post('/posts',
     body('allergens').isArray().withMessage('过敏原必须为数组'),
     body('healthCert').optional().isBoolean().withMessage('健康证标识必须为布尔值'),
   ]),
-  asyncHandler(async (req: Request<Record<string, string>, any, CreateKitchenPostBody>, res: Response) => {
+  asyncHandler(async (req: Request<Record<string, string>, unknown, CreateKitchenPostBody>, res: Response) => {
     // offer 类型（提供美食）强制要求持有健康证，保障食品安全
     if (req.body.type === 'offer' && req.body.healthCert !== true) {
       throw new BadRequestError('提供美食分享时必须持有健康证');
@@ -195,7 +195,7 @@ router.get('/posts/:id',
 // PUT /api/kitchen/posts/:id - 更新美食
 router.put('/posts/:id',
   authenticate,
-  asyncHandler(async (req: Request<Record<string, string>, any, UpdateKitchenPostBody>, res: Response) => {
+  asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateKitchenPostBody>, res: Response) => {
     const result = await kitchenService.update(req.params.id, req.user!.id, req.body);
     success(res, result, '更新成功');
   })
@@ -274,7 +274,7 @@ router.post('/orders',
     body('quantity').isInt({ min: 1 }).withMessage('份数必须大于0'),
     body('pickupType').optional().isIn(['self_pickup', 'delivery']).withMessage('领取方式不正确'),
   ]),
-  asyncHandler(async (req: Request<Record<string, string>, any, CreateKitchenOrderBody>, res: Response) => {
+  asyncHandler(async (req: Request<Record<string, string>, unknown, CreateKitchenOrderBody>, res: Response) => {
     const result = await kitchenOrderService.create(req.user!.id, req.body);
     created(res, result, '预约成功');
   })
@@ -315,7 +315,7 @@ router.put('/orders/:id/complete',
     body('rating').isInt({ min: 1, max: 5 }).withMessage('评分必须为1-5'),
     body('content').optional().isLength({ max: 500 }).withMessage('评价内容不超过500字符'),
   ]),
-  asyncHandler(async (req: Request<Record<string, string>, any, CompleteKitchenOrderBody>, res: Response) => {
+  asyncHandler(async (req: Request<Record<string, string>, unknown, CompleteKitchenOrderBody>, res: Response) => {
     const result = await kitchenOrderService.complete(req.params.id, req.user!.id, req.body);
     success(res, result, '完成成功');
   })
@@ -344,7 +344,7 @@ router.post('/group-orders',
     body('address').isLength({ min: 1 }).withMessage('集合地点不能为空'),
     body('deadline').isISO8601().withMessage('截止时间格式不正确'),
   ]),
-  asyncHandler(async (req: Request<Record<string, string>, any, CreateGroupOrderBody>, res: Response) => {
+  asyncHandler(async (req: Request<Record<string, string>, unknown, CreateGroupOrderBody>, res: Response) => {
     const result = await groupOrderService.create(req.user!.id, req.body);
     created(res, result, '拼单创建成功');
   })
@@ -382,7 +382,7 @@ router.post('/group-orders/:id/join',
   validate([
     body('amount').isInt({ min: 0 }).withMessage('分摊金额必须为非负整数'),
   ]),
-  asyncHandler(async (req: Request<Record<string, string>, any, JoinGroupOrderBody>, res: Response) => {
+  asyncHandler(async (req: Request<Record<string, string>, unknown, JoinGroupOrderBody>, res: Response) => {
     const result = await groupOrderService.join(req.params.id, req.user!.id, req.body.amount);
     success(res, result, '参与成功');
   })
@@ -394,7 +394,7 @@ router.post('/group-orders/:id/cancel',
   validate([
     body('reason').optional().isLength({ max: 255 }).withMessage('取消原因不超过255字符'),
   ]),
-  asyncHandler(async (req: Request<Record<string, string>, any, CancelGroupOrderBody>, res: Response) => {
+  asyncHandler(async (req: Request<Record<string, string>, unknown, CancelGroupOrderBody>, res: Response) => {
     await groupOrderService.cancel(req.params.id, req.user!.id, req.body.reason);
     success(res, null, '拼单已取消');
   })

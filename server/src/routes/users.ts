@@ -104,7 +104,7 @@ router.put('/profile', authenticate, validate([
   // avatar 仅校验为字符串，URL 合法性由 service 层 validateImageUrl 统一校验
   // 支持 /uploads/ 相对路径（本地上传）与 HTTPS 白名单域名（OSS/外链）
   body('avatar').optional().isString().withMessage('头像格式不正确'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, UpdateProfileBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateProfileBody>, res: Response) => {
   const { nickname, avatar } = req.body;
   const user = await userService.updateProfile(req.user!.id, { nickname, avatar });
   success(res, user, '更新成功');
@@ -169,7 +169,7 @@ router.get('/:id', authenticate, asyncHandler(async (req: Request, res: Response
 router.post('/verify', authenticate, validate([
   body('realName').isLength({ min: 2, max: 100 }).withMessage('真实姓名长度需在2-100字符之间'),
   body('idCard').matches(/^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/).withMessage('身份证号格式不正确'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, VerifyBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, VerifyBody>, res: Response) => {
   const { realName, idCard } = req.body;
   const result = await userService.submitVerification(req.user!.id, realName, idCard);
   success(res, result, result.message);
@@ -249,7 +249,7 @@ router.get('/verify/status', authenticate, asyncHandler(async (req: Request, res
  */
 router.post('/deletion', authenticate, validate([
   body('reason').optional().isLength({ max: 500 }).withMessage('注销原因最多500字符'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, DeletionRequestBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, DeletionRequestBody>, res: Response) => {
   const { reason } = req.body;
   const result = await dataDeletionService.submitDeletionRequest(req.user!.id, reason);
   success(res, result, result.message);

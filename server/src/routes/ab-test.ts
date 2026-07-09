@@ -118,7 +118,7 @@ router.post('/:testName/event', authenticate, validate([
   body('eventType').isString().notEmpty().withMessage('事件类型不能为空'),
   body('variant').isString().notEmpty().withMessage('变体名称不能为空'),
   body('metadata').optional().isObject(),
-]), asyncHandler(async (req: Request<Record<string, string>, any, RecordEventBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, RecordEventBody>, res: Response) => {
   const { eventType, variant, metadata } = req.body;
   await abTestService.recordEvent(req.params.testName, req.user!.id, variant, eventType, metadata);
   success(res, null, '事件记录成功');

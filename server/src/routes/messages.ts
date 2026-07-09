@@ -154,7 +154,7 @@ router.get('/', authenticate, asyncHandler(async (req: Request, res: Response) =
  *       401:
  *         description: 未授权
  */
-router.post('/read', authenticate, asyncHandler(async (req: Request<Record<string, string>, any, MarkReadBody>, res: Response) => {
+router.post('/read', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, MarkReadBody>, res: Response) => {
   const { order_id } = req.body;
   if (!order_id) throw new BadRequestError('order_id 参数必填');
 

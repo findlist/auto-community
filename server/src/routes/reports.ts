@@ -23,7 +23,7 @@ router.post('/', authenticate, validate([
   body('targetType').isIn(['skill', 'kitchen', 'time_bank', 'emergency', 'user']).withMessage('无效的举报类型'),
   body('targetId').isUUID().withMessage('无效的目标ID'),
   body('reason').isLength({ min: 5, max: 500 }).withMessage('举报原因需在5-500字符之间'),
-]), asyncHandler(async (req: Request<Record<string, string>, any, CreateReportBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateReportBody>, res: Response) => {
   const { targetType, targetId, reason } = req.body;
   const report = await adminService.createReport(req.user!.id, targetType, targetId, reason);
   success(res, report, '举报成功');
