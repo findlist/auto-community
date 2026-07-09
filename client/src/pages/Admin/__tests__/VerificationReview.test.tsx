@@ -369,7 +369,8 @@ describe('VerificationReview 实名认证审核', () => {
     const initialCallCount = vi.mocked(getVerificationRequests).mock.calls.length;
     // 下一页按钮（ChevronRight 图标按钮无 accessible name，用 class 定位）
     // 分页按钮容器内有两个 border 按钮，取第二个（下一页）
-    const pageButtons = document.querySelectorAll('button.border-gray-300');
+    // 选择器用 border-neutral-300：源码分页按钮 class 为 border-neutral-300（非 border-gray-300）
+    const pageButtons = document.querySelectorAll('button.border-neutral-300');
     const nextBtn = pageButtons[pageButtons.length - 1]!;
     await act(async () => {
       fireEvent.click(nextBtn);
