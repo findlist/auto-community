@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type AxiosError } from "axios";
 import { convertKeys, toCamelCase, toSnakeCase } from "./caseConverter";
 
 // 扩展 Error 类以支持字段级错误
@@ -43,9 +43,11 @@ client.interceptors.response.use(
     response.data = convertKeys(response.data, toCamelCase);
     return response.data;
   },
-  (error) => {
+  (error: AxiosError) => {
     const status = error.response?.status;
-    const data = error.response?.data;
+    const data = error.response?.data as
+      | { message?: string; errors?: Array<{ field?: string; message?: string }> }
+      | undefined;
 
     // 401 → 清除 token，跳转登录
     if (status === 401) {
@@ -56,9 +58,11 @@ client.interceptors.response.use(
     }
 
     // 提取字段级错误（422 验证错误）
-    const fieldErrors = data?.errors?.map((e: any) => ({
+    // 后端返回的 errors 项结构不严格保证，用精准可选类型替代 any，
+    // 强制编译期收窄访问，避免运行时因字段缺失导致 undefined 污染下游
+    const fieldErrors = data?.errors?.map((e: { field?: string; message?: string }) => ({
       field: e.field || "unknown",
-      message: e.message,
+      message: e.message ?? "",
     }));
 
     const message = data?.message || "请求失败，请稍后重试";

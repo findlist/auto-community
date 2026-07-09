@@ -10,6 +10,28 @@ import { toast } from "@/components/Toast";
 // 合法的订单类型集合，用于校验 URL 传入的 orderType
 const VALID_ORDER_TYPES: OrderType[] = ["skill", "kitchen", "time", "emergency"];
 
+// WebSocket 推送的聊天消息载荷结构：仅声明本组件消费的字段，其余字段忽略
+// 设计原因：WebSocket 消息为动态结构，用类型守卫收窄避免 any 逃逸到组件内部
+interface ChatWSMessage {
+  type: string;
+  data?: {
+    id: string;
+    senderId: string;
+    receiverId?: string;
+    content: string;
+    type?: string;
+    orderType: OrderType;
+    createdAt: string;
+  };
+}
+
+// 类型守卫：判断未知 data 是否为聊天消息结构
+function isChatWSMessage(data: unknown): data is ChatWSMessage {
+  if (typeof data !== "object" || data === null) return false;
+  const obj = data as Record<string, unknown>;
+  return typeof obj.type === "string";
+}
+
 export default function Chat() {
   const { orderId } = useParams<{ orderId: string }>();
   const [searchParams] = useSearchParams();
@@ -91,19 +113,20 @@ export default function Chat() {
         setReconnectCount(0);
       },
       onMessage: (data) => {
-        if (data.type === "chat" && data.data) {
-          const newMessage: Message = {
-            id: data.data.id,
-            senderId: data.data.senderId,
-            receiverId: data.data.receiverId || "",
-            content: data.data.content,
-            type: data.data.type || "text",
-            orderType: data.data.orderType,
-            read: false,
-            createdAt: data.data.createdAt,
-          };
-          setMessages((prev) => [...prev, newMessage]);
-        }
+        // 用类型守卫替代隐式 any 访问，避免运行时因消息结构异常抛错
+        if (!isChatWSMessage(data) || data.type !== "chat" || !data.data) return;
+        const payload = data.data;
+        const newMessage: Message = {
+          id: payload.id,
+          senderId: payload.senderId,
+          receiverId: payload.receiverId || "",
+          content: payload.content,
+          type: payload.type || "text",
+          orderType: payload.orderType,
+          read: false,
+          createdAt: payload.createdAt,
+        };
+        setMessages((prev) => [...prev, newMessage]);
       },
       onStatusChange: (status) => {
         setConnectionStatus(status);

@@ -17,14 +17,16 @@ export interface WebSocketClientOptions {
   // 连接错误回调
   onError?: (error: Event) => void;
   // 消息接收回调
-  onMessage?: (data: any) => void;
+  // data 用 unknown 而非 any，强制消费方做类型收窄，避免运行时因结构不匹配触发隐式 any 污染
+  onMessage?: (data: unknown) => void;
   // 连接状态变化回调
   onStatusChange?: (status: ConnectionStatus) => void;
 }
 
 interface Subscription {
   type: string;
-  data: Record<string, any>;
+  // 订阅载荷由调用方决定，统一 unknown 强制消费方收窄，避免 any 逃逸
+  data: Record<string, unknown>;
 }
 
 export class WebSocketClient {
@@ -161,7 +163,7 @@ export class WebSocketClient {
   /**
    * 添加订阅（重连后自动恢复）
    */
-  subscribe(type: string, data: Record<string, any>): void {
+  subscribe(type: string, data: Record<string, unknown>): void {
     // 避免重复订阅
     const exists = this.subscriptions.some(
       (s) => s.type === type && JSON.stringify(s.data) === JSON.stringify(data)
@@ -182,7 +184,7 @@ export class WebSocketClient {
   /**
    * 移除订阅
    */
-  unsubscribe(type: string, data?: Record<string, any>): void {
+  unsubscribe(type: string, data?: Record<string, unknown>): void {
     this.subscriptions = this.subscriptions.filter((s) => {
       if (data) {
         return !(s.type === type && JSON.stringify(s.data) === JSON.stringify(data));
@@ -202,7 +204,8 @@ export class WebSocketClient {
   /**
    * 发送消息
    */
-  send(data: any): boolean {
+  // data 收紧为 unknown：内部仅做 JSON.stringify，无需访问具体字段，调用方传任意可序列化对象即可
+  send(data: unknown): boolean {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
       return true;
