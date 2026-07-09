@@ -36,27 +36,48 @@
 - 设计原因：unknown 强制消费方做类型收窄，避免运行时因消息结构异常导致隐式 any 污染下游逻辑
 - 验证结果：client.test.ts 18/18 ✅、websocket.test.ts 29/29 ✅、Chat.test.tsx 18/18 ✅、tsc -b ✅、前端 build ✅
 
+### 最小迭代单元 2：新增 getErrorMessage 工具函数
+- 提交：`b65ef79 refactor: 新增 getErrorMessage 工具函数配套收紧 catch (err: any) 类型`
+- 修改文件：
+  - [client/src/utils/error.ts](file:///e:/work/auto-community/client/src/utils/error.ts)（新建）
+  - [client/src/utils/__tests__/error.test.ts](file:///e:/work/auto-community/client/src/utils/__tests__/error.test.ts)（新建）
+- 设计原因：axios 拦截器已将 HTTP 错误统一转为 ApiError，消费方不应再访问 `err.response.data.message`（该路径在 ApiError 上不存在，永远走 fallback）
+- 验证结果：error.test.ts 14/14 ✅、tsc -b ✅
+
+### 最小迭代单元 3：收紧前端 13 处 catch (err: any) 为 getErrorMessage
+- 提交：`8f133fb refactor: 收紧前端 13 处 catch (err: any) 为 getErrorMessage 工具函数`
+- 修改文件（17 个：9 个源码 + 6 个测试 + 2 个工具函数调整）：
+  - 源码：ABTestResults / Chat / SharedKitchen(Create/Detail/Orders/GroupOrders) / SkillExchange(Create/Detail/Orders)
+  - 测试：对应 6 个测试文件的 mock 对齐 ApiError 结构
+  - 工具函数：[error.ts](file:///e:/work/auto-community/client/src/utils/error.ts) 调整设计（原生 Error 走 fallback）
+- 具体改动：
+  1. 13 处 `catch (error: any) { toast.error(error.response?.data?.message || "xxx") }` → `catch (error) { toast.error(getErrorMessage(error, "xxx")) }`
+  2. getErrorMessage 设计调整：仅 ApiError 返回 message，原生 Error 走 fallback（避免 "Network Error" 等技术性信息泄露给用户）
+  3. 6 个测试文件的 mock 从原始 axios error 结构 `{response:{data:{message}}}` 改为 `new ApiError(msg, code)`，对齐拦截器转换后的实际运行时结构
+- 设计原因：统一错误处理入口，消除 13 处 any 逃逸；测试 mock 对齐实际运行时结构，避免"测试通过但生产行为不符"的假阳性
+- 验证结果：tsc -b ✅、vitest 845/845 ✅、npm run build ✅
+
 ## 验证结果
 - 后端 tsc --noEmit ✅
 - 后端 vitest run 1445/1445 ✅
 - 后端覆盖率 95.45%（Stmts）✅
 - 前端 npm run build ✅（零错误零警告，打包体积合理）
-- 前端 vitest run 831/831 ✅（含本轮涉及 3 个测试文件 65 用例）
+- 前端 vitest run 845/845 ✅（含本轮新增 error.test.ts 14 用例）
 
 ## 遗留问题
 - 高德地图 Key 实际未配置（AMAP_KEY 为空），生产部署后地图页将运行在降级模式，需运维方配置 AMAP_KEY 与前端 `window._AMAP_KEY` 后启用地图渲染
 - CD 流水线依赖 GitHub Secrets 与远程服务器 GHCR 登录态，部署前需在仓库 Settings → Secrets 配置 STAGING_*/PRODUCTION_* 凭据
 - GHCR_OWNER 建议在仓库 Variables 中显式配置，避免依赖默认 repository_owner（含大小写敏感问题）
-- 前端仍有 14 个非测试文件含 `catch (err: any)` / `Record<string, any>` 等局部 any 用法（不影响编译与运行，可后续小步迭代收紧）
+- 前端 catch (err: any) 已全部清理完毕（13 处已收紧），剩余 any 主要在 Record<string, any> 类型注解与后端 service 层
 
 ## 下一轮迭代建议
 Phase 3 P2/P3 任务继续推进，建议优先级：
-1. **前端 any 持续收紧**：剩余 14 个非测试文件（Create.tsx / Orders.tsx / GroupOrders.tsx / ABTestResults.tsx 等）的 `catch (err: any)` 模式，可复用本次 `isChatWSMessage` 类型守卫思路或新增 `getErrorMessage(err: unknown)` 工具函数
-2. **后端 any 收紧**：后端非测试文件 17 个含 any（emergency/skill/kitchen/time-bank service 等），优先处理 service 层
+1. **后端 any 收紧**：后端非测试文件 17 个含 any（emergency/skill/kitchen/time-bank service 等），优先处理 service 层
+2. **前端 Record<string, any> 收紧**：前端仍有部分 `Record<string, any>` 类型注解，可逐步替换为精准类型
 3. **PostgreSQL 慢查询优化**：已有 17+ 索引迁移文件，可结合 EXPLAIN 分析补缺失索引
 4. **生产就绪验收**：对照规范第九章 7 项验收标准全量检查（当前已满足 6 项，仅缺"全页面移动端适配查漏补缺"专项检查）
 
 ## 阶段判定
 - ✅ Phase 1 完成（2 项 P0 全部落地 + 后端零类型错误 + 全量测试通过 + 前端构建零错误）
 - ✅ Phase 2 完成（8 项 P1 全部落地 + 后端测试覆盖率 95.45% > 60% + CI/CD 稳定可用）
-- 🔄 Phase 3 进行中（技术债清理 - any 收紧 1/N 已完成）
+- 🔄 Phase 3 进行中（技术债清理 - 前端 catch any 收紧 3/3 已完成，后端 any 收紧待启动）
