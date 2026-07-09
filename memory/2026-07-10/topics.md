@@ -298,3 +298,32 @@
 - ✅ Phase 1 完成（2 项 P0 全部落地 + 后端零类型错误 + 全量测试通过 + 前端构建零错误）
 - ✅ Phase 2 完成（8 项 P1 全部落地 + 后端测试覆盖率 95.45% > 60% + CI/CD 稳定可用）
 - 🔄 Phase 3 进行中（技术债清理：前端 any 收紧已完结；测试补全：Auth 4/4 + 组件 11/11 + hooks 4/4 全覆盖完结，剩余 pages 业务页面测试缺口）
+
+---
+
+## 本轮迭代摘要（02:07 调度 — Phase3 技术债清理：lint error 清零）
+
+### 健康度预检
+- 后端 tsc --noEmit ✅（零错误）
+- 后端 vitest 1445/1445 ✅（9.06s）
+- 前端 npm run build ✅（6.96s，零错误零警告）
+
+### 基线冲突澄清
+- 用户指令声明 Phase1 8/10 仅剩 2 项 P0（应急资源地图页、CD 流水线），但经代码核查 [ResourceMap.tsx](file:///e:/work/auto-community/client/src/pages/Emergency/ResourceMap.tsx)（含高德 SDK 加载 hook、降级兼容、点位渲染、信息窗体、导航跳转、Haversine 距离计算）与 [.github/workflows/cd.yml](file:///e:/work/auto-community/.github/workflows/cd.yml)（Docker 多阶段构建、staging 自动部署、production 手动审批）均已完整落地，与历史记忆一致
+- 按"已完成功能不得重复开发"规则不重复开发，确认 Phase1/Phase2 实际已完成，当前推进 Phase3 技术债清理（优先级高于样式精修与测试补全）
+- bug-check 报告标注的 P0（CreateService.tsx Hooks 违规）经核查已在后续迭代修复（所有 Hooks 现位于 early return 之前）
+
+### 最小迭代单元 1：清理前后端 lint error（5→0）
+- 提交：`e89f59f fix: 清理前后端 lint 错误（未使用导入与可选链非空断言）`（已 push origin HEAD）
+- 修改文件（2 个）：
+  - [server/src/middleware/__tests__/upload.test.ts](file:///e:/work/auto-community/server/src/middleware/__tests__/upload.test.ts)：移除未使用的 `uploadSingle`/`uploadMultiple` 导入（no-unused-vars error）
+  - [client/src/pages/Messages/__tests__/Chat.test.tsx](file:///e:/work/auto-community/client/src/pages/Messages/__tests__/Chat.test.tsx)：3 处 `input.parentElement?.querySelector('button')!` 改为 `input.parentElement!.querySelector('button') as HTMLButtonElement`（no-non-null-asserted-optional-chain error）
+- 设计原因：
+  - `?.` + `!` 是矛盾写法：可选链暗示可能为 null，非空断言又声明非空，lint 规则禁止；input 经 getByPlaceholderText 取得必存在且渲染在容器内，parentElement 必非空，故改用非空断言（非可选链）+ 类型断言
+- 验收结果：
+  - 后端 eslint --quiet ✅（0 error，原 2）
+  - 前端 eslint --quiet ✅（0 error，原 3）
+  - 后端 upload.test.ts 15/15 ✅
+  - 前端 Chat.test.tsx 18/18 ✅
+  - 前端 npm run build ✅（6.80s）
+- 技术债进展：前后端 lint error 全部清零（后端从 bug-check 报告的 35 errors 降至 0，本轮清理最后 2 个；前端从 5 errors 降至 0，本轮清理最后 3 个）

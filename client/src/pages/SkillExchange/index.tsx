@@ -63,6 +63,8 @@ export default function SkillExchange() {
     setHasMore(true);
     setPosts([]);
     loadPosts(true);
+    // 仅在 activeTab/selectedCategory/keyword 变化时重新加载；loadPosts 依赖 page/loading，纳入会导致分页后无限重载
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, selectedCategory, keyword]);
 
   useEffect(() => {

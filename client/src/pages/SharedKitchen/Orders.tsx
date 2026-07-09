@@ -46,6 +46,8 @@ export default function Orders() {
     setHasMore(true);
     setOrders([]);
     loadOrders(true);
+    // 仅在 activeTab/statusFilter 变化时重新加载；loadOrders 依赖 page/loading，纳入会导致分页后无限重载
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, statusFilter]);
 
   // 确认订单

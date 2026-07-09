@@ -127,6 +127,9 @@ export default function LocationPicker({
     return () => {
       map.destroy();
     };
+    // 地图仅在 SDK 加载完成时初始化一次；initialLocation/location/onLocationChange 变化时
+    // 应通过 marker.setPosition 更新而非重建地图实例，故显式排除这些依赖
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapLoaded]);
 
   // 搜索地址

@@ -66,7 +66,10 @@ export default function MyOrders() {
     }
     setLoading(true);
     loadOrders(true);
-  }, [isAuthenticated]);
+    // navigate 由 React Router 保证引用稳定，安全纳入依赖
+    // loadOrders 依赖 page，纳入会导致分页后无限重载，故显式排除
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, navigate]);
 
   const filteredOrders = activeTab ? orders.filter(o => o.status === activeTab) : orders;
 

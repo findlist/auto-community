@@ -125,10 +125,14 @@ vi.mock('@/components/Toast', () => ({
   },
 }));
 
-// mock useNavigate：避免 MemoryRouter 之外的真实路由依赖
+// mock useNavigate：返回稳定引用（真实 useNavigate 在组件生命周期内引用不变）
+// 若每次渲染返回新 vi.fn()，会导致将 navigate 纳入 useEffect 依赖的组件无限重渲染
+const { navigateMock } = vi.hoisted(() => ({
+  navigateMock: vi.fn(),
+}));
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
-  return { ...actual, useNavigate: () => vi.fn() };
+  return { ...actual, useNavigate: () => navigateMock };
 });
 
 // 引入被 mock 的 API 以便在用例中配置返回值

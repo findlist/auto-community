@@ -65,7 +65,10 @@ export default function TimeAccountPage() {
       return;
     }
     Promise.all([loadAccount(), loadTransactions(true)]).finally(() => setLoading(false));
-  }, [isAuthenticated]);
+    // navigate 稳定、loadAccount 无依赖（均引用稳定）安全纳入
+    // loadTransactions 依赖 cursor，纳入会导致游标分页后无限重载，故显式排除
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, navigate, loadAccount]);
 
   const handleTransferSuccess = () => {
     loadAccount();

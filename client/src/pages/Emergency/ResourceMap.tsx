@@ -178,9 +178,11 @@ export default function ResourceMap() {
       closeWhenClickMap: true,
     });
 
+    // 捕获当前 markers 实例到局部变量，cleanup 执行时 ref 可能已被其他 effect 修改（满足 exhaustive-deps 规则）
+    const markers = markersRef.current;
     return () => {
       map.destroy();
-      markersRef.current.clear();
+      markers.clear();
     };
   }, [mapLoaded, userLocation]);
 

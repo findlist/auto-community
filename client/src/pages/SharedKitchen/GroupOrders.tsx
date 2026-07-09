@@ -49,6 +49,8 @@ export default function GroupOrders() {
     setPage(1);
     setHasMore(true);
     loadOrders(true);
+    // 仅挂载时初始化；loadOrders 依赖 page/loading，纳入会导致分页后无限重载，故显式排除
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 创建拼单

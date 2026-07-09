@@ -83,6 +83,8 @@ export default function SharedKitchen() {
       setPosts([]);
       loadFoodShares(true);
     }
+    // 仅在 activeTab/selectedCategory 变化时重新加载；load 函数依赖 page/loading，纳入会导致分页后无限重载
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, selectedCategory]);
 
   const handleLoadMore = () => {
