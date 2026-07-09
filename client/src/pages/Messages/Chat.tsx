@@ -93,7 +93,9 @@ export default function Chat() {
     let wasReconnecting = false;
 
     // 创建 WebSocketClient 实例
-    const wsClient = new WebSocketClient(`ws://${window.location.host}/ws?token=${token}`, {
+    // 使用 protocol-relative host（不含端口），避免经过反向代理时泄漏内部端口
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsClient = new WebSocketClient(`${wsProtocol}//${window.location.host.split(':')[0]}/ws?token=${token}`, {
       maxReconnectAttempts: 5,
       reconnectIntervals: [1000, 2000, 5000, 5000, 5000],
       onOpen: () => {
