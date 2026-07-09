@@ -39,7 +39,7 @@ router.post('/', validate([
   body('phone').matches(/^1[3-9]\d{9}$/).withMessage('手机号格式不正确'),
   body('address').isString().isLength({ min: 1 }).withMessage('详细地址必填'),
   body('isDefault').optional().isBoolean(),
-]), asyncHandler(async (req: Request<{}, any, CreateAddressBody>, res: Response) => {
+]), asyncHandler(async (req: Request<Record<string, string>, any, CreateAddressBody>, res: Response) => {
   const result = await addressService.create(req.user!.id, req.body);
   success(res, result, '地址已添加');
 }));

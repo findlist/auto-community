@@ -68,7 +68,7 @@ router.get('/match/time-bank/:serviceId', authenticate, async (req, res) => {
  *     summary: 内容智能分类与紧急程度判断
  *     tags: [AI]
  */
-router.post('/classify', authenticate, async (req: Request<{}, any, ClassifyBody>, res: Response) => {
+router.post('/classify', authenticate, async (req: Request<Record<string, string>, any, ClassifyBody>, res: Response) => {
   try {
     const { text } = req.body || {};
     if (!text || typeof text !== 'string') {
