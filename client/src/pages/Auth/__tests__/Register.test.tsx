@@ -116,8 +116,8 @@ describe('Auth/Register 注册页', () => {
     expect(screen.getByPlaceholderText('再次输入密码')).toBeInTheDocument();
     // 提交按钮（含"立即注册"文本）
     expect(screen.getByRole('button', { name: /立即注册/ })).toBeInTheDocument();
-    // 跳转链接
-    expect(screen.getByText('直接登录')).toBeInTheDocument();
+    // 跳转链接（底部"已有账号？直接登录"整体在一个 Link 节点内）
+    expect(screen.getByText('已有账号？直接登录')).toBeInTheDocument();
     expect(screen.getByText('《隐私政策》')).toBeInTheDocument();
     // 注册福利提示
     expect(screen.getByText(/注册即送 100 积分/)).toBeInTheDocument();

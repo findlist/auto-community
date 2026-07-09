@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Phone, Lock, ArrowRight, ArrowLeft } from "lucide-react";
 import { simpleResetPassword } from "@/api/auth";
 import { ApiError } from "@/api/client";
 
@@ -48,19 +49,27 @@ export default function ForgotPassword() {
     }
   };
 
+  // 成功状态：保持与表单同款玻璃态卡片，避免状态切换时布局跳变
   if (success) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] px-4">
-        <div className="w-full max-w-sm text-center space-y-4">
-          <div className="text-emerald-500 text-5xl">✓</div>
-          <h1 className="text-2xl font-bold text-gray-900">密码重置成功</h1>
-          <p className="text-gray-600">
+      <div className="relative min-h-[calc(100svh-3.5rem)] lg:min-h-[calc(100svh-4rem)] flex items-center justify-center px-4 py-12 overflow-hidden">
+        <div className="absolute inset-0 bg-neutral-900/55 backdrop-blur-sm" />
+        <div className="relative w-full max-w-md text-center animate-fade-in-up">
+          <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mb-5">
+            <span className="text-emerald-300 text-3xl">✓</span>
+          </div>
+          <h1 className="text-white text-2xl font-bold mb-2">密码重置成功</h1>
+          <p className="text-white/70 text-sm mb-6">
             您的密码已重置，请使用新密码登录。
             <br />
             即将跳转到登录页面...
           </p>
-          <Link to="/login" className="text-emerald-500 hover:text-emerald-600">
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-neutral-900 text-sm font-semibold hover:bg-neutral-100 transition-colors"
+          >
             立即登录
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </div>
@@ -68,87 +77,147 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] px-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
-        <h1 className="text-2xl font-bold text-center text-gray-900">重置密码</h1>
-        <p className="text-sm text-center text-gray-500">
-          输入注册手机号和新密码即可重置
-        </p>
+    <div className="relative min-h-[calc(100svh-3.5rem)] lg:min-h-[calc(100svh-4rem)] flex items-center justify-center px-4 py-12 overflow-hidden">
+      {/* 氛围背景：与登录页一致的暗化遮罩，保证表单区可读 */}
+      <div className="absolute inset-0 bg-neutral-900/55 backdrop-blur-sm" />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">手机号</label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => {
-              setPhone(e.target.value);
-              setFieldErrors((prev) => ({ ...prev, phone: "" }));
-            }}
-            placeholder="请输入注册手机号"
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-              fieldErrors.phone ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {fieldErrors.phone && (
-            <p className="mt-1 text-sm text-red-500">{fieldErrors.phone}</p>
-          )}
+      {/* 内容容器：品牌 + 表单 */}
+      <div className="relative w-full max-w-md">
+        {/* 品牌字标 */}
+        <div className="text-center mb-8 animate-fade-in-up">
+          <h1 className="text-white text-4xl lg:text-5xl font-bold tracking-tight mb-2">
+            重置密码
+          </h1>
+          <p className="text-white/70 text-sm tracking-wide">
+            输入注册手机号和新密码即可重置
+          </p>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">新密码</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setFieldErrors((prev) => ({ ...prev, password: "" }));
-            }}
-            placeholder="请输入新密码（至少6位）"
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-              fieldErrors.password ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {fieldErrors.password && (
-            <p className="mt-1 text-sm text-red-500">{fieldErrors.password}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">确认密码</label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => {
-              setConfirmPassword(e.target.value);
-              setFieldErrors((prev) => ({ ...prev, confirmPassword: "" }));
-            }}
-            placeholder="请再次输入新密码"
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-              fieldErrors.confirmPassword ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {fieldErrors.confirmPassword && (
-            <p className="mt-1 text-sm text-red-500">{fieldErrors.confirmPassword}</p>
-          )}
-        </div>
-
-        {error && <p className="text-sm text-red-500">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50"
+        {/* 表单：玻璃态卡片，与登录页一致 */}
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 lg:p-8 space-y-5 animate-fade-in-up shadow-2xl"
+          style={{ animationDelay: "120ms" }}
         >
-          {loading ? "重置中..." : "重置密码"}
-        </button>
+          {/* 手机号 */}
+          <div>
+            <label htmlFor="phone" className="block text-xs font-medium text-white/80 mb-2 tracking-wide">
+              手机号
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+              <input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, phone: "" }));
+                }}
+                placeholder="请输入注册手机号"
+                autoComplete="tel"
+                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all ${
+                  fieldErrors.phone ? "border-red-400/70" : "border-white/20"
+                }`}
+              />
+            </div>
+            {fieldErrors.phone && (
+              <p className="mt-1.5 text-xs text-red-300">{fieldErrors.phone}</p>
+            )}
+          </div>
 
-        <p className="text-sm text-center text-gray-500">
-          想起密码了？
-          <Link to="/login" className="text-emerald-500 hover:text-emerald-600 ml-1">
-            立即登录
+          {/* 新密码 */}
+          <div>
+            <label htmlFor="password" className="block text-xs font-medium text-white/80 mb-2 tracking-wide">
+              新密码
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, password: "" }));
+                }}
+                placeholder="请输入新密码（至少6位）"
+                autoComplete="new-password"
+                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all ${
+                  fieldErrors.password ? "border-red-400/70" : "border-white/20"
+                }`}
+              />
+            </div>
+            {fieldErrors.password && (
+              <p className="mt-1.5 text-xs text-red-300">{fieldErrors.password}</p>
+            )}
+          </div>
+
+          {/* 确认密码 */}
+          <div>
+            <label htmlFor="confirmPassword" className="block text-xs font-medium text-white/80 mb-2 tracking-wide">
+              确认密码
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                }}
+                placeholder="请再次输入新密码"
+                autoComplete="new-password"
+                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all ${
+                  fieldErrors.confirmPassword ? "border-red-400/70" : "border-white/20"
+                }`}
+              />
+            </div>
+            {fieldErrors.confirmPassword && (
+              <p className="mt-1.5 text-xs text-red-300">{fieldErrors.confirmPassword}</p>
+            )}
+          </div>
+
+          {error && (
+            <div className="px-3.5 py-2.5 rounded-xl bg-red-500/20 border border-red-400/30 text-red-200 text-sm">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-white text-neutral-900 rounded-xl font-semibold hover:bg-neutral-100 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-neutral-900/30 border-t-neutral-900 rounded-full animate-spin" />
+                重置中...
+              </span>
+            ) : (
+              <>
+                重置密码
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+
+          <Link
+            to="/login"
+            className="flex items-center justify-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors pt-1"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            返回登录
           </Link>
+        </form>
+
+        {/* 底部标语 */}
+        <p className="text-center text-white/40 text-xs mt-6 animate-fade-in-up" style={{ animationDelay: "240ms" }}>
+          AI 智能推荐 · 三维匹配 · 温暖社区
         </p>
-      </form>
+      </div>
     </div>
   );
 }
