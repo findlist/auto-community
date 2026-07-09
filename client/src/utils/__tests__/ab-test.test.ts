@@ -33,8 +33,8 @@ describe("ab-test - A/B 测试变体分配工具", () => {
     it("缓存未命中时应调用 API 并将结果写入缓存", async () => {
       // mock API 返回变体 B
       vi.mocked(assignVariant).mockResolvedValueOnce({
-        data: { variant: "variant_b", testName: "test1" },
-      } as any);
+        code: 0, message: "ok", data: { variant: "variant_b", testName: "test1" },
+      });
 
       const result = await getVariant("test1");
 
@@ -53,8 +53,8 @@ describe("ab-test - A/B 测试变体分配工具", () => {
       localStorage.setItem("ab_variant_test1", JSON.stringify({ variant: "old", timestamp: expiredTs }));
 
       vi.mocked(assignVariant).mockResolvedValueOnce({
-        data: { variant: "new", testName: "test1" },
-      } as any);
+        code: 0, message: "ok", data: { variant: "new", testName: "test1" },
+      });
 
       const result = await getVariant("test1");
 
@@ -71,8 +71,8 @@ describe("ab-test - A/B 测试变体分配工具", () => {
       localStorage.setItem("ab_variant_test1", "{invalid json");
 
       vi.mocked(assignVariant).mockResolvedValueOnce({
-        data: { variant: "fresh", testName: "test1" },
-      } as any);
+        code: 0, message: "ok", data: { variant: "fresh", testName: "test1" },
+      });
 
       const result = await getVariant("test1");
 
@@ -85,7 +85,7 @@ describe("ab-test - A/B 测试变体分配工具", () => {
     it("应先获取变体再调用 recordEvent", async () => {
       // 预置缓存避免 getVariant 调用 API
       localStorage.setItem("ab_variant_test1", JSON.stringify({ variant: "control", timestamp: Date.now() }));
-      vi.mocked(recordEvent).mockResolvedValueOnce({ data: null } as any);
+      vi.mocked(recordEvent).mockResolvedValueOnce({ code: 0, message: "ok", data: null });
 
       await trackEvent("test1", "click", { source: "banner" });
 
@@ -94,7 +94,7 @@ describe("ab-test - A/B 测试变体分配工具", () => {
 
     it("无 metadata 时应传 undefined 给 recordEvent", async () => {
       localStorage.setItem("ab_variant_test1", JSON.stringify({ variant: "control", timestamp: Date.now() }));
-      vi.mocked(recordEvent).mockResolvedValueOnce({ data: null } as any);
+      vi.mocked(recordEvent).mockResolvedValueOnce({ code: 0, message: "ok", data: null });
 
       await trackEvent("test1", "view");
 

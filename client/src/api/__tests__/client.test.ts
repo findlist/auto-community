@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AxiosHeaders } from 'axios';
+import { AxiosHeaders, type InternalAxiosRequestConfig } from 'axios';
 import client, { ApiError } from '../client';
 
 // mock window.location，以便断言 401 时的跳转行为
@@ -221,7 +221,7 @@ describe('api client', () => {
         status: 200,
         statusText: 'OK',
         headers: new AxiosHeaders(),
-        config: { url: '/test' } as any,
+        config: { url: '/test', headers: new AxiosHeaders() } as InternalAxiosRequestConfig,
       });
       expect(result).toEqual({
         serviceId: 's1',
@@ -243,7 +243,7 @@ describe('api client', () => {
         status: 200,
         statusText: 'OK',
         headers: new AxiosHeaders(),
-        config: { url: '/test' } as any,
+        config: { url: '/test', headers: new AxiosHeaders() } as InternalAxiosRequestConfig,
       });
       expect(result).toEqual({
         code: 0,
@@ -262,7 +262,7 @@ describe('api client', () => {
         status: 200,
         statusText: 'OK',
         headers: new AxiosHeaders(),
-        config: { url: '/test' } as any,
+        config: { url: '/test', headers: new AxiosHeaders() } as InternalAxiosRequestConfig,
       });
       // Blob 是类实例，不转换，原样返回避免破坏二进制数据
       expect(result).toBe(blob);
@@ -274,7 +274,7 @@ describe('api client', () => {
         status: 200,
         statusText: 'OK',
         headers: new AxiosHeaders(),
-        config: { url: '/test' } as any,
+        config: { url: '/test', headers: new AxiosHeaders() } as InternalAxiosRequestConfig,
       });
       expect(result).toEqual({ durationMinutes: 30, createdAt: '2026-01-01' });
     });

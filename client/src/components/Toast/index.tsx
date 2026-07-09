@@ -27,6 +27,7 @@ interface ToastStore {
 
 let toastIdCounter = 0;
 
+// eslint-disable-next-line react-refresh/only-export-components -- store hook 与组件共置便于消费方统一导入，拆分需改动 29 个引用文件，收益不抵成本
 export const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
   add: (toast) => {
@@ -41,11 +42,13 @@ export const useToastStore = create<ToastStore>((set) => ({
 /**
  * 触发全局提示的快捷方法
  */
+// eslint-disable-next-line react-refresh/only-export-components -- 同上，快捷方法与组件共置
 export function showToast(message: string, type: ToastType = "info", duration = 3000) {
   useToastStore.getState().add({ type, message, duration });
 }
 
 // 业务便捷方法
+// eslint-disable-next-line react-refresh/only-export-components -- 同上，便捷对象与组件共置
 export const toast = {
   success: (msg: string, duration?: number) => showToast(msg, "success", duration),
   error: (msg: string, duration?: number) => showToast(msg, "error", duration),

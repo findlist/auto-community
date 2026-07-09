@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import TimeAccountPage from "@/pages/TimeBank/TimeAccount";
-import type { TimeAccount, TimeTransaction } from "@/types";
+import type { TimeAccount, TimeTransaction, User } from "@/types";
 
 // 用 vi.hoisted 提升 mock 数据，避免 vi.mock 工厂引用外部变量触发 TDZ
 const { mockAccount, mockTransactions, mockEmptyList, mockMoreList, mockUser, navigateMock } = vi.hoisted(() => {
@@ -38,7 +38,17 @@ const { mockAccount, mockTransactions, mockEmptyList, mockMoreList, mockUser, na
     ],
     mockEmptyList: { list: [], nextCursor: null, hasMore: false },
     mockMoreList: [make({ id: "tx-5", type: "earn", amount: 50, remark: "第二页交易" })],
-    mockUser: { id: "user-1", nickname: "测试用户" },
+    // 补全 User 接口必填字段，避免 useAuth mockReturnValue 类型不匹配
+    mockUser: {
+      id: "user-1",
+      phone: "13800000000",
+      nickname: "测试用户",
+      creditBalance: 0,
+      timeBalance: 0,
+      reputationScore: 0,
+      role: "user" as const,
+      createdAt: "2024-01-01T00:00:00.000Z",
+    } as User,
     navigateMock: vi.fn(),
   };
 });
@@ -90,6 +100,21 @@ vi.mock("react-router-dom", async () => {
 import { getAccount, getTransactions } from "@/api/timeBank";
 import { useAuth } from "@/hooks/useAuth";
 
+// 构造完整的 useAuth 返回值，补全 mock 未提供的 token/login/logout/setUser 字段
+// 设计原因：useAuth 返回类型要求所有字段，mockReturnValue 必须提供完整对象，
+// 用 as any 绕过类型检查会违反 no-explicit-any 规则，故用工厂函数集中补全默认值
+function makeAuthValue(overrides: Partial<ReturnType<typeof useAuth>>): ReturnType<typeof useAuth> {
+  return {
+    user: null,
+    token: null,
+    isAuthenticated: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    setUser: vi.fn(),
+    ...overrides,
+  };
+}
+
 const renderPage = () => {
   // 启用 React Router v7 future flag，提前适配 v7 行为变更并消除测试噪音
   return render(
@@ -101,14 +126,14 @@ const renderPage = () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(useAuth).mockReturnValue({ isAuthenticated: true, user: mockUser } as any);
+  vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: mockUser, isAuthenticated: true }));
   vi.mocked(getAccount).mockResolvedValue({ code: 0, message: "ok", data: mockAccount });
   vi.mocked(getTransactions).mockResolvedValue({ code: 0, message: "ok", data: { list: mockTransactions, nextCursor: null, hasMore: false } });
 });
 
 describe("TimeBank/TimeAccount 时间账户", () => {
   it("未登录跳转 /login", () => {
-    vi.mocked(useAuth).mockReturnValue({ isAuthenticated: false, user: null } as any);
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, isAuthenticated: false }));
     renderPage();
     expect(navigateMock).toHaveBeenCalledWith("/login");
   });

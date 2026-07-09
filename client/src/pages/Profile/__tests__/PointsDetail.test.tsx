@@ -38,6 +38,21 @@ vi.mock('react-router-dom', async () => {
 
 import { useAuth } from '@/hooks/useAuth';
 
+// 构造完整的 useAuth 返回值，补全 mock 未提供的 token/login/logout/setUser 字段
+// 设计原因：useAuth 返回类型要求所有字段，mockReturnValue 必须提供完整对象，
+// 用 as any 绕过类型检查会违反 no-explicit-any 规则，故用工厂函数集中补全默认值
+function makeAuthValue(overrides: Partial<ReturnType<typeof useAuth>>): ReturnType<typeof useAuth> {
+  return {
+    user: null,
+    token: null,
+    isAuthenticated: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    setUser: vi.fn(),
+    ...overrides,
+  };
+}
+
 // 工厂函数：构造交易记录，默认 earn 类型
 function makeTx(overrides: Partial<{
   id: string;
@@ -72,12 +87,12 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks();
   // 默认已登录，单测可通过 mockReturnValueOnce 覆盖
-  vi.mocked(useAuth).mockReturnValue({ user: mockUser, isAuthenticated: true } as any);
+  vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: mockUser, isAuthenticated: true }));
 });
 
 describe('Profile/PointsDetail 积分明细页', () => {
   it('未登录显示"请先登录"与"去登录"链接', () => {
-    vi.mocked(useAuth).mockReturnValueOnce({ user: null, isAuthenticated: false } as any);
+    vi.mocked(useAuth).mockReturnValueOnce(makeAuthValue({ user: null, isAuthenticated: false }));
     renderPage();
     expect(screen.getByText('请先登录')).toBeInTheDocument();
     expect(screen.getByText('去登录')).toBeInTheDocument();

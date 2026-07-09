@@ -24,7 +24,8 @@ const {
     close: vi.fn(),
     getReconnectAttempts: vi.fn(() => 0),
   },
-  lastWsOptionsRef: { current: null as null | { onMessage?: (data: any) => void; onStatusChange?: (status: any) => void; onOpen?: () => void } },
+  // 类型与真实 WebSocketClientOptions 对齐：onMessage 用 unknown 强制消费方收窄，onStatusChange 用 ConnectionStatus 约束状态字符串
+  lastWsOptionsRef: { current: null as null | { onMessage?: (data: unknown) => void; onStatusChange?: (status: ConnectionStatus) => void; onOpen?: () => void } },
   // User 接口必填字段补全，避免 TS2740 类型错误
   mockUser: {
     id: 'user-self',
@@ -46,7 +47,8 @@ const {
 // 既保留 vi.mocked(WebSocketClient).mock.calls 断言能力，又让 mockWsInstance.send 的 mock.calls 记录调用
 // _url 前缀下划线表明构造函数签名需匹配真实 WebSocketClient(url, options)，但测试不直接使用 url 参数
 vi.mock('@/utils/websocket', () => ({
-  WebSocketClient: vi.fn(function (this: any, _url: string, options: any) {
+  // this 类型对齐 mockWsInstance（Object.assign 后 this 持有其全部方法），options 对齐 WebSocketClientOptions
+  WebSocketClient: vi.fn(function (this: typeof mockWsInstance, _url: string, options: WebSocketClientOptions) {
     lastWsOptionsRef.current = options;
     Object.assign(this, mockWsInstance);
   }),
@@ -99,7 +101,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 import { getMessages, markMessagesAsRead } from '@/api/messages';
-import { WebSocketClient } from '@/utils/websocket';
+import { WebSocketClient, type WebSocketClientOptions, type ConnectionStatus } from '@/utils/websocket';
 
 // 包装组件：注入 MemoryRouter 提供路由上下文（future flag 提前适配 v7）
 function renderChat() {
