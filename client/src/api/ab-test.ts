@@ -48,7 +48,7 @@ export function recordEvent(
   testName: string,
   eventType: string,
   variant: string,
-  metadata?: Record<string, any>,
+  metadata?: Record<string, unknown>,
 ) {
   return client.post<never, ApiResponse<null>>(`/ab-tests/${testName}/event`, {
     eventType,

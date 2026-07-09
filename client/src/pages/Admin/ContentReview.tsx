@@ -226,7 +226,9 @@ export default function ContentReview() {
     setEditError(null);
     try {
       // 仅传入当前类型支持的字段，避免写入无关字段
-      const payload: Record<string, any> = { title: form.title, description: form.description };
+      // 用 Partial<ContentDetail> 精确约束 payload，与 updateContent 入参契约对齐，
+      // 避免原 Record<string, any> 让非法字段静默通过编译
+      const payload: Partial<ContentDetail> = { title: form.title, description: form.description };
       if (type === "skill") {
         payload.creditPrice = form.creditPrice;
         payload.images = form.images;

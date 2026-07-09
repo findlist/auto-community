@@ -46,7 +46,7 @@ export async function getVariant(testName: string): Promise<string> {
 export async function trackEvent(
   testName: string,
   eventType: string,
-  metadata?: Record<string, any>,
+  metadata?: Record<string, unknown>,
 ): Promise<void> {
   const variant = await getVariant(testName);
   await recordEvent(testName, eventType, variant, metadata);
