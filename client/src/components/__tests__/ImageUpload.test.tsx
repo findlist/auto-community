@@ -14,8 +14,9 @@ vi.mock("@/api/upload", () => ({
 }));
 
 // mock URL.createObjectURL / revokeObjectURL：jsdom 对 Blob URL 支持不稳定
-const createObjectURLSpy = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:mock-url");
-const revokeObjectURLSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+// vi.spyOn 的副作用即为 mock 效果，变量无需保留引用
+vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:mock-url");
+vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
 
 // 构造合法图片文件
 function makeImageFile(name: string, type = "image/jpeg", size = 1024) {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import ErrorBoundary from "../ErrorBoundary";
 
 // 构造可控的子组件，通过 prop 控制是否抛出错误
