@@ -109,8 +109,9 @@ describe("MetricsChart 指标图表", () => {
     render(<MetricsChart title="测试" data={sampleData} />);
     const seriesItems = screen.getAllByTestId("series-item");
     expect(seriesItems).toHaveLength(1);
-    expect(seriesItems[0].textContent).toBe("10,20,15");
-    expect(seriesItems[0].getAttribute("data-name")).toBe("测试");
+    // toHaveLength(1) 后 [0] 仍可能为 undefined，用非空断言
+    expect(seriesItems[0]!.textContent).toBe("10,20,15");
+    expect(seriesItems[0]!.getAttribute("data-name")).toBe("测试");
   });
 
   it("自定义 color 传递给 series", () => {

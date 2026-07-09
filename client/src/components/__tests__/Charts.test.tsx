@@ -116,7 +116,7 @@ describe("LineChart 折线图", () => {
     // 取第一个 hover 区域 circle（r=12 透明）
     const hoverCircles = Array.from(container.querySelectorAll('circle[r="12"]'));
     expect(hoverCircles.length).toBeGreaterThan(0);
-    fireEvent.mouseEnter(hoverCircles[0]);
+    fireEvent.mouseEnter(hoverCircles[0]!);
     // tooltip 内含「系列1: 10」值文本（图例也含「系列1」，用更精确的文本区分）
     expect(screen.getByText("系列1: 10")).toBeInTheDocument();
   });
@@ -235,9 +235,7 @@ describe("BarChart 条形图", () => {
     );
     const li = container.querySelector("li");
     fireEvent.mouseEnter(li!);
-    // 重新查询：tooltip 在 hover 后追加
-    const tooltipText = container.ownerDocument.querySelector('[style*="translate"]');
-    // tooltip 内容包含项目名 100
+    // hover 后条形内数值仍可见
     expect(screen.getAllByText("100").length).toBeGreaterThan(0);
   });
 });
