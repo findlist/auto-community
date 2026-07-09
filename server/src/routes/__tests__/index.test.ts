@@ -23,23 +23,30 @@ process.env.DB_PASSWORD = 'test-db-password';
 
 // mock 所有子路由为空 Router，避免触发子路由模块的真实加载
 // 设计原因：index.ts 仅聚合路由，测试聚焦 GET / 端点结构，无需加载 16 个子路由及其依赖
-// 注：工厂内直接 require('express').Router()，不引用外部变量避免 TDZ 问题
-vi.mock('../auth', () => ({ default: require('express').Router() }));
-vi.mock('../users', () => ({ default: require('express').Router() }));
-vi.mock('../skills', () => ({ default: require('express').Router() }));
-vi.mock('../kitchen', () => ({ default: require('express').Router() }));
-vi.mock('../time-bank', () => ({ default: require('express').Router() }));
-vi.mock('../emergency', () => ({ default: require('express').Router() }));
-vi.mock('../messages', () => ({ default: require('express').Router() }));
-vi.mock('../notifications', () => ({ default: require('express').Router() }));
-vi.mock('../admin', () => ({ default: require('express').Router() }));
-vi.mock('../reports', () => ({ default: require('express').Router() }));
-vi.mock('../upload', () => ({ default: require('express').Router() }));
-vi.mock('../address', () => ({ default: require('express').Router() }));
-vi.mock('../ai', () => ({ default: require('express').Router() }));
-vi.mock('../ab-test', () => ({ default: require('express').Router() }));
-vi.mock('../metrics', () => ({ default: require('express').Router() }));
-vi.mock('../public', () => ({ default: require('express').Router() }));
+// 使用 vi.hoisted 提升工厂函数避免 TDZ，工厂内动态 import express 创建空 Router（避免 require 调用）
+const { emptyRouterFactory } = vi.hoisted(() => ({
+  emptyRouterFactory: async () => {
+    const { default: express } = await import('express');
+    return { default: express.Router() };
+  },
+}));
+
+vi.mock('../auth', emptyRouterFactory);
+vi.mock('../users', emptyRouterFactory);
+vi.mock('../skills', emptyRouterFactory);
+vi.mock('../kitchen', emptyRouterFactory);
+vi.mock('../time-bank', emptyRouterFactory);
+vi.mock('../emergency', emptyRouterFactory);
+vi.mock('../messages', emptyRouterFactory);
+vi.mock('../notifications', emptyRouterFactory);
+vi.mock('../admin', emptyRouterFactory);
+vi.mock('../reports', emptyRouterFactory);
+vi.mock('../upload', emptyRouterFactory);
+vi.mock('../address', emptyRouterFactory);
+vi.mock('../ai', emptyRouterFactory);
+vi.mock('../ab-test', emptyRouterFactory);
+vi.mock('../metrics', emptyRouterFactory);
+vi.mock('../public', emptyRouterFactory);
 
 // 必须在 vi.mock 之后 import 被测模块，确保 mock 生效
 import indexRouter from '../index';

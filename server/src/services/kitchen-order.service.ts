@@ -30,17 +30,6 @@ interface KitchenOrderRow {
   timeout_at: Date | null;
 }
 
-// 美食帖子 DB Row（create 函数中查询 kitchen_posts 用）
-interface KitchenPostRow {
-  id: string;
-  user_id: string;
-  title: string;
-  images: string[] | null;
-  remaining_portions: number;
-  credit_price: number;
-  status: string;
-}
-
 // 帖子简要信息（toOrderResponse 的 post 参数）
 interface KitchenPostBrief {
   id: string;

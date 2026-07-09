@@ -3,7 +3,6 @@ import { authenticate, requireRole } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 import { success } from '../utils/response';
 import { metricsCollectorService } from '../services/metrics-collector.service';
-import { metricsCalculationService } from '../services/metrics-calculation.service';
 
 const router = Router();
 

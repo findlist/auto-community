@@ -119,7 +119,7 @@ vi.mock('../../config/database', () => ({ query: mockQuery }));
 
 import kitchenRouter from '../kitchen';
 import { errorHandler } from '../../middleware/errorHandler';
-import { BadRequestError, NotFoundError } from '../../utils/errors';
+import { NotFoundError } from '../../utils/errors';
 
 /**
  * 启动临时 Express 服务器到随机端口

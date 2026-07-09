@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // 设计原因：redis.ts 在模块加载时调用 createClient 创建单例并注册事件监听器，
 // 通过 vi.hoisted 提前创建 mock 引用，便于在 vi.mock 工厂内捕获实例并控制行为
