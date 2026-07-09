@@ -223,8 +223,9 @@ describe('Chat 聊天交互', () => {
     await screen.findByText('暂无消息');
 
     // 页面含返回按钮+发送按钮两个 button，用 input 同级容器定位发送按钮
+    // input 经 getByPlaceholderText 取得必存在，且渲染在容器内 parentElement 必非空，故用非空断言而非可选链
     const input = screen.getByPlaceholderText('输入消息...');
-    const sendButton = input.parentElement?.querySelector('button')!;
+    const sendButton = input.parentElement!.querySelector('button') as HTMLButtonElement;
     expect(sendButton).toBeDisabled();
   });
 
@@ -236,7 +237,7 @@ describe('Chat 聊天交互', () => {
     await user.type(screen.getByPlaceholderText('输入消息...'), '测试消息');
 
     const input = screen.getByPlaceholderText('输入消息...');
-    const sendButton = input.parentElement?.querySelector('button')!;
+    const sendButton = input.parentElement!.querySelector('button') as HTMLButtonElement;
     expect(sendButton).toBeEnabled();
   });
 
@@ -248,7 +249,8 @@ describe('Chat 聊天交互', () => {
     const input = screen.getByPlaceholderText('输入消息...') as HTMLInputElement;
     await user.type(input, '你好');
     // 发送按钮在 input 同级容器内（返回按钮在顶栏，不在同一容器）
-    const sendButton = input.parentElement?.querySelector('button')!;
+    // input 已断言为 HTMLInputElement 且渲染在容器内，parentElement 必非空，用非空断言避免可选链+非空断言的矛盾写法
+    const sendButton = input.parentElement!.querySelector('button') as HTMLButtonElement;
     await user.click(sendButton);
 
     // send 被调用，参数含 content 与 orderId

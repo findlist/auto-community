@@ -30,7 +30,8 @@ const { mockMulter, mockMulterInstance } = vi.hoisted(() => {
 
 vi.mock('multer', () => ({ default: mockMulter }));
 
-import { buildStorageKey, uploadMiddleware, uploadSingle, uploadMultiple } from '../upload';
+// 仅导入测试实际使用的符号；uploadSingle/uploadMultiple 未在本测试文件中使用，保留会导致 no-unused-vars 报错
+import { buildStorageKey, uploadMiddleware } from '../upload';
 import { BadRequestError } from '../../utils/errors';
 
 // import 触发 upload.ts 执行 multer(opts)，此时 mockMulter 已记录调用，捕获配置项供后续测试复用
