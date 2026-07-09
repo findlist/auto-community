@@ -77,8 +77,9 @@ export default function Orders() {
     try {
       await cancelFoodOrder(orderId);
       loadOrders(true);
-    } catch ( error: any) {
-      toast.error(error.response?.data?.message || "操作失败");
+    } catch (error) {
+      // axios 拦截器已将 HTTP 错误统一转为 ApiError，用 getErrorMessage 提取可读文案
+      toast.error(getErrorMessage(error, "操作失败"));
     }
   };
 
