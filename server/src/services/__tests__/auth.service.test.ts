@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { QueryResultRow } from 'pg';
 
 // 设置必需的环境变量，避免 env 模块加载时退出进程
 process.env.JWT_SECRET = 'test-jwt-secret';
@@ -125,8 +126,22 @@ const PRIVACY_VERSION = 'v1.0';
 const ACCESS_TOKEN = 'access-token';
 const REFRESH_TOKEN = 'refresh-token';
 
+// users 表行类型：与 auth.service.ts 中 UserRow 对齐，
+// 继承 QueryResultRow 以兼容 pg 查询返回类型，并支持 overrides 展开任意字段
+interface UserRow extends QueryResultRow {
+  id: string;
+  phone: string;
+  nickname: string;
+  avatar: string | null;
+  credit_balance: number;
+  time_balance: number;
+  reputation_score: string | number;
+  role: string | null;
+  created_at: Date;
+}
+
 // 构造一个完整的 UserRow 测试数据，避免每个用例重复字段
-function createMockUserRow(overrides: Record<string, unknown> = {}): any {
+function createMockUserRow(overrides: Record<string, unknown> = {}): UserRow {
   return {
     id: 'user-1',
     phone: ENCRYPTED_PHONE,
@@ -209,7 +224,7 @@ describe('auth.service - register', () => {
     mockQuery.mockResolvedValueOnce({ rows: [] });
     // transaction 回调执行后返回 user 行
     const userRow = createMockUserRow();
-    mockTransaction.mockImplementation(async (cb: any) => {
+    mockTransaction.mockImplementation(async (cb: (client: { query: ReturnType<typeof vi.fn> }) => Promise<unknown>) => {
       const client = {
         // 事务内 INSERT 用户 / INSERT 积分流水，仅第一次 RETURNING 需要返回 user
         query: vi.fn().mockResolvedValueOnce({ rows: [userRow] }).mockResolvedValueOnce({ rows: [] }),
@@ -255,7 +270,7 @@ describe('auth.service - register', () => {
     // 第二次：INSERT credit_transactions 返回空
     clientQuerySpy.mockResolvedValueOnce({ rows: [] });
 
-    mockTransaction.mockImplementation(async (cb: any) => {
+    mockTransaction.mockImplementation(async (cb: (client: { query: typeof clientQuerySpy }) => Promise<unknown>) => {
       return await cb({ query: clientQuerySpy });
     });
 

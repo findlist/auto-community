@@ -358,3 +358,38 @@
   - 路由目录 `Request<...any,...>` 模式 0 处（原 56 处）
   - time-bank.service.ts `any` warning 0 处（原 3 处）
   - 剩余 124 处 `any` warning 属于其他模式（service 层 as any 断言、validator 中间件等），不在本迭代单元范围
+
+### 最小迭代单元 4：清理前端测试与生产代码 any 类型（20 处 eslint 警告 → 0）
+- 提交：`68528df refactor: 清理前端测试与生产代码 any 类型，消除 eslint 警告`（已 push origin HEAD）
+- 修改文件（6 个）：
+  - [client/src/components/Toast/index.tsx](file:///e:/work/auto-community/client/src/components/Toast/index.tsx)：3 处 react-refresh/only-export-components 警告加 eslint-disable 注释（29 个文件引用 Toast，拆分成本过高）
+  - [client/src/api/__tests__/client.test.ts](file:///e:/work/auto-community/client/src/api/__tests__/client.test.ts)：4 处 `as any` → `as InternalAxiosRequestConfig`（补全 headers 字段 `new AxiosHeaders()`）
+  - [client/src/utils/__tests__/ab-test.test.ts](file:///e:/work/auto-community/client/src/utils/__tests__/ab-test.test.ts)：5 处 `as any` → 完整 `ApiResponse` 结构（含 code/message/data）
+  - [client/src/pages/Messages/__tests__/Chat.test.tsx](file:///e:/work/auto-community/client/src/pages/Messages/__tests__/Chat.test.tsx)：4 处 any 替换为精准类型（onMessage `unknown`、onStatusChange `ConnectionStatus`、mock 构造函数 `this: typeof mockWsInstance`、options `WebSocketClientOptions`）
+  - [client/src/pages/Profile/__tests__/PointsDetail.test.tsx](file:///e:/work/auto-community/client/src/pages/Profile/__tests__/PointsDetail.test.tsx)：2 处 `as any` → `makeAuthValue` 工厂函数（补全 useAuth 返回的 token/login/logout/setUser 字段）
+  - [client/src/pages/TimeBank/__tests__/TimeAccount.test.tsx](file:///e:/work/auto-community/client/src/pages/TimeBank/__tests__/TimeAccount.test.tsx)：2 处 `as any` → `makeAuthValue` 工厂函数 + 补全 mockUser 为完整 User 类型
+- 设计原因：
+  - `AxiosRequestConfig` 与 axios 拦截器的 `InternalAxiosRequestConfig`（headers 必填）不兼容，需补全 `headers: new AxiosHeaders()` 字段
+  - useAuth 返回类型要求 token/login/logout/setUser 全部字段，测试 mock 仅提供 user/isAuthenticated，用 `makeAuthValue(overrides)` 工厂函数集中补全默认值，消除 `as any` 断言
+  - Toast 的 store hook / showToast / toast 便捷对象与组件共置，29 个文件引用，拆分需改动引用链，收益不抵成本，故用 eslint-disable 注释
+  - WebSocket mock 构造函数 `this` 对齐 `typeof mockWsInstance`（Object.assign 后 this 持有其全部方法），options 对齐 `WebSocketClientOptions`
+- 验收结果：
+  - 前端 npm run build ✅（6.60s，零错误零警告）
+  - 前端 vitest 79 文件 1180/1180 ✅（35.90s）
+  - 前端 eslint --format compact ✅（0 warning 0 error）
+- 技术债进展：前端 eslint 警告全部清零（react-refresh 3 + no-explicit-any 17 = 20 → 0）
+
+### 最小迭代单元 5：清理后端测试文件 any 类型注解（15 处）
+- 修改文件（4 个）：
+  - [server/src/services/__tests__/skill-order.service.test.ts](file:///e:/work/auto-community/server/src/services/__tests__/skill-order.service.test.ts)：9 处 any 清理（8 处 `cb: any` → `cb: (client: PoolClient) => Promise<unknown>` + `as unknown as PoolClient` 安全断言；1 处 `Partial<Record<string, any>>` → `Partial<Record<string, unknown>>` + 返回值 `: any` → `: SkillOrderRow`）
+  - [server/src/services/__tests__/auth.service.test.ts](file:///e:/work/auto-community/server/src/services/__tests__/auth.service.test.ts)：3 处 any 清理（返回值 `: any` → `: UserRow`；2 处 `cb: any` → `cb: (client: { query: ... }) => Promise<unknown>`）
+  - [server/src/services/__tests__/notification-channels.test.ts](file:///e:/work/auto-community/server/src/services/__tests__/notification-channels.test.ts)：1 处 `this: any` → `this: Record<string, unknown>`
+  - [server/src/services/__tests__/time-bank.update-service.test.ts](file:///e:/work/auto-community/server/src/services/__tests__/time-bank.update-service.test.ts)：2 处参数 `: any` → `: TimeServiceRow`
+- 设计原因：
+  - `cb: any` 是事务回调参数，被测代码用 `(client: PoolClient) => Promise<T>` 调用，mock 中 `cb(mockClient)` 传入 mock 客户端。采用 `PoolClient` 作为回调参数类型（与真实签名对齐），`cb(mockClient)` 用 `as unknown as PoolClient` 安全断言（非 `as any`，通过 unknown 中转保留类型安全性）
+  - 函数返回值 `: any` → 定义行接口（`SkillOrderRow`/`UserRow`/`TimeServiceRow`）继承 `QueryResultRow`，与数据库列结构对齐
+  - `this: any` → `this: Record<string, unknown>`（vi.fn 构造函数 this 需可扩展以接收 Object.assign）
+- 验收结果：
+  - 后端 tsc --noEmit ✅（零错误）
+  - 后端 vitest 73 文件 1445/1445 ✅
+- 技术债进展：后端测试文件 `: any` 类型注解 15 处全部清零（剩余 `as any` 断言约 100+ 处在测试 mock 中，优先级低留待后续）

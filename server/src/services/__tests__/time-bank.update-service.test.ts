@@ -13,6 +13,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { QueryResultRow } from 'pg';
 
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.DB_PASSWORD = 'test-db-password';
@@ -56,12 +57,32 @@ beforeEach(() => {
   mockQuery.mockReset();
 });
 
+// time_services 表行类型：与 time-bank.service.ts 中 TimeServiceRow 对齐，
+// 继承 QueryResultRow 以兼容 pg 查询返回类型
+interface TimeServiceRow extends QueryResultRow {
+  id: string;
+  user_id: string;
+  type: string;
+  category: string;
+  title: string;
+  description: string | null;
+  duration_minutes: number;
+  location: string | null;
+  address: string | null;
+  certification: unknown;
+  images: string[];
+  status: string;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at: Date | null;
+}
+
 /**
  * 构造 mock query 实现：
  * - 第一次调用（SELECT * FROM time_services）→ 返回 service 行
  * - 后续调用（UPDATE）→ 返回更新后的行
  */
-function setupMockQuery(serviceRow: any, updatedRow?: any) {
+function setupMockQuery(serviceRow: TimeServiceRow, updatedRow?: TimeServiceRow) {
   mockQuery.mockImplementationOnce(async () => ({ rows: [serviceRow] }));
   if (updatedRow) {
     mockQuery.mockImplementationOnce(async () => ({ rows: [updatedRow] }));

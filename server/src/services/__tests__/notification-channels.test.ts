@@ -72,7 +72,7 @@ const {
     return mockSmsClient;
   }),
   // mock SendSmsRequest 构造函数：将 map 字段赋值到 this，便于测试断言请求参数
-  mockSendSmsRequest: vi.fn(function (this: any, map?: Record<string, unknown>) {
+  mockSendSmsRequest: vi.fn(function (this: Record<string, unknown>, map?: Record<string, unknown>) {
     Object.assign(this, map || {});
   }),
   // mock 腾讯云短信 client 实例，由 Client 构造函数返回
