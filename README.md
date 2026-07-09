@@ -310,6 +310,36 @@ cd client && npm ci && npm run build                     # 前端 dist/ 交由 N
 
 ---
 
+## 🕐 质量保障定时任务
+
+本项目除自驱迭代任务外，还配置了两个每日质量保障定时任务，**每天 00:00（北京时间）** 执行，与自动开发并行运行，形成「开发—检查—优化」闭环。
+
+### 1. Bug 检查任务
+
+- **任务名称**：`auto-community Bug 检查`
+- **执行时间**：每天 00:00（Asia/Shanghai）
+- **检查范围**：
+  - 前端（client）：运行 `npm run lint` / `npm run test` / `npm run build`，审查 `src/pages`、`src/components`、`src/hooks`、`src/utils`
+  - 后端（server）：运行 `npm run lint` / `npm run test` / `npm run build`，审查 `src/routes`、`src/services`、`src/middleware`
+  - 分析最近一次提交变更（`git diff HEAD~1`），重点关注类型错误、异常处理缺失、安全漏洞（XSS / SQL 注入）、性能问题
+- **输出位置**：`docs/bug-check/bug-check-YYYYMMDD.md`
+- **原则**：只读不写，仅生成检查报告，不修改任何代码
+
+### 2. 前端样式优化任务
+
+- **任务名称**：`auto-community 前端样式优化`
+- **执行时间**：每天 00:00（Asia/Shanghai）
+- **优化范围**：
+  - 审查 `client/src/pages` 下各模块页面（Home / Auth / TimeBank / SharedKitchen / SkillExchange / Admin）
+  - 使用 `frontend-design` 技能审查页面设计质量
+  - 改善视觉层次、间距、配色、字体，优化响应式布局与交互体验
+- **验证**：修改后运行 `cd client && npm run build` 确保构建通过，不破坏现有功能
+- **输出位置**：`docs/style-optimization/style-opt-YYYYMMDD.md`
+
+> 两个任务均设置了「当天已有同名报告则跳过」的防重复规则，避免覆盖既有成果。
+
+---
+
 ## 许可证
 
 本项目基于 [Apache License 2.0](./LICENSE) 协议开源。
