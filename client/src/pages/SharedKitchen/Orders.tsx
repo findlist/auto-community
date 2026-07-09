@@ -3,6 +3,7 @@ import { getFoodOrders, confirmFoodOrder, cancelFoodOrder } from "@/api/kitchen"
 import { ReviewSubmitModal } from "@/pages/SharedKitchen/FoodReview";
 import type { KitchenOrder } from "@/types";
 import { toast } from "@/components/Toast";
+import { getErrorMessage } from "@/utils/error";
 
 export default function Orders() {
   const [activeTab, setActiveTab] = useState<"buyer" | "seller">("buyer");
@@ -53,8 +54,8 @@ export default function Orders() {
     try {
       await confirmFoodOrder(orderId);
       loadOrders(true);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "操作失败");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "操作失败"));
     }
   };
 

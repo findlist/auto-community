@@ -31,9 +31,10 @@ describe("getErrorMessage - 错误信息提取", () => {
   });
 
   describe("原生 Error 实例", () => {
-    it("应返回 Error 的 message", () => {
-      const err = new Error("网络异常");
-      expect(getErrorMessage(err)).toBe("网络异常");
+    // 设计原因：原生 Error 多为网络异常/超时等技术性错误，message 不直接展示
+    it("应返回 fallback 而非 Error.message（避免技术性信息泄露）", () => {
+      const err = new Error("Network Error");
+      expect(getErrorMessage(err)).toBe("操作失败，请稍后重试");
     });
 
     it("Error.message 为空时应返回 fallback", () => {

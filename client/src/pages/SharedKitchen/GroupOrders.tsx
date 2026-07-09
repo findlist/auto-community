@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getGroupOrders, createGroupOrder, joinGroupOrder } from "@/api/kitchen";
 import type { GroupOrder } from "@/types";
 import { toast } from "@/components/Toast";
+import { getErrorMessage } from "@/utils/error";
 
 export default function GroupOrders() {
   const navigate = useNavigate();
@@ -74,8 +75,8 @@ export default function GroupOrders() {
       setDescription("");
       setTargetAmount(100);
       setAddress("");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "创建失败");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "创建失败"));
     }
   };
 
@@ -87,8 +88,8 @@ export default function GroupOrders() {
       toast.success("参与成功");
       setShowJoinModal(null);
       loadOrders(true);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "参与失败");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "参与失败"));
     }
   };
 

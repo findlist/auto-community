@@ -231,8 +231,7 @@ describe('SharedKitchen/Create 发布美食表单', () => {
   });
 
   it('提交失败显示 toast.error 错误提示，不跳转', async () => {
-    // SharedKitchen/Create 的 catch 用 error.response?.data?.message || "发布失败"
-    // 用 ApiError 模拟（ApiError 有 message 属性但无 response.data.message）
+    // 用原生 Error 模拟网络异常等非业务错误
     const err = new Error('网络错误');
     createFoodShareMock.mockRejectedValueOnce(err);
     renderCreatePage();
@@ -241,7 +240,7 @@ describe('SharedKitchen/Create 发布美食表单', () => {
       fireEvent.click(screen.getByRole('button', { name: '立即发布' }));
     });
     await waitFor(() => {
-      // 普通 Error 无 response.data.message，走兜底"发布失败"
+      // 原生 Error 走 fallback，避免技术性 message 泄露给用户
       expect(toastErrorMock).toHaveBeenCalledWith('发布失败');
       expect(navigateMock).not.toHaveBeenCalled();
       expect(toastSuccessMock).not.toHaveBeenCalled();

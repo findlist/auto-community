@@ -5,6 +5,7 @@ import { getPost, createOrder, deletePost } from "@/api/skills";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/Toast";
+import { getErrorMessage } from "@/utils/error";
 import AIRecommend from "@/components/AIRecommend";
 import Empty from "@/components/Empty";
 import type { SkillPost } from "@/types";
@@ -46,8 +47,8 @@ export default function Detail() {
       await createOrder({ postId: id });
       toast.success("交易发起成功！");
       navigate("/skills");
-    } catch (error: any) {
-      toast.error(error.message || "发起交易失败");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "发起交易失败"));
     } finally {
       setSubmitting(false);
     }
@@ -59,8 +60,8 @@ export default function Detail() {
       await deletePost(id);
       toast.success("删除成功");
       navigate("/skills");
-    } catch (error: any) {
-      toast.error(error.message || "删除失败");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "删除失败"));
     }
   };
 

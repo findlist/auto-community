@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ABTestResults from '../ABTestResults';
+import { ApiError } from '@/api/client';
 
 // vi.hoisted 提升 mock 数据与 spy，避免 TDZ（临时死区）导致引用未初始化
 const { mockConfig, mockResults, mockEmptyResults, getTestConfigMock, getTestResultsMock } = vi.hoisted(() => {
@@ -167,8 +168,8 @@ describe('ABTestResults 端到端测试', () => {
   });
 
   it('config 失败但 results 成功时，显示错误条但结果表格正常渲染', async () => {
-    // config 失败：构造带 response.data.message 的错误对象，对齐组件的 err?.response?.data?.message 取值
-    getTestConfigMock.mockRejectedValueOnce({ response: { data: { message: '配置接口异常' } } });
+    // 实际运行时拦截器已将 HTTP 错误转为 ApiError，mock 需对齐该结构
+    getTestConfigMock.mockRejectedValueOnce(new ApiError('配置接口异常', 500));
     render(<ABTestResults />);
     await waitFor(() => {
       // 错误条显示 config 错误信息
@@ -179,7 +180,7 @@ describe('ABTestResults 端到端测试', () => {
   });
 
   it('results 失败但 config 成功时，显示错误条但配置卡片正常渲染', async () => {
-    getTestResultsMock.mockRejectedValueOnce({ response: { data: { message: '结果接口异常' } } });
+    getTestResultsMock.mockRejectedValueOnce(new ApiError('结果接口异常', 500));
     render(<ABTestResults />);
     await waitFor(() => {
       // 错误条显示 results 错误信息
@@ -190,8 +191,8 @@ describe('ABTestResults 端到端测试', () => {
   });
 
   it('config 与 results 都失败时，错误条优先展示 config 错误（configError ?? resultsError）', async () => {
-    getTestConfigMock.mockRejectedValueOnce({ response: { data: { message: '配置错误' } } });
-    getTestResultsMock.mockRejectedValueOnce({ response: { data: { message: '结果错误' } } });
+    getTestConfigMock.mockRejectedValueOnce(new ApiError('配置错误', 500));
+    getTestResultsMock.mockRejectedValueOnce(new ApiError('结果错误', 500));
     render(<ABTestResults />);
     await waitFor(() => {
       // 派生 error = configError ?? resultsError，config 错误优先
@@ -202,7 +203,7 @@ describe('ABTestResults 端到端测试', () => {
 
   it('点击重试按钮重新加载 config 与 results', async () => {
     // 首次加载失败
-    getTestConfigMock.mockRejectedValueOnce({ response: { data: { message: '首次失败' } } });
+    getTestConfigMock.mockRejectedValueOnce(new ApiError('首次失败', 500));
     render(<ABTestResults />);
     await waitFor(() => {
       expect(screen.getByText('首次失败')).toBeInTheDocument();

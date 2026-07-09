@@ -5,6 +5,7 @@ import { useFormValidation } from "@/hooks/useFormValidation";
 import { validateRequired, validateMinLength, validateMaxLength, validatePrice } from "@/utils/formValidation";
 import ImageUpload from "@/components/Upload/ImageUpload";
 import { toast } from "@/components/Toast";
+import { getErrorMessage } from "@/utils/error";
 
 const categories = ["家常菜", "烘焙", "饮品", "小吃", "素食", "海鲜", "火锅", "其他"];
 const allergenOptions = ["鸡蛋", "牛奶", "面粉", "花生", "大豆", "海鲜", "肉类"];
@@ -77,8 +78,8 @@ export default function Create() {
       });
       toast.success("发布成功");
       navigate("/kitchen");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "发布失败");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "发布失败"));
     } finally {
       setSubmitting(false);
     }

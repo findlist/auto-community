@@ -402,10 +402,8 @@ describe('SharedKitchen 订单列表与状态操作', () => {
   });
 
   it('操作失败显示 toast.error 错误提示', async () => {
-    // 模拟 confirmFoodOrder 抛出 ApiError
-    vi.mocked(confirmFoodOrder).mockRejectedValue({
-      response: { data: { message: '确认失败' } },
-    } as unknown as ApiError);
+    // 实际运行时拦截器已将 HTTP 错误转为 ApiError，mock 需对齐该结构
+    vi.mocked(confirmFoodOrder).mockRejectedValue(new ApiError('确认失败', 500));
 
     vi.mocked(getFoodOrders).mockResolvedValue(buildPageResponse([mockOrders[0]!]));
 
@@ -425,7 +423,7 @@ describe('SharedKitchen 订单列表与状态操作', () => {
       fireEvent.click(screen.getByRole('button', { name: '确认' }));
     });
 
-    // 验证 toast.error 提示（页面用 error.response?.data?.message 提取错误信息）
+    // 验证 toast.error 提示（getErrorMessage 从 ApiError 提取后端返回的 message）
     expect(toastErrorMock).toHaveBeenCalledWith('确认失败');
   });
 });

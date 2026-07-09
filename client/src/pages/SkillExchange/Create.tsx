@@ -6,6 +6,7 @@ import { useFormValidation } from "@/hooks/useFormValidation";
 import { validateRequired, validateMinLength, validateMaxLength, validatePrice, validateRange } from "@/utils/formValidation";
 import ImageUpload from "@/components/Upload/ImageUpload";
 import { toast } from "@/components/Toast";
+import { getErrorMessage } from "@/utils/error";
 
 const categories = [
   "电脑维修", "家政服务", "教育培训", "运动健身",
@@ -73,8 +74,8 @@ export default function Create() {
       });
       toast.success("发布成功");
       navigate("/skills");
-    } catch (error: any) {
-      toast.error(error.message || "发布失败");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "发布失败"));
     } finally {
       setSubmitting(false);
     }

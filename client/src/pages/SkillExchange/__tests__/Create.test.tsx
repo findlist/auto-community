@@ -218,8 +218,8 @@ describe('SkillExchange/Create 发布技能表单', () => {
       fireEvent.click(screen.getByRole('button', { name: '立即发布' }));
     });
     await waitFor(() => {
-      // Create.tsx 的 catch 用 error.message || "发布失败"，普通 Error 有 message
-      expect(toastErrorMock).toHaveBeenCalledWith('网络错误');
+      // 原生 Error 走 fallback，避免技术性 message 泄露给用户
+      expect(toastErrorMock).toHaveBeenCalledWith('发布失败');
     });
   });
 

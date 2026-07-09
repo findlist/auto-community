@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Detail from '../Detail';
 import type { SkillPost, User } from '@/types';
+import { ApiError } from '@/api/client';
 
 // vi.hoisted 提升 mock 数据避免 TDZ：mock 当前用户与多种帖子数据
 const { mockOwner, mockOtherUser, mockActivePost, mockClosedPost } = vi.hoisted(() => {
@@ -279,7 +280,8 @@ describe('SkillExchange/Detail 帖子详情', () => {
 
   it('交易失败显示 toast.error 错误提示', async () => {
     switchUser(mockOtherUser);
-    vi.mocked(createOrder).mockRejectedValue(new Error('余额不足'));
+    // 业务错误应用 ApiError 模拟，对齐拦截器转换后的结构
+    vi.mocked(createOrder).mockRejectedValue(new ApiError('余额不足', 400));
 
     renderDetail();
 

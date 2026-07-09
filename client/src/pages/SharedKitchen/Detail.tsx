@@ -4,6 +4,7 @@ import { getFoodShareById, createFoodOrder } from "@/api/kitchen";
 import { ApiError } from "@/api/client";
 import type { KitchenPost } from "@/types";
 import { toast } from "@/components/Toast";
+import { getErrorMessage } from "@/utils/error";
 
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
@@ -47,8 +48,8 @@ export default function Detail() {
       toast.success("预约成功");
       setShowOrderModal(false);
       navigate("/kitchen/orders");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "预约失败");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "预约失败"));
     } finally {
       setOrdering(false);
     }

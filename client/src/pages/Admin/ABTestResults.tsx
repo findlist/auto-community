@@ -6,6 +6,7 @@ import {
   type ABTestConfig,
   type TestResults,
 } from "@/api/ab-test";
+import { getErrorMessage } from "@/utils/error";
 
 // 卡方检验：计算两组二项分布的 p-value
 function chiSquareTest(
@@ -105,8 +106,9 @@ export default function ABTestResults() {
       const res = await getTestConfig("ai_recommendation_vs_keyword");
       setConfig(res.data);
       setConfigError(null);
-    } catch (err: any) {
-      setConfigError(err?.response?.data?.message || "加载测试配置失败");
+    } catch (err) {
+      // 拦截器已将 HTTP 错误统一转为 ApiError，getErrorMessage 负责类型收窄并提取 message
+      setConfigError(getErrorMessage(err, "加载测试配置失败"));
     }
   }, []);
 
@@ -115,8 +117,8 @@ export default function ABTestResults() {
       const res = await getTestResults("ai_recommendation_vs_keyword");
       setResults(res.data);
       setResultsError(null);
-    } catch (err: any) {
-      setResultsError(err?.response?.data?.message || "加载测试结果失败");
+    } catch (err) {
+      setResultsError(getErrorMessage(err, "加载测试结果失败"));
     }
   }, []);
 

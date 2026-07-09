@@ -6,6 +6,7 @@ import { getMessages, markMessagesAsRead, type OrderType } from "@/api/messages"
 import { WebSocketClient, type ConnectionStatus } from "@/utils/websocket";
 import type { Message } from "@/types";
 import { toast } from "@/components/Toast";
+import { getErrorMessage } from "@/utils/error";
 
 // 合法的订单类型集合，用于校验 URL 传入的 orderType
 const VALID_ORDER_TYPES: OrderType[] = ["skill", "kitchen", "time", "emergency"];
@@ -75,8 +76,8 @@ export default function Chat() {
         const res = await getMessages(orderId, undefined, 50, orderType);
         setMessages(res.data.list);
         await markMessagesAsRead(orderId, orderType);
-      } catch (error: any) {
-        toast.error(error.message || "加载消息失败");
+      } catch (error) {
+        toast.error(getErrorMessage(error, "加载消息失败"));
       } finally {
         setLoading(false);
       }

@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Detail from '../Detail';
 import type { KitchenPost } from '@/types';
+import { ApiError } from '@/api/client';
 
 // vi.hoisted 提升 mock 数据避免 TDZ：mock 多种美食帖子数据
 const { mockActivePost, mockFreePost, mockDeliveryPost, mockAllergenPost, mockNeedPost, mockNoImagePost, mockLowRemainingPost } = vi.hoisted(() => {
@@ -422,10 +423,8 @@ describe('SharedKitchen/Detail 美食详情', () => {
   });
 
   it('预约失败显示 toast.error 错误提示', async () => {
-    // 模拟后端返回错误（带 response.data.message）
-    vi.mocked(createFoodOrder).mockRejectedValue({
-      response: { data: { message: '库存不足，预约失败' } },
-    });
+    // 实际运行时拦截器已将 HTTP 错误转为 ApiError，mock 需对齐该结构
+    vi.mocked(createFoodOrder).mockRejectedValue(new ApiError('库存不足，预约失败', 400));
 
     renderDetail();
 

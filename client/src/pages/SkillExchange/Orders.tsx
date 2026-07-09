@@ -4,6 +4,7 @@ import { getOrders, updateOrderStatus } from "@/api/skills";
 import { useAuth } from "@/hooks/useAuth";
 import type { SkillOrder } from "@/types";
 import { toast } from "@/components/Toast";
+import { getErrorMessage } from "@/utils/error";
 
 const statusLabels: Record<string, string> = {
   pending: "待接受",
@@ -37,8 +38,8 @@ export default function SkillExchangeOrders() {
     try {
       const res = await getOrders({ page: 1, pageSize: 20 });
       setOrders(res.data.list);
-    } catch (error: any) {
-      toast.error(error.message || "加载订单失败");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "加载订单失败"));
     } finally {
       setLoading(false);
     }
@@ -53,8 +54,8 @@ export default function SkillExchangeOrders() {
       await updateOrderStatus(orderId, status);
       toast.success("操作成功");
       loadOrders();
-    } catch (error: any) {
-      toast.error(error.message || "操作失败");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "操作失败"));
     }
   };
 
