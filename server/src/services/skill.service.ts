@@ -3,22 +3,8 @@ import { NotFoundError, BadRequestError, PermissionDeniedError } from '../utils/
 import { sanitizeObject, validateImageUrls } from '../utils/sanitize';
 import { skillPostCache } from './cache.service';
 
-// TODO(scheduler): scheduler.ts 需新增 handleSkillPostExpiry，由统一任务处理
-// 该函数负责将 status='active' AND expires_at < NOW() 的帖子置为 expired
-// 建议执行频率：每小时一次（cron 表达式 '0 * * * *'）
-// 实现示例：
-//   async function handleSkillPostExpiry(): Promise<void> {
-//     const result = await query(
-//       `UPDATE skill_posts
-//        SET status = 'expired', updated_at = NOW()
-//        WHERE deleted_at IS NULL AND status = 'active' AND expires_at IS NOT NULL AND expires_at < NOW()
-//        RETURNING id`,
-//     );
-//     if (result.rows.length > 0) {
-//       console.log(`[定时任务] 技能帖子过期处理完成，共处理 ${result.rows.length} 个帖子`);
-//     }
-//   }
-// 注意：本任务不修改 scheduler.ts，避免与统一任务冲突
+// 技能帖子过期处理已由 scheduler.ts 的 handleSkillPostExpiry 统一调度（每小时执行），
+// 将 status='active' AND expires_at < NOW() 的帖子置为 expired，无需在此重复实现
 
 // 设计原因：原 toSkillPost(row: any) 让 row 字段误用静默通过编译，
 // 定义 SkillPostRow 与 SELECT 列对齐（含 LEFT JOIN users 后的 nickname/avatar/reputation_score），

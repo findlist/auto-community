@@ -109,7 +109,10 @@ export class WebSocketClient {
     };
 
     this.ws.onclose = () => {
-      console.log("WebSocket 连接已关闭");
+      // 仅开发环境输出连接关闭日志，生产环境避免每次正常关闭都产生噪音
+      if (import.meta.env.DEV) {
+        console.log("WebSocket 连接已关闭");
+      }
       this.options.onClose();
 
       // 非手动关闭时尝试重连
@@ -140,7 +143,10 @@ export class WebSocketClient {
     );
     const delay = this.options.reconnectIntervals[intervalIndex] ?? 5000;
 
-    console.log(`将在 ${delay / 1000} 秒后进行第 ${this.reconnectAttempts + 1} 次重连`);
+    // 仅开发环境输出重连进度日志，生产环境由 onStatusChange("reconnecting") 驱动 UI 提示
+    if (import.meta.env.DEV) {
+      console.log(`将在 ${delay / 1000} 秒后进行第 ${this.reconnectAttempts + 1} 次重连`);
+    }
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectAttempts++;
