@@ -161,7 +161,7 @@ export default function UserManagement() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800">用户管理</h2>
+        <h2 className="text-xl font-bold text-neutral-800">用户管理</h2>
         <ExportButton type="users" />
       </div>
 
@@ -173,7 +173,7 @@ export default function UserManagement() {
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           placeholder="按手机号/昵称搜索"
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+          className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
         />
         <button
           onClick={handleSearch}
@@ -212,7 +212,7 @@ export default function UserManagement() {
             </button>
             <button
               onClick={() => setSelectedIds(new Set())}
-              className="px-3 py-1.5 text-gray-600 border border-gray-300 rounded-lg text-xs hover:bg-gray-50"
+              className="px-3 py-1.5 text-neutral-600 border border-neutral-300 rounded-lg text-xs hover:bg-neutral-50"
             >
               清除选择
             </button>
@@ -225,13 +225,13 @@ export default function UserManagement() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : users.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">暂无数据</div>
+        <div className="text-center py-20 text-neutral-500">暂无数据</div>
       ) : (
         <>
           {/* 桌面端表格 */}
-          <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-gray-100">
+          <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-neutral-100">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
+              <thead className="bg-neutral-50 text-neutral-600">
                 <tr>
                   <th className="px-4 py-3 text-left w-10">
                     <input
@@ -239,7 +239,7 @@ export default function UserManagement() {
                       aria-label="全选当前页"
                       checked={users.length > 0 && users.every((u) => selectedIds.has(u.id))}
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                      className="w-4 h-4 rounded border-neutral-300 text-emerald-600 focus:ring-emerald-500"
                     />
                   </th>
                   <th className="px-4 py-3 text-left">昵称</th>
@@ -251,16 +251,16 @@ export default function UserManagement() {
                   <th className="px-4 py-3 text-left">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-neutral-100">
                 {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-gray-50">
+                  <tr key={u.id} className="hover:bg-neutral-50">
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
                         aria-label={`选择 ${u.nickname}`}
                         checked={selectedIds.has(u.id)}
                         onChange={() => toggleSelect(u.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        className="w-4 h-4 rounded border-neutral-300 text-emerald-600 focus:ring-emerald-500"
                       />
                     </td>
                     <td className="px-4 py-3">{u.nickname}</td>
@@ -270,7 +270,7 @@ export default function UserManagement() {
                         className={`px-2 py-0.5 rounded text-xs ${
                           u.role === "admin"
                             ? "bg-emerald-100 text-emerald-700"
-                            : "bg-gray-100 text-gray-600"
+                            : "bg-neutral-100 text-neutral-600"
                         }`}
                       >
                         {u.role === "admin" ? "管理员" : "普通用户"}
@@ -288,7 +288,7 @@ export default function UserManagement() {
                       </span>
                     </td>
                     <td className="px-4 py-3">{u.reputationScore}</td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3 text-neutral-500">
                       {new Date(u.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3">
@@ -321,7 +321,7 @@ export default function UserManagement() {
                                 action: "removeAdmin",
                               })
                             }
-                            className="text-gray-600 hover:underline text-xs"
+                            className="text-neutral-600 hover:underline text-xs"
                           >
                             取消管理员
                           </button>
@@ -350,7 +350,7 @@ export default function UserManagement() {
           {/* 移动端卡片布局 */}
           <div className="md:hidden space-y-3">
             {users.map((u) => (
-              <div key={u.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div key={u.id} className="bg-white rounded-xl border border-neutral-100 p-4">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-start gap-2">
                     <input
@@ -358,11 +358,11 @@ export default function UserManagement() {
                       aria-label={`选择 ${u.nickname}`}
                       checked={selectedIds.has(u.id)}
                       onChange={() => toggleSelect(u.id)}
-                      className="mt-1 w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                      className="mt-1 w-4 h-4 rounded border-neutral-300 text-emerald-600 focus:ring-emerald-500"
                     />
                     <div>
-                      <div className="font-medium text-gray-800">{u.nickname}</div>
-                      <div className="text-sm text-gray-500">{u.phone}</div>
+                      <div className="font-medium text-neutral-800">{u.nickname}</div>
+                      <div className="text-sm text-neutral-500">{u.phone}</div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-1 items-end">
@@ -370,7 +370,7 @@ export default function UserManagement() {
                       className={`px-2 py-0.5 rounded text-xs ${
                         u.role === "admin"
                           ? "bg-emerald-100 text-emerald-700"
-                          : "bg-gray-100 text-gray-600"
+                          : "bg-neutral-100 text-neutral-600"
                       }`}
                     >
                       {u.role === "admin" ? "管理员" : "普通用户"}
@@ -386,7 +386,7 @@ export default function UserManagement() {
                     </span>
                   </div>
                 </div>
-                <div className="text-sm text-gray-500 mb-3">
+                <div className="text-sm text-neutral-500 mb-3">
                   信誉分: {u.reputationScore} · 注册:{" "}
                   {new Date(u.createdAt).toLocaleDateString()}
                 </div>
@@ -419,7 +419,7 @@ export default function UserManagement() {
                           action: "removeAdmin",
                         })
                       }
-                      className="text-gray-600 text-xs"
+                      className="text-neutral-600 text-xs"
                     >
                       取消管理员
                     </button>
@@ -443,13 +443,13 @@ export default function UserManagement() {
           </div>
 
           {/* 分页控件 */}
-          <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+          <div className="flex items-center justify-between mt-4 text-sm text-neutral-600">
             <span>共 {total} 条</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadUsers(page - 1, search)}
                 disabled={page <= 1}
-                className="p-1.5 rounded-lg border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -459,7 +459,7 @@ export default function UserManagement() {
               <button
                 onClick={() => loadUsers(page + 1, search)}
                 disabled={page >= totalPages}
-                className="p-1.5 rounded-lg border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -473,30 +473,30 @@ export default function UserManagement() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-sm">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold text-gray-800">
+              <h3 className="text-lg font-bold text-neutral-800">
                 {getConfirmText(confirm.action).title}
               </h3>
               <button
                 onClick={() => setConfirm(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-neutral-400 hover:text-neutral-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-gray-600 mb-2">
+            <p className="text-sm text-neutral-600 mb-2">
               {confirm.count !== undefined ? (
                 <>选中数量: <span className="font-medium">{confirm.count} 个用户</span></>
               ) : (
                 <>用户: <span className="font-medium">{confirm.nickname}</span></>
               )}
             </p>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-neutral-500 mb-4">
               {getConfirmText(confirm.action).desc}
             </p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setConfirm(null)}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm text-neutral-600 border border-neutral-300 rounded-lg hover:bg-neutral-50"
               >
                 取消
               </button>

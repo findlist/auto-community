@@ -268,10 +268,10 @@ export default function ContentReview() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-800 mb-4">内容审核</h2>
+      <h2 className="text-xl font-bold text-neutral-800 mb-4">内容审核</h2>
 
       {/* 模块切换标签 */}
-      <div className="flex gap-1 mb-3 border-b border-gray-200 overflow-x-auto">
+      <div className="flex gap-1 mb-3 border-b border-neutral-200 overflow-x-auto">
         {typeTabs.map((tab) => (
           <button
             key={tab.key}
@@ -279,7 +279,7 @@ export default function ContentReview() {
             className={`px-4 py-2 text-sm whitespace-nowrap border-b-2 transition-colors ${
               type === tab.key
                 ? "border-emerald-500 text-emerald-600 font-medium"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+                : "border-transparent text-neutral-500 hover:text-neutral-700"
             }`}
           >
             {tab.label}
@@ -296,7 +296,7 @@ export default function ContentReview() {
             className={`px-3 py-1.5 text-sm rounded-lg ${
               status === tab.key
                 ? "bg-emerald-500 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
             }`}
           >
             {tab.label}
@@ -325,14 +325,14 @@ export default function ContentReview() {
             </button>
             <button
               onClick={() => setBatchConfirm({ action: 'batchInactive', count: selectedIds.size })}
-              className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-600 text-white rounded-lg text-xs hover:bg-gray-700"
+              className="inline-flex items-center gap-1 px-3 py-1.5 bg-neutral-600 text-white rounded-lg text-xs hover:bg-neutral-700"
             >
               <Archive className="w-3.5 h-3.5" />
               批量下架
             </button>
             <button
               onClick={() => setSelectedIds(new Set())}
-              className="px-3 py-1.5 text-gray-600 border border-gray-300 rounded-lg text-xs hover:bg-gray-50"
+              className="px-3 py-1.5 text-neutral-600 border border-neutral-300 rounded-lg text-xs hover:bg-neutral-50"
             >
               清除选择
             </button>
@@ -345,13 +345,13 @@ export default function ContentReview() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : list.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">暂无数据</div>
+        <div className="text-center py-20 text-neutral-500">暂无数据</div>
       ) : (
         <>
           {/* 桌面端表格 */}
-          <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-gray-100">
+          <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-neutral-100">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
+              <thead className="bg-neutral-50 text-neutral-600">
                 <tr>
                   <th className="px-4 py-3 text-left w-10">
                     <input
@@ -359,7 +359,7 @@ export default function ContentReview() {
                       aria-label="全选当前页"
                       checked={list.length > 0 && list.every((it) => selectedIds.has(it.id))}
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                      className="w-4 h-4 rounded border-neutral-300 text-emerald-600 focus:ring-emerald-500"
                     />
                   </th>
                   <th className="px-4 py-3 text-left">标题</th>
@@ -368,16 +368,16 @@ export default function ContentReview() {
                   <th className="px-4 py-3 text-left">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-neutral-100">
                 {list.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
+                  <tr key={item.id} className="hover:bg-neutral-50">
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
                         aria-label={`选择 ${item.title}`}
                         checked={selectedIds.has(item.id)}
                         onChange={() => toggleSelect(item.id)}
-                        className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        className="w-4 h-4 rounded border-neutral-300 text-emerald-600 focus:ring-emerald-500"
                       />
                     </td>
                     <td className="px-4 py-3">{item.title}</td>
@@ -386,13 +386,13 @@ export default function ContentReview() {
                         className={`px-2 py-0.5 rounded text-xs ${
                           item.status === "active"
                             ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-600"
+                            : "bg-neutral-100 text-neutral-600"
                         }`}
                       >
                         {item.status === "active" ? "已上架" : "已下架"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3 text-neutral-500">
                       {new Date(item.createdAt).toLocaleString()}
                     </td>
                     <td className="px-4 py-3 flex gap-3">
@@ -407,7 +407,7 @@ export default function ContentReview() {
                         onClick={() => handleToggleStatus(item)}
                         disabled={actioningId === item.id}
                         // 触摸目标提升：原无 padding 行内按钮，移动端难以精准点击
-                        className={`text-xs hover:underline disabled:opacity-50 py-1 px-2 rounded hover:bg-gray-50 transition-colors ${
+                        className={`text-xs hover:underline disabled:opacity-50 py-1 px-2 rounded hover:bg-neutral-50 transition-colors ${
                           item.status === "active"
                             ? "text-red-600"
                             : "text-emerald-600"
@@ -429,7 +429,7 @@ export default function ContentReview() {
           {/* 移动端卡片布局 */}
           <div className="md:hidden space-y-3">
             {list.map((item) => (
-              <div key={item.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div key={item.id} className="bg-white rounded-xl border border-neutral-100 p-4">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-start gap-2 flex-1 mr-2">
                     <input
@@ -437,21 +437,21 @@ export default function ContentReview() {
                       aria-label={`选择 ${item.title}`}
                       checked={selectedIds.has(item.id)}
                       onChange={() => toggleSelect(item.id)}
-                      className="mt-1 w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                      className="mt-1 w-4 h-4 rounded border-neutral-300 text-emerald-600 focus:ring-emerald-500"
                     />
-                    <div className="font-medium text-gray-800">{item.title}</div>
+                    <div className="font-medium text-neutral-800">{item.title}</div>
                   </div>
                   <span
                     className={`px-2 py-0.5 rounded text-xs whitespace-nowrap ${
                       item.status === "active"
                         ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-600"
+                        : "bg-neutral-100 text-neutral-600"
                     }`}
                   >
                     {item.status === "active" ? "已上架" : "已下架"}
                   </span>
                 </div>
-                <div className="text-sm text-gray-500 mb-3">
+                <div className="text-sm text-neutral-500 mb-3">
                   {new Date(item.createdAt).toLocaleString()}
                 </div>
                 <div className="flex gap-3">
@@ -465,7 +465,7 @@ export default function ContentReview() {
                   <button
                     onClick={() => handleToggleStatus(item)}
                     disabled={actioningId === item.id}
-                    className={`text-xs disabled:opacity-50 py-1 px-2 rounded hover:bg-gray-50 transition-colors ${
+                    className={`text-xs disabled:opacity-50 py-1 px-2 rounded hover:bg-neutral-50 transition-colors ${
                       item.status === "active" ? "text-red-600" : "text-emerald-600"
                     }`}
                   >
@@ -481,13 +481,13 @@ export default function ContentReview() {
           </div>
 
           {/* 分页控件 */}
-          <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+          <div className="flex items-center justify-between mt-4 text-sm text-neutral-600">
             <span>共 {total} 条</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadContent(type, status, page - 1)}
                 disabled={page <= 1}
-                className="p-1.5 rounded-lg border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -497,7 +497,7 @@ export default function ContentReview() {
               <button
                 onClick={() => loadContent(type, status, page + 1)}
                 disabled={page >= totalPages}
-                className="p-1.5 rounded-lg border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -511,10 +511,10 @@ export default function ContentReview() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             {/* 弹窗头部 */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-800">编辑内容</h3>
-              <button onClick={handleCloseEdit} className="p-1 hover:bg-gray-100 rounded">
-                <X className="w-5 h-5 text-gray-500" />
+            <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100">
+              <h3 className="font-semibold text-neutral-800">编辑内容</h3>
+              <button onClick={handleCloseEdit} className="p-1 hover:bg-neutral-100 rounded">
+                <X className="w-5 h-5 text-neutral-500" />
               </button>
             </div>
 
@@ -537,7 +537,7 @@ export default function ContentReview() {
                       type="text"
                       value={form.title}
                       onChange={(e) => updateField("title", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                     />
                   </Field>
 
@@ -547,7 +547,7 @@ export default function ContentReview() {
                       value={form.description}
                       onChange={(e) => updateField("description", e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
                     />
                   </Field>
 
@@ -582,7 +582,7 @@ export default function ContentReview() {
                               e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
                             )
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                          className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                         />
                       </Field>
                       <Field label="地址">
@@ -621,7 +621,7 @@ export default function ContentReview() {
                               e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
                             )
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                          className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                         />
                       </Field>
                     </>
@@ -650,7 +650,7 @@ export default function ContentReview() {
                         <select
                           value={form.urgency || ""}
                           onChange={(e) => updateField("urgency", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                          className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                         >
                           <option value="">请选择</option>
                           <option value="low">低</option>
@@ -672,10 +672,10 @@ export default function ContentReview() {
             </div>
 
             {/* 弹窗底部操作 */}
-            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-100">
+            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-neutral-100">
               <button
                 onClick={handleCloseEdit}
-                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 rounded-lg"
               >
                 取消
               </button>
@@ -701,26 +701,26 @@ export default function ContentReview() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white rounded-xl p-6 w-full max-w-sm">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold text-gray-800">
+              <h3 className="text-lg font-bold text-neutral-800">
                 {batchConfirm.action === "batchActive" ? "批量上架" : "批量下架"}
               </h3>
               <button
                 onClick={() => setBatchConfirm(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-neutral-400 hover:text-neutral-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-gray-600 mb-2">
+            <p className="text-sm text-neutral-600 mb-2">
               选中数量: <span className="font-medium">{batchConfirm.count} 条内容</span>
             </p>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-neutral-500 mb-4">
               {batchConfirm.action === "batchActive" ? "将所选内容批量上架，用户可见" : "将所选内容批量下架，用户不可见"}
             </p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setBatchConfirm(null)}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm text-neutral-600 border border-neutral-300 rounded-lg hover:bg-neutral-50"
               >
                 取消
               </button>
@@ -730,7 +730,7 @@ export default function ContentReview() {
                 className={`px-4 py-2 text-sm text-white rounded-lg disabled:opacity-50 ${
                   batchConfirm.action === "batchActive"
                     ? "bg-emerald-500 hover:bg-emerald-600"
-                    : "bg-gray-600 hover:bg-gray-700"
+                    : "bg-neutral-600 hover:bg-neutral-700"
                 }`}
               >
                 {batchSubmitting ? "处理中..." : "确认"}
@@ -748,7 +748,7 @@ export default function ContentReview() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-neutral-700 mb-1">{label}</label>
       {children}
     </div>
   );
@@ -760,7 +760,7 @@ function TextInput({ value, onChange }: { value?: string; onChange: (v: string) 
       type="text"
       value={value || ""}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
     />
   );
 }
@@ -771,7 +771,7 @@ function NumberInput({ value, onChange }: { value?: number; onChange: (v: number
       type="number"
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value === "" ? 0 : Number(e.target.value))}
-      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
     />
   );
 }

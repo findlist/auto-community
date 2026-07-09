@@ -112,15 +112,15 @@ export default function ReportManagement() {
     const map: Record<string, string> = {
       pending: "bg-yellow-100 text-yellow-700",
       resolved: "bg-green-100 text-green-700",
-      rejected: "bg-gray-100 text-gray-600",
+      rejected: "bg-neutral-100 text-neutral-600",
     };
-    return map[s] || "bg-gray-100 text-gray-600";
+    return map[s] || "bg-neutral-100 text-neutral-600";
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800">举报处理</h2>
+        <h2 className="text-xl font-bold text-neutral-800">举报处理</h2>
         {/* 导出当前状态的举报，status 为空字符串时不传，导出全部 */}
         <ExportButton type="reports" params={{ status: status || undefined }} />
       </div>
@@ -134,7 +134,7 @@ export default function ReportManagement() {
             className={`px-3 py-1.5 text-sm rounded-lg ${
               status === tab.key
                 ? "bg-emerald-500 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
             }`}
           >
             {tab.label}
@@ -154,13 +154,13 @@ export default function ReportManagement() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : list.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">暂无数据</div>
+        <div className="text-center py-20 text-neutral-500">暂无数据</div>
       ) : (
         <>
           {/* 桌面端表格 */}
-          <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-gray-100">
+          <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-neutral-100">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
+              <thead className="bg-neutral-50 text-neutral-600">
                 <tr>
                   <th className="px-4 py-3 text-left">举报类型</th>
                   <th className="px-4 py-3 text-left">目标ID</th>
@@ -170,11 +170,11 @@ export default function ReportManagement() {
                   <th className="px-4 py-3 text-left">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-neutral-100">
                 {list.map((report) => (
-                  <tr key={report.id} className="hover:bg-gray-50">
+                  <tr key={report.id} className="hover:bg-neutral-50">
                     <td className="px-4 py-3">{getTargetTypeText(report.targetType)}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500">
+                    <td className="px-4 py-3 font-mono text-xs text-neutral-500">
                       {report.targetId.length > 12
                         ? `${report.targetId.slice(0, 12)}...`
                         : report.targetId}
@@ -189,7 +189,7 @@ export default function ReportManagement() {
                         {getStatusText(report.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3 text-neutral-500">
                       {new Date(report.createdAt).toLocaleString()}
                     </td>
                     <td className="px-4 py-3">
@@ -201,7 +201,7 @@ export default function ReportManagement() {
                           处理
                         </button>
                       ) : (
-                        <span className="text-gray-400 text-xs">
+                        <span className="text-neutral-400 text-xs">
                           {report.handleNote ? "已处理" : "-"}
                         </span>
                       )}
@@ -215,9 +215,9 @@ export default function ReportManagement() {
           {/* 移动端卡片布局 */}
           <div className="md:hidden space-y-3">
             {list.map((report) => (
-              <div key={report.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div key={report.id} className="bg-white rounded-xl border border-neutral-100 p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <div className="font-medium text-gray-800">
+                  <div className="font-medium text-neutral-800">
                     {getTargetTypeText(report.targetType)}
                   </div>
                   <span
@@ -227,15 +227,15 @@ export default function ReportManagement() {
                   </span>
                 </div>
                 <div className="text-sm space-y-1 mb-3">
-                  <div className="text-gray-500 font-mono text-xs">
+                  <div className="text-neutral-500 font-mono text-xs">
                     目标: {report.targetId}
                   </div>
-                  <div className="text-gray-700">原因: {report.reason}</div>
-                  <div className="text-gray-500">
+                  <div className="text-neutral-700">原因: {report.reason}</div>
+                  <div className="text-neutral-500">
                     举报时间: {new Date(report.createdAt).toLocaleString()}
                   </div>
                   {report.handleNote && (
-                    <div className="text-gray-500">
+                    <div className="text-neutral-500">
                       处理备注: {report.handleNote}
                     </div>
                   )}
@@ -253,13 +253,13 @@ export default function ReportManagement() {
           </div>
 
           {/* 分页控件 */}
-          <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+          <div className="flex items-center justify-between mt-4 text-sm text-neutral-600">
             <span>共 {total} 条</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadReports(status, page - 1)}
                 disabled={page <= 1}
-                className="p-1.5 rounded-lg border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -269,7 +269,7 @@ export default function ReportManagement() {
               <button
                 onClick={() => loadReports(status, page + 1)}
                 disabled={page >= totalPages}
-                className="p-1.5 rounded-lg border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -283,28 +283,28 @@ export default function ReportManagement() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-sm">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold text-gray-800">处理举报</h3>
+              <h3 className="text-lg font-bold text-neutral-800">处理举报</h3>
               <button
                 onClick={() => {
                   setHandleTarget(null);
                   setHandleNote("");
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-neutral-400 hover:text-neutral-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-gray-500 mb-3">
+            <p className="text-sm text-neutral-500 mb-3">
               举报 ID: <span className="font-mono">{handleTarget.id}</span>
             </p>
-            <label className="block text-sm text-gray-600 mb-1">处理结果</label>
+            <label className="block text-sm text-neutral-600 mb-1">处理结果</label>
             <div className="flex gap-2 mb-3">
               <button
                 onClick={() => setHandleStatus("resolved")}
                 className={`flex-1 px-3 py-2 text-sm rounded-lg border ${
                   handleStatus === "resolved"
                     ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                    : "border-gray-300 text-gray-600"
+                    : "border-neutral-300 text-neutral-600"
                 }`}
               >
                 已解决
@@ -314,19 +314,19 @@ export default function ReportManagement() {
                 className={`flex-1 px-3 py-2 text-sm rounded-lg border ${
                   handleStatus === "rejected"
                     ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                    : "border-gray-300 text-gray-600"
+                    : "border-neutral-300 text-neutral-600"
                 }`}
               >
                 已驳回
               </button>
             </div>
-            <label className="block text-sm text-gray-600 mb-1">处理备注</label>
+            <label className="block text-sm text-neutral-600 mb-1">处理备注</label>
             <textarea
               value={handleNote}
               onChange={(e) => setHandleNote(e.target.value)}
               placeholder="请输入处理备注"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
             />
             <div className="flex gap-2 justify-end mt-4">
               <button
@@ -334,7 +334,7 @@ export default function ReportManagement() {
                   setHandleTarget(null);
                   setHandleNote("");
                 }}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm text-neutral-600 border border-neutral-300 rounded-lg hover:bg-neutral-50"
               >
                 取消
               </button>

@@ -119,7 +119,7 @@ export default function VerificationReview() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-800 mb-4">实名认证审核</h2>
+      <h2 className="text-xl font-bold text-neutral-800 mb-4">实名认证审核</h2>
 
       {/* 状态筛选 */}
       <div className="flex gap-2 mb-4">
@@ -128,7 +128,7 @@ export default function VerificationReview() {
           className={`px-3 py-1.5 rounded-lg text-sm ${
             statusFilter === ""
               ? "bg-emerald-500 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
           }`}
         >
           全部
@@ -138,7 +138,7 @@ export default function VerificationReview() {
           className={`px-3 py-1.5 rounded-lg text-sm ${
             statusFilter === "pending"
               ? "bg-emerald-500 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
           }`}
         >
           待审核
@@ -148,7 +148,7 @@ export default function VerificationReview() {
           className={`px-3 py-1.5 rounded-lg text-sm ${
             statusFilter === "approved"
               ? "bg-emerald-500 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
           }`}
         >
           已通过
@@ -158,7 +158,7 @@ export default function VerificationReview() {
           className={`px-3 py-1.5 rounded-lg text-sm ${
             statusFilter === "rejected"
               ? "bg-emerald-500 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
           }`}
         >
           已拒绝
@@ -177,13 +177,13 @@ export default function VerificationReview() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : requests.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">暂无认证申请</div>
+        <div className="text-center py-20 text-neutral-500">暂无认证申请</div>
       ) : (
         <>
           {/* 桌面端表格 */}
-          <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-gray-100">
+          <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-neutral-100">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
+              <thead className="bg-neutral-50 text-neutral-600">
                 <tr>
                   <th className="px-4 py-3 text-left">申请人</th>
                   <th className="px-4 py-3 text-left">手机号</th>
@@ -195,20 +195,20 @@ export default function VerificationReview() {
                   <th className="px-4 py-3 text-left">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-neutral-100">
                 {requests.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
+                  <tr key={r.id} className="hover:bg-neutral-50">
                     <td className="px-4 py-3">{r.userNickname}</td>
                     <td className="px-4 py-3">{r.userPhone}</td>
                     <td className="px-4 py-3 font-medium">{r.realName}</td>
                     <td className="px-4 py-3">{getStatusBadge(r.status)}</td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3 text-neutral-500">
                       {new Date(r.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3 text-neutral-500">
                       {r.reviewerNickname || "-"}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">
+                    <td className="px-4 py-3 text-neutral-500 max-w-[200px] truncate">
                       {r.rejectReason || "-"}
                     </td>
                     <td className="px-4 py-3">
@@ -256,22 +256,22 @@ export default function VerificationReview() {
             {requests.map((r) => (
               <div
                 key={r.id}
-                className="bg-white rounded-xl border border-gray-100 p-4"
+                className="bg-white rounded-xl border border-neutral-100 p-4"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <div className="font-medium text-gray-800">
+                    <div className="font-medium text-neutral-800">
                       {r.userNickname}
                     </div>
-                    <div className="text-sm text-gray-500">{r.userPhone}</div>
+                    <div className="text-sm text-neutral-500">{r.userPhone}</div>
                   </div>
                   {getStatusBadge(r.status)}
                 </div>
                 <div className="text-sm mb-2">
-                  <span className="text-gray-500">真实姓名：</span>
+                  <span className="text-neutral-500">真实姓名：</span>
                   <span className="font-medium">{r.realName}</span>
                 </div>
-                <div className="text-sm text-gray-500 mb-3">
+                <div className="text-sm text-neutral-500 mb-3">
                   提交时间：{new Date(r.createdAt).toLocaleDateString()}
                   {r.reviewerNickname && (
                     <span className="ml-2">审核人：{r.reviewerNickname}</span>
@@ -319,13 +319,13 @@ export default function VerificationReview() {
           </div>
 
           {/* 分页控件 */}
-          <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+          <div className="flex items-center justify-between mt-4 text-sm text-neutral-600">
             <span>共 {total} 条</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadRequests(page - 1, statusFilter)}
                 disabled={page <= 1}
-                className="p-1.5 rounded-lg border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -335,7 +335,7 @@ export default function VerificationReview() {
               <button
                 onClick={() => loadRequests(page + 1, statusFilter)}
                 disabled={page >= totalPages}
-                className="p-1.5 rounded-lg border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -349,7 +349,7 @@ export default function VerificationReview() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-sm">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-neutral-800 flex items-center gap-2">
                 <UserCheck className="w-5 h-5" />
                 {review.action === "approve" ? "确认通过" : "确认拒绝"}
               </h3>
@@ -358,27 +358,27 @@ export default function VerificationReview() {
                   setReview(null);
                   setRejectReason("");
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-neutral-400 hover:text-neutral-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-gray-600 mb-2">
+            <p className="text-sm text-neutral-600 mb-2">
               申请人：<span className="font-medium">{review.userNickname}</span>
             </p>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-neutral-600 mb-4">
               真实姓名：<span className="font-medium">{review.realName}</span>
             </p>
             {review.action === "reject" && (
               <div className="mb-4">
-                <label className="block text-sm text-gray-600 mb-1">
+                <label className="block text-sm text-neutral-600 mb-1">
                   拒绝原因 *
                 </label>
                 <textarea
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   placeholder="请填写拒绝原因（2-200字符）"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
                   rows={3}
                 />
               </div>
@@ -389,7 +389,7 @@ export default function VerificationReview() {
                   setReview(null);
                   setRejectReason("");
                 }}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm text-neutral-600 border border-neutral-300 rounded-lg hover:bg-neutral-50"
               >
                 取消
               </button>

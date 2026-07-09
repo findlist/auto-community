@@ -77,8 +77,8 @@ export default function HomepageImage() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-800 mb-1">首页展示图片</h2>
-      <p className="text-sm text-gray-500 mb-5">
+      <h2 className="text-xl font-bold text-neutral-800 mb-1">首页展示图片</h2>
+      <p className="text-sm text-neutral-500 mb-5">
         配置首页 Hero 区的全幅背景图，建议使用 16:9 横向图片。
       </p>
 
@@ -89,15 +89,15 @@ export default function HomepageImage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-5">
+      <div className="bg-white rounded-xl border border-neutral-100 p-5 space-y-5">
         {/* 预览区 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">当前图片预览</label>
-          <div className="aspect-video w-full max-w-2xl rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">当前图片预览</label>
+          <div className="aspect-video w-full max-w-2xl rounded-lg overflow-hidden bg-neutral-100 border border-neutral-200">
             {url ? (
               <img src={url} alt="首页展示图片" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+              <div className="w-full h-full flex items-center justify-center text-neutral-400 text-sm">
                 暂未配置，将使用默认图片
               </div>
             )}
@@ -106,7 +106,7 @@ export default function HomepageImage() {
 
         {/* URL 输入 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">图片 URL</label>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">图片 URL</label>
           <input
             type="text"
             value={url}
@@ -115,14 +115,14 @@ export default function HomepageImage() {
               setSuccess(false);
             }}
             placeholder="粘贴图片 URL，或使用下方按钮上传"
-            className="w-full max-w-2xl px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            className="w-full max-w-2xl px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
           />
         </div>
 
         {/* 上传按钮 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">上传本地图片</label>
-          <label className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg cursor-pointer hover:bg-gray-200 text-sm">
+          <label className="block text-sm font-medium text-neutral-700 mb-1">上传本地图片</label>
+          <label className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-100 text-neutral-700 rounded-lg cursor-pointer hover:bg-neutral-200 text-sm">
             {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             {uploading ? "上传中..." : "选择图片上传"}
             <input
@@ -133,7 +133,7 @@ export default function HomepageImage() {
               className="hidden"
             />
           </label>
-          <p className="text-xs text-gray-400 mt-1">支持 JPEG、PNG、GIF，最大 5MB</p>
+          <p className="text-xs text-neutral-400 mt-1">支持 JPEG、PNG、GIF，最大 5MB</p>
         </div>
 
         {/* 保存按钮 */}

@@ -39,7 +39,7 @@ export default function AdminLayout() {
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
               active
                 ? "bg-emerald-50 text-emerald-700 font-medium"
-                : "text-gray-600 hover:bg-gray-100"
+                : "text-neutral-600 hover:bg-neutral-100"
             }`}
           >
             <Icon className="w-5 h-5" />
@@ -51,20 +51,20 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-50">
       {/* 顶部标题栏 */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
+      <header className="sticky top-0 z-40 bg-white border-b border-neutral-200">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             {/* 移动端菜单按钮 */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden p-1.5 rounded-lg hover:bg-gray-100"
+              className="md:hidden p-1.5 rounded-lg hover:bg-neutral-100"
               aria-label="切换菜单"
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <h1 className="text-lg font-bold text-gray-800">邻里圈管理后台</h1>
+            <h1 className="text-lg font-bold text-neutral-800">邻里圈管理后台</h1>
           </div>
           <Link
             to="/"
@@ -77,7 +77,7 @@ export default function AdminLayout() {
 
       <div className="flex">
         {/* 桌面端固定侧边栏 */}
-        <aside className="hidden md:block w-60 min-h-[calc(100vh-3.5rem)] bg-white border-r border-gray-200">
+        <aside className="hidden md:block w-60 min-h-[calc(100vh-3.5rem)] bg-white border-r border-neutral-200">
           {renderNavItems()}
         </aside>
 
@@ -88,7 +88,7 @@ export default function AdminLayout() {
               className="md:hidden fixed inset-0 z-30 bg-black/40"
               onClick={() => setSidebarOpen(false)}
             />
-            <aside className="md:hidden fixed left-0 top-14 bottom-0 z-40 w-60 bg-white border-r border-gray-200 overflow-y-auto">
+            <aside className="md:hidden fixed left-0 top-14 bottom-0 z-40 w-60 bg-white border-r border-neutral-200 overflow-y-auto">
               {renderNavItems()}
             </aside>
           </>

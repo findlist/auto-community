@@ -145,7 +145,7 @@ export default function OrderManagement() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800">订单管理</h2>
+        <h2 className="text-xl font-bold text-neutral-800">订单管理</h2>
         {/* 导出当前类型+状态的订单：toApiType 统一映射前端 key 到后端 orderType */}
         <ExportButton
           type="orders"
@@ -157,7 +157,7 @@ export default function OrderManagement() {
       </div>
 
       {/* 模块切换标签 */}
-      <div className="flex gap-1 mb-3 border-b border-gray-200 overflow-x-auto">
+      <div className="flex gap-1 mb-3 border-b border-neutral-200 overflow-x-auto">
         {typeTabs.map((tab) => (
           <button
             key={tab.key}
@@ -165,7 +165,7 @@ export default function OrderManagement() {
             className={`px-4 py-2 text-sm whitespace-nowrap border-b-2 transition-colors ${
               type === tab.key
                 ? "border-emerald-500 text-emerald-600 font-medium"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+                : "border-transparent text-neutral-500 hover:text-neutral-700"
             }`}
           >
             {tab.label}
@@ -182,7 +182,7 @@ export default function OrderManagement() {
             className={`px-3 py-1.5 text-sm rounded-lg ${
               status === tab.key
                 ? "bg-emerald-500 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
             }`}
           >
             {tab.label}
@@ -202,13 +202,13 @@ export default function OrderManagement() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : list.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">暂无数据</div>
+        <div className="text-center py-20 text-neutral-500">暂无数据</div>
       ) : (
         <>
           {/* 桌面端表格 */}
-          <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-gray-100">
+          <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-neutral-100">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
+              <thead className="bg-neutral-50 text-neutral-600">
                 <tr>
                   <th className="px-4 py-3 text-left">订单ID</th>
                   <th className="px-4 py-3 text-left">买方</th>
@@ -219,21 +219,21 @@ export default function OrderManagement() {
                   <th className="px-4 py-3 text-left">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-neutral-100">
                 {list.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500">
+                  <tr key={item.id} className="hover:bg-neutral-50">
+                    <td className="px-4 py-3 font-mono text-xs text-neutral-500">
                       {item.id.length > 12 ? `${item.id.slice(0, 12)}...` : item.id}
                     </td>
                     <td className="px-4 py-3">{getBuyerName(item)}</td>
                     <td className="px-4 py-3">{getSellerName(item)}</td>
                     <td className="px-4 py-3">{getAmount(item)}</td>
                     <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
+                      <span className="px-2 py-0.5 rounded text-xs bg-neutral-100 text-neutral-600">
                         {getStatusText(item.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3 text-neutral-500">
                       {new Date(item.createdAt).toLocaleString()}
                     </td>
                     <td className="px-4 py-3">
@@ -245,7 +245,7 @@ export default function OrderManagement() {
                           强制取消
                         </button>
                       ) : (
-                        <span className="text-gray-400 text-xs">-</span>
+                        <span className="text-neutral-400 text-xs">-</span>
                       )}
                     </td>
                   </tr>
@@ -257,30 +257,30 @@ export default function OrderManagement() {
           {/* 移动端卡片布局 */}
           <div className="md:hidden space-y-3">
             {list.map((item) => (
-              <div key={item.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div key={item.id} className="bg-white rounded-xl border border-neutral-100 p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <div className="font-mono text-xs text-gray-500">
+                  <div className="font-mono text-xs text-neutral-500">
                     {item.id.length > 16 ? `${item.id.slice(0, 16)}...` : item.id}
                   </div>
-                  <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
+                  <span className="px-2 py-0.5 rounded text-xs bg-neutral-100 text-neutral-600">
                     {getStatusText(item.status)}
                   </span>
                 </div>
                 <div className="text-sm space-y-1 mb-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">买方</span>
+                    <span className="text-neutral-500">买方</span>
                     <span>{getBuyerName(item)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">卖方</span>
+                    <span className="text-neutral-500">卖方</span>
                     <span>{getSellerName(item)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">{getAmountLabel()}</span>
+                    <span className="text-neutral-500">{getAmountLabel()}</span>
                     <span className="font-medium">{getAmount(item)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">创建时间</span>
+                    <span className="text-neutral-500">创建时间</span>
                     <span>{new Date(item.createdAt).toLocaleString()}</span>
                   </div>
                 </div>
@@ -297,13 +297,13 @@ export default function OrderManagement() {
           </div>
 
           {/* 分页控件 */}
-          <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+          <div className="flex items-center justify-between mt-4 text-sm text-neutral-600">
             <span>共 {total} 条</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadOrders(type, status, page - 1)}
                 disabled={page <= 1}
-                className="p-1.5 rounded-lg border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -313,7 +313,7 @@ export default function OrderManagement() {
               <button
                 onClick={() => loadOrders(type, status, page + 1)}
                 disabled={page >= totalPages}
-                className="p-1.5 rounded-lg border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -327,27 +327,27 @@ export default function OrderManagement() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-sm">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold text-gray-800">强制取消订单</h3>
+              <h3 className="text-lg font-bold text-neutral-800">强制取消订单</h3>
               <button
                 onClick={() => {
                   setCancelTarget(null);
                   setCancelReason("");
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-neutral-400 hover:text-neutral-600"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-gray-500 mb-2">
+            <p className="text-sm text-neutral-500 mb-2">
               订单 ID: <span className="font-mono">{cancelTarget.id}</span>
             </p>
-            <label className="block text-sm text-gray-600 mb-1">取消原因</label>
+            <label className="block text-sm text-neutral-600 mb-1">取消原因</label>
             <textarea
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               placeholder="请输入取消原因"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
             />
             <div className="flex gap-2 justify-end mt-4">
               <button
@@ -355,7 +355,7 @@ export default function OrderManagement() {
                   setCancelTarget(null);
                   setCancelReason("");
                 }}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm text-neutral-600 border border-neutral-300 rounded-lg hover:bg-neutral-50"
               >
                 取消
               </button>

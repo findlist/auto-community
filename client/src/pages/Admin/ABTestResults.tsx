@@ -69,9 +69,9 @@ function statusBadgeClass(status: string): string {
     case "paused":
       return "bg-amber-100 text-amber-700";
     case "completed":
-      return "bg-gray-100 text-gray-700";
+      return "bg-neutral-100 text-neutral-700";
     default:
-      return "bg-gray-100 text-gray-500";
+      return "bg-neutral-100 text-neutral-500";
   }
 }
 
@@ -278,7 +278,7 @@ export default function ABTestResults() {
                 <tbody>
                   <tr className="border-b border-[var(--color-border)]">
                     <td className="px-5 py-3">
-                      <span className="inline-block w-3 h-3 rounded-full bg-gray-400 mr-2 align-middle" />
+                      <span className="inline-block w-3 h-3 rounded-full bg-neutral-400 mr-2 align-middle" />
                       <span className="font-medium text-[var(--color-text-primary)]">
                         Control（类别匹配）
                       </span>
@@ -373,7 +373,7 @@ function SignificanceCard({
           className={`px-2 py-0.5 rounded text-xs font-medium ${
             significant
               ? "bg-emerald-100 text-emerald-700"
-              : "bg-gray-100 text-gray-500"
+              : "bg-neutral-100 text-neutral-500"
           }`}
         >
           p = {pValue < 0.001 ? "<0.001" : pValue.toFixed(4)}

@@ -153,12 +153,12 @@ export default function SystemStatus() {
     <div className="space-y-6">
       {/* 标题和操作按钮 */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-800">系统状态监控</h2>
+        <h2 className="text-xl font-bold text-neutral-800">系统状态监控</h2>
         <div className="flex gap-2">
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
             刷新
@@ -166,7 +166,7 @@ export default function SystemStatus() {
           <button
             onClick={handleClearAlerts}
             disabled={clearing || alerts.length === 0}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
           >
             <Trash2 className="w-4 h-4" />
             清除告警
@@ -177,18 +177,18 @@ export default function SystemStatus() {
       {/* 系统指标卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* 数据库状态 */}
-        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+        <div className="bg-white rounded-xl p-4 border border-neutral-100 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
                 <Database className="w-5 h-5 text-blue-600" />
               </div>
-              <span className="font-medium text-gray-800">数据库</span>
+              <span className="font-medium text-neutral-800">数据库</span>
             </div>
             {metrics && <StatusIndicator status={metrics.database.status} />}
           </div>
           {metrics && (
-            <div className="space-y-2 text-sm text-gray-600">
+            <div className="space-y-2 text-sm text-neutral-600">
               <div className="flex justify-between">
                 <span>连接池大小</span>
                 <span className="font-medium">{metrics.database.poolSize}</span>
@@ -215,18 +215,18 @@ export default function SystemStatus() {
         </div>
 
         {/* Redis 状态 */}
-        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+        <div className="bg-white rounded-xl p-4 border border-neutral-100 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
                 <Server className="w-5 h-5 text-purple-600" />
               </div>
-              <span className="font-medium text-gray-800">Redis</span>
+              <span className="font-medium text-neutral-800">Redis</span>
             </div>
             {metrics && <StatusIndicator status={metrics.redis.status} />}
           </div>
           {metrics && (
-            <div className="space-y-2 text-sm text-gray-600">
+            <div className="space-y-2 text-sm text-neutral-600">
               <div className="flex justify-between">
                 <span>连接状态</span>
                 <span
@@ -246,13 +246,13 @@ export default function SystemStatus() {
         </div>
 
         {/* 服务器状态 */}
-        <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+        <div className="bg-white rounded-xl p-4 border border-neutral-100 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
                 <MemoryStick className="w-5 h-5 text-orange-600" />
               </div>
-              <span className="font-medium text-gray-800">服务器</span>
+              <span className="font-medium text-neutral-800">服务器</span>
             </div>
             <span className="flex items-center gap-1 text-emerald-600">
               <CheckCircle className="w-4 h-4" />
@@ -260,7 +260,7 @@ export default function SystemStatus() {
             </span>
           </div>
           {metrics && (
-            <div className="space-y-2 text-sm text-gray-600">
+            <div className="space-y-2 text-sm text-neutral-600">
               <div className="flex justify-between">
                 <span>运行时间</span>
                 <span className="font-medium text-xs">{formatUptime(metrics.server.uptime)}</span>
@@ -291,9 +291,9 @@ export default function SystemStatus() {
       </div>
 
       {/* 告警日志列表 */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-        <div className="px-4 py-3 border-b border-gray-100">
-          <h3 className="font-medium text-gray-800 flex items-center gap-2">
+      <div className="bg-white rounded-xl border border-neutral-100 shadow-sm">
+        <div className="px-4 py-3 border-b border-neutral-100">
+          <h3 className="font-medium text-neutral-800 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-yellow-500" />
             告警日志
             {alerts.length > 0 && (
@@ -305,13 +305,13 @@ export default function SystemStatus() {
         </div>
         <div className="max-h-80 overflow-y-auto">
           {alerts.length === 0 ? (
-            <div className="px-4 py-8 text-center text-gray-500">
+            <div className="px-4 py-8 text-center text-neutral-500">
               暂无告警日志
             </div>
           ) : (
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-neutral-100">
               {alerts.map((alert, index) => (
-                <li key={index} className="px-4 py-3 hover:bg-gray-50">
+                <li key={index} className="px-4 py-3 hover:bg-neutral-50">
                   <div className="flex items-start gap-3">
                     <div
                       className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -333,7 +333,7 @@ export default function SystemStatus() {
                         >
                           {alert.level === "critical" ? "严重" : "警告"}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-neutral-500">
                           {alert.type === "database"
                             ? "数据库"
                             : alert.type === "redis"
@@ -341,8 +341,8 @@ export default function SystemStatus() {
                             : "内存"}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-800 mt-1">{alert.message}</p>
-                      <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
+                      <p className="text-sm text-neutral-800 mt-1">{alert.message}</p>
+                      <div className="flex items-center gap-1 mt-1 text-xs text-neutral-400">
                         <Clock className="w-3 h-3" />
                         {new Date(alert.timestamp).toLocaleString("zh-CN")}
                       </div>

@@ -153,8 +153,8 @@ export default function SystemConfig() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">系统配置</h2>
-          <p className="text-xs text-gray-500 mt-1">管理站点全局参数（积分规则、超时时长等）</p>
+          <h2 className="text-xl font-bold text-neutral-800">系统配置</h2>
+          <p className="text-xs text-neutral-500 mt-1">管理站点全局参数（积分规则、超时时长等）</p>
         </div>
         <button
           onClick={() => setEditTarget({ setting: null })}
@@ -178,7 +178,7 @@ export default function SystemConfig() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : list.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
+        <div className="text-center py-20 text-neutral-400">
           <Settings className="w-12 h-12 mx-auto mb-3" />
           <p className="text-sm">暂无配置项</p>
         </div>
@@ -190,8 +190,8 @@ export default function SystemConfig() {
               <section key={group.key}>
                 <div className="flex items-center gap-2 mb-3">
                   <GroupIcon className="w-4 h-4 text-emerald-500" />
-                  <h3 className="text-sm font-semibold text-gray-700">{group.title}</h3>
-                  <span className="text-xs text-gray-400">({group.items.length})</span>
+                  <h3 className="text-sm font-semibold text-neutral-700">{group.title}</h3>
+                  <span className="text-xs text-neutral-400">({group.items.length})</span>
                 </div>
                 <SettingList
                   items={group.items}
@@ -220,18 +220,18 @@ export default function SystemConfig() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-sm">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold text-gray-800">确认删除配置</h3>
-              <button onClick={() => setDeleteTarget(null)} className="text-gray-400 hover:text-gray-600">
+              <h3 className="text-lg font-bold text-neutral-800">确认删除配置</h3>
+              <button onClick={() => setDeleteTarget(null)} className="text-neutral-400 hover:text-neutral-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-gray-600 mb-1">配置键：</p>
-            <p className="font-mono text-sm text-gray-900 mb-4 break-all">{deleteTarget.key}</p>
+            <p className="text-sm text-neutral-600 mb-1">配置键：</p>
+            <p className="font-mono text-sm text-neutral-900 mb-4 break-all">{deleteTarget.key}</p>
             <p className="text-sm text-red-600 mb-4">删除后不可恢复，相关功能可能受影响。</p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm text-neutral-600 border border-neutral-300 rounded-lg hover:bg-neutral-50"
               >
                 取消
               </button>
@@ -264,9 +264,9 @@ function SettingList({ items, onEdit, onDelete, isProtected }: SettingListProps)
   return (
     <>
       {/* 桌面端表格 */}
-      <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-gray-100">
+      <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-neutral-100">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
+          <thead className="bg-neutral-50 text-neutral-600">
             <tr>
               <th className="px-4 py-3 text-left">配置键</th>
               <th className="px-4 py-3 text-left">配置值</th>
@@ -275,24 +275,24 @@ function SettingList({ items, onEdit, onDelete, isProtected }: SettingListProps)
               <th className="px-4 py-3 text-left">操作</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-neutral-100">
             {items.map((item) => {
               const protectedKey = isProtected(item.key);
               return (
-                <tr key={item.key} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">
+                <tr key={item.key} className="hover:bg-neutral-50">
+                  <td className="px-4 py-3 font-mono text-xs text-neutral-700">
                     <div className="flex items-center gap-1">
                       {protectedKey && <Lock className="w-3 h-3 text-amber-500" />}
                       {item.key}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-600 max-w-xs truncate" title={item.value ?? ""}>
-                    {item.value || <span className="text-gray-400">（空）</span>}
+                  <td className="px-4 py-3 text-neutral-600 max-w-xs truncate" title={item.value ?? ""}>
+                    {item.value || <span className="text-neutral-400">（空）</span>}
                   </td>
-                  <td className="px-4 py-3 text-gray-500 max-w-xs truncate" title={item.description ?? ""}>
-                    {item.description || <span className="text-gray-400">-</span>}
+                  <td className="px-4 py-3 text-neutral-500 max-w-xs truncate" title={item.description ?? ""}>
+                    {item.description || <span className="text-neutral-400">-</span>}
                   </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
+                  <td className="px-4 py-3 text-neutral-500 text-xs">
                     {item.updatedAt ? new Date(item.updatedAt).toLocaleString() : "-"}
                   </td>
                   <td className="px-4 py-3">
@@ -327,9 +327,9 @@ function SettingList({ items, onEdit, onDelete, isProtected }: SettingListProps)
         {items.map((item) => {
           const protectedKey = isProtected(item.key);
           return (
-            <div key={item.key} className="bg-white rounded-xl border border-gray-100 p-4">
+            <div key={item.key} className="bg-white rounded-xl border border-neutral-100 p-4">
               <div className="flex justify-between items-start mb-2">
-                <div className="font-mono text-xs text-gray-700 flex items-center gap-1">
+                <div className="font-mono text-xs text-neutral-700 flex items-center gap-1">
                   {protectedKey && <Lock className="w-3 h-3 text-amber-500" />}
                   {item.key}
                 </div>
@@ -354,16 +354,16 @@ function SettingList({ items, onEdit, onDelete, isProtected }: SettingListProps)
               </div>
               <div className="text-sm space-y-1">
                 <div className="flex justify-between gap-2">
-                  <span className="text-gray-500 flex-shrink-0">配置值</span>
-                  <span className="text-gray-700 text-right break-all">{item.value || "（空）"}</span>
+                  <span className="text-neutral-500 flex-shrink-0">配置值</span>
+                  <span className="text-neutral-700 text-right break-all">{item.value || "（空）"}</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-gray-500 flex-shrink-0">说明</span>
-                  <span className="text-gray-700 text-right">{item.description || "-"}</span>
+                  <span className="text-neutral-500 flex-shrink-0">说明</span>
+                  <span className="text-neutral-700 text-right">{item.description || "-"}</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-gray-500 flex-shrink-0">更新时间</span>
-                  <span className="text-gray-500 text-xs">
+                  <span className="text-neutral-500 flex-shrink-0">更新时间</span>
+                  <span className="text-neutral-500 text-xs">
                     {item.updatedAt ? new Date(item.updatedAt).toLocaleString() : "-"}
                   </span>
                 </div>
@@ -430,33 +430,33 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
       {/* w-full max-w-md：替代 w-[90%] 固定百分比，配合外层 p-4 实现稳定的 viewport 适配 */}
       <div className="bg-white rounded-xl w-full max-w-md p-5 shadow-lg">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-bold text-gray-800">{isEdit ? "编辑配置" : "新增配置"}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <h3 className="text-lg font-bold text-neutral-800">{isEdit ? "编辑配置" : "新增配置"}</h3>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">配置键</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">配置键</label>
             <input
               type="text"
               value={key}
               onChange={e => setKey(e.target.value)}
               placeholder="如 daily_earn_limit"
               disabled={isEdit}
-              className={`w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                isEdit ? "text-gray-400 cursor-not-allowed" : ""
+              className={`w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                isEdit ? "text-neutral-400 cursor-not-allowed" : ""
               }`}
             />
             {isEdit && (
-              <p className="text-xs text-gray-400 mt-1">配置键创建后不可修改</p>
+              <p className="text-xs text-neutral-400 mt-1">配置键创建后不可修改</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              配置值 <span className="text-xs text-gray-400">（{value.length}/{VALUE_MAX_LENGTH}）</span>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              配置值 <span className="text-xs text-neutral-400">（{value.length}/{VALUE_MAX_LENGTH}）</span>
             </label>
             {isNumericValue ? (
               <div className="space-y-3">
@@ -466,9 +466,9 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
                     type="number"
                     value={value}
                     onChange={e => setValue(e.target.value)}
-                    className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="flex-1 px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
-                  <span className="text-sm text-gray-500 whitespace-nowrap">{numericValue}</span>
+                  <span className="text-sm text-neutral-500 whitespace-nowrap">{numericValue}</span>
                 </div>
                 <input
                   type="range"
@@ -479,7 +479,7 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
                   onChange={e => setValue(e.target.value)}
                   className="w-full accent-emerald-500"
                 />
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-neutral-400">
                   滑块范围：0 - {sliderMax}（步长 {sliderStep}，数字输入可超出范围）
                 </p>
               </div>
@@ -489,14 +489,14 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
                 onChange={e => setValue(e.target.value)}
                 placeholder="配置值，统一以字符串存储"
                 rows={3}
-                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none font-mono"
+                className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none font-mono"
               />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              值类型 <span className="text-xs text-gray-400">（决定滑块步长精度）</span>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              值类型 <span className="text-xs text-neutral-400">（决定滑块步长精度）</span>
             </label>
             {/* 分段选择器：string/int/float 三选一，选中态用 emerald 高亮 */}
             <div className="flex gap-2">
@@ -508,14 +508,14 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
                   className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
                     valueType === vt
                       ? 'bg-emerald-500 text-white border-emerald-500'
-                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                      : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
                   }`}
                 >
                   {vt === 'string' ? '字符串' : vt === 'int' ? '整数' : '浮点'}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-neutral-400 mt-1">
               {valueType === 'float' ? '浮点类配置（如汇率/系数），滑块步长 0.01' :
                valueType === 'int' ? '整数类配置（如积分/超时），滑块步长 1' :
                '字符串配置，数值时可调节滑块'}
@@ -523,13 +523,13 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">配置说明（选填）</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">配置说明（选填）</label>
             <input
               type="text"
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="简要描述配置用途"
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
         </div>
@@ -545,7 +545,7 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
         <div className="flex gap-2 justify-end mt-5">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="px-4 py-2 text-sm text-neutral-600 border border-neutral-300 rounded-lg hover:bg-neutral-50"
           >
             取消
           </button>
