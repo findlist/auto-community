@@ -327,3 +327,34 @@
   - 前端 Chat.test.tsx 18/18 ✅
   - 前端 npm run build ✅（6.80s）
 - 技术债进展：前后端 lint error 全部清零（后端从 bug-check 报告的 35 errors 降至 0，本轮清理最后 2 个；前端从 5 errors 降至 0，本轮清理最后 3 个）
+
+### 最小迭代单元 2：修复前端 react-hooks/exhaustive-deps 警告（8 处 → 0）
+- 修改文件（7 个）：
+  - [client/src/pages/Emergency/ResourceMap.tsx](file:///e:/work/auto-community/client/src/pages/Emergency/ResourceMap.tsx)：cleanup 中 markersRef.current 捕获到局部变量，满足 exhaustive-deps 规则
+  - [client/src/pages/SharedKitchen/GroupOrders.tsx](file:///e:/work/auto-community/client/src/pages/SharedKitchen/GroupOrders.tsx)：mount-only effect 加 eslint-disable 注释（loadOrders 依赖 page/loading，纳入会导致分页后无限重载）
+  - [client/src/pages/SharedKitchen/Orders.tsx](file:///e:/work/auto-community/client/src/pages/SharedKitchen/Orders.tsx)：筛选重载 effect 加 eslint-disable 注释（同上原因）
+  - [client/src/pages/SharedKitchen/index.tsx](file:///e:/work/auto-community/client/src/pages/SharedKitchen/index.tsx)：筛选重载 effect 加 eslint-disable 注释
+  - [client/src/pages/SkillExchange/index.tsx](file:///e:/work/auto-community/client/src/pages/SkillExchange/index.tsx)：筛选重载 effect 加 eslint-disable 注释
+  - [client/src/pages/TimeBank/MyOrders.tsx](file:///e:/work/auto-community/client/src/pages/TimeBank/MyOrders.tsx) + [TimeAccount.tsx](file:///e:/work/auto-community/client/src/pages/TimeBank/TimeAccount.tsx)：认证 effect 纳入稳定的 navigate 依赖，loadOrders/loadAccount 显式排除
+  - [client/src/components/Map/LocationPicker.tsx](file:///e:/work/auto-community/client/src/components/Map/LocationPicker.tsx)：地图初始化 effect 加 eslint-disable 注释（SDK 加载完成后仅初始化一次，位置变化应通过 marker.setPosition 更新而非重建地图）
+  - [client/src/pages/TimeBank/__tests__/MyOrders.test.tsx](file:///e:/work/auto-community/client/src/pages/TimeBank/__tests__/MyOrders.test.tsx)：useNavigate mock 改为返回稳定引用（vi.hoisted 提升 navigateMock），避免每次渲染返回新函数导致组件无限重渲染
+- 设计要点：
+  - 真实 useNavigate 在组件生命周期内引用不变，mock 应保持相同语义
+  - mount-only effect 与筛选重载 effect 中 loadOrders 依赖 page/loading，纳入依赖会导致分页后无限重载，故显式 eslint-disable 并注释设计原因
+  - ResourceMap cleanup 捕获 markersRef.current 到局部变量，因 cleanup 执行时 ref 可能已被其他 effect 修改
+- 验收结果：前端 eslint react-hooks/exhaustive-deps 警告 8 → 0，前端 build ✅
+
+### 最小迭代单元 3：清理后端生产代码 any 类型（59 处）
+- 提交：`83fa1a8 refactor: 收紧后端路由与服务层 any 类型`（已 push origin HEAD）
+- 修改文件（13 个）：
+  - 12 个路由文件（ai/auth/address/admin/emergency/ab-test/kitchen/messages/reports/skills/time-bank/users）：56 处 `Request<Record<string, string>, any, ...Body>` 替换为 `unknown`
+  - [server/src/services/time-bank.service.ts](file:///e:/work/auto-community/server/src/services/time-bank.service.ts)：3 处 `Map<string, any>` 替换为 `Map<string, TimeAccountRow>`
+- 设计原因：
+  - `Request<Params, ResBody, ReqBody>` 中 ResBody 泛型在路由处理器中不使用（响应通过 success/created/paginated 辅助函数发送），`any → unknown` 安全且消除隐式 any 逃逸
+  - 定义 `TimeAccountRow` 接口（与 time_accounts 表列结构对齐），`getOrCreateAccount` 返回类型从隐式 `QueryResultRow` 收紧为 `Promise<TimeAccountRow>`，3 处 `accounts.get()` 加非空断言（getOrCreateAccount 保证返回值，for 循环已写入 key）
+- 验收结果：
+  - 后端 tsc --noEmit ✅（零错误）
+  - 后端 vitest 1445/1445 ✅（8.65s）
+  - 路由目录 `Request<...any,...>` 模式 0 处（原 56 处）
+  - time-bank.service.ts `any` warning 0 处（原 3 处）
+  - 剩余 124 处 `any` warning 属于其他模式（service 层 as any 断言、validator 中间件等），不在本迭代单元范围
