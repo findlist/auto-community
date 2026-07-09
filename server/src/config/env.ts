@@ -98,10 +98,11 @@ export const env = {
   DB_USER: process.env.DB_USER || 'postgres',
   DB_PASSWORD: process.env.DB_PASSWORD as string,
 
-  // Redis配置
+  // Redis配置（共享实例时 community 用 DB 0，emotion 用 DB 1）
   REDIS_HOST: process.env.REDIS_HOST || 'localhost',
   REDIS_PORT: parseInt(process.env.REDIS_PORT || '6379', 10),
   REDIS_PASSWORD: process.env.REDIS_PASSWORD || '',
+  REDIS_DB: parseInt(process.env.REDIS_DB || '0', 10),
 
   // JWT配置
   JWT_SECRET: process.env.JWT_SECRET as string,

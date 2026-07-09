@@ -3,6 +3,7 @@ import { env } from './env';
 import { logger } from '../utils/logger';
 
 // 创建Redis客户端
+// database: 共享 Redis 实例时区分项目（社区默认 DB 0）
 export const redisClient: RedisClientType = createClient({
   socket: {
     host: env.REDIS_HOST,
@@ -13,6 +14,7 @@ export const redisClient: RedisClientType = createClient({
     },
   },
   password: env.REDIS_PASSWORD || undefined,
+  database: env.REDIS_DB ? Number(env.REDIS_DB) : 0,
 });
 
 // 连接事件监听

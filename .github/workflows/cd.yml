@@ -6,7 +6,8 @@
 #   - STAGING_USER / PRODUCTION_USER：SSH 登录用户
 #   - STAGING_SSH_KEY / PRODUCTION_SSH_KEY：SSH 私钥
 #   - STAGING_DEPLOY_PATH / PRODUCTION_DEPLOY_PATH：远程服务器上 docker-compose.prod.yml 所在目录
-#   - 服务器需预装 Docker + Docker Compose，并已放置 docker-compose.prod.yml（使用 image: ghcr.io/...）
+#   - GHCR_OWNER（Variables）：GHCR 命名空间，镜像地址为 ghcr.io/<GHCR_OWNER>/server|client
+#   - 服务器需预装 Docker + Docker Compose，并已放置 docker-compose.prod.yml + .env
 #   - 服务器需已登录 GHCR（echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin）
 name: CD
 
@@ -25,6 +26,13 @@ on:
         options:
           - staging
           - production
+      # 手动生产部署时必须指定镜像版本号（如 1.2.3，不带 v 前缀），与 GHCR 上的 semver tag 对应
+      # tag 推送场景由 github.ref_name 自动提取，无需手动填写
+      version:
+        description: '生产镜像版本号（仅 production 时生效，如 1.2.3）'
+        required: false
+        default: 'latest'
+        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -148,15 +156,18 @@ jobs:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          # 远程执行：拉取最新镜像 → 重启容器 → 清理旧镜像 → 健康检查
+          # 远程执行：拉取镜像 → 重启容器 → 清理旧镜像 → 健康检查
+          # 测试环境统一拉取 latest 标签（默认分支推送自动打 latest），保证始终为最新构建
+          # prod compose 文件使用 image: 字段，必须显式 -f 指定
           script: |
             cd ${{ secrets.STAGING_DEPLOY_PATH }}
-            docker compose pull
-            docker compose up -d --remove-orphans
+            export GHCR_OWNER=${{ vars.GHCR_OWNER || github.repository_owner }}
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
             # 等待服务启动并检查健康状态
             sleep 5
-            docker compose ps
+            docker compose -f docker-compose.prod.yml ps
 
   # ============ 部署到生产环境（需手动批准） ============
   # 依赖测试环境部署成功；打 v* 版本标签或手动选择 production 时触发
@@ -178,10 +189,23 @@ jobs:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.PRODUCTION_USER }}
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          # 生产环境镜像 tag 策略：
+          #   - tag 推送（v1.2.3）：github.ref_name 去除 'v' 前缀 → 1.2.3
+          #   - 手动触发：使用 inputs.version 输入值（默认 latest）
+          # 两种来源互斥，通过条件表达式选择，确保镜像 tag 与 GHCR semver 输出对齐
           script: |
             cd ${{ secrets.PRODUCTION_DEPLOY_PATH }}
-            docker compose pull
-            docker compose up -d --remove-orphans
+            if [ -n "${{ github.event.inputs.version }}" ]; then
+              export SERVER_IMAGE_TAG=${{ github.event.inputs.version }}
+              export CLIENT_IMAGE_TAG=${{ github.event.inputs.version }}
+            else
+              export TAG_NAME=${{ github.ref_name }}
+              export SERVER_IMAGE_TAG=${TAG_NAME#v}
+              export CLIENT_IMAGE_TAG=${TAG_NAME#v}
+            fi
+            export GHCR_OWNER=${{ vars.GHCR_OWNER || github.repository_owner }}
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
             sleep 5
-            docker compose ps
+            docker compose -f docker-compose.prod.yml ps
