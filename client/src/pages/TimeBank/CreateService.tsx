@@ -31,12 +31,7 @@ export default function CreateService() {
     if (!isAuthenticated) navigate("/login");
   }, [isAuthenticated, navigate]);
 
-  if (!isAuthenticated) return null;
-
-  const updateField = (field: string, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-  };
-
+  // 所有 Hooks 必须在 early return 之前调用，否则 Hooks 调用顺序在条件分支间不一致，触发 React 运行时崩溃
   const fieldConfigs = useMemo(() => ({
     title: {
       value: form.title,
@@ -67,6 +62,12 @@ export default function CreateService() {
   }), [form.title, form.category, form.description, form.durationMinutes]);
 
   const { setTouched, getFieldError, validateAll } = useFormValidation(fieldConfigs);
+
+  if (!isAuthenticated) return null;
+
+  const updateField = (field: string, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleSubmit = async () => {
     if (!validateAll() || submitting) return;
