@@ -42,6 +42,10 @@ import { NotFoundError, BadRequestError } from '../../utils/errors';
 
 const mockedQuery = vi.mocked(query);
 
+// 局部类型别名：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需 rows
+// 用 as unknown as DbResult 替代 as unknown as DbResult 以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
+
 beforeEach(() => {
   mockedQuery.mockReset();
 });
@@ -49,10 +53,10 @@ beforeEach(() => {
 describe('admin.service - 用户管理', () => {
   it('getUsers 支持按 search 搜索', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as any)
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
       .mockResolvedValueOnce({
         rows: [{ id: 'u1', phone: '13800000000', nickname: '张三', role: 'user', status: 'active', created_at: new Date(), reputation_score: 80, credit_balance: 100 }],
-      } as any);
+      } as unknown as DbResult);
 
     const result = await adminService.getUsers(1, 20, '张三');
 
@@ -67,7 +71,7 @@ describe('admin.service - 用户管理', () => {
   it('banUser 更新用户状态为 banned', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'u1', status: 'banned' }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.banUser('u1');
 
@@ -76,14 +80,14 @@ describe('admin.service - 用户管理', () => {
   });
 
   it('banUser 用户不存在时抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(adminService.banUser('u-x')).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('unbanUser 更新用户状态为 active', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'u1', status: 'active' }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.unbanUser('u1');
     expect(result.status).toBe('active');
@@ -92,7 +96,7 @@ describe('admin.service - 用户管理', () => {
   it('updateUserRole 更新用户角色', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'u1', role: 'admin' }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.updateUserRole('u1', 'admin');
     expect(result.role).toBe('admin');
@@ -103,10 +107,10 @@ describe('admin.service - 用户管理', () => {
 describe('admin.service - 内容审核', () => {
   it('getContent 按类型查询内容列表', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as any)
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
       .mockResolvedValueOnce({
         rows: [{ id: 's1', title: '技能帖', status: 'active', created_at: new Date(), user_id: 'u1', credit_price: 50 }],
-      } as any);
+      } as unknown as DbResult);
 
     const result = await adminService.getContent('skill', undefined, 1, 20);
 
@@ -118,10 +122,10 @@ describe('admin.service - 内容审核', () => {
 
   it('getContent kitchen 类型使用 price 别名', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as any)
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
       .mockResolvedValueOnce({
         rows: [{ id: 'k1', title: '美食帖', status: 'active', created_at: new Date(), user_id: 'u1', credit_price: 30 }],
-      } as any);
+      } as unknown as DbResult);
 
     const result = await adminService.getContent('kitchen', undefined, 1, 20);
     expect(result.list[0].price).toBe(30);
@@ -130,14 +134,14 @@ describe('admin.service - 内容审核', () => {
   it('updateContentStatus 状态更新成功', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 's1', status: 'rejected' }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.updateContentStatus('skill', 's1', 'rejected');
     expect(result.status).toBe('rejected');
   });
 
   it('updateContentStatus 内容不存在抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(adminService.updateContentStatus('skill', 's-x', 'rejected')).rejects.toBeInstanceOf(NotFoundError);
   });
 });
@@ -156,7 +160,7 @@ describe('admin.service - getContentDetail', () => {
         status: 'active',
         created_at: new Date(),
       }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.getContentDetail('skill', 's1');
 
@@ -167,7 +171,7 @@ describe('admin.service - getContentDetail', () => {
   });
 
   it('内容不存在抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(adminService.getContentDetail('skill', 's-x')).rejects.toBeInstanceOf(NotFoundError);
   });
 });
@@ -176,13 +180,13 @@ describe('admin.service - updateContent', () => {
   it('驼峰字段名应映射为下划线列名（creditPrice → credit_price）', async () => {
     // 第一次校验存在性，第二次实际 UPDATE，第三次返回详情
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ id: 's1' }] } as any) // SELECT id
-      .mockResolvedValueOnce({ rows: [] } as any) // UPDATE
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] } as unknown as DbResult) // SELECT id
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult) // UPDATE
       .mockResolvedValueOnce({
         rows: [{ id: 's1', title: '新标题', description: '', credit_price: 80, images: [], tags: [], address: null, status: 'active', created_at: new Date() }],
-      } as any);
+      } as unknown as DbResult);
 
-    // data 参数不再需要 as any：对象字面量天然可赋给 Record<string, unknown>
+    // data 参数不再需要类型断言：对象字面量天然可赋给 Record<string, unknown>
     await adminService.updateContent('skill', 's1', {
       title: '新标题',
       creditPrice: 80,
@@ -198,11 +202,11 @@ describe('admin.service - updateContent', () => {
 
   it('字段不在白名单时被忽略', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ id: 's1' }] } as any) // SELECT id
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] } as unknown as DbResult) // SELECT id
       // 字段不在白名单 → 没有有效字段 → 走 getById 分支，返回 getContentDetail
       .mockResolvedValueOnce({
         rows: [{ id: 's1', title: '原标题', description: '', credit_price: 50, images: [], tags: [], address: null, status: 'active', created_at: new Date() }],
-      } as any);
+      } as unknown as DbResult);
 
     // 传入白名单外字段（如 user_id 不在 skill.editableFields 中）
     const result = await adminService.updateContent('skill', 's1', {
@@ -215,7 +219,7 @@ describe('admin.service - updateContent', () => {
   });
 
   it('内容不存在抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(
       adminService.updateContent('skill', 's-x', { title: '新标题' }, 'admin-1'),
     ).rejects.toBeInstanceOf(NotFoundError);
@@ -223,7 +227,7 @@ describe('admin.service - updateContent', () => {
 
   it('字段类型不合法（如函数）时抛 BadRequestError', async () => {
     // 内容存在，但字段值类型非法（function 不是 SqlParam 联合成员）
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 's1' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 's1' }] } as unknown as DbResult);
 
     // title 字段为函数，type guard 应拒绝；as unknown as string 仅测试入参类型断言
     await expect(
@@ -232,7 +236,7 @@ describe('admin.service - updateContent', () => {
   });
 
   it('NaN 数值类型不合法时抛 BadRequestError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 's1' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 's1' }] } as unknown as DbResult);
 
     // credit_price 字段为 NaN，type guard 应拒绝（避免 pg 序列化异常）
     await expect(
@@ -243,11 +247,11 @@ describe('admin.service - updateContent', () => {
   it('字符串数组类型字段可正常写入（images/tags）', async () => {
     // 覆盖 string[] 类型的 type guard 通过路径，确保数组字段不被误拒
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ id: 's1' }] } as any) // SELECT id
-      .mockResolvedValueOnce({ rows: [] } as any) // UPDATE
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] } as unknown as DbResult) // SELECT id
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult) // UPDATE
       .mockResolvedValueOnce({
         rows: [{ id: 's1', title: '标题', description: '', credit_price: 50, images: ['a.png', 'b.png'], tags: ['编程'], address: null, status: 'active', created_at: new Date() }],
-      } as any);
+      } as unknown as DbResult);
 
     await adminService.updateContent('skill', 's1', {
       images: ['https://cdn.example.com/a.png', 'https://cdn.example.com/b.png'],
@@ -265,7 +269,7 @@ describe('admin.service - 首页展示图片', () => {
   it('getHomepageImage 返回已配置的图片 URL', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ value: 'https://cdn.example.com/hero.png' }],
-    } as any);
+    } as unknown as DbResult);
 
     const url = await adminService.getHomepageImage();
     expect(url).toBe('https://cdn.example.com/hero.png');
@@ -275,13 +279,13 @@ describe('admin.service - 首页展示图片', () => {
   });
 
   it('getHomepageImage 未配置时返回 null', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     const url = await adminService.getHomepageImage();
     expect(url).toBeNull();
   });
 
   it('setHomepageImage 使用 UPSERT 写入', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     const result = await adminService.setHomepageImage('https://cdn.example.com/hero.png', 'admin-1');
 
@@ -294,6 +298,6 @@ describe('admin.service - 首页展示图片', () => {
 
   it('setHomepageImage URL 为空时抛 BadRequestError', async () => {
     await expect(adminService.setHomepageImage('', 'admin-1')).rejects.toBeInstanceOf(BadRequestError);
-    await expect(adminService.setHomepageImage(null as any, 'admin-1')).rejects.toBeInstanceOf(BadRequestError);
+    await expect(adminService.setHomepageImage(null as unknown as string, 'admin-1')).rejects.toBeInstanceOf(BadRequestError);
   });
 });
