@@ -21,8 +21,9 @@ module.exports = {
   // 忽略编译输出与迁移脚本目录（迁移脚本由 node-pg-migrate 单独管理）
   ignorePatterns: ['dist/', 'node_modules/', 'src/migrations/'],
   rules: {
-    // 未使用变量告警，避免阻塞既有代码
-    'no-unused-vars': 'warn',
+    // 关闭原生 no-unused-vars：原生规则不理解 TS 类型标注，会与 TS 版本规则产生重复告警
+    // TypeScript 项目统一使用 @typescript-eslint/no-unused-vars 接管未使用变量检查
+    'no-unused-vars': 'off',
     // 未使用变量告警（TS 版本）：忽略以 _ 开头的参数，与 TS 编译器 noUnusedParameters 行为一致
     // 便于 Express 错误处理中间件等必须保留参数签名但参数未使用的场景
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
