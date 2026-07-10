@@ -51,6 +51,11 @@ import { env } from '../../config/env';
 
 const mockedQuery = vi.mocked(query);
 
+// 局部类型别名：避免每个 mock 调用处重复书写冗长的泛型
+// 设计原因：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需提供 rows，
+// 用 as unknown as DbResult 替代 as any 以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
+
 // 构造 Express 请求/响应/next 的辅助函数
 function createReqRes(authHeader?: string) {
   const req = {
@@ -59,6 +64,14 @@ function createReqRes(authHeader?: string) {
   const res = {} as Response;
   const next = vi.fn() as unknown as NextFunction;
   return { req, res, next };
+}
+
+// 提取 next 被调用时传入的错误对象
+// 设计原因：vi.mocked(next).mock.calls[0][0] 的类型为 NextFunction 参数类型，
+// Express NextFunction 签名包含 next('route') 路由跳转字面量，类型推断为 "route"，
+// 需断言为 Error 才能访问 .message 属性。此处集中断言避免每处重复书写
+function getNextError(next: NextFunction): Error {
+  return vi.mocked(next).mock.calls[0][0] as unknown as Error;
 }
 
 // 生成一个有效的 JWT（用于测试通过场景）
@@ -80,7 +93,7 @@ describe('authenticate 中间件 - 权限校验', () => {
     await authenticate(req, res, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-    const err = (next as any).mock.calls[0][0];
+    const err = getNextError(next);
     expect(err).toBeInstanceOf(UnauthorizedError);
     expect(err.message).toBe('未提供认证令牌');
   });
@@ -89,7 +102,7 @@ describe('authenticate 中间件 - 权限校验', () => {
     const { req, res, next } = createReqRes('Basic abc123');
     await authenticate(req, res, next);
 
-    const err = (next as any).mock.calls[0][0];
+    const err = getNextError(next);
     expect(err).toBeInstanceOf(UnauthorizedError);
     expect(err.message).toBe('认证令牌格式错误');
   });
@@ -98,7 +111,7 @@ describe('authenticate 中间件 - 权限校验', () => {
     const { req, res, next } = createReqRes('Bearer ');
     await authenticate(req, res, next);
 
-    const err = (next as any).mock.calls[0][0];
+    const err = getNextError(next);
     expect(err).toBeInstanceOf(UnauthorizedError);
     expect(err.message).toBe('认证令牌为空');
   });
@@ -107,7 +120,7 @@ describe('authenticate 中间件 - 权限校验', () => {
     const { req, res, next } = createReqRes('Bearer invalid.token.here');
     await authenticate(req, res, next);
 
-    const err = (next as any).mock.calls[0][0];
+    const err = getNextError(next);
     expect(err).toBeInstanceOf(UnauthorizedError);
     expect(err.message).toBe('无效的认证令牌');
   });
@@ -121,7 +134,7 @@ describe('authenticate 中间件 - 权限校验', () => {
     const { req, res, next } = createReqRes(`Bearer ${token}`);
     await authenticate(req, res, next);
 
-    const err = (next as any).mock.calls[0][0];
+    const err = getNextError(next);
     expect(err).toBeInstanceOf(UnauthorizedError);
     expect(err.message).toBe('认证令牌已失效');
   });
@@ -130,12 +143,12 @@ describe('authenticate 中间件 - 权限校验', () => {
     const token = makeValidToken({ id: 'user-1', nickname: 'tester' });
     mockedQuery.mockResolvedValueOnce({
       rows: [{ deleted_at: null, status: 'disabled' }],
-    } as any);
+    } as unknown as DbResult);
 
     const { req, res, next } = createReqRes(`Bearer ${token}`);
     await authenticate(req, res, next);
 
-    const err = (next as any).mock.calls[0][0];
+    const err = getNextError(next);
     expect(err).toBeInstanceOf(UnauthorizedError);
     expect(err.message).toBe('用户账号已被禁用或删除');
   });
@@ -144,24 +157,24 @@ describe('authenticate 中间件 - 权限校验', () => {
     const token = makeValidToken({ id: 'user-1', nickname: 'tester' });
     mockedQuery.mockResolvedValueOnce({
       rows: [{ deleted_at: new Date(), status: 'active' }],
-    } as any);
+    } as unknown as DbResult);
 
     const { req, res, next } = createReqRes(`Bearer ${token}`);
     await authenticate(req, res, next);
 
-    const err = (next as any).mock.calls[0][0];
+    const err = getNextError(next);
     expect(err).toBeInstanceOf(UnauthorizedError);
     expect(err.message).toBe('用户账号已被禁用或删除');
   });
 
   it('用户不存在（rows 为空）应调用 next(UnauthorizedError)', async () => {
     const token = makeValidToken({ id: 'user-1', nickname: 'tester' });
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     const { req, res, next } = createReqRes(`Bearer ${token}`);
     await authenticate(req, res, next);
 
-    const err = (next as any).mock.calls[0][0];
+    const err = getNextError(next);
     expect(err).toBeInstanceOf(UnauthorizedError);
     expect(err.message).toBe('用户账号已被禁用或删除');
   });
@@ -170,7 +183,7 @@ describe('authenticate 中间件 - 权限校验', () => {
     const token = makeValidToken({ id: 'user-1', nickname: 'tester' });
     mockedQuery.mockResolvedValueOnce({
       rows: [{ deleted_at: null, status: 'active' }],
-    } as any);
+    } as unknown as DbResult);
 
     const { req, res, next } = createReqRes(`Bearer ${token}`);
     await authenticate(req, res, next);
@@ -188,7 +201,7 @@ describe('requireRole 中间件 - 角色校验', () => {
     const middleware = requireRole('admin');
     await middleware(req, res, next);
 
-    const err = (next as any).mock.calls[0][0];
+    const err = getNextError(next);
     expect(err).toBeInstanceOf(UnauthorizedError);
     expect(err.message).toBe('未登录');
   });
@@ -196,12 +209,12 @@ describe('requireRole 中间件 - 角色校验', () => {
   it('用户不存在应调用 next(UnauthorizedError)', async () => {
     const { req, res, next } = createReqRes();
     req.user = { id: 'user-1', nickname: 'tester' };
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     const middleware = requireRole('admin');
     await middleware(req, res, next);
 
-    const err = (next as any).mock.calls[0][0];
+    const err = getNextError(next);
     expect(err).toBeInstanceOf(UnauthorizedError);
     expect(err.message).toBe('用户不存在');
   });
@@ -209,12 +222,12 @@ describe('requireRole 中间件 - 角色校验', () => {
   it('角色不匹配应调用 next(ForbiddenError)', async () => {
     const { req, res, next } = createReqRes();
     req.user = { id: 'user-1', nickname: 'tester' };
-    mockedQuery.mockResolvedValueOnce({ rows: [{ role: 'user' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ role: 'user' }] } as unknown as DbResult);
 
     const middleware = requireRole('admin');
     await middleware(req, res, next);
 
-    const err = (next as any).mock.calls[0][0];
+    const err = getNextError(next);
     expect(err).toBeInstanceOf(ForbiddenError);
     expect(err.message).toBe('权限不足');
   });
@@ -222,7 +235,7 @@ describe('requireRole 中间件 - 角色校验', () => {
   it('角色匹配应调用 next（无错误）', async () => {
     const { req, res, next } = createReqRes();
     req.user = { id: 'user-1', nickname: 'tester' };
-    mockedQuery.mockResolvedValueOnce({ rows: [{ role: 'admin' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ role: 'admin' }] } as unknown as DbResult);
 
     const middleware = requireRole('admin', 'super_admin');
     await middleware(req, res, next);
@@ -275,7 +288,7 @@ describe('tokenBlacklist - Redis 化黑名单（Task 10）', () => {
 describe('generateAccessToken - JWT 生成', () => {
   it('应生成包含 payload 的有效 JWT', () => {
     const token = generateAccessToken({ id: 'user-1', nickname: 'tester' });
-    const decoded = jwt.verify(token, env.JWT_SECRET) as any;
+    const decoded = jwt.verify(token, env.JWT_SECRET) as unknown as jwt.JwtPayload;
     expect(decoded.id).toBe('user-1');
     expect(decoded.nickname).toBe('tester');
     // 应包含 exp 字段
