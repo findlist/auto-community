@@ -32,6 +32,12 @@ import { BadRequestError } from '../../utils/errors';
 
 const mockedQuery = vi.mocked(query);
 
+// 局部类型别名：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需 rows
+// 用 as unknown as DbResult 替代显式 any 断言以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
+// 内容类型联合，与 admin.service 内部 ContentType 对齐，用于非法字面量测试入参
+type ContentType = 'skill' | 'kitchen' | 'time_bank' | 'emergency';
+
 beforeEach(() => {
   mockedQuery.mockReset();
 });
@@ -53,11 +59,11 @@ describe('admin.service - 批量封禁 batchBanUsers', () => {
         { id: 'user-a', role: 'user' },
         { id: 'user-b', role: 'user' },
       ],
-    } as any);
+    } as unknown as DbResult);
     // 第二次 query：UPDATE 返回成功
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'user-a' }, { id: 'user-b' }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.batchBanUsers(['user-a', 'user-a', 'user-b'], 'operator-1');
 
@@ -72,8 +78,8 @@ describe('admin.service - 批量封禁 batchBanUsers', () => {
         { id: 'user-a', role: 'user' },
         { id: 'admin-x', role: 'admin' },
       ],
-    } as any);
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'user-a' }] } as any);
+    } as unknown as DbResult);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'user-a' }] } as unknown as DbResult);
 
     const result = await adminService.batchBanUsers(['user-a', 'admin-x'], 'operator-1');
 
@@ -84,7 +90,7 @@ describe('admin.service - 批量封禁 batchBanUsers', () => {
   it('跳过操作者自身，放入 skippedSelfId', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'operator-1', role: 'admin' }],
-    } as any);
+    } as unknown as DbResult);
     // 全部跳过时不应触发第二次 UPDATE
     const result = await adminService.batchBanUsers(['operator-1'], 'operator-1');
 
@@ -99,7 +105,7 @@ describe('admin.service - 批量封禁 batchBanUsers', () => {
         { id: 'admin-x', role: 'admin' },
         { id: 'admin-y', role: 'admin' },
       ],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.batchBanUsers(['admin-x', 'admin-y'], 'operator-1');
 
@@ -114,9 +120,9 @@ describe('admin.service - 批量封禁 batchBanUsers', () => {
         { id: 'user-a', role: 'user' },
         { id: 'user-b', role: 'user' },
       ],
-    } as any);
+    } as unknown as DbResult);
     // UPDATE 只返回 1 个（user-b 已封禁，WHERE status != 'banned' 命中失败）
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'user-a' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'user-a' }] } as unknown as DbResult);
 
     const result = await adminService.batchBanUsers(['user-a', 'user-b'], 'operator-1');
 
@@ -125,8 +131,8 @@ describe('admin.service - 批量封禁 batchBanUsers', () => {
   });
 
   it('SQL 使用 WHERE id = ANY($1) 且 status != banned', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'user-a', role: 'user' }] } as any);
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'user-a' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'user-a', role: 'user' }] } as unknown as DbResult);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'user-a' }] } as unknown as DbResult);
 
     await adminService.batchBanUsers(['user-a'], 'operator-1');
 
@@ -150,7 +156,7 @@ describe('admin.service - 批量解封 batchUnbanUsers', () => {
   it('正常解封返回成功与失败明细', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'user-a' }, { id: 'user-c' }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.batchUnbanUsers(['user-a', 'user-b', 'user-c']);
 
@@ -159,7 +165,7 @@ describe('admin.service - 批量解封 batchUnbanUsers', () => {
   });
 
   it('SQL 仅解封 status=banned 的用户', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'user-a' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'user-a' }] } as unknown as DbResult);
 
     await adminService.batchUnbanUsers(['user-a']);
 
@@ -173,7 +179,7 @@ describe('admin.service - 批量解封 batchUnbanUsers', () => {
 describe('admin.service - 批量内容状态更新 batchUpdateContentStatus', () => {
   it('无效内容类型抛 BadRequestError', async () => {
     await expect(
-      adminService.batchUpdateContentStatus('invalid' as any, ['id-1'], 'active'),
+      adminService.batchUpdateContentStatus('invalid' as unknown as ContentType, ['id-1'], 'active'),
     ).rejects.toBeInstanceOf(BadRequestError);
     expect(mockedQuery).not.toHaveBeenCalled();
   });
@@ -194,7 +200,7 @@ describe('admin.service - 批量内容状态更新 batchUpdateContentStatus', ()
   it('正常更新返回成功与失败明细', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'post-1' }, { id: 'post-3' }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.batchUpdateContentStatus('skill', ['post-1', 'post-2', 'post-3'], 'inactive');
 
@@ -203,7 +209,7 @@ describe('admin.service - 批量内容状态更新 batchUpdateContentStatus', ()
   });
 
   it('SQL 使用对应表名（skill → skill_posts）', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'post-1' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'post-1' }] } as unknown as DbResult);
 
     await adminService.batchUpdateContentStatus('skill', ['post-1'], 'active');
 
@@ -214,7 +220,7 @@ describe('admin.service - 批量内容状态更新 batchUpdateContentStatus', ()
   });
 
   it('kitchen 类型使用 kitchen_posts 表', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'kp-1' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'kp-1' }] } as unknown as DbResult);
 
     await adminService.batchUpdateContentStatus('kitchen', ['kp-1'], 'active');
 
@@ -223,7 +229,7 @@ describe('admin.service - 批量内容状态更新 batchUpdateContentStatus', ()
   });
 
   it('time_bank 类型使用 time_services 表', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'ts-1' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'ts-1' }] } as unknown as DbResult);
 
     await adminService.batchUpdateContentStatus('time_bank', ['ts-1'], 'inactive');
 
@@ -232,7 +238,7 @@ describe('admin.service - 批量内容状态更新 batchUpdateContentStatus', ()
   });
 
   it('emergency 类型使用 emergency_requests 表', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'er-1' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'er-1' }] } as unknown as DbResult);
 
     await adminService.batchUpdateContentStatus('emergency', ['er-1'], 'inactive');
 
@@ -241,7 +247,7 @@ describe('admin.service - 批量内容状态更新 batchUpdateContentStatus', ()
   });
 
   it('去重后只处理唯一 ID', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'post-1' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'post-1' }] } as unknown as DbResult);
 
     const result = await adminService.batchUpdateContentStatus('skill', ['post-1', 'post-1'], 'active');
 

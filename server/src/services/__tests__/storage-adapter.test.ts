@@ -67,6 +67,10 @@ import {
   batchPutWithRollback,
 } from '../storage-adapter';
 
+// 局部类型别名：OssStorage 构造函数首参为 OSS 客户端实例，测试 mock 只需 put/delete 方法
+// 用 as unknown as OssClient 替代显式 any 断言以消除 no-explicit-any warning
+type OssClient = ConstructorParameters<typeof OssStorage>[0];
+
 beforeEach(() => {
   // 每个用例重置适配器缓存，避免单例污染跨用例
   __resetStorageAdapterForTest();
@@ -153,30 +157,30 @@ describe('LocalStorage.delete', () => {
 describe('OssStorage', () => {
   it('put 调用 client.put 传入 key 和 buffer', async () => {
     const mockClient = { put: vi.fn().mockResolvedValue(undefined), delete: vi.fn() };
-    const storage = new OssStorage(mockClient as any, 'bucket', 'oss-cn-hangzhou.aliyuncs.com', '');
+    const storage = new OssStorage(mockClient as unknown as OssClient, 'bucket', 'oss-cn-hangzhou.aliyuncs.com', '');
     const buffer = Buffer.from('test');
     await storage.put('2026-07-06/abc.jpg', buffer);
     expect(mockClient.put).toHaveBeenCalledWith('2026-07-06/abc.jpg', buffer);
   });
 
   it('getUrl 优先使用 customDomain 拼接 CDN 域名', () => {
-    const storage = new OssStorage({} as any, 'bucket', 'oss-cn-hangzhou.aliyuncs.com', 'cdn.example.com');
+    const storage = new OssStorage({} as unknown as OssClient, 'bucket', 'oss-cn-hangzhou.aliyuncs.com', 'cdn.example.com');
     expect(storage.getUrl('abc.jpg')).toBe('https://cdn.example.com/abc.jpg');
   });
 
   it('getUrl 无 customDomain 时拼接 bucket.endpoint 默认域名', () => {
-    const storage = new OssStorage({} as any, 'my-bucket', 'oss-cn-hangzhou.aliyuncs.com', '');
+    const storage = new OssStorage({} as unknown as OssClient, 'my-bucket', 'oss-cn-hangzhou.aliyuncs.com', '');
     expect(storage.getUrl('abc.jpg')).toBe('https://my-bucket.oss-cn-hangzhou.aliyuncs.com/abc.jpg');
   });
 
   it('getUrl 去除 endpoint 的 https:// 前缀，统一拼 HTTPS', () => {
-    const storage = new OssStorage({} as any, 'my-bucket', 'https://oss-cn-hangzhou.aliyuncs.com', '');
+    const storage = new OssStorage({} as unknown as OssClient, 'my-bucket', 'https://oss-cn-hangzhou.aliyuncs.com', '');
     expect(storage.getUrl('abc.jpg')).toBe('https://my-bucket.oss-cn-hangzhou.aliyuncs.com/abc.jpg');
   });
 
   it('delete 调用 client.delete 传入 key', async () => {
     const mockClient = { put: vi.fn(), delete: vi.fn().mockResolvedValue(undefined) };
-    const storage = new OssStorage(mockClient as any, 'bucket', 'endpoint', '');
+    const storage = new OssStorage(mockClient as unknown as OssClient, 'bucket', 'endpoint', '');
     await storage.delete('abc.jpg');
     expect(mockClient.delete).toHaveBeenCalledWith('abc.jpg');
   });
@@ -186,7 +190,7 @@ describe('OssStorage', () => {
       put: vi.fn(),
       delete: vi.fn().mockRejectedValue({ code: 'NoSuchKey' }),
     };
-    const storage = new OssStorage(mockClient as any, 'bucket', 'endpoint', '');
+    const storage = new OssStorage(mockClient as unknown as OssClient, 'bucket', 'endpoint', '');
     await expect(storage.delete('missing.jpg')).resolves.toBeUndefined();
   });
 
@@ -195,7 +199,7 @@ describe('OssStorage', () => {
       put: vi.fn(),
       delete: vi.fn().mockRejectedValue(new Error('network error')),
     };
-    const storage = new OssStorage(mockClient as any, 'bucket', 'endpoint', '');
+    const storage = new OssStorage(mockClient as unknown as OssClient, 'bucket', 'endpoint', '');
     await expect(storage.delete('abc.jpg')).rejects.toThrow('network error');
   });
 });

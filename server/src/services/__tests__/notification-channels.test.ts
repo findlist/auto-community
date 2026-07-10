@@ -342,7 +342,7 @@ describe('emailChannel.send - 邮件通道', () => {
     mockEnv.SMTP_USER = 'user';
     mockEnv.SMTP_PASS = 'pass';
     mockEnv.SMTP_FROM = 'noreply@example.com';
-    mockTransporter.sendMail.mockResolvedValue({ messageId: 'msg-1' } as any);
+    mockTransporter.sendMail.mockResolvedValue({ messageId: 'msg-1' });
 
     await emailChannel.send({
       userId: 'user-1',
@@ -379,7 +379,7 @@ describe('emailChannel.send - 邮件通道', () => {
     mockEnv.SMTP_USER = 'fallback@example.com';
     mockEnv.SMTP_PASS = 'pass';
     mockEnv.SMTP_FROM = '';
-    mockTransporter.sendMail.mockResolvedValue({} as any);
+    mockTransporter.sendMail.mockResolvedValue({});
 
     await emailChannel.send({
       userId: 'user-1',
@@ -402,7 +402,7 @@ describe('emailChannel.send - 邮件通道', () => {
     mockEnv.SMTP_PORT = 465;
     mockEnv.SMTP_USER = 'user';
     mockEnv.SMTP_PASS = 'pass';
-    mockTransporter.sendMail.mockResolvedValue({} as any);
+    mockTransporter.sendMail.mockResolvedValue({});
 
     await emailChannel.send({
       userId: 'user-1',
@@ -424,7 +424,7 @@ describe('emailChannel.send - 邮件通道', () => {
     mockEnv.SMTP_PORT = 25;
     mockEnv.SMTP_USER = '';
     mockEnv.SMTP_PASS = '';
-    mockTransporter.sendMail.mockResolvedValue({} as any);
+    mockTransporter.sendMail.mockResolvedValue({});
 
     await emailChannel.send({
       userId: 'user-1',
@@ -444,7 +444,7 @@ describe('emailChannel.send - 邮件通道', () => {
     mockEnv.SMTP_HOST = 'smtp.example.com';
     mockEnv.SMTP_USER = 'user';
     mockEnv.SMTP_PASS = 'pass';
-    mockTransporter.sendMail.mockResolvedValue({} as any);
+    mockTransporter.sendMail.mockResolvedValue({});
 
     await emailChannel.send({
       userId: 'user-1',
@@ -482,7 +482,7 @@ describe('emailChannel.send - 邮件通道', () => {
     mockEnv.SMTP_HOST = 'smtp.example.com';
     mockEnv.SMTP_USER = 'user';
     mockEnv.SMTP_PASS = 'pass';
-    mockTransporter.sendMail.mockResolvedValue({} as any);
+    mockTransporter.sendMail.mockResolvedValue({});
 
     await emailChannel.send({ userId: 'u1', type: 'system', title: 'A', userEmail: 'a@b.com' });
     await emailChannel.send({ userId: 'u2', type: 'system', title: 'B', userEmail: 'c@d.com' });
@@ -537,7 +537,7 @@ describe('smsChannel.send - 短信通道', () => {
     mockEnv.SMS_ACCESS_SECRET = 'sk';
     mockEnv.SMS_SIGN_NAME = '邻里圈';
     mockEnv.SMS_TEMPLATE_CODE = 'SMS_123456';
-    mockSmsClient.sendSms.mockResolvedValue({ body: { code: 'OK' } } as any);
+    mockSmsClient.sendSms.mockResolvedValue({ body: { code: 'OK' } });
 
     await smsChannel.send({
       userId: 'user-1',
@@ -591,7 +591,7 @@ describe('smsChannel.send - 短信通道', () => {
     mockEnv.SMS_TENCENT_SDK_APP_ID = '1400006666';
     mockEnv.SMS_TENCENT_SIGN_NAME = '邻里圈';
     mockEnv.SMS_TENCENT_TEMPLATE_ID = '100001';
-    mockTencentSmsClient.SendSms.mockResolvedValue({ SendStatusSet: [{ Code: 'Ok' }] } as any);
+    mockTencentSmsClient.SendSms.mockResolvedValue({ SendStatusSet: [{ Code: 'Ok' }] });
 
     await smsChannel.send({
       userId: 'user-1',
@@ -667,7 +667,7 @@ describe('smsChannel.send - 短信通道', () => {
     mockEnv.SMS_TENCENT_SDK_APP_ID = '1400006666';
     mockEnv.SMS_TENCENT_SIGN_NAME = '邻里圈';
     mockEnv.SMS_TENCENT_TEMPLATE_ID = '100001';
-    mockTencentSmsClient.SendSms.mockResolvedValue({} as any);
+    mockTencentSmsClient.SendSms.mockResolvedValue({});
 
     await smsChannel.send({ userId: 'u1', type: 'system', title: 'A', userPhone: '13800000001' });
     await smsChannel.send({ userId: 'u2', type: 'system', title: 'B', userPhone: '13800000002' });
@@ -701,7 +701,7 @@ describe('smsChannel.send - 短信通道', () => {
     mockEnv.SMS_ACCESS_SECRET = 'sk';
     mockEnv.SMS_SIGN_NAME = '邻里圈';
     mockEnv.SMS_TEMPLATE_CODE = 'SMS_123456';
-    mockSmsClient.sendSms.mockResolvedValue({} as any);
+    mockSmsClient.sendSms.mockResolvedValue({});
 
     await smsChannel.send({ userId: 'u1', type: 'system', title: 'A', userPhone: '13800000001' });
     await smsChannel.send({ userId: 'u2', type: 'system', title: 'B', userPhone: '13800000002' });

@@ -19,6 +19,7 @@ vi.mock('../../config/database', () => ({
   pool: {},
 }));
 
+import type { PoolClient } from 'pg';
 import { creditService } from '../credit.service';
 import { query } from '../../config/database';
 import { InsufficientCreditError } from '../../utils/errors';
@@ -30,7 +31,7 @@ function createMockClient(initialBalance: number) {
   const client = {
     balance,
     // 记录所有 SQL 调用，便于断言
-    async query(text: string, params: any[] = []) {
+    async query(text: string, params: unknown[] = []) {
       calls.push(text);
       // SELECT ... FOR UPDATE 返回当前余额
       if (text.includes('SELECT credit_balance FROM users WHERE id = $1 FOR UPDATE')) {
@@ -42,12 +43,12 @@ function createMockClient(initialBalance: number) {
       }
       // UPDATE 扣减
       if (text.startsWith('UPDATE users SET credit_balance = credit_balance - $1')) {
-        balance = balance - params[0];
+        balance = balance - (params[0] as number);
         return { rows: [] };
       }
       // UPDATE 增加（带 RETURNING）
       if (text.startsWith('UPDATE users SET credit_balance = credit_balance + $1')) {
-        balance = balance + params[0];
+        balance = balance + (params[0] as number);
         return { rows: [{ credit_balance: balance }] };
       }
       // INSERT 流水
@@ -71,6 +72,10 @@ function createMockClient(initialBalance: number) {
 
 const mockedQuery = vi.mocked(query);
 
+// 局部类型别名：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需 rows
+// 用 as unknown as DbResult 替代显式 any 断言以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
+
 beforeEach(() => {
   mockedQuery.mockReset();
 });
@@ -79,7 +84,7 @@ describe('credit.service - freezeCredits', () => {
   it('余额充足时扣减并记录 freeze 流水', async () => {
     const client = createMockClient(100);
     const result = await creditService.freezeCredits(
-      client as any,
+      client as unknown as PoolClient,
       'user-1',
       30,
       '测试冻结',
@@ -102,14 +107,14 @@ describe('credit.service - freezeCredits', () => {
     // 余额 30，冻结 30 后 = 0 < MIN_BALANCE(10)
     const client = createMockClient(30);
     await expect(
-      creditService.freezeCredits(client as any, 'user-1', 30, '测试冻结'),
+      creditService.freezeCredits(client as unknown as PoolClient, 'user-1', 30, '测试冻结'),
     ).rejects.toBeInstanceOf(InsufficientCreditError);
   });
 
   it('冻结金额超过余额应抛 InsufficientCreditError', async () => {
     const client = createMockClient(20);
     await expect(
-      creditService.freezeCredits(client as any, 'user-1', 50, '测试冻结'),
+      creditService.freezeCredits(client as unknown as PoolClient, 'user-1', 50, '测试冻结'),
     ).rejects.toBeInstanceOf(InsufficientCreditError);
   });
 
@@ -117,14 +122,14 @@ describe('credit.service - freezeCredits', () => {
     const client = createMockClient(100);
     // 通过 spy 拦截 INSERT 调用，校验参数
     const insertSpy = vi.spyOn(client, 'query');
-    await creditService.freezeCredits(client as any, 'user-1', 30, '无订单关联');
+    await creditService.freezeCredits(client as unknown as PoolClient, 'user-1', 30, '无订单关联');
     const insertCall = insertSpy.mock.calls.find(
       ([sql]) => typeof sql === 'string' && sql.startsWith('INSERT INTO credit_transactions'),
     );
     expect(insertCall).toBeDefined();
     // 参数顺序：[userId, -amount, newBalance, relatedOrderId, referenceType, reason]
     // insertCall[1] 是 params 数组（可选参数，需断言非空）
-    const insertParams = insertCall![1] as any[];
+    const insertParams = insertCall![1] as unknown[];
     expect(insertParams[3]).toBeNull();
   });
 });
@@ -133,7 +138,7 @@ describe('credit.service - unfreezeCredits', () => {
   it('解冻应增加余额并记录 unfreeze 流水', async () => {
     const client = createMockClient(70);
     const result = await creditService.unfreezeCredits(
-      client as any,
+      client as unknown as PoolClient,
       'user-1',
       30,
       '测试解冻',
@@ -157,7 +162,7 @@ describe('credit.service - settleCredits', () => {
     let sellerBalance = 50;
     const calls: string[] = [];
     const client = {
-      async query(text: string, params: any[] = []) {
+      async query(text: string, params: unknown[] = []) {
         calls.push(text);
         // 读取买家余额
         if (text === 'SELECT credit_balance FROM users WHERE id = $1' && params[0] === 'buyer-1') {
@@ -165,7 +170,7 @@ describe('credit.service - settleCredits', () => {
         }
         // 卖家余额增加（带 RETURNING）
         if (text.startsWith('UPDATE users SET credit_balance = credit_balance + $1 WHERE id = $2 RETURNING credit_balance')) {
-          sellerBalance = sellerBalance + params[0];
+          sellerBalance = sellerBalance + (params[0] as number);
           return { rows: [{ credit_balance: sellerBalance }] };
         }
         return { rows: [] };
@@ -182,7 +187,7 @@ describe('credit.service - settleCredits', () => {
     };
 
     const result = await creditService.settleCredits(
-      client as any,
+      client as unknown as PoolClient,
       'buyer-1',
       'seller-1',
       30,
@@ -204,7 +209,7 @@ describe('credit.service - deductCredits', () => {
   it('余额充足时扣减并记录 spend 流水', async () => {
     const client = createMockClient(100);
     const result = await creditService.deductCredits(
-      client as any,
+      client as unknown as PoolClient,
       'user-1',
       30,
       '测试扣减',
@@ -216,14 +221,14 @@ describe('credit.service - deductCredits', () => {
   it('余额不足且不允许负数时应抛 InsufficientCreditError', async () => {
     const client = createMockClient(20);
     await expect(
-      creditService.deductCredits(client as any, 'user-1', 50, '测试扣减'),
+      creditService.deductCredits(client as unknown as PoolClient, 'user-1', 50, '测试扣减'),
     ).rejects.toBeInstanceOf(InsufficientCreditError);
   });
 
   it('allowNegative=true 时允许扣到负数（用于卖家负债扣回）', async () => {
     const client = createMockClient(20);
     const result = await creditService.deductCredits(
-      client as any,
+      client as unknown as PoolClient,
       'user-1',
       50,
       '负债扣回',
@@ -239,7 +244,7 @@ describe('credit.service - earnCredits', () => {
   it('增加余额并记录 earn 流水', async () => {
     const client = createMockClient(100);
     const result = await creditService.earnCredits(
-      client as any,
+      client as unknown as PoolClient,
       'user-1',
       50,
       '测试增加',
@@ -252,7 +257,7 @@ describe('credit.service - earnCredits', () => {
 
 describe('credit.service - checkBalance / getCreditBalance', () => {
   it('checkBalance 返回余额与充足性标志', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ credit_balance: 100 }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ credit_balance: 100 }] } as unknown as DbResult);
     const result = await creditService.checkBalance('user-1', 30);
     expect(result.available).toBe(100);
     // 100 - 30 = 70 >= MIN_BALANCE(10)
@@ -260,14 +265,14 @@ describe('credit.service - checkBalance / getCreditBalance', () => {
   });
 
   it('checkBalance 扣减后低于 MIN_BALANCE 时 sufficient=false', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ credit_balance: 30 }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ credit_balance: 30 }] } as unknown as DbResult);
     const result = await creditService.checkBalance('user-1', 30);
     // 30 - 30 = 0 < MIN_BALANCE(10)
     expect(result.sufficient).toBe(false);
   });
 
   it('getCreditBalance 返回当前积分余额', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ credit_balance: 250 }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ credit_balance: 250 }] } as unknown as DbResult);
     const result = await creditService.getCreditBalance('user-1');
     expect(result.creditBalance).toBe(250);
   });

@@ -32,6 +32,10 @@ import { BadRequestError, NotFoundError } from '../../utils/errors';
 
 const mockedQuery = vi.mocked(query);
 
+// 局部类型别名：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需 rows/rowCount
+// 用 as unknown as DbResult 替代显式 any 断言以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
+
 beforeEach(() => {
   mockedQuery.mockReset();
 });
@@ -50,7 +54,7 @@ describe('admin.service - 系统配置 listSettings', () => {
           updated_at: new Date('2026-07-03'),
         },
       ],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.listSettings();
 
@@ -72,7 +76,7 @@ describe('admin.service - 系统配置 listSettings', () => {
   });
 
   it('空结果集返回空数组', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     const result = await adminService.listSettings();
     expect(result).toEqual([]);
   });
@@ -91,7 +95,7 @@ describe('admin.service - 系统配置 getSetting', () => {
           updated_at: new Date('2026-07-02'),
         },
       ],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.getSetting('skill_publish_reward');
 
@@ -103,14 +107,14 @@ describe('admin.service - 系统配置 getSetting', () => {
   });
 
   it('配置不存在时抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(adminService.getSetting('nonexistent_key')).rejects.toBeInstanceOf(NotFoundError);
   });
 });
 
 describe('admin.service - 系统配置 setSetting', () => {
   it('键名格式合法时执行 upsert，不传 valueType 时绑定 null 保留原类型', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     // 不传 valueType：resolvedValueType 绑定 null，让 COALESCE 保留原类型（编辑场景）
     // 新增场景由 INSERT VALUES 的 COALESCE($3, 'string') 兜底默认类型
@@ -129,7 +133,7 @@ describe('admin.service - 系统配置 setSetting', () => {
   });
 
   it('description 传 undefined 时绑定 null，valueType 缺省也绑定 null', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await adminService.setSetting('daily_earn_limit', '150', undefined, 'admin-1');
 
@@ -140,7 +144,7 @@ describe('admin.service - 系统配置 setSetting', () => {
   });
 
   it('显式传入合法 valueType（int）时写入对应类型', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await adminService.setSetting('order_auto_expire_hours', '24', '订单自动过期小时数', 'admin-1', 'int');
 
@@ -149,7 +153,7 @@ describe('admin.service - 系统配置 setSetting', () => {
   });
 
   it('显式传入合法 valueType（float）时写入对应类型', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await adminService.setSetting('exchange_rate', '0.85', '时间币兑换汇率', 'admin-1', 'float');
 
@@ -158,14 +162,14 @@ describe('admin.service - 系统配置 setSetting', () => {
 
   it('非法 valueType 抛 BadRequestError，不触发数据库写入', async () => {
     await expect(
-      adminService.setSetting('valid_key', 'value', undefined, 'admin-1', 'boolean' as any),
+      adminService.setSetting('valid_key', 'value', undefined, 'admin-1', 'boolean'),
     ).rejects.toBeInstanceOf(BadRequestError);
     // 校验失败应短路在白名单检查，不触发 SQL
     expect(mockedQuery).not.toHaveBeenCalled();
   });
 
   it('setSetting 返回值含 valueType 字段', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     const result = await adminService.setSetting('exchange_rate', '0.85', '汇率', 'admin-1', 'float');
 
@@ -173,7 +177,7 @@ describe('admin.service - 系统配置 setSetting', () => {
   });
 
   it('不传 valueType 时返回值 valueType 兜底为 string（与 DB 实际值一致）', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     // 缺省场景：resolvedValueType 为 null，返回值用 DEFAULT_VALUE_TYPE 兜底
     const result = await adminService.setSetting('new_config', 'value', '描述', 'admin-1');
@@ -224,12 +228,12 @@ describe('admin.service - 系统配置 deleteSetting', () => {
   });
 
   it('配置不存在时抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rowCount: 0 } as any);
+    mockedQuery.mockResolvedValueOnce({ rowCount: 0 } as unknown as DbResult);
     await expect(adminService.deleteSetting('nonexistent')).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('正常删除返回 { key }，SQL 绑定 key 参数', async () => {
-    mockedQuery.mockResolvedValueOnce({ rowCount: 1 } as any);
+    mockedQuery.mockResolvedValueOnce({ rowCount: 1 } as unknown as DbResult);
 
     const result = await adminService.deleteSetting('custom_config');
 

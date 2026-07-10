@@ -35,6 +35,12 @@ import { BadRequestError } from '../../utils/errors';
 
 const mockedQuery = vi.mocked(query);
 
+// 局部类型别名：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需 rows
+// 用 as unknown as DbResult 替代显式 any 断言以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
+// 订单类型联合，与 admin.service 内部 OrderType 对齐，用于非法字面量测试入参
+type OrderType = 'skill' | 'kitchen' | 'time_bank';
+
 beforeEach(() => {
   mockedQuery.mockReset();
 });
@@ -43,7 +49,7 @@ describe('admin.service - getOrders 订单列表查询', () => {
   it('skill 类型使用 buyer_id/seller_id 列名 JOIN users 返回昵称', async () => {
     // 第一次 query 为 count，第二次为 list
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as any)
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
       .mockResolvedValueOnce({
         rows: [{
           id: 'so-1',
@@ -55,7 +61,7 @@ describe('admin.service - getOrders 订单列表查询', () => {
           buyer_nickname: '买家小明',
           seller_nickname: '卖家老王',
         }],
-      } as any);
+      } as unknown as DbResult);
 
     const result = await adminService.getOrders('skill', undefined, 1, 20);
 
@@ -74,8 +80,8 @@ describe('admin.service - getOrders 订单列表查询', () => {
 
   it('kitchen 类型使用 user_id/seller_id 列名', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as any)
-      .mockResolvedValueOnce({ rows: [] } as any);
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await adminService.getOrders('kitchen', undefined, 1, 20);
 
@@ -87,7 +93,7 @@ describe('admin.service - getOrders 订单列表查询', () => {
 
   it('time_bank 类型使用 requester_id/provider_id 列名，durationMinutes 字段映射', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as any)
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
       .mockResolvedValueOnce({
         rows: [{
           id: 'to-1',
@@ -99,7 +105,7 @@ describe('admin.service - getOrders 订单列表查询', () => {
           buyer_nickname: '请求者',
           seller_nickname: '服务者',
         }],
-      } as any);
+      } as unknown as DbResult);
 
     const result = await adminService.getOrders('time_bank', undefined, 1, 20);
 
@@ -112,8 +118,8 @@ describe('admin.service - getOrders 订单列表查询', () => {
 
   it('status 过滤使用 o.status 表前缀避免 JOIN 歧义', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as any)
-      .mockResolvedValueOnce({ rows: [] } as any);
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await adminService.getOrders('skill', 'completed', 1, 20);
 
@@ -127,7 +133,7 @@ describe('admin.service - getOrders 订单列表查询', () => {
 
   it('买方昵称缺失时 buyer 字段为 undefined（用户被删除场景）', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as any)
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
       .mockResolvedValueOnce({
         rows: [{
           id: 'so-2',
@@ -139,7 +145,7 @@ describe('admin.service - getOrders 订单列表查询', () => {
           buyer_nickname: null,
           seller_nickname: '卖家',
         }],
-      } as any);
+      } as unknown as DbResult);
 
     const result = await adminService.getOrders('skill', undefined, 1, 20);
 
@@ -150,21 +156,21 @@ describe('admin.service - getOrders 订单列表查询', () => {
 
   it('分页参数正确传递 LIMIT/OFFSET', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '50' }] } as any)
-      .mockResolvedValueOnce({ rows: [] } as any);
+      .mockResolvedValueOnce({ rows: [{ count: '50' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await adminService.getOrders('skill', undefined, 3, 20);
 
     // 第 3 页偏移量应为 40
     const listCall = mockedQuery.mock.calls[1];
-    const listParams = listCall[1] as any[];
+    const listParams = listCall[1] as unknown[];
     expect(listParams).toContain(20);  // LIMIT
     expect(listParams).toContain(40);  // OFFSET = (3-1) * 20
   });
 
   it('无效订单类型抛 BadRequestError', async () => {
     // typescript 在编译期阻止字面量传参，用 any 绕过测试运行时校验
-    await expect(adminService.getOrders('invalid' as any, undefined, 1, 20))
+    await expect(adminService.getOrders('invalid' as unknown as OrderType, undefined, 1, 20))
       .rejects.toBeInstanceOf(BadRequestError);
   });
 });

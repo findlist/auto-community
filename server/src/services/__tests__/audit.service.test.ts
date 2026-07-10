@@ -26,8 +26,14 @@ vi.mock('../../utils/logger', () => ({
 import { auditService } from '../audit.service';
 import { query, pool } from '../../config/database';
 
+// 局部类型别名：query / pool.query 均返回 Promise<QueryResult<QueryResultRow>>，
+// 测试 mock 只需 rows；用 as unknown as DbResult 替代显式 any 断言以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
+
 const mockedQuery = vi.mocked(query);
-const mockedPoolQuery = vi.mocked(pool.query);
+// pool.query 存在回调重载（返回 void），vi.mocked 选中该重载会导致 mockResolvedValueOnce 期望 void
+// 复用 mockedQuery 的类型（MockedFunction<typeof query>），使 mock 链路类型与运行时一致
+const mockedPoolQuery = pool.query as unknown as typeof mockedQuery;
 
 beforeEach(() => {
   mockedQuery.mockReset();
@@ -36,7 +42,7 @@ beforeEach(() => {
 
 describe('audit.service - writeAuditLog', () => {
   it('成功写入审计日志', async () => {
-    mockedPoolQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedPoolQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await auditService.writeAuditLog({
       userId: 'user-1',
@@ -45,7 +51,7 @@ describe('audit.service - writeAuditLog', () => {
     });
 
     expect(mockedPoolQuery).toHaveBeenCalledTimes(1);
-    const [sql, params] = mockedPoolQuery.mock.calls[0];
+    const [sql, params] = mockedPoolQuery.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain('INSERT INTO audit_logs');
     // 参数：userId, action, resourceType, resourceId, ip, userAgent, requestBody, status, errorMessage
     expect(params[0]).toBe('user-1');
@@ -54,7 +60,7 @@ describe('audit.service - writeAuditLog', () => {
   });
 
   it('未登录场景 userId 为 null', async () => {
-    mockedPoolQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedPoolQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await auditService.writeAuditLog({
       action: 'LOGIN_FAILED',
@@ -62,7 +68,7 @@ describe('audit.service - writeAuditLog', () => {
       errorMessage: '密码错误',
     });
 
-    const params = mockedPoolQuery.mock.calls[0][1];
+    const params = mockedPoolQuery.mock.calls[0][1] as unknown[];
     expect(params[0]).toBeNull();
     expect(params[8]).toBe('密码错误');
   });
@@ -80,13 +86,13 @@ describe('audit.service - writeAuditLog', () => {
 describe('audit.service - getAuditLogs', () => {
   it('无条件时查询全部并返回分页结构', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '2' }] } as any) // COUNT
+      .mockResolvedValueOnce({ rows: [{ count: '2' }] } as unknown as DbResult) // COUNT
       .mockResolvedValueOnce({
         rows: [
           { id: 1, user_id: 'u1', nickname: '张三', action: 'LOGIN', status: 'success', created_at: new Date('2026-01-01') },
           { id: 2, user_id: 'u2', nickname: '李四', action: 'LOGOUT', status: 'success', created_at: new Date('2026-01-02') },
         ],
-      } as any);
+      } as unknown as DbResult);
 
     const result = await auditService.getAuditLogs({}, 1, 20);
 
@@ -100,8 +106,8 @@ describe('audit.service - getAuditLogs', () => {
 
   it('按 userId/action/status 多条件筛选', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as any)
-      .mockResolvedValueOnce({ rows: [{ id: 1, user_id: 'u1', action: 'LOGIN', status: 'success', created_at: new Date() }] } as any);
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [{ id: 1, user_id: 'u1', action: 'LOGIN', status: 'success', created_at: new Date() }] } as unknown as DbResult);
 
     await auditService.getAuditLogs({
       userId: 'u1',
@@ -120,8 +126,8 @@ describe('audit.service - getAuditLogs', () => {
 
   it('按时间范围筛选：startDate/endDate 均传入', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as any)
-      .mockResolvedValueOnce({ rows: [] } as any);
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await auditService.getAuditLogs({
       startDate: '2026-01-01',
@@ -136,13 +142,13 @@ describe('audit.service - getAuditLogs', () => {
   it('第二页分页参数：offset = (page-1) * pageSize', async () => {
     // total=50, pageSize=20, page=2 → totalPages=3, hasNext=true
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '50' }] } as any)
-      .mockResolvedValueOnce({ rows: [] } as any);
+      .mockResolvedValueOnce({ rows: [{ count: '50' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     const result = await auditService.getAuditLogs({}, 2, 20);
 
     // list 查询参数最后两个应为 [pageSize, offset]
-    const listCallParams = mockedQuery.mock.calls[1]![1] as any[];
+    const listCallParams = mockedQuery.mock.calls[1]![1] as unknown[];
     const offset = listCallParams[listCallParams.length - 1];
     expect(offset).toBe(20); // (2-1) * 20
     expect(result.hasNext).toBe(true); // 50 条 / 20 每页 → 3 页，page=2 < 3
@@ -151,8 +157,8 @@ describe('audit.service - getAuditLogs', () => {
   it('末页 hasNext 应为 false', async () => {
     // total=30, pageSize=20, page=2 → totalPages=2, hasNext=false
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '30' }] } as any)
-      .mockResolvedValueOnce({ rows: [] } as any);
+      .mockResolvedValueOnce({ rows: [{ count: '30' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     const result = await auditService.getAuditLogs({}, 2, 20);
     expect(result.hasNext).toBe(false);
@@ -160,8 +166,8 @@ describe('audit.service - getAuditLogs', () => {
 
   it('关联 users 表获取昵称：LEFT JOIN', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as any)
-      .mockResolvedValueOnce({ rows: [{ id: 1, user_id: 'u1', nickname: '张三', action: 'LOGIN', status: 'success', created_at: new Date() }] } as any);
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [{ id: 1, user_id: 'u1', nickname: '张三', action: 'LOGIN', status: 'success', created_at: new Date() }] } as unknown as DbResult);
 
     await auditService.getAuditLogs({ userId: 'u1' });
 

@@ -33,6 +33,12 @@ import { BadRequestError } from '../../utils/errors';
 
 const mockedQuery = vi.mocked(query);
 
+// 局部类型别名：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需 rows
+// 用 as unknown as DbResult 替代显式 any 断言以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
+// getExportData 第一参数为 ExportType 联合类型（未导出），通过 Parameters 提取
+type ExportTypeParam = Parameters<typeof adminService.getExportData>[0];
+
 beforeEach(() => {
   mockedQuery.mockReset();
 });
@@ -40,14 +46,14 @@ beforeEach(() => {
 describe('admin.service - 数据导出 getExportData', () => {
   it('无效类型抛 BadRequestError', async () => {
     await expect(
-      adminService.getExportData('invalid' as any, {}),
+      adminService.getExportData('invalid' as unknown as ExportTypeParam, {}),
     ).rejects.toBeInstanceOf(BadRequestError);
   });
 
   it('users 导出：查询未删除用户，返回用户列定义', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'u1', phone: '13800000000', nickname: '张三', role: 'user', status: 'active', reputation_score: 4.5, credit_balance: 100, created_at: new Date('2026-01-01') }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.getExportData('users', {});
 
@@ -61,7 +67,7 @@ describe('admin.service - 数据导出 getExportData', () => {
   });
 
   it('users 导出：支持 status 筛选，参数正确绑定', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await adminService.getExportData('users', { status: 'banned' });
 
@@ -73,7 +79,7 @@ describe('admin.service - 数据导出 getExportData', () => {
   it('orders 导出：默认 orderType=skill，SQL 查询 skill_orders 表', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'o1', buyer_id: 'u1', seller_id: 'u2', credit_amount: 50, status: 'completed', created_at: new Date() }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.getExportData('orders', {});
 
@@ -88,7 +94,7 @@ describe('admin.service - 数据导出 getExportData', () => {
   it('orders 导出：orderType=kitchen 查询 kitchen_orders 表，买家字段为 user_id', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'o2', user_id: 'u3', seller_id: 'u4', credit_amount: 30, status: 'pending', created_at: new Date() }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.getExportData('orders', { orderType: 'kitchen' });
 
@@ -103,7 +109,7 @@ describe('admin.service - 数据导出 getExportData', () => {
   it('orders 导出：orderType=time_bank 查询 time_orders 表，金额字段为 duration_minutes', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'o3', requester_id: 'u5', provider_id: 'u6', duration_minutes: 60, status: 'in_progress', created_at: new Date() }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.getExportData('orders', { orderType: 'time_bank' });
 
@@ -115,7 +121,7 @@ describe('admin.service - 数据导出 getExportData', () => {
   });
 
   it('orders 导出：支持 status + 时间范围筛选，参数顺序正确', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await adminService.getExportData('orders', {
       orderType: 'skill',
@@ -139,7 +145,7 @@ describe('admin.service - 数据导出 getExportData', () => {
         created_at: new Date(), handled_at: null,
         reporter_nickname: '张三', handler_nickname: null,
       }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await adminService.getExportData('reports', {});
 
@@ -147,12 +153,12 @@ describe('admin.service - 数据导出 getExportData', () => {
     expect(sql).toContain('LEFT JOIN users reporter');
     expect(sql).toContain('LEFT JOIN users handler');
     expect(result.columns.map(c => c.field)).toContain('reporter_nickname');
-    // 测试 mock 返回联合类型，需 as any 访问动态字段
+    // 测试 mock 返回联合类型，需类型断言访问动态字段
     expect((result.rows[0] as Record<string, unknown>).reporter_nickname).toBe('张三');
   });
 
   it('audit-logs 导出：支持时间范围筛选，查询 audit_logs 表', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await adminService.getExportData('audit-logs', {
       startDate: '2026-01-01',
@@ -167,7 +173,7 @@ describe('admin.service - 数据导出 getExportData', () => {
   });
 
   it('所有导出类型 SQL 均包含 LIMIT 保护，避免全表扫描', async () => {
-    mockedQuery.mockResolvedValue({ rows: [] } as any);
+    mockedQuery.mockResolvedValue({ rows: [] } as unknown as DbResult);
 
     for (const type of ['users', 'orders', 'reports', 'audit-logs'] as const) {
       await adminService.getExportData(type, type === 'orders' ? { orderType: 'skill' } : {});
@@ -180,7 +186,7 @@ describe('admin.service - 数据导出 getExportData', () => {
   });
 
   it('空结果集时返回空 rows 与完整 columns', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     const result = await adminService.getExportData('users', {});
 
