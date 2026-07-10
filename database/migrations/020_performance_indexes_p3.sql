@@ -12,7 +12,9 @@
 --    补齐 (order_id, order_type, created_at) 复合索引覆盖订单维度过滤与排序。
 -- 4. messages 订单未读计数查询 WHERE receiver_id=$1 AND order_type=$2 AND read_at IS NULL，
 --    原 idx_messages_receiver_read(receiver_id, read_at) 不能覆盖 order_type 过滤，
---    进入订单消息列表时需扫描该接收者全部订单消息再过滤。补齐 (receiver_id, order_type, read_at) 复合索引。
+--    进入订单消息列表时需扫描该接收者全部订单消息再过滤。
+--    该索引已在 012_add_performance_indexes.sql 中创建（idx_messages_receiver_order_read），
+--    此处不再重复声明，保持迁移历史清晰。
 -- 全部为新增索引，不改表结构，回滚安全。down 函数逆序 dropIndex 保证回滚顺序。
 
 -- 1. emergency_requests 软删除列表索引：覆盖 deleted_at IS NULL + created_at DESC 排序
@@ -26,7 +28,3 @@ CREATE INDEX IF NOT EXISTS idx_emergency_responses_request_created
 -- 3. reviews 订单维度评价索引：覆盖 order_id+order_type 过滤 + created_at DESC 排序
 CREATE INDEX IF NOT EXISTS idx_reviews_order_type_created
   ON reviews (order_id, order_type, created_at DESC);
-
--- 4. messages 订单未读计数索引：覆盖 receiver_id+order_type 过滤 + read_at IS NULL
-CREATE INDEX IF NOT EXISTS idx_messages_receiver_order_read
-  ON messages (receiver_id, order_type, read_at);
