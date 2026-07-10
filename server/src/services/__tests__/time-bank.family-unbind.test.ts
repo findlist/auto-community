@@ -61,7 +61,8 @@ const mockedNotifyFamilyBindingChange = vi.mocked(notificationService.notifyFami
 beforeEach(() => {
   mockQuery.mockReset();
   mockedNotifyFamilyBindingChange.mockReset();
-  mockedNotifyFamilyBindingChange.mockResolvedValue({} as any);
+  // mockResolvedValue 需要 NotificationData 形状，用双重断言替代裸 any 以满足类型约束
+  mockedNotifyFamilyBindingChange.mockResolvedValue({} as unknown as Awaited<ReturnType<typeof notificationService.notifyFamilyBindingChange>>);
 });
 
 /**

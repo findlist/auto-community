@@ -64,8 +64,8 @@ const mockedNotifyTimeBankTransaction = vi.mocked(notificationService.notifyTime
 beforeEach(() => {
   mockClient.query.mockReset();
   mockedNotifyTimeBankTransaction.mockReset();
-  // mockResolvedValue 需要 NotificationData 形状，用 as any 简化测试桩
-  mockedNotifyTimeBankTransaction.mockResolvedValue({} as any);
+  // mockResolvedValue 需要 NotificationData 形状，用双重断言替代裸 any 以满足类型约束
+  mockedNotifyTimeBankTransaction.mockResolvedValue({} as unknown as Awaited<ReturnType<typeof notificationService.notifyTimeBankTransaction>>);
 });
 
 /**

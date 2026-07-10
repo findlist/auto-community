@@ -239,7 +239,7 @@ describe('emergency-resource.service create', () => {
       name: '避难所',
       // 非法字段，不在白名单内
       hackField: 'malicious',
-    } as any);
+    } as unknown as Parameters<typeof emergencyResourceService.create>[0]);
 
     const call = mockQuery.mock.calls[0];
     const sql = call[0] as string;

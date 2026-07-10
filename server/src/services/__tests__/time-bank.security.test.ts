@@ -98,7 +98,9 @@ function filterUpdateFields(data: Record<string, any>): {
 
   // 检测白名单外的可疑字段
   const rejected = Object.keys(data).filter(
-    (key) => !UPDATABLE_SERVICE_FIELDS.includes(key as any),
+    // UPDATABLE_SERVICE_FIELDS 用 as const 声明，includes 期望字面量联合类型；
+    // Object.keys 返回 string，需断言为联合类型成员以满足类型约束
+    (key) => !UPDATABLE_SERVICE_FIELDS.includes(key as typeof UPDATABLE_SERVICE_FIELDS[number]),
   );
 
   return { fields, params, rejected };

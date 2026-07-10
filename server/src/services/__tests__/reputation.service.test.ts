@@ -28,6 +28,7 @@ vi.mock('../../config/database', () => ({
   pool: {},
 }));
 
+import type { PoolClient } from 'pg';
 import { reputationService } from '../reputation.service';
 
 beforeEach(() => {
@@ -65,7 +66,7 @@ describe('reputation.service updateReputationScore 事务内调用（PoolClient�
       query: vi.fn().mockResolvedValueOnce({ rows: [] }),
     };
 
-    await reputationService.updateReputationScore(mockClient as any, 'user-1');
+    await reputationService.updateReputationScore(mockClient as unknown as PoolClient, 'user-1');
 
     // 验证走的是 client.query（事务内），顶层 query 不被调用
     expect(mockClient.query).toHaveBeenCalledTimes(1);
@@ -77,7 +78,7 @@ describe('reputation.service updateReputationScore 事务内调用（PoolClient�
       query: vi.fn().mockResolvedValueOnce({ rows: [] }),
     };
 
-    await reputationService.updateReputationScore(mockClient as any, 'user-2');
+    await reputationService.updateReputationScore(mockClient as unknown as PoolClient, 'user-2');
 
     const call = mockClient.query.mock.calls[0];
     expect(call[0]).toContain('UPDATE users SET reputation_score');
@@ -90,7 +91,7 @@ describe('reputation.service updateReputationScore 事务内调用（PoolClient�
       query: vi.fn().mockResolvedValueOnce({ rows: [] }),
     };
 
-    const result = await reputationService.updateReputationScore(mockClient as any, 'user-3');
+    const result = await reputationService.updateReputationScore(mockClient as unknown as PoolClient, 'user-3');
 
     expect(result).toBeUndefined();
   });

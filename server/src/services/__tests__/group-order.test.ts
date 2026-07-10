@@ -57,8 +57,10 @@ import { query } from '../../config/database';
 
 const mockedCreditService = vi.mocked(creditService);
 // 顶层 query mock 引用：create/getList/getById/checkExpired 使用顶层 query（非 transaction 内 client.query）
-// 放宽为 any 类型以避免与 QueryResult 完整结构（含 command/rowCount/oid/fields）的类型冲突
-const mockedQuery = vi.mocked(query) as any;
+// 局部类型别名：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需 rows
+// 用 as unknown as DbResult 替代裸 any 断言以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
+const mockedQuery = vi.mocked(query);
 
 // 辅助函数：创建 mock 拼单数据
 function mockGroupOrder(overrides: Record<string, any> = {}) {
@@ -482,9 +484,9 @@ describe('group-order.service - create 创建拼单', () => {
       current_participants: 0, address: '地址', deadline: new Date('2026-01-01'),
       status: 'open', created_at: new Date('2026-01-01'), updated_at: new Date('2026-01-01'),
     };
-    mockedQuery.mockResolvedValueOnce({ rows: [mockRow] });
-    mockedQuery.mockResolvedValueOnce({ rows: [] });
-    mockedQuery.mockResolvedValueOnce({ rows: [] });
+    mockedQuery.mockResolvedValueOnce({ rows: [mockRow] } as unknown as DbResult);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     const result = await groupOrderService.create('user-1', {
       title: '测试拼单', description: '描述', targetAmount: 300,
@@ -503,9 +505,9 @@ describe('group-order.service - create 创建拼单', () => {
       current_participants: 0, address: '地址', deadline: new Date('2026-01-01'),
       status: 'open', created_at: new Date('2026-01-01'), updated_at: new Date('2026-01-01'),
     };
-    mockedQuery.mockResolvedValueOnce({ rows: [mockRow] });
-    mockedQuery.mockResolvedValueOnce({ rows: [] });
-    mockedQuery.mockResolvedValueOnce({ rows: [] });
+    mockedQuery.mockResolvedValueOnce({ rows: [mockRow] } as unknown as DbResult);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await groupOrderService.create('user-1', {
       title: '测试拼单', targetAmount: 300,
@@ -603,8 +605,8 @@ describe('group-order.service - getList 获取列表', () => {
       status: 'open', created_at: new Date('2026-01-01'), updated_at: new Date('2026-01-01'),
       initiator_uid: 'user-1', initiator_nickname: '张三', initiator_avatar: null,
     };
-    mockedQuery.mockResolvedValueOnce({ rows: [{ count: '1' }] });
-    mockedQuery.mockResolvedValueOnce({ rows: [mockRow] });
+    mockedQuery.mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult);
+    mockedQuery.mockResolvedValueOnce({ rows: [mockRow] } as unknown as DbResult);
 
     const result = await groupOrderService.getList({}, 1, 20);
 
@@ -615,8 +617,8 @@ describe('group-order.service - getList 获取列表', () => {
   });
 
   it('有 status 过滤：SQL 参数含 status 值', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] });
-    mockedQuery.mockResolvedValueOnce({ rows: [] });
+    mockedQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     const result = await groupOrderService.getList({ status: 'open' }, 2, 10);
 
@@ -644,8 +646,8 @@ describe('group-order.service - getById 获取详情', () => {
       user_id: 'user-2', group_order_id: 'order-1', amount: 50, status: 'paid',
       created_at: new Date('2026-01-01'), nickname: '李四', avatar: null,
     };
-    mockedQuery.mockResolvedValueOnce({ rows: [mockRow] });
-    mockedQuery.mockResolvedValueOnce({ rows: [mockParticipantRow] });
+    mockedQuery.mockResolvedValueOnce({ rows: [mockRow] } as unknown as DbResult);
+    mockedQuery.mockResolvedValueOnce({ rows: [mockParticipantRow] } as unknown as DbResult);
 
     const result = await groupOrderService.getById('order-1');
 
@@ -658,7 +660,7 @@ describe('group-order.service - getById 获取详情', () => {
   });
 
   it('拼单不存在抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] });
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await expect(
       groupOrderService.getById('nonexistent'),
@@ -670,7 +672,7 @@ describe('group-order.service - getById 获取详情', () => {
 
 describe('group-order.service - checkExpired 检查过期', () => {
   it('无过期拼单返回 0', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] });
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     const count = await groupOrderService.checkExpired();
 
@@ -681,7 +683,7 @@ describe('group-order.service - checkExpired 检查过期', () => {
     // checkExpired 查询返回 1 个过期拼单
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'expired-1', initiator_id: 'initiator-1' }],
-    });
+    } as unknown as DbResult);
     // cancel 内部 lock order 返回空（拼单不存在），抛 NotFoundError，被 checkExpired catch 捕获
     mockClient.query.mockReset();
     mockClient.query.mockResolvedValueOnce({ rows: [] });

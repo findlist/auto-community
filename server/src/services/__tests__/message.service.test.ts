@@ -165,7 +165,7 @@ describe('message.service getMessages 权限校验', () => {
 
   it('无效 orderType 抛 ForbiddenError', async () => {
     await expect(
-      messageService.getMessages('o1', 'u1', undefined, 20, 'invalid' as any),
+      messageService.getMessages('o1', 'u1', undefined, 20, 'invalid' as unknown as Parameters<typeof messageService.getMessages>[4]),
     ).rejects.toThrow('无效的订单类型');
     // 无效类型不应触发 query
     expect(mockQuery).not.toHaveBeenCalled();
