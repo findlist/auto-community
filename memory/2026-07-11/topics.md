@@ -210,3 +210,64 @@
 3. 生产就绪复检（覆盖率复核、env 校验、健康检查端点实际部署验证）
 4. 测试覆盖率缺口补全（如有低于阈值路径）
 5. 工作区未跟踪 docs 目录归档或清理
+
+---
+
+## 本轮迭代摘要（2026-07-11 续 — 数据库生产阻塞 BUG 修复 + 索引补齐）
+- 健康度预检：后端 tsc ✅（零错误）| 后端 vitest 73 文件 1445/1445 ✅ | 前端 build ✅（7.85s 零错误零警告）
+- 本轮完成 3 个最小迭代单元（含 2 个生产阻塞 BUG 修复 + 1 个技术债清理），3 次 git 提交均 push 到 origin/main：
+  - `6cb3622 fix: 补建 deletion_requests 表迁移，修复生产环境账号注销功能阻塞 BUG`
+  - `9ca7316 fix: 补建 credit_transactions.updated_at 字段修复解冻积分 BUG + 补充缺失索引`
+  - `edff7c0 fix: 移除 p3 迁移中 messages 索引重复声明，修复新部署迁移冲突`
+
+### 最小迭代单元 1：补建 deletion_requests 表迁移（生产阻塞 BUG 修复）
+- 提交：`6cb3622`（已 push）
+- 问题根因：data-deletion.service.ts 中大量使用 deletion_requests 表（提交/取消/审核/清理共 10 处 SQL），但该表从未在任何迁移文件中创建，生产部署后所有账号注销请求都会因 `relation "deletion_requests" does not exist` 失败
+- 修复方案：新建迁移文件补建表结构（id/user_id/reason/status/reviewed_by/reviewed_at/completed_at/created_at）+ status CHECK 约束 + 2 个复合索引（user_id+status 查重、status+created_at 列表查询）
+- 修改文件：
+  - [server/src/migrations/1704067200026_deletion_requests.ts](file:///e:/work/auto-community/server/src/migrations/1704067200026_deletion_requests.ts)（新建）
+  - [database/migrations/024_deletion_requests.sql](file:///e:/work/auto-community/database/migrations/024_deletion_requests.sql)（新建）
+
+### 最小迭代单元 2：补建 credit_transactions.updated_at 字段 + 缺失索引
+- 提交：`9ca7316`（已 push）
+- 问题根因：scheduler.ts 两处 `UPDATE credit_transactions SET type = 'unfreeze', updated_at = NOW()` 试图更新 updated_at 字段，但 credit_transactions 表（001_init.sql）从未创建该字段，生产环境订单超时解冻积分时会因 `column "updated_at" does not exist` 报错
+- 修复方案：
+  1. 迁移补建 credit_transactions.updated_at 字段（DEFAULT NOW()）
+  2. 补充 credit_transactions(reference_id, reference_type, type) 复合索引，覆盖 scheduler 定时任务解冻积分 UPDATE 查询（流水追加表无索引会全表扫描）
+  3. 补充 service_disputes(order_id) 和 (initiator_id) 索引，覆盖争议查询
+- 修改文件：
+  - [server/src/migrations/1704067200027_performance_indexes_p6.ts](file:///e:/work/auto-community/server/src/migrations/1704067200027_performance_indexes_p6.ts)（新建）
+  - [database/migrations/025_performance_indexes_p6.sql](file:///e:/work/auto-community/database/migrations/025_performance_indexes_p6.sql)（新建）
+
+### 最小迭代单元 3：移除 p3 迁移中 messages 索引重复声明
+- 提交：`edff7c0`（已 push）
+- 问题根因：idx_messages_receiver_order_read 已在 012_add_performance_indexes 中创建，p3 迁移中重复声明且 node-pg-migrate createIndex 未使用 ifNotExist 参数，新部署执行 p3 时会报 `relation already exists` 错误
+- 修复方案：移除 p3 中的 messages 索引重复声明（up 和 down 函数同步清理），由 012 统一管理该索引的创建与回滚
+- 修改文件：
+  - [server/src/migrations/1704067200023_performance_indexes_p3.ts](file:///e:/work/auto-community/server/src/migrations/1704067200023_performance_indexes_p3.ts)
+  - [database/migrations/020_performance_indexes_p3.sql](file:///e:/work/auto-community/database/migrations/020_performance_indexes_p3.sql)
+
+### 调研工作：数据库索引覆盖全面审计
+- 启动 search 子代理调研数据库索引与查询匹配情况，产出完整报告（35 个已有索引 + 20 个潜在缺失索引）
+- 人工交叉比对 init.sql 及各迁移文件，发现调研报告中大量误报（users.phone_hash / credit_transactions.user_id / time_accounts.user_id / delivery_addresses.user_id / skill_posts.user_id / emergency_resources.status / ab_test_configs.test_name / ab_test_results(test_name,user_id) / post_embeddings(post_id,post_type) / users.ban_until 等均已有索引）
+- 确认真正缺失的索引：credit_transactions(reference_id,reference_type,type) 和 service_disputes(order_id/initiator_id)，已在迭代单元 2 中补充
+- 检查 scheduler.ts 全部 UPDATE 语句字段，确认除 credit_transactions.updated_at 外无其他字段缺失
+
+## 本轮验证结果
+- 后端 `npx tsc --noEmit` ✅（零错误）
+- 后端 `npx vitest run` ✅（73 文件 1445/1445 通过）
+- 前端 `npm run build` ✅（7.85s，零错误零警告）
+
+## 本轮遗留问题
+- 高德地图 Key 实际未配置（AMAP_KEY 为空），生产部署后地图页运行在降级模式（静态点位 + 列表）
+- CD 流水线依赖 GitHub Secrets 与远程服务器 GHCR 登录态，需运维侧确认
+- 迁移文件时间戳冲突（012 和 018 各有 2 个文件共享同一时间戳），不影响功能但不规范，修改时间戳可能导致迁移记录不一致，暂不处理
+- 工作区有未跟踪内容（docs/bug-check/、docs/style-optimization/），非本轮范围
+
+## 下一轮迭代建议
+按规范优先级排序：
+1. 生产就绪复检：后端测试覆盖率复核（运行 coverage 报告，确认 ≥70%）
+2. 检查其他 service 是否存在类似"SQL 使用不存在的表/字段"的潜在 BUG（参照本轮 deletion_requests 和 credit_transactions.updated_at 的发现模式）
+3. PostgreSQL 慢查询优化：对 P2 级低频查询补充索引（如 audit_logs 多条件动态过滤、time_transactions 按类型查询等）
+4. 日志分级改造复查：确认业务代码合理使用 info/warn/error 级别（logger 基础设施已完善）
+5. 工作区未跟踪 docs 目录归档或清理
