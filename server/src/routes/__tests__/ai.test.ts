@@ -94,7 +94,7 @@ describe('ai 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       expect(data.data).toHaveLength(1);
       expect(mockMatchSkill).toHaveBeenCalledWith('post-001');
@@ -118,7 +118,7 @@ describe('ai 路由集成测试', () => {
       });
       // httpStatusFromCode('INTERNAL_ERROR') 兜底返回 400（未在 errorCodeToStatus 映射表）
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_ERROR');
       expect(data.message).toBe('推荐服务暂不可用');
       // 验证 logger.error 被调用记录错误
@@ -135,7 +135,7 @@ describe('ai 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       expect(mockMatchTimeService).toHaveBeenCalledWith('svc-001');
     });
@@ -146,7 +146,7 @@ describe('ai 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_ERROR');
       expect(data.message).toBe('推荐服务暂不可用');
     });
@@ -165,9 +165,9 @@ describe('ai 路由集成测试', () => {
         body: JSON.stringify({ text: '需要帮忙搬运家具' }),
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
-      expect(data.data.category).toBe('生活服务');
+      expect((data.data as Record<string, unknown>).category).toBe('生活服务');
       expect(mockClassifyContent).toHaveBeenCalledWith('需要帮忙搬运家具');
     });
 
@@ -178,7 +178,7 @@ describe('ai 路由集成测试', () => {
         body: JSON.stringify({}),
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
       expect(data.message).toBe('文本不能为空');
       // classifyContent 不应被调用（被前置校验拦截）
@@ -192,7 +192,7 @@ describe('ai 路由集成测试', () => {
         body: JSON.stringify({ text: 123 }),
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
       expect(mockClassifyContent).not.toHaveBeenCalled();
     });
@@ -205,7 +205,7 @@ describe('ai 路由集成测试', () => {
         body: JSON.stringify({ text: '需要帮忙' }),
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_ERROR');
       expect(data.message).toBe('分类服务暂不可用');
       expect(mockLogger.error).toHaveBeenCalled();
@@ -219,7 +219,7 @@ describe('ai 路由集成测试', () => {
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
     });
   });

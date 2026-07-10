@@ -116,15 +116,17 @@ describe('notifications 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
       // paginated 响应结构：{ code, message, data: { list, total, page, pageSize, totalPages, hasNext } }
       expect(data.code).toBe('SUCCESS');
-      expect(data.data.list).toHaveLength(1);
-      expect(data.data.list[0].id).toBe('notif-uuid-001');
-      expect(data.data.total).toBe(1);
-      expect(data.data.page).toBe(1);
-      expect(data.data.pageSize).toBe(20);
+      const dataData = data.data as Record<string, unknown>;
+      const list = dataData.list as Record<string, unknown>[];
+      expect(list).toHaveLength(1);
+      expect(list[0].id).toBe('notif-uuid-001');
+      expect(dataData.total).toBe(1);
+      expect(dataData.page).toBe(1);
+      expect(dataData.pageSize).toBe(20);
       // 验证 getNotifications 收到正确的 userId 与分页参数
       expect(mockGetNotifications).toHaveBeenCalledWith('user-uuid-001', 1, 20);
     });
@@ -136,7 +138,7 @@ describe('notifications 路由集成测试', () => {
       });
       const res = await fetch(`${baseUrl}/`);
       expect(res.status).toBe(401);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.message).toBe('未提供认证令牌');
       // getNotifications 不应被调用（被 authenticate 拦截）
       expect(mockGetNotifications).not.toHaveBeenCalled();
@@ -148,7 +150,7 @@ describe('notifications 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(500);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
       expect(data.message).toBe('数据库查询失败');
     });
@@ -160,10 +162,11 @@ describe('notifications 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       // success 响应结构：{ code, message, data: { unreadCount } }
       expect(data.code).toBe('SUCCESS');
-      expect(data.data.unreadCount).toBe(5);
+      const dataData = data.data as Record<string, unknown>;
+      expect(dataData.unreadCount).toBe(5);
       expect(mockGetUnreadCount).toHaveBeenCalledWith('user-uuid-001');
     });
 
@@ -184,7 +187,7 @@ describe('notifications 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       expect(data.message).toBe('标记已读成功');
       // 验证 markAsRead 收到正确的 userId 与 notificationId
@@ -198,7 +201,7 @@ describe('notifications 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(404);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       // NotFoundError 标准化响应：code 为 NOT_FOUND（CommonErrorCode.NOT_FOUND）
       expect(data.code).toBe('NOT_FOUND');
       expect(data.message).toContain('通知');
@@ -221,9 +224,10 @@ describe('notifications 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
-      expect(data.data.markedCount).toBe(3);
+      const dataData = data.data as Record<string, unknown>;
+      expect(dataData.markedCount).toBe(3);
       expect(mockMarkAllAsRead).toHaveBeenCalledWith('user-uuid-001');
     });
 
@@ -243,7 +247,7 @@ describe('notifications 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(500);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
     });
   });

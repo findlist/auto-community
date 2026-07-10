@@ -89,10 +89,10 @@ describe('health 路由集成测试', () => {
     it('数据库连接正常时返回 200 与 ok 状态', async () => {
       const res = await fetch(`${baseUrl}/health`);
       expect(res.status).toBe(200);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
       // 设计原因：测试断言需要访问响应体多个字段，逐字段类型守卫会让测试代码冗长，
-      // 用 Record<string, any> 收窄到字典类型即可，any 仅出现在测试断言层不泛滥到业务代码
-      const data = (await res.json()) as Record<string, any>;
+      // 用 Record<string, unknown> 收窄到字典类型即可，unknown 仅出现在测试断言层不泛滥到业务代码
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.status).toBe('ok');
       expect(data.database).toBe('connected');
       expect(data.timestamp).toBeTypeOf('string');
@@ -105,10 +105,10 @@ describe('health 路由集成测试', () => {
       mockPool.connect.mockRejectedValue(new Error('Connection refused'));
       const res = await fetch(`${baseUrl}/health`);
       expect(res.status).toBe(503);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
       // 设计原因：测试断言需要访问响应体多个字段，逐字段类型守卫会让测试代码冗长，
-      // 用 Record<string, any> 收窄到字典类型即可，any 仅出现在测试断言层不泛滥到业务代码
-      const data = (await res.json()) as Record<string, any>;
+      // 用 Record<string, unknown> 收窄到字典类型即可，unknown 仅出现在测试断言层不泛滥到业务代码
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.status).toBe('error');
       expect(data.database).toBe('disconnected');
       expect(data.error).toBe('Connection refused');
@@ -119,10 +119,10 @@ describe('health 路由集成测试', () => {
       mockPool.connect.mockRejectedValue('string error');
       const res = await fetch(`${baseUrl}/health`);
       expect(res.status).toBe(503);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
       // 设计原因：测试断言需要访问响应体多个字段，逐字段类型守卫会让测试代码冗长，
-      // 用 Record<string, any> 收窄到字典类型即可，any 仅出现在测试断言层不泛滥到业务代码
-      const data = (await res.json()) as Record<string, any>;
+      // 用 Record<string, unknown> 收窄到字典类型即可，unknown 仅出现在测试断言层不泛滥到业务代码
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.error).toBe('Unknown error');
     });
   });
@@ -140,13 +140,13 @@ describe('health 路由集成测试', () => {
 
       const res = await fetch(`${baseUrl}/health/metrics`);
       expect(res.status).toBe(200);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
       // 设计原因：测试断言需要访问响应体多个字段，逐字段类型守卫会让测试代码冗长，
-      // 用 Record<string, any> 收窄到字典类型即可，any 仅出现在测试断言层不泛滥到业务代码
-      const data = (await res.json()) as Record<string, any>;
+      // 用 Record<string, unknown> 收窄到字典类型即可，unknown 仅出现在测试断言层不泛滥到业务代码
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe(0);
-      expect(data.data.metrics).toEqual(fakeMetrics);
-      expect(data.data.alerts).toEqual(fakeAlerts);
+      expect((data.data as Record<string, unknown>).metrics).toEqual(fakeMetrics);
+      expect((data.data as Record<string, unknown>).alerts).toEqual(fakeAlerts);
       // 验证告警日志查询使用默认 limit=50
       expect(mockGetAlertLogs).toHaveBeenCalledWith(50);
     });
@@ -155,10 +155,10 @@ describe('health 路由集成测试', () => {
       mockGetSystemMetrics.mockRejectedValue(new Error('Redis 不可用'));
       const res = await fetch(`${baseUrl}/health/metrics`);
       expect(res.status).toBe(500);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
       // 设计原因：测试断言需要访问响应体多个字段，逐字段类型守卫会让测试代码冗长，
-      // 用 Record<string, any> 收窄到字典类型即可，any 仅出现在测试断言层不泛滥到业务代码
-      const data = (await res.json()) as Record<string, any>;
+      // 用 Record<string, unknown> 收窄到字典类型即可，unknown 仅出现在测试断言层不泛滥到业务代码
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe(500);
       expect(data.message).toBe('获取系统指标失败');
       expect(data.error).toBe('Redis 不可用');
@@ -168,10 +168,10 @@ describe('health 路由集成测试', () => {
       mockGetSystemMetrics.mockRejectedValue(null);
       const res = await fetch(`${baseUrl}/health/metrics`);
       expect(res.status).toBe(500);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
       // 设计原因：测试断言需要访问响应体多个字段，逐字段类型守卫会让测试代码冗长，
-      // 用 Record<string, any> 收窄到字典类型即可，any 仅出现在测试断言层不泛滥到业务代码
-      const data = (await res.json()) as Record<string, any>;
+      // 用 Record<string, unknown> 收窄到字典类型即可，unknown 仅出现在测试断言层不泛滥到业务代码
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.error).toBe('Unknown error');
     });
   });
@@ -180,10 +180,10 @@ describe('health 路由集成测试', () => {
     it('清除告警日志返回 200 与成功消息', async () => {
       const res = await fetch(`${baseUrl}/health/metrics/alerts`, { method: 'DELETE' });
       expect(res.status).toBe(200);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
       // 设计原因：测试断言需要访问响应体多个字段，逐字段类型守卫会让测试代码冗长，
-      // 用 Record<string, any> 收窄到字典类型即可，any 仅出现在测试断言层不泛滥到业务代码
-      const data = (await res.json()) as Record<string, any>;
+      // 用 Record<string, unknown> 收窄到字典类型即可，unknown 仅出现在测试断言层不泛滥到业务代码
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe(0);
       expect(data.message).toBe('告警日志已清除');
       expect(mockClearAlertLogs).toHaveBeenCalledTimes(1);

@@ -218,7 +218,7 @@ describe('admin 路由集成测试', () => {
       mockGetUsers.mockResolvedValue({ list: [{ id: 'u1', nickname: 'A' }], total: 1 });
       const res = await fetch(`${baseUrl}/users?page=1&pageSize=10`);
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       // 验证 getUsers 收到分页参数与可选 search（未传时为 undefined）
       expect(mockGetUsers).toHaveBeenCalledWith(1, 10, undefined);
@@ -416,8 +416,8 @@ describe('admin 路由集成测试', () => {
       mockGetHomepageImage.mockResolvedValue('https://example.com/hero.jpg');
       const res = await fetch(`${baseUrl}/homepage-image`);
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.url).toBe('https://example.com/hero.jpg');
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).url).toBe('https://example.com/hero.jpg');
     });
 
     it('PUT /homepage-image 合法 url 更新成功', async () => {
@@ -711,7 +711,7 @@ describe('admin 路由集成测试', () => {
     it('GET /export/invalid-type 非法类型 400', async () => {
       const res = await fetch(`${baseUrl}/export/invalid-type`);
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
       expect(mockGetExportData).not.toHaveBeenCalled();
     });

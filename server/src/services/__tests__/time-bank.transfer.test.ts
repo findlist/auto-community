@@ -26,7 +26,7 @@ const { mockClient } = vi.hoisted(() => ({
 vi.mock('../../config/database', () => ({
   query: vi.fn(),
   // transaction 直接以 mockClient 回调，模拟事务执行
-  transaction: vi.fn((cb: (client: typeof mockClient) => Promise<any>) => cb(mockClient)),
+  transaction: vi.fn((cb: (client: typeof mockClient) => Promise<unknown>) => cb(mockClient)),
   pool: {},
 }));
 
@@ -95,10 +95,10 @@ function setupMockClient(opts: {
     if (info.exists) accountState[id] = info.balance;
   }
 
-  mockClient.query.mockImplementation(async (text: string, params: any[] = []) => {
+  mockClient.query.mockImplementation(async (text: string, params: unknown[] = []) => {
     // users 行锁查询：SELECT id, time_balance, nickname FROM users WHERE id = $1 FOR UPDATE
     if (text.includes('SELECT id, time_balance, nickname FROM users WHERE id = $1 FOR UPDATE')) {
-      const id = params[0];
+      const id = params[0] as string;
       if (userState[id] !== undefined) {
         return { rows: [{ id, time_balance: userState[id], nickname: userNicknames[id] }] };
       }
@@ -106,7 +106,7 @@ function setupMockClient(opts: {
     }
     // time_accounts 行锁查询
     if (text.includes('SELECT * FROM time_accounts WHERE user_id = $1 FOR UPDATE')) {
-      const userId = params[0];
+      const userId = params[0] as string;
       if (accountState[userId] !== undefined) {
         return { rows: [{ user_id: userId, balance: accountState[userId] }] };
       }
@@ -114,32 +114,32 @@ function setupMockClient(opts: {
     }
     // getOrCreateAccount 在账户不存在时 INSERT，模拟返回新账户
     if (text.startsWith('INSERT INTO time_accounts')) {
-      const userId = params[0];
+      const userId = params[0] as string;
       accountState[userId] = 0;
       return { rows: [{ user_id: userId, balance: 0 }] };
     }
     // from_user 扣减余额（users 表）
     if (text.startsWith('UPDATE users SET time_balance = time_balance - $1')) {
-      const id = params[1];
-      userState[id] = (userState[id] || 0) - params[0];
+      const id = params[1] as string;
+      userState[id] = (userState[id] || 0) - (params[0] as number);
       return { rows: [] };
     }
     // to_user 增加余额（users 表）
     if (text.startsWith('UPDATE users SET time_balance = time_balance + $1')) {
-      const id = params[1];
-      userState[id] = (userState[id] || 0) + params[0];
+      const id = params[1] as string;
+      userState[id] = (userState[id] || 0) + (params[0] as number);
       return { rows: [] };
     }
     // from_user 账户扣减（含 total_spent）
     if (text.startsWith('UPDATE time_accounts SET balance = balance - $1, total_spent')) {
-      const userId = params[1];
-      accountState[userId] = (accountState[userId] || 0) - params[0];
+      const userId = params[1] as string;
+      accountState[userId] = (accountState[userId] || 0) - (params[0] as number);
       return { rows: [] };
     }
     // to_user 账户增加（transfer 包含 total_earned，与 donate 的关键区别）
     if (text.startsWith('UPDATE time_accounts SET balance = balance + $1, total_earned')) {
-      const userId = params[1];
-      accountState[userId] = (accountState[userId] || 0) + params[0];
+      const userId = params[1] as string;
+      accountState[userId] = (accountState[userId] || 0) + (params[0] as number);
       return { rows: [] };
     }
     // 流水插入
@@ -257,7 +257,7 @@ describe('time-bank.service - transferTime', () => {
 
     // 验证流水写入：INSERT INTO time_transactions ... 'transfer' ...
     const insertCall = mockClient.query.mock.calls.find(
-      (call: any[]) => typeof call[0] === 'string' && call[0].startsWith('INSERT INTO time_transactions') && call[0].includes("'transfer'"),
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].startsWith('INSERT INTO time_transactions') && call[0].includes("'transfer'"),
     );
     expect(insertCall).toBeDefined();
     // 参数顺序：from_user_id, to_user_id, amount, type, status, remark → $1..$4 对应前 4 个
@@ -280,12 +280,12 @@ describe('time-bank.service - transferTime', () => {
 
     // transfer 的 to_user 账户 UPDATE 应包含 total_earned（donate 不包含）
     const toUserAccountUpdate = mockClient.query.mock.calls.find(
-      (call: any[]) => typeof call[0] === 'string' && call[0].startsWith('UPDATE time_accounts SET balance = balance + $1, total_earned'),
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].startsWith('UPDATE time_accounts SET balance = balance + $1, total_earned'),
     );
     expect(toUserAccountUpdate).toBeDefined();
     // from_user 账户 UPDATE 应包含 total_spent
     const fromUserAccountUpdate = mockClient.query.mock.calls.find(
-      (call: any[]) => typeof call[0] === 'string' && call[0].startsWith('UPDATE time_accounts SET balance = balance - $1, total_spent'),
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].startsWith('UPDATE time_accounts SET balance = balance - $1, total_spent'),
     );
     expect(fromUserAccountUpdate).toBeDefined();
   });
@@ -355,7 +355,7 @@ describe('time-bank.service - transferTime', () => {
 
     // 验证 lockUsersForUpdate 被调用：SELECT id, time_balance, nickname FROM users WHERE id = $1 FOR UPDATE
     const lockCalls = mockClient.query.mock.calls.filter(
-      (call: any[]) => typeof call[0] === 'string' && call[0].includes('FOR UPDATE') && call[0].includes('FROM users'),
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('FOR UPDATE') && call[0].includes('FROM users'),
     );
     // 应有两次行锁查询（from_user 和 to_user）
     expect(lockCalls.length).toBeGreaterThanOrEqual(2);

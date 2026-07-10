@@ -163,8 +163,8 @@ describe('emergency 路由集成测试', () => {
       });
       const res = await fetch(`${baseUrl}/requests`);
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.list).toHaveLength(1);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).list).toHaveLength(1);
       // 验证 getPagination 默认值与 query 透传
       expect(mockGetRequests).toHaveBeenCalledWith({
         type: undefined,
@@ -344,8 +344,8 @@ describe('emergency 路由集成测试', () => {
       });
       const res = await fetch(`${baseUrl}/resources`);
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.list).toHaveLength(1);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).list).toHaveLength(1);
       expect(mockGetResources).toHaveBeenCalledWith({ type: undefined, page: 1, pageSize: 20 });
     });
   });
@@ -417,7 +417,7 @@ describe('emergency 路由集成测试', () => {
     it('缺少 address 参数返回 null', async () => {
       const res = await fetch(`${baseUrl}/map/geocode`);
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.data).toBeNull();
       // 缺 address 时短路返回，不调用 mapService
       expect(mockGeocode).not.toHaveBeenCalled();
@@ -435,7 +435,7 @@ describe('emergency 路由集成测试', () => {
     it('缺少经纬度参数返回 null', async () => {
       const res = await fetch(`${baseUrl}/map/regeo`);
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.data).toBeNull();
       expect(mockRegeo).not.toHaveBeenCalled();
     });

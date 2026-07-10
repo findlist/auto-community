@@ -111,8 +111,8 @@ describe('address 路由集成测试', () => {
       mockListByUser.mockResolvedValue([buildAddress(), buildAddress({ id: 'addr-uuid-002', isDefault: true })]);
       const res = await fetch(`${baseUrl}/`, { headers: { Authorization: 'Bearer valid-token' } });
       expect(res.status).toBe(200);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
       expect(Array.isArray(data.data)).toBe(true);
       expect(data.data).toHaveLength(2);
       // 验证 listByUser 收到正确的 userId
@@ -123,7 +123,7 @@ describe('address 路由集成测试', () => {
       mockListByUser.mockResolvedValue([]);
       const res = await fetch(`${baseUrl}/`, { headers: { Authorization: 'Bearer valid-token' } });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.data).toEqual([]);
     });
 
@@ -134,7 +134,7 @@ describe('address 路由集成测试', () => {
       });
       const res = await fetch(`${baseUrl}/`);
       expect(res.status).toBe(401);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.message).toBe('未提供认证令牌');
       // listByUser 不应被调用（被 authenticate 拦截）
       expect(mockListByUser).not.toHaveBeenCalled();
@@ -144,7 +144,7 @@ describe('address 路由集成测试', () => {
       mockListByUser.mockRejectedValue(new Error('数据库查询失败'));
       const res = await fetch(`${baseUrl}/`, { headers: { Authorization: 'Bearer valid-token' } });
       expect(res.status).toBe(500);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
       expect(data.message).toBe('数据库查询失败');
     });
@@ -160,10 +160,10 @@ describe('address 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       expect(data.message).toBe('地址已添加');
-      expect(data.data.id).toBe('addr-uuid-001');
+      expect((data.data as Record<string, unknown>).id).toBe('addr-uuid-001');
       // 验证 create 收到正确的 userId 与 body
       expect(mockCreate).toHaveBeenCalledWith('user-uuid-001', body);
     });
@@ -190,9 +190,9 @@ describe('address 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
-      expect(data.errors.some((e: { field: string }) => e.field === 'recipient')).toBe(true);
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'recipient')).toBe(true);
       expect(mockCreate).not.toHaveBeenCalled();
     });
 
@@ -204,8 +204,8 @@ describe('address 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.errors.some((e: { field: string }) => e.field === 'phone')).toBe(true);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'phone')).toBe(true);
     });
 
     it('address 缺失时 validate 返回 422', async () => {
@@ -216,8 +216,8 @@ describe('address 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.errors.some((e: { field: string }) => e.field === 'address')).toBe(true);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'address')).toBe(true);
     });
 
     it('create 抛错时由 errorHandler 返回 500', async () => {
@@ -229,7 +229,7 @@ describe('address 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(500);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
     });
   });
@@ -244,7 +244,7 @@ describe('address 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.message).toBe('地址已更新');
       // 验证 update 收到正确的 id、userId 与 body
       expect(mockUpdate).toHaveBeenCalledWith('addr-uuid-001', 'user-uuid-001', body);
@@ -271,8 +271,8 @@ describe('address 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.errors.some((e: { field: string }) => e.field === 'phone')).toBe(true);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'phone')).toBe(true);
     });
 
     it('update 抛 NotFoundError 时由 errorHandler 标准化为 404', async () => {
@@ -284,7 +284,7 @@ describe('address 路由集成测试', () => {
         body: JSON.stringify({ recipient: '李四' }),
       });
       expect(res.status).toBe(404);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
     });
   });
@@ -297,7 +297,7 @@ describe('address 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.message).toBe('地址已删除');
       expect(mockRemove).toHaveBeenCalledWith('addr-uuid-001', 'user-uuid-001');
     });
@@ -318,7 +318,7 @@ describe('address 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(404);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
     });
   });
@@ -331,7 +331,7 @@ describe('address 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.message).toBe('已设为默认地址');
       expect(mockSetDefault).toHaveBeenCalledWith('addr-uuid-001', 'user-uuid-001');
     });
@@ -352,7 +352,7 @@ describe('address 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(404);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
     });
   });

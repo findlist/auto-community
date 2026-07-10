@@ -81,10 +81,10 @@ describe('public 路由集成测试', () => {
 
       const res = await fetch(`${baseUrl}/stats`);
       expect(res.status).toBe(200);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.totalUsers).toBe(128);
-      expect(data.data.totalMutualAids).toBe(256);
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).totalUsers).toBe(128);
+      expect((data.data as Record<string, unknown>).totalMutualAids).toBe(256);
       // 验证两段 SQL 均被调用
       expect(mockQuery).toHaveBeenCalledTimes(2);
     });
@@ -97,18 +97,18 @@ describe('public 路由集成测试', () => {
 
       const res = await fetch(`${baseUrl}/stats`);
       expect(res.status).toBe(200);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.totalUsers).toBe(0);
-      expect(data.data.totalMutualAids).toBe(0);
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).totalUsers).toBe(0);
+      expect((data.data as Record<string, unknown>).totalMutualAids).toBe(0);
     });
 
     it('query 抛错时由 errorHandler 返回 500', async () => {
       mockQuery.mockRejectedValue(new Error('数据库连接失败'));
       const res = await fetch(`${baseUrl}/stats`);
       expect(res.status).toBe(500);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
       // errorHandler 未知错误分支：code 为 INTERNAL_SERVER_ERROR，message 在非 production 环境为原始错误
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
       expect(data.message).toBe('数据库连接失败');
@@ -121,9 +121,9 @@ describe('public 路由集成测试', () => {
       mockGetHomepageImage.mockResolvedValue('https://cdn.example.com/home.jpg');
       const res = await fetch(`${baseUrl}/homepage-image`);
       expect(res.status).toBe(200);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.url).toBe('https://cdn.example.com/home.jpg');
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).url).toBe('https://cdn.example.com/home.jpg');
       expect(mockGetHomepageImage).toHaveBeenCalledTimes(1);
     });
 
@@ -131,17 +131,17 @@ describe('public 路由集成测试', () => {
       mockGetHomepageImage.mockResolvedValue(null);
       const res = await fetch(`${baseUrl}/homepage-image`);
       expect(res.status).toBe(200);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.url).toBeNull();
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).url).toBeNull();
     });
 
     it('getHomepageImage 抛错时由 errorHandler 返回 500', async () => {
       mockGetHomepageImage.mockRejectedValue(new Error('查询失败'));
       const res = await fetch(`${baseUrl}/homepage-image`);
       expect(res.status).toBe(500);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
       expect(data.message).toBe('查询失败');
     });

@@ -116,13 +116,15 @@ describe('messages 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       // cursorPaginated 响应结构：{ code, message, data: { list, nextCursor, hasMore } }
       expect(data.code).toBe('SUCCESS');
-      expect(data.data.list).toHaveLength(1);
-      expect(data.data.list[0].id).toBe('msg-uuid-001');
-      expect(data.data.nextCursor).toBe('msg-uuid-001');
-      expect(data.data.hasMore).toBe(false);
+      const dataData = data.data as Record<string, unknown>;
+      const list = dataData.list as Record<string, unknown>[];
+      expect(list).toHaveLength(1);
+      expect(list[0].id).toBe('msg-uuid-001');
+      expect(dataData.nextCursor).toBe('msg-uuid-001');
+      expect(dataData.hasMore).toBe(false);
       // 验证 getMessages 收到正确的参数（order_id, userId, cursor, limit, orderType）
       // 默认 order_type=skill，cursor=undefined，limit=50
       expect(mockGetMessages).toHaveBeenCalledWith(
@@ -139,7 +141,7 @@ describe('messages 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       // BadRequestError 标准化响应：code 为 BAD_REQUEST（CommonErrorCode.BAD_REQUEST）
       expect(data.code).toBe('BAD_REQUEST');
       expect(data.message).toContain('order_id');
@@ -151,7 +153,7 @@ describe('messages 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
       expect(data.message).toContain('order_type');
       expect(mockGetMessages).not.toHaveBeenCalled();
@@ -203,7 +205,7 @@ describe('messages 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(500);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
     });
   });
@@ -216,7 +218,7 @@ describe('messages 路由集成测试', () => {
         body: JSON.stringify({ order_id: 'order-uuid-001' }),
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       expect(data.message).toBe('标记已读成功');
       // 默认 order_type=skill
@@ -230,7 +232,7 @@ describe('messages 路由集成测试', () => {
         body: JSON.stringify({}),
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
       expect(mockMarkAsRead).not.toHaveBeenCalled();
     });
@@ -265,7 +267,7 @@ describe('messages 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       // getUnreadCount 返回值直接传给 success
       expect(data.data).toEqual({ skill: 3, kitchen: 1, time: 0, emergency: 0 });

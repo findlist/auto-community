@@ -131,7 +131,7 @@ describe('auth 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       // 验证 register 收到正确的参数
       expect(mockRegister).toHaveBeenCalledWith('13800138000', 'password123', '新用户', 'v1.0');
@@ -150,9 +150,9 @@ describe('auth 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
-      expect(data.errors.some((e: { field: string }) => e.field === 'phone')).toBe(true);
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'phone')).toBe(true);
       expect(mockRegister).not.toHaveBeenCalled();
     });
 
@@ -169,8 +169,8 @@ describe('auth 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.errors.some((e: { field: string }) => e.field === 'password')).toBe(true);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'password')).toBe(true);
     });
 
     it('未同意隐私政策时 validate 返回 422', async () => {
@@ -186,8 +186,8 @@ describe('auth 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.errors.some((e: { field: string }) => e.field === 'privacyConsentVersion')).toBe(true);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'privacyConsentVersion')).toBe(true);
     });
 
     it('register 抛错时由 errorHandler 返回 500', async () => {
@@ -204,7 +204,7 @@ describe('auth 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(500);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
     });
   });
@@ -231,8 +231,8 @@ describe('auth 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.errors.some((e: { field: string }) => e.field === 'phone')).toBe(true);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'phone')).toBe(true);
     });
 
     it('账号不存在时 UnauthorizedError 标准化为 401', async () => {
@@ -244,7 +244,7 @@ describe('auth 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(401);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('UNAUTHORIZED');
     });
   });
@@ -271,8 +271,8 @@ describe('auth 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.errors.some((e: { field: string }) => e.field === 'refreshToken')).toBe(true);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'refreshToken')).toBe(true);
     });
 
     it('refreshToken 无效时 UnauthorizedError 标准化为 401', async () => {
@@ -364,8 +364,8 @@ describe('auth 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.errors.some((e: { field: string }) => e.field === 'code')).toBe(true);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'code')).toBe(true);
     });
 
     it('验证码错误时 BadRequestError 标准化为 400', async () => {
@@ -377,7 +377,7 @@ describe('auth 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
     });
   });
@@ -404,8 +404,8 @@ describe('auth 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.errors.some((e: { field: string }) => e.field === 'password')).toBe(true);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'password')).toBe(true);
     });
 
     it('账号不存在时 NotFoundError 标准化为 404', async () => {
@@ -417,7 +417,7 @@ describe('auth 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(404);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
     });
   });

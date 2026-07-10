@@ -24,7 +24,7 @@ const mockClient = {
 
 vi.mock('../../config/database', () => ({
   query: vi.fn(),
-  transaction: vi.fn((cb: (client: typeof mockClient) => Promise<any>) => cb(mockClient)),
+  transaction: vi.fn((cb: (client: typeof mockClient) => Promise<unknown>) => cb(mockClient)),
   pool: {},
 }));
 
@@ -63,7 +63,7 @@ type DbResult = Awaited<ReturnType<typeof query>>;
 const mockedQuery = vi.mocked(query);
 
 // 辅助函数：创建 mock 拼单数据
-function mockGroupOrder(overrides: Record<string, any> = {}) {
+function mockGroupOrder(overrides: Record<string, unknown> = {}) {
   return {
     id: 'group-order-1',
     initiator_id: 'initiator-1',
@@ -80,7 +80,7 @@ function mockGroupOrder(overrides: Record<string, any> = {}) {
 }
 
 // 辅助函数：创建 mock 参与者数据
-function mockParticipant(overrides: Record<string, any> = {}) {
+function mockParticipant(overrides: Record<string, unknown> = {}) {
   return {
     id: 'participation-1',
     group_order_id: 'group-order-1',
@@ -92,7 +92,7 @@ function mockParticipant(overrides: Record<string, any> = {}) {
 }
 
 // 辅助函数：设置取消场景的 mock 调用链
-function setupCancelMock(orderOverrides: Record<string, any> = {}) {
+function setupCancelMock(orderOverrides: Record<string, unknown> = {}) {
   const order = mockGroupOrder(orderOverrides);
   const participants = [
     mockParticipant({ user_id: 'participant-a', amount: 100 }),
@@ -124,7 +124,7 @@ function setupCancelMock(orderOverrides: Record<string, any> = {}) {
 }
 
 // 辅助函数：设置 exit 场景的 mock 调用链
-function setupExitMock(orderOverrides: Record<string, any> = {}, participantOverrides: Record<string, any> = {}) {
+function setupExitMock(orderOverrides: Record<string, unknown> = {}, participantOverrides: Record<string, unknown> = {}) {
   const order = mockGroupOrder(orderOverrides);
   const participant = mockParticipant(participantOverrides);
 

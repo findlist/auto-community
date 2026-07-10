@@ -107,7 +107,7 @@ describe('ab-test 路由集成测试', () => {
       ]);
       const res = await fetch(`${baseUrl}/`, { headers: { Authorization: 'Bearer admin-token' } });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       expect(data.data).toHaveLength(1);
       expect(mockGetAllTestConfigs).toHaveBeenCalledTimes(1);
@@ -146,8 +146,8 @@ describe('ab-test 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.testName).toBe('homepage_layout');
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).testName).toBe('homepage_layout');
       expect(mockGetTestConfig).toHaveBeenCalledWith('homepage_layout');
     });
 
@@ -157,7 +157,7 @@ describe('ab-test 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(404);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
     });
 
@@ -183,8 +183,8 @@ describe('ab-test 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.variant).toBe('variant_a');
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).variant).toBe('variant_a');
       expect(mockAssignVariant).toHaveBeenCalledWith('homepage_layout', 'user-uuid-001');
     });
 
@@ -195,7 +195,7 @@ describe('ab-test 路由集成测试', () => {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
     });
 
@@ -219,7 +219,7 @@ describe('ab-test 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.message).toBe('事件记录成功');
       // 验证 recordEvent 收到正确的参数顺序
       expect(mockRecordEvent).toHaveBeenCalledWith('homepage_layout', 'user-uuid-001', 'control', 'impression', { page: 'home' });
@@ -233,9 +233,9 @@ describe('ab-test 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
-      expect(data.errors.some((e: { field: string }) => e.field === 'eventType')).toBe(true);
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'eventType')).toBe(true);
       expect(mockRecordEvent).not.toHaveBeenCalled();
     });
 
@@ -247,8 +247,8 @@ describe('ab-test 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.errors.some((e: { field: string }) => e.field === 'variant')).toBe(true);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'variant')).toBe(true);
     });
 
     it('未认证时返回 401', async () => {
@@ -279,8 +279,8 @@ describe('ab-test 路由集成测试', () => {
         headers: { Authorization: 'Bearer admin-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.totalParticipants).toBe(1000);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).totalParticipants).toBe(1000);
       expect(mockGetTestResults).toHaveBeenCalledWith('homepage_layout');
     });
 
@@ -290,7 +290,7 @@ describe('ab-test 路由集成测试', () => {
         headers: { Authorization: 'Bearer admin-token' },
       });
       expect(res.status).toBe(404);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
     });
 

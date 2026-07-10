@@ -72,17 +72,18 @@ describe('index 路由集成测试', () => {
   it('GET / 返回 API 版本信息与端点字典', async () => {
     const res = await fetch(`${baseUrl}/`);
     expect(res.status).toBe(200);
-    // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-    const data = (await res.json()) as Record<string, any>;
+    // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+    const data = (await res.json()) as Record<string, unknown>;
     expect(data.code).toBe('SUCCESS');
     expect(data.message).toBe('邻里圈API v1.0');
     // 验证端点字典包含核心模块
     expect(data.endpoints).toBeTypeOf('object');
-    expect(data.endpoints.auth).toBe('/api/auth');
-    expect(data.endpoints.users).toBe('/api/users');
-    expect(data.endpoints.skills).toBe('/api/skills');
-    expect(data.endpoints.kitchen).toBe('/api/kitchen');
-    expect(data.endpoints.ai).toBe('/api/ai');
-    expect(data.endpoints.abTests).toBe('/api/ab-tests');
+    const endpoints = data.endpoints as Record<string, unknown>;
+    expect(endpoints.auth).toBe('/api/auth');
+    expect(endpoints.users).toBe('/api/users');
+    expect(endpoints.skills).toBe('/api/skills');
+    expect(endpoints.kitchen).toBe('/api/kitchen');
+    expect(endpoints.ai).toBe('/api/ai');
+    expect(endpoints.abTests).toBe('/api/ab-tests');
   });
 });

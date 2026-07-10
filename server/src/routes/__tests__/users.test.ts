@@ -122,9 +122,9 @@ describe('users 路由集成测试', () => {
       mockGetProfile.mockResolvedValue({ id: 'user-uuid-001', nickname: 'tester' });
       const res = await fetch(`${baseUrl}/profile`, { headers: authHeader });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
-      expect(data.data.id).toBe('user-uuid-001');
+      expect((data.data as Record<string, unknown>).id).toBe('user-uuid-001');
       expect(mockGetProfile).toHaveBeenCalledWith('user-uuid-001');
     });
 
@@ -141,7 +141,7 @@ describe('users 路由集成测试', () => {
       mockGetProfile.mockRejectedValue(new Error('数据库查询失败'));
       const res = await fetch(`${baseUrl}/profile`, { headers: authHeader });
       expect(res.status).toBe(500);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
     });
   });
@@ -156,7 +156,7 @@ describe('users 路由集成测试', () => {
         body: JSON.stringify({ nickname: '新昵称' }),
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       // 验证 updateProfile 收到 userId 与 body 字段
       expect(mockUpdateProfile).toHaveBeenCalledWith('user-uuid-001', { nickname: '新昵称' });
@@ -169,7 +169,7 @@ describe('users 路由集成测试', () => {
         body: JSON.stringify({ nickname: 'a' }),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
       expect(mockUpdateProfile).not.toHaveBeenCalled();
     });
@@ -200,7 +200,7 @@ describe('users 路由集成测试', () => {
       mockGetUserById.mockRejectedValue(new NotFoundError('用户不存在'));
       const res = await fetch(`${baseUrl}/non-existent`, { headers: authHeader });
       expect(res.status).toBe(404);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
     });
   });
@@ -214,7 +214,7 @@ describe('users 路由集成测试', () => {
       });
       const res = await fetch(`${baseUrl}/credit-history?page=1&pageSize=10`, { headers: authHeader });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       // 请求传入 page=1, pageSize=10
       expect(mockGetCreditHistory).toHaveBeenCalledWith('user-uuid-001', 1, 10);
@@ -261,9 +261,9 @@ describe('users 路由集成测试', () => {
         body: JSON.stringify({ realName: '张三', idCard: 'invalid-id' }),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
-      expect(data.errors.some((e: { field: string }) => e.field === 'idCard')).toBe(true);
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'idCard')).toBe(true);
     });
 
     it('真实姓名过短时 validate 返回 422', async () => {
@@ -273,8 +273,8 @@ describe('users 路由集成测试', () => {
         body: JSON.stringify({ realName: '张', idCard: '110101199001011234' }),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.errors.some((e: { field: string }) => e.field === 'realName')).toBe(true);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'realName')).toBe(true);
     });
   });
 
@@ -319,7 +319,7 @@ describe('users 路由集成测试', () => {
         body: JSON.stringify({ reason: '不再使用' }),
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
     });
   });
@@ -347,7 +347,7 @@ describe('users 路由集成测试', () => {
       mockCancelDeletionRequest.mockRejectedValue(new BadRequestError('无可取消的注销申请'));
       const res = await fetch(`${baseUrl}/deletion`, { method: 'DELETE', headers: authHeader });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
     });
   });

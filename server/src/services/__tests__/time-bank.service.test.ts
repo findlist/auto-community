@@ -400,7 +400,7 @@ describe('time-bank.service completeOrder', () => {
       created_at: new Date(), updated_at: new Date(),
     };
 
-    mockClient.query.mockImplementation(async (text: string, params: any[] = []) => {
+    mockClient.query.mockImplementation(async (text: string, params: unknown[] = []) => {
       // 1. SELECT order FOR UPDATE（事务内首条）
       if (text.includes('SELECT * FROM time_orders WHERE id = $1 FOR UPDATE')) {
         return { rows: [opts.order] };

@@ -186,8 +186,8 @@ describe('skills 路由集成测试', () => {
       mockGetPostList.mockResolvedValue({ list: [{ id: 'p-1' }], total: 1, page: 1, pageSize: 20 });
       const res = await fetch(`${baseUrl}/posts?type=offer&category=tech&keyword=react`);
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.list).toHaveLength(1);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).list).toHaveLength(1);
       expect(mockGetPostList).toHaveBeenCalledWith(
         { type: 'offer', category: 'tech', keyword: 'react' },
         1,

@@ -79,13 +79,13 @@ const UPDATABLE_SERVICE_FIELDS = [
  * 返回最终进入 SET 子句的字段名列表与对应的参数值。
  * 该函数复刻了 time-bank.service.ts 中的过滤行为，用于独立验证安全性。
  */
-function filterUpdateFields(data: Record<string, any>): {
+function filterUpdateFields(data: Record<string, unknown>): {
   fields: string[];
-  params: any[];
+  params: unknown[];
   rejected: string[];
 } {
   const fields: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
   let paramIndex = 1;
 
   // 仅遍历白名单字段，确保字段名为受控常量

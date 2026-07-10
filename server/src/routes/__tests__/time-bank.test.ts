@@ -197,7 +197,7 @@ describe('time-bank 路由集成测试', () => {
     it('缺 service_id 抛 BadRequestError 400', async () => {
       const res = await fetch(`${baseUrl}/recommend`, { headers: authHeader });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
       expect(mockMatchTimeService).not.toHaveBeenCalled();
     });
@@ -260,7 +260,7 @@ describe('time-bank 路由集成测试', () => {
         body: JSON.stringify(validServiceBody),
       });
       expect(res.status).toBe(201);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('CREATED');
       expect(mockCreateService).toHaveBeenCalledWith('user-uuid-001', expect.objectContaining({ title: '陪诊服务' }));
       // storeEmbedding 是 fire-and-forget 异步调用，验证传入正确参数
@@ -345,7 +345,7 @@ describe('time-bank 路由集成测试', () => {
         body: JSON.stringify({ action: 'complete' }),
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
       expect(mockCompleteOrder).not.toHaveBeenCalled();
     });
@@ -411,10 +411,10 @@ describe('time-bank 路由集成测试', () => {
       });
       const res = await fetch(`${baseUrl}/transactions?cursor=tx-0&limit=10`, { headers: authHeader });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
-      expect(data.data.nextCursor).toBe('tx-1');
-      expect(data.data.hasMore).toBe(true);
+      expect((data.data as Record<string, unknown>).nextCursor).toBe('tx-1');
+      expect((data.data as Record<string, unknown>).hasMore).toBe(true);
       expect(mockGetTransactions).toHaveBeenCalledWith('user-uuid-001', 'tx-0', 10);
     });
 

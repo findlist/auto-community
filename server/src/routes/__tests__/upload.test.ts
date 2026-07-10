@@ -112,11 +112,11 @@ describe('upload 路由集成测试', () => {
         headers: { Authorization: 'Bearer token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.url).toBe('https://cdn.example.com/2026-07-08/photo.jpg');
-      expect(data.data.filename).toBe('photo.jpg');
-      expect(data.data.size).toBe(100);
-      expect(data.data.mimetype).toBe('image/jpeg');
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).url).toBe('https://cdn.example.com/2026-07-08/photo.jpg');
+      expect((data.data as Record<string, unknown>).filename).toBe('photo.jpg');
+      expect((data.data as Record<string, unknown>).size).toBe(100);
+      expect((data.data as Record<string, unknown>).mimetype).toBe('image/jpeg');
       // 验证 adapter.put 收到 buffer 与 mimetype
       expect(mockPut).toHaveBeenCalledWith('2026-07-08/photo.jpg', expect.any(Buffer), 'image/jpeg');
     });
@@ -189,8 +189,8 @@ describe('upload 路由集成测试', () => {
         headers: { Authorization: 'Bearer token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.images).toHaveLength(2);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).images).toHaveLength(2);
       // 验证 batchPutWithRollback 收到 items 数组（含 key/buffer/mimetype/size）
       expect(mockBatchPutWithRollback).toHaveBeenCalled();
       const arg = mockBatchPutWithRollback.mock.calls[0][1] as Array<Record<string, unknown>>;

@@ -100,12 +100,12 @@ describe('reports 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(200);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
       // success 响应结构：{ code, message, data }
       expect(data.code).toBe('SUCCESS');
       expect(data.message).toBe('举报成功');
-      expect(data.data.id).toBe('report-uuid-001');
+      expect((data.data as Record<string, unknown>).id).toBe('report-uuid-001');
       // 验证 createReport 收到正确的 userId 与 body 字段
       expect(mockCreateReport).toHaveBeenCalledWith(
         'user-uuid-001',
@@ -131,8 +131,8 @@ describe('reports 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(401);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
       // AppError 标准化响应：code 为错误码字符串，message 为错误消息
       expect(data.message).toBe('未提供认证令牌');
       // createReport 不应被调用（被 authenticate 拦截）
@@ -151,13 +151,13 @@ describe('reports 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
       expect(data.message).toBe('参数验证失败');
       // 验证 errors 数组包含 targetType 字段错误
       expect(Array.isArray(data.errors)).toBe(true);
-      expect(data.errors.some((e: { field: string }) => e.field === 'targetType')).toBe(true);
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'targetType')).toBe(true);
       expect(mockCreateReport).not.toHaveBeenCalled();
     });
 
@@ -173,10 +173,10 @@ describe('reports 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
-      expect(data.errors.some((e: { field: string }) => e.field === 'targetId')).toBe(true);
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'targetId')).toBe(true);
     });
 
     it('reason 长度不足 5 时 validate 返回 422', async () => {
@@ -191,10 +191,10 @@ describe('reports 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
-      expect(data.errors.some((e: { field: string }) => e.field === 'reason')).toBe(true);
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'reason')).toBe(true);
     });
 
     it('createReport 抛错时由 errorHandler 返回 500', async () => {
@@ -210,8 +210,8 @@ describe('reports 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(500);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
       expect(data.message).toBe('数据库写入失败');
     });
@@ -229,10 +229,10 @@ describe('reports 路由集成测试', () => {
         body: JSON.stringify(body),
       });
       expect(res.status).toBe(422);
-      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, any> 便于字段访问
-      const data = (await res.json()) as Record<string, any>;
+      // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
-      expect(data.errors.some((e: { field: string }) => e.field === 'reason')).toBe(true);
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'reason')).toBe(true);
     });
   });
 });

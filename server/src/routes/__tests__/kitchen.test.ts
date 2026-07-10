@@ -194,7 +194,7 @@ describe('kitchen 路由集成测试', () => {
         body: JSON.stringify(validOfferBody),
       });
       expect(res.status).toBe(201);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('CREATED');
       expect(mockKitchenCreate).toHaveBeenCalledWith('user-uuid-001', expect.objectContaining({ title: '手工蛋糕' }));
       // storeEmbedding 是 fire-and-forget 异步调用，验证传入正确参数
@@ -209,7 +209,7 @@ describe('kitchen 路由集成测试', () => {
         body: JSON.stringify(bodyWithoutHealthCert),
       });
       expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
       expect(mockKitchenCreate).not.toHaveBeenCalled();
     });
@@ -233,7 +233,7 @@ describe('kitchen 路由集成测试', () => {
         body: JSON.stringify(bodyWithoutTitle),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
     });
 
@@ -256,7 +256,7 @@ describe('kitchen 路由集成测试', () => {
       });
       const res = await fetch(`${baseUrl}/posts?page=1&pageSize=10`);
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       // 验证 getList 收到筛选参数
       expect(mockKitchenGetList).toHaveBeenCalledWith(
@@ -291,7 +291,7 @@ describe('kitchen 路由集成测试', () => {
       mockKitchenGetById.mockRejectedValue(new NotFoundError('美食不存在'));
       const res = await fetch(`${baseUrl}/posts/non-existent`);
       expect(res.status).toBe(404);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
     });
   });
@@ -336,7 +336,7 @@ describe('kitchen 路由集成测试', () => {
         body: JSON.stringify(validOrderBody),
       });
       expect(res.status).toBe(201);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('CREATED');
       expect(mockOrderCreate).toHaveBeenCalledWith('user-uuid-001', expect.objectContaining({ quantity: 2 }));
       // auditMiddleware 在路由模块加载时已被调用（高阶函数返回中间件），
@@ -604,16 +604,18 @@ describe('kitchen 路由集成测试', () => {
         });
       const res = await fetch(`${baseUrl}/reviews?userId=user-uuid-001&page=1&pageSize=10`);
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
-      expect(data.data.total).toBe(2);
-      expect(data.data.list).toHaveLength(2);
+      const dataData = data.data as Record<string, unknown>;
+      expect(dataData.total).toBe(2);
+      const list = dataData.list as Record<string, unknown>[];
+      expect(list).toHaveLength(2);
       // 验证 rating string→number 转换（parseFloat）
-      expect(data.data.list[0].rating).toBe(5);
+      expect(list[0].rating).toBe(5);
       // 验证 reviewer 对象构建
-      expect(data.data.list[0].reviewer.nickname).toBe('张三');
+      expect((list[0].reviewer as Record<string, unknown>).nickname).toBe('张三');
       // 验证 nickname 为 null 时 reviewer 仍构建为对象
-      expect(data.data.list[1].reviewer.nickname).toBeNull();
+      expect((list[1].reviewer as Record<string, unknown>).nickname).toBeNull();
       // 验证 query 调用 2 次（count + list）
       expect(mockQuery).toHaveBeenCalledTimes(2);
       // 验证第一次 query（count）SQL 含 reviewed_id 条件
@@ -628,9 +630,10 @@ describe('kitchen 路由集成测试', () => {
         .mockResolvedValueOnce({ rows: [] });
       const res = await fetch(`${baseUrl}/reviews`);
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.total).toBe(0);
-      expect(data.data.list).toHaveLength(0);
+      const data = (await res.json()) as Record<string, unknown>;
+      const dataData = data.data as Record<string, unknown>;
+      expect(dataData.total).toBe(0);
+      expect(dataData.list).toHaveLength(0);
       // 验证第一次 query（count）SQL 不含 reviewed_id 条件
       const firstCallArgs = mockQuery.mock.calls[0];
       expect(firstCallArgs[0]).not.toContain("reviewed_id");
@@ -643,9 +646,10 @@ describe('kitchen 路由集成测试', () => {
         .mockResolvedValueOnce({ rows: [] });
       const res = await fetch(`${baseUrl}/reviews?userId=empty-user`);
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
-      expect(data.data.total).toBe(0);
-      expect(data.data.list).toEqual([]);
+      const data = (await res.json()) as Record<string, unknown>;
+      const dataData = data.data as Record<string, unknown>;
+      expect(dataData.total).toBe(0);
+      expect(dataData.list).toEqual([]);
     });
   });
 });

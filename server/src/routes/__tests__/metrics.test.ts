@@ -119,9 +119,11 @@ describe('metrics 路由集成测试', () => {
         headers: { Authorization: 'Bearer admin-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
-      expect(data.data.emergency_response_time.value).toBe(120);
+      const dataData = data.data as Record<string, unknown>;
+      const emergencyResponseTime = dataData.emergency_response_time as Record<string, unknown>;
+      expect(emergencyResponseTime.value).toBe(120);
       expect(mockGetDashboardMetrics).toHaveBeenCalledTimes(1);
     });
 
@@ -131,7 +133,7 @@ describe('metrics 路由集成测试', () => {
       });
       const res = await fetch(`${baseUrl}/dashboard`);
       expect(res.status).toBe(401);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.message).toBe('未提供认证令牌');
       expect(mockGetDashboardMetrics).not.toHaveBeenCalled();
     });
@@ -144,7 +146,7 @@ describe('metrics 路由集成测试', () => {
         headers: { Authorization: 'Bearer user-token' },
       });
       expect(res.status).toBe(403);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       // ForbiddenError 标准化响应：code 为 FORBIDDEN（CommonErrorCode.FORBIDDEN）
       expect(data.code).toBe('FORBIDDEN');
       expect(data.message).toContain('权限不足');
@@ -157,7 +159,7 @@ describe('metrics 路由集成测试', () => {
         headers: { Authorization: 'Bearer admin-token' },
       });
       expect(res.status).toBe(500);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
       expect(data.message).toBe('聚合查询失败');
     });
@@ -169,10 +171,11 @@ describe('metrics 路由集成测试', () => {
         headers: { Authorization: 'Bearer admin-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
-      expect(data.data.avg).toBe(100);
-      expect(data.data.count).toBe(10);
+      const dataData = data.data as Record<string, unknown>;
+      expect(dataData.avg).toBe(100);
+      expect(dataData.count).toBe(10);
       // 验证 getMetricSummary 收到正确的 name 参数
       expect(mockGetMetricSummary).toHaveBeenCalledWith(
         'emergency_response_time',
@@ -201,7 +204,7 @@ describe('metrics 路由集成测试', () => {
         headers: { Authorization: 'Bearer admin-token' },
       });
       expect(res.status).toBe(500);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
     });
   });
@@ -212,7 +215,7 @@ describe('metrics 路由集成测试', () => {
         headers: { Authorization: 'Bearer admin-token' },
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       expect(Array.isArray(data.data)).toBe(true);
       expect(data.data).toHaveLength(2);
@@ -259,7 +262,7 @@ describe('metrics 路由集成测试', () => {
         headers: { Authorization: 'Bearer admin-token' },
       });
       expect(res.status).toBe(500);
-      const data = (await res.json()) as Record<string, any>;
+      const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
     });
   });
