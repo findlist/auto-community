@@ -223,33 +223,33 @@ describe('kitchen-order.service create', () => {
 
 describe('kitchen-order.service confirm', () => {
   it('订单不存在抛 NotFoundError', async () => {
-    mockQuery.mockResolvedValue({ rows: [] });
+    mockClientQuery.mockResolvedValueOnce({ rows: [] }); // SELECT FOR UPDATE
 
     await expect(kitchenOrderService.confirm('not-exist', 'seller-1')).rejects.toThrow(NotFoundError);
   });
 
   it('非卖家抛 PermissionDeniedError', async () => {
-    mockQuery.mockResolvedValue({ rows: [makeOrderRow({ seller_id: 'seller-2' })] });
+    mockClientQuery.mockResolvedValueOnce({ rows: [makeOrderRow({ seller_id: 'seller-2' })] });
 
     await expect(kitchenOrderService.confirm('order-1', 'seller-1')).rejects.toThrow(PermissionDeniedError);
   });
 
   it('状态非 pending 抛 OrderStatusInvalidError', async () => {
-    mockQuery.mockResolvedValue({ rows: [makeOrderRow({ status: 'confirmed' })] });
+    mockClientQuery.mockResolvedValueOnce({ rows: [makeOrderRow({ status: 'confirmed' })] });
 
     await expect(kitchenOrderService.confirm('order-1', 'seller-1')).rejects.toThrow(OrderStatusInvalidError);
   });
 
   it('正常确认并通知买家', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ rows: [makeOrderRow({ status: 'pending' })] }) // SELECT
+    mockClientQuery
+      .mockResolvedValueOnce({ rows: [makeOrderRow({ status: 'pending' })] }) // SELECT FOR UPDATE
       .mockResolvedValueOnce({ rows: [] }); // UPDATE status
 
     const result = await kitchenOrderService.confirm('order-1', 'seller-1');
 
     expect(result.status).toBe('confirmed');
     // 验证 UPDATE SQL 含 status = 'confirmed'
-    const updateSql = mockQuery.mock.calls[1][0] as string;
+    const updateSql = mockClientQuery.mock.calls[1][0] as string;
     expect(updateSql).toContain("status = 'confirmed'");
   });
 });

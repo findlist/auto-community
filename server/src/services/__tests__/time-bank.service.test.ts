@@ -290,33 +290,40 @@ describe('time-bank.service createOrder', () => {
 
 // ===================== updateOrderStatus =====================
 describe('time-bank.service updateOrderStatus', () => {
+  // updateOrderStatus 已改为事务 + FOR UPDATE，配置 mockTransaction 注入 mockClient
+  beforeEach(() => {
+    mockTransaction.mockImplementation(async (cb: (client: typeof mockClient) => Promise<unknown>) => cb(mockClient));
+  });
+
   it('订单不存在时抛 NotFoundError', async () => {
-    mockQuery.mockResolvedValue({ rows: [] });
+    mockClient.query.mockResolvedValueOnce({ rows: [] }); // SELECT FOR UPDATE
 
     await expect(timeBankService.updateOrderStatus('nonexistent', 'user-1', 'accept')).rejects.toThrow(NotFoundError);
   });
 
   it('非双方当事人时抛 PermissionDeniedError', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ provider_id: 'user-2', requester_id: 'user-3', status: 'pending' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ provider_id: 'user-2', requester_id: 'user-3', status: 'pending' }] });
 
     await expect(timeBankService.updateOrderStatus('order-1', 'user-1', 'accept')).rejects.toThrow(PermissionDeniedError);
   });
 
   it('accept 非 provider 时抛 PermissionDeniedError', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ provider_id: 'user-2', requester_id: 'user-1', status: 'pending' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ provider_id: 'user-2', requester_id: 'user-1', status: 'pending' }] });
 
     await expect(timeBankService.updateOrderStatus('order-1', 'user-1', 'accept')).rejects.toThrow(PermissionDeniedError);
   });
 
   it('accept 状态非 pending 时抛 OrderStatusInvalidError', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'accepted' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'accepted' }] });
 
     await expect(timeBankService.updateOrderStatus('order-1', 'user-1', 'accept')).rejects.toThrow(OrderStatusInvalidError);
   });
 
   it('accept 正常：更新状态并通知 requester', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'pending' }] });
-    mockQuery.mockResolvedValue({ rows: [{ id: 'order-1', service_id: 'svc-1', provider_id: 'user-1', requester_id: 'user-2', duration_minutes: 60, status: 'accepted', started_at: null, completed_at: null, cancelled_at: null, created_at: new Date(), updated_at: new Date() }] });
+    mockClient.query
+      .mockResolvedValueOnce({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'pending' }] }) // SELECT FOR UPDATE
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', service_id: 'svc-1', provider_id: 'user-1', requester_id: 'user-2', duration_minutes: 60, status: 'accepted', started_at: null, completed_at: null, cancelled_at: null, created_at: new Date(), updated_at: new Date() }] }); // SELECT 返回更新后订单
 
     const result = await timeBankService.updateOrderStatus('order-1', 'user-1', 'accept');
 
@@ -326,8 +333,10 @@ describe('time-bank.service updateOrderStatus', () => {
   });
 
   it('start 正常：更新状态为 in_progress', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'accepted' }] });
-    mockQuery.mockResolvedValue({ rows: [{ id: 'order-1', service_id: 'svc-1', provider_id: 'user-1', requester_id: 'user-2', duration_minutes: 60, status: 'in_progress', started_at: new Date(), completed_at: null, cancelled_at: null, created_at: new Date(), updated_at: new Date() }] });
+    mockClient.query
+      .mockResolvedValueOnce({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'accepted' }] }) // SELECT FOR UPDATE
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', service_id: 'svc-1', provider_id: 'user-1', requester_id: 'user-2', duration_minutes: 60, status: 'in_progress', started_at: new Date(), completed_at: null, cancelled_at: null, created_at: new Date(), updated_at: new Date() }] }); // SELECT 返回更新后订单
 
     const result = await timeBankService.updateOrderStatus('order-1', 'user-1', 'start');
 
@@ -336,14 +345,16 @@ describe('time-bank.service updateOrderStatus', () => {
   });
 
   it('cancel 状态为 in_progress 时抛 OrderStatusInvalidError', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'in_progress' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'in_progress' }] });
 
     await expect(timeBankService.updateOrderStatus('order-1', 'user-1', 'cancel')).rejects.toThrow(OrderStatusInvalidError);
   });
 
   it('cancel 正常：由 requester 发起，通知 provider', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ provider_id: 'user-2', requester_id: 'user-1', status: 'pending' }] });
-    mockQuery.mockResolvedValue({ rows: [{ id: 'order-1', service_id: 'svc-1', provider_id: 'user-2', requester_id: 'user-1', duration_minutes: 60, status: 'cancelled', started_at: null, completed_at: null, cancelled_at: new Date(), created_at: new Date(), updated_at: new Date() }] });
+    mockClient.query
+      .mockResolvedValueOnce({ rows: [{ provider_id: 'user-2', requester_id: 'user-1', status: 'pending' }] }) // SELECT FOR UPDATE
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', service_id: 'svc-1', provider_id: 'user-2', requester_id: 'user-1', duration_minutes: 60, status: 'cancelled', started_at: null, completed_at: null, cancelled_at: new Date(), created_at: new Date(), updated_at: new Date() }] }); // SELECT 返回更新后订单
 
     const result = await timeBankService.updateOrderStatus('order-1', 'user-1', 'cancel');
 
@@ -353,13 +364,13 @@ describe('time-bank.service updateOrderStatus', () => {
   });
 
   it('complete action 时抛 BadRequestError（提示用 completeOrder）', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'in_progress' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'in_progress' }] });
 
     await expect(timeBankService.updateOrderStatus('order-1', 'user-1', 'complete')).rejects.toThrow(BadRequestError);
   });
 
   it('无效 action 时抛 BadRequestError', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'pending' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'pending' }] });
 
     await expect(timeBankService.updateOrderStatus('order-1', 'user-1', 'invalid')).rejects.toThrow(BadRequestError);
   });

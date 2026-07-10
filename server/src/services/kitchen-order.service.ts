@@ -173,27 +173,32 @@ async function create(userId: string, data: {
 
 // 确认订单
 async function confirm(orderId: string, sellerId: string) {
-  const result = await query<KitchenOrderRow>(
-    'SELECT * FROM kitchen_orders WHERE id = $1',
-    [orderId]
-  );
+  // 使用事务 + FOR UPDATE 行锁，防止并发确认破坏订单状态机一致性
+  const order = await transaction(async (client) => {
+    const result = await client.query<KitchenOrderRow>(
+      'SELECT * FROM kitchen_orders WHERE id = $1 FOR UPDATE',
+      [orderId]
+    );
 
-  if (result.rows.length === 0) {
-    throw new NotFoundError('订单');
-  }
-  const order = result.rows[0];
+    if (result.rows.length === 0) {
+      throw new NotFoundError('订单');
+    }
+    const order = result.rows[0];
 
-  if (order.seller_id !== sellerId) {
-    throw new PermissionDeniedError('只有分享者可以确认订单');
-  }
-  if (order.status !== 'pending') {
-    throw new OrderStatusInvalidError('只能确认待确认的订单');
-  }
+    if (order.seller_id !== sellerId) {
+      throw new PermissionDeniedError('只有分享者可以确认订单');
+    }
+    if (order.status !== 'pending') {
+      throw new OrderStatusInvalidError('只能确认待确认的订单');
+    }
 
-  await query(
-    "UPDATE kitchen_orders SET status = 'confirmed', updated_at = NOW() WHERE id = $1",
-    [orderId]
-  );
+    await client.query(
+      "UPDATE kitchen_orders SET status = 'confirmed', updated_at = NOW() WHERE id = $1",
+      [orderId]
+    );
+
+    return result.rows[0];
+  });
 
   // 通知买家：订单已被分享者确认（通知失败不影响主流程）
   notificationService.notifyOrderStatusChange(
@@ -203,7 +208,7 @@ async function confirm(orderId: string, sellerId: string) {
     'confirmed',
   ).catch(() => {});
 
-  return { ...toOrderResponse(result.rows[0]), status: 'confirmed' };
+  return { ...toOrderResponse(order), status: 'confirmed' };
 }
 
 // 完成订单（含评价和积分结算）

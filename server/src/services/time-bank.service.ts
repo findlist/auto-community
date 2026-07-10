@@ -452,41 +452,49 @@ async function createOrder(userId: string, serviceId: string) {
 }
 
 async function updateOrderStatus(orderId: string, userId: string, action: string) {
-  const orderResult = await query('SELECT * FROM time_orders WHERE id = $1', [orderId]);
-  if (orderResult.rows.length === 0) throw new NotFoundError('订单');
-  const order = orderResult.rows[0];
+  // 使用事务 + FOR UPDATE 行锁，防止并发状态变更破坏订单状态机一致性
+  const order = await transaction(async (client) => {
+    const orderResult = await client.query('SELECT * FROM time_orders WHERE id = $1 FOR UPDATE', [orderId]);
+    if (orderResult.rows.length === 0) throw new NotFoundError('订单');
+    const order = orderResult.rows[0];
 
-  const isProvider = order.provider_id === userId;
-  const isRequester = order.requester_id === userId;
-  if (!isProvider && !isRequester) throw new PermissionDeniedError();
+    const isProvider = order.provider_id === userId;
+    const isRequester = order.requester_id === userId;
+    if (!isProvider && !isRequester) throw new PermissionDeniedError();
 
-  switch (action) {
-    case 'accept': {
-      if (!isProvider) throw new PermissionDeniedError('仅服务提供者可接受订单');
-      if (order.status !== 'pending') throw new OrderStatusInvalidError();
-      await query("UPDATE time_orders SET status = 'accepted', updated_at = NOW() WHERE id = $1", [orderId]);
-      break;
-    }
-    case 'start': {
-      if (!isProvider) throw new PermissionDeniedError('仅服务提供者可开始服务');
-      if (order.status !== 'accepted') throw new OrderStatusInvalidError();
-      await query("UPDATE time_orders SET status = 'in_progress', started_at = NOW(), updated_at = NOW() WHERE id = $1", [orderId]);
-      break;
-    }
-    case 'cancel': {
-      if (!['pending', 'accepted'].includes(order.status)) {
-        throw new OrderStatusInvalidError('订单状态不允许取消');
+    switch (action) {
+      case 'accept': {
+        if (!isProvider) throw new PermissionDeniedError('仅服务提供者可接受订单');
+        if (order.status !== 'pending') throw new OrderStatusInvalidError();
+        await client.query("UPDATE time_orders SET status = 'accepted', updated_at = NOW() WHERE id = $1", [orderId]);
+        break;
       }
-      await query("UPDATE time_orders SET status = 'cancelled', cancelled_at = NOW(), updated_at = NOW() WHERE id = $1", [orderId]);
-      break;
+      case 'start': {
+        if (!isProvider) throw new PermissionDeniedError('仅服务提供者可开始服务');
+        if (order.status !== 'accepted') throw new OrderStatusInvalidError();
+        await client.query("UPDATE time_orders SET status = 'in_progress', started_at = NOW(), updated_at = NOW() WHERE id = $1", [orderId]);
+        break;
+      }
+      case 'cancel': {
+        if (!['pending', 'accepted'].includes(order.status)) {
+          throw new OrderStatusInvalidError('订单状态不允许取消');
+        }
+        await client.query("UPDATE time_orders SET status = 'cancelled', cancelled_at = NOW(), updated_at = NOW() WHERE id = $1", [orderId]);
+        break;
+      }
+      case 'complete':
+        throw new BadRequestError('请使用 completeOrder 方法完成订单');
+      default:
+        throw new BadRequestError('无效的操作类型');
     }
-    case 'complete':
-      throw new BadRequestError('请使用 completeOrder 方法完成订单');
-    default:
-      throw new BadRequestError('无效的操作类型');
-  }
+
+    // 事务内重新查询更新后的订单行
+    const updatedResult = await client.query('SELECT * FROM time_orders WHERE id = $1', [orderId]);
+    return updatedResult.rows[0];
+  });
 
   // 通知对方订单状态变更（accept/start 由 provider 操作通知 requester；cancel 通知对方）
+  const isProvider = order.provider_id === userId;
   const otherUserId = isProvider ? order.requester_id : order.provider_id;
   const statusMap: Record<string, string> = { accept: 'accepted', start: 'in_progress', cancel: 'cancelled' };
   notificationService.notifyOrderStatusChange(
@@ -496,9 +504,8 @@ async function updateOrderStatus(orderId: string, userId: string, action: string
     statusMap[action],
   ).catch(() => {});
 
-  const updatedResult = await query('SELECT * FROM time_orders WHERE id = $1', [orderId]);
   // 断言为 TimeOrderRow：与 time_orders 表结构对齐
-  return toOrder(updatedResult.rows[0] as TimeOrderRow);
+  return toOrder(order as TimeOrderRow);
 }
 
 async function completeOrder(
