@@ -5,6 +5,11 @@ export default defineConfig({
   test: {
     // 测试运行环境：后端服务无 DOM 依赖，使用 node 环境
     environment: 'node',
+    // flaky test 自动重试 1 次
+    // 设计原因：19 个路由集成测试文件并行执行时各自启动/关闭 HTTP 服务器，
+    // coverage 插桩导致性能下降，偶发 server.address() 时序问题使 fetch 报 "bad port"。
+    // retry:1 给 flaky 用例第二次机会；持续失败的真正 bug 连续 2 次失败仍会报错，不会被掩盖
+    retry: 1,
     // 测试文件匹配模式：覆盖 src 下任意层级的 __tests__ 目录
     include: ['src/**/__tests__/**/*.test.ts'],
     // 排除编译产物、node_modules 以及预先存在的非 vitest 格式测试文件：
