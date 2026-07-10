@@ -29,8 +29,9 @@ module.exports = {
   rules: {
     // 禁止 any 类型：前端 any 已全部清零，升级为 error 防止退化
     '@typescript-eslint/no-explicit-any': 'error',
-    // 禁止未使用的变量
-    '@typescript-eslint/no-unused-vars': 'error',
+    // 禁止未使用的变量：忽略以 _ 开头的参数/变量/捕获错误，与后端配置保持一致
+    // 便于 React 组件 props 解构中必须保留签名但不使用的参数场景
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
     // 强制 Hooks 规则
     'react-hooks/rules-of-hooks': 'error',
     // 依赖项检查（警告级别，避免过度严格）
