@@ -19,7 +19,7 @@ const mockClient = {
 
 vi.mock('../../config/database', () => ({
   query: vi.fn(),
-  transaction: vi.fn((cb: (client: typeof mockClient) => Promise<any>) => cb(mockClient)),
+  transaction: vi.fn((cb: (client: typeof mockClient) => Promise<unknown>) => cb(mockClient)),
   pool: {},
 }));
 
@@ -30,8 +30,12 @@ import { NotFoundError } from '../../utils/errors';
 const mockedQuery = vi.mocked(query);
 const mockedTransaction = vi.mocked(transaction);
 
+// 局部类型别名：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需 rows
+// 用 as unknown as DbResult 替代显式 any 断言以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
+
 // 构造一条地址行
-function mockRow(overrides: Record<string, any> = {}) {
+function mockRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 'addr-1',
     user_id: 'user-1',
@@ -55,7 +59,7 @@ describe('address.service - listByUser', () => {
   it('返回当前用户的所有地址，按默认优先', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [mockRow({ is_default: true }), mockRow({ id: 'addr-2' })],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await addressService.listByUser('user-1');
 
@@ -67,7 +71,7 @@ describe('address.service - listByUser', () => {
   });
 
   it('用户无地址时返回空数组', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     const result = await addressService.listByUser('user-1');
     expect(result).toEqual([]);
   });
@@ -77,8 +81,8 @@ describe('address.service - create', () => {
   it('首个地址自动设为默认', async () => {
     // count=0 → 自动默认
     mockClient.query
-      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as any) // COUNT
-      .mockResolvedValueOnce({ rows: [mockRow({ is_default: true })] } as any); // INSERT RETURNING
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult) // COUNT
+      .mockResolvedValueOnce({ rows: [mockRow({ is_default: true })] } as unknown as DbResult); // INSERT RETURNING
 
     const result = await addressService.create('user-1', {
       recipient: '张三',
@@ -96,9 +100,9 @@ describe('address.service - create', () => {
 
   it('标记为默认时，先取消其他默认地址', async () => {
     mockClient.query
-      .mockResolvedValueOnce({ rows: [] } as any) // UPDATE 取消其他默认
-      .mockResolvedValueOnce({ rows: [{ count: '2' }] } as any) // COUNT 非首条
-      .mockResolvedValueOnce({ rows: [mockRow({ is_default: true })] } as any); // INSERT
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult) // UPDATE 取消其他默认
+      .mockResolvedValueOnce({ rows: [{ count: '2' }] } as unknown as DbResult) // COUNT 非首条
+      .mockResolvedValueOnce({ rows: [mockRow({ is_default: true })] } as unknown as DbResult); // INSERT
 
     await addressService.create('user-1', {
       recipient: '李四',
@@ -114,7 +118,7 @@ describe('address.service - create', () => {
 
 describe('address.service - update', () => {
   it('地址不存在时抛 NotFoundError', async () => {
-    mockClient.query.mockResolvedValueOnce({ rows: [] } as any); // SELECT FOR UPDATE
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult); // SELECT FOR UPDATE
 
     await expect(
       addressService.update('addr-x', 'user-1', { recipient: '新名字' }),
@@ -123,8 +127,8 @@ describe('address.service - update', () => {
 
   it('更新字段时按需收集并附加 updated_at', async () => {
     mockClient.query
-      .mockResolvedValueOnce({ rows: [mockRow()] } as any) // SELECT FOR UPDATE
-      .mockResolvedValueOnce({ rows: [mockRow({ recipient: '新名字' })] } as any); // UPDATE RETURNING
+      .mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult) // SELECT FOR UPDATE
+      .mockResolvedValueOnce({ rows: [mockRow({ recipient: '新名字' })] } as unknown as DbResult); // UPDATE RETURNING
 
     const result = await addressService.update('addr-1', 'user-1', { recipient: '新名字' });
 
@@ -136,9 +140,9 @@ describe('address.service - update', () => {
 
   it('设为默认时先取消其他默认地址', async () => {
     mockClient.query
-      .mockResolvedValueOnce({ rows: [mockRow()] } as any) // SELECT FOR UPDATE
-      .mockResolvedValueOnce({ rows: [] } as any) // UPDATE 取消其他默认
-      .mockResolvedValueOnce({ rows: [mockRow({ is_default: true })] } as any); // UPDATE RETURNING
+      .mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult) // SELECT FOR UPDATE
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult) // UPDATE 取消其他默认
+      .mockResolvedValueOnce({ rows: [mockRow({ is_default: true })] } as unknown as DbResult); // UPDATE RETURNING
 
     await addressService.update('addr-1', 'user-1', { isDefault: true });
 
@@ -151,8 +155,8 @@ describe('address.service - update', () => {
 describe('address.service - remove', () => {
   it('删除非默认地址时不触发自动迁移', async () => {
     mockClient.query
-      .mockResolvedValueOnce({ rows: [mockRow({ is_default: false })] } as any) // SELECT
-      .mockResolvedValueOnce({ rows: [] } as any); // DELETE
+      .mockResolvedValueOnce({ rows: [mockRow({ is_default: false })] } as unknown as DbResult) // SELECT
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult); // DELETE
 
     await addressService.remove('addr-1', 'user-1');
 
@@ -162,9 +166,9 @@ describe('address.service - remove', () => {
 
   it('删除默认地址时自动将最近一条设为默认', async () => {
     mockClient.query
-      .mockResolvedValueOnce({ rows: [mockRow({ is_default: true })] } as any) // SELECT
-      .mockResolvedValueOnce({ rows: [] } as any) // DELETE
-      .mockResolvedValueOnce({ rows: [] } as any); // UPDATE 自动迁移默认
+      .mockResolvedValueOnce({ rows: [mockRow({ is_default: true })] } as unknown as DbResult) // SELECT
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult) // DELETE
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult); // UPDATE 自动迁移默认
 
     await addressService.remove('addr-1', 'user-1');
 
@@ -175,22 +179,22 @@ describe('address.service - remove', () => {
   });
 
   it('地址不存在时抛 NotFoundError', async () => {
-    mockClient.query.mockResolvedValueOnce({ rows: [] } as any);
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(addressService.remove('addr-x', 'user-1')).rejects.toBeInstanceOf(NotFoundError);
   });
 });
 
 describe('address.service - setDefault', () => {
   it('地址不存在时抛 NotFoundError', async () => {
-    mockClient.query.mockResolvedValueOnce({ rows: [] } as any);
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(addressService.setDefault('addr-x', 'user-1')).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('先取消所有默认，再设置目标地址为默认', async () => {
     mockClient.query
-      .mockResolvedValueOnce({ rows: [mockRow()] } as any) // SELECT 校验归属
-      .mockResolvedValueOnce({ rows: [] } as any) // UPDATE 全部取消默认
-      .mockResolvedValueOnce({ rows: [] } as any); // UPDATE 目标设为默认
+      .mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult) // SELECT 校验归属
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult) // UPDATE 全部取消默认
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult); // UPDATE 目标设为默认
 
     await addressService.setDefault('addr-1', 'user-1');
 

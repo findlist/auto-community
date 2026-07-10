@@ -61,12 +61,15 @@ vi.mock('../credit.service', () => ({
   },
 }));
 
-import { skillOrderService } from '../skill-order.service';
+import { skillOrderService, type ResolveAction } from '../skill-order.service';
 import { query, transaction } from '../../config/database';
 import { idempotency } from '../../utils/idempotency';
 import { creditService } from '../credit.service';
 import { BadRequestError, NotFoundError, OrderStatusInvalidError, InsufficientCreditError, PermissionDeniedError } from '../../utils/errors';
 
+// 局部类型别名：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需 rows
+// 用 as unknown as DbResult 替代裸 any 断言以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
 const mockedQuery = vi.mocked(query);
 const mockedTransaction = vi.mocked(transaction);
 const mockedIdempotency = vi.mocked(idempotency);
@@ -93,7 +96,7 @@ describe('skill-order.service - createOrder 双花防护', () => {
   });
 
   it('帖子不存在时应抛 NotFoundError 且不冻结积分', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await expect(
       skillOrderService.createOrder('user-1', 'post-missing'),
@@ -106,7 +109,7 @@ describe('skill-order.service - createOrder 双花防护', () => {
   it('帖子状态非 active 时应抛 OrderStatusInvalidError', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'post-1', status: 'closed', user_id: 'seller-1', credit_price: 30 }],
-    } as any);
+    } as unknown as DbResult);
 
     await expect(
       skillOrderService.createOrder('user-1', 'post-1'),
@@ -116,7 +119,7 @@ describe('skill-order.service - createOrder 双花防护', () => {
   it('购买自己的帖子应抛 BadRequestError', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'post-1', status: 'active', user_id: 'user-1', credit_price: 30 }],
-    } as any);
+    } as unknown as DbResult);
 
     await expect(
       skillOrderService.createOrder('user-1', 'post-1'),
@@ -128,7 +131,7 @@ describe('skill-order.service - createOrder 双花防护', () => {
     const expired = new Date(Date.now() - 86400_000).toISOString();
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'post-1', status: 'active', user_id: 'seller-1', credit_price: 30, expires_at: expired }],
-    } as any);
+    } as unknown as DbResult);
 
     await expect(
       skillOrderService.createOrder('user-1', 'post-1'),
@@ -138,7 +141,7 @@ describe('skill-order.service - createOrder 双花防护', () => {
   it('freezeCredits 抛错（余额不足）时不创建订单、不写入幂等缓存', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'post-1', status: 'active', user_id: 'seller-1', credit_price: 80 }],
-    } as any);
+    } as unknown as DbResult);
 
     // 模拟事务：直接执行 callback，让 creditService.freezeCredits 抛错
     // cb 类型为 PoolClient 回调（与 transaction 签名对齐），mockClient 仅实现 query 方法故用 unknown 中转断言
@@ -156,7 +159,7 @@ describe('skill-order.service - createOrder 双花防护', () => {
   it('正常下单：冻结积分 → 创建订单 → 写入幂等缓存', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'post-1', status: 'active', user_id: 'seller-1', credit_price: 30 }],
-    } as any);
+    } as unknown as DbResult);
 
     const insertedOrder = {
       id: 'order-1',
@@ -179,7 +182,7 @@ describe('skill-order.service - createOrder 双花防护', () => {
 
     // mock 事务 client.query：INSERT INTO skill_orders 返回订单
     const mockClient = {
-      query: vi.fn().mockResolvedValueOnce({ rows: [insertedOrder] } as any),
+      query: vi.fn().mockResolvedValueOnce({ rows: [insertedOrder] } as unknown as DbResult),
     };
     mockedTransaction.mockImplementationOnce(async (cb: (client: PoolClient) => Promise<unknown>) => cb(mockClient as unknown as PoolClient));
 
@@ -220,9 +223,9 @@ describe('skill-order.service - cancelOrder 退款', () => {
     // 3. SELECT 返回更新后订单
     const mockClient = {
       query: vi.fn()
-        .mockResolvedValueOnce({ rows: [order] } as any)         // SELECT FOR UPDATE
-        .mockResolvedValueOnce({ rows: [] } as any)               // UPDATE cancelled
-        .mockResolvedValueOnce({ rows: [{ ...order, status: 'cancelled' }] } as any), // SELECT 返回
+        .mockResolvedValueOnce({ rows: [order] } as unknown as DbResult)         // SELECT FOR UPDATE
+        .mockResolvedValueOnce({ rows: [] } as unknown as DbResult)               // UPDATE cancelled
+        .mockResolvedValueOnce({ rows: [{ ...order, status: 'cancelled' }] } as unknown as DbResult), // SELECT 返回
     };
     mockedTransaction.mockImplementationOnce(async (cb: (client: PoolClient) => Promise<unknown>) => cb(mockClient as unknown as PoolClient));
 
@@ -254,10 +257,10 @@ describe('skill-order.service - cancelOrder 退款', () => {
 
     const mockClient = {
       query: vi.fn()
-        .mockResolvedValueOnce({ rows: [order] } as any)                                  // SELECT FOR UPDATE
-        .mockResolvedValueOnce({ rows: [] } as any)                                        // UPDATE cancelled
-        .mockResolvedValueOnce({ rows: [{ credit_balance: 20 }] } as any)                  // SELECT 卖家余额
-        .mockResolvedValueOnce({ rows: [{ ...order, status: 'cancelled' }] } as any),     // SELECT 返回
+        .mockResolvedValueOnce({ rows: [order] } as unknown as DbResult)                                  // SELECT FOR UPDATE
+        .mockResolvedValueOnce({ rows: [] } as unknown as DbResult)                                        // UPDATE cancelled
+        .mockResolvedValueOnce({ rows: [{ credit_balance: 20 }] } as unknown as DbResult)                  // SELECT 卖家余额
+        .mockResolvedValueOnce({ rows: [{ ...order, status: 'cancelled' }] } as unknown as DbResult),     // SELECT 返回
     };
     mockedTransaction.mockImplementationOnce(async (cb: (client: PoolClient) => Promise<unknown>) => cb(mockClient as unknown as PoolClient));
 
@@ -294,7 +297,7 @@ describe('skill-order.service - cancelOrder 退款', () => {
       status: 'pending',
     };
     const mockClient = {
-      query: vi.fn().mockResolvedValueOnce({ rows: [order] } as any),
+      query: vi.fn().mockResolvedValueOnce({ rows: [order] } as unknown as DbResult),
     };
     mockedTransaction.mockImplementationOnce(async (cb: (client: PoolClient) => Promise<unknown>) => cb(mockClient as unknown as PoolClient));
 
@@ -315,7 +318,7 @@ describe('skill-order.service - cancelOrder 退款', () => {
       status: 'completed',
     };
     const mockClient = {
-      query: vi.fn().mockResolvedValueOnce({ rows: [order] } as any),
+      query: vi.fn().mockResolvedValueOnce({ rows: [order] } as unknown as DbResult),
     };
     mockedTransaction.mockImplementationOnce(async (cb: (client: PoolClient) => Promise<unknown>) => cb(mockClient as unknown as PoolClient));
 
@@ -326,7 +329,7 @@ describe('skill-order.service - cancelOrder 退款', () => {
 
   it('订单不存在应抛 NotFoundError', async () => {
     const mockClient = {
-      query: vi.fn().mockResolvedValueOnce({ rows: [] } as any),
+      query: vi.fn().mockResolvedValueOnce({ rows: [] } as unknown as DbResult),
     };
     mockedTransaction.mockImplementationOnce(async (cb: (client: PoolClient) => Promise<unknown>) => cb(mockClient as unknown as PoolClient));
 
@@ -383,12 +386,12 @@ function buildOrderRow(overrides: Partial<Record<string, unknown>> = {}): SkillO
 }
 
 // mock 事务内 client.query 链式返回值：按 rows 数组顺序填充
-function mockTransactionQuery(...rowsList: any[]) {
+function mockTransactionQuery(...rowsList: unknown[]) {
   const mockClient = {
     query: vi.fn(),
   };
   rowsList.forEach((rows) => {
-    mockClient.query.mockResolvedValueOnce({ rows } as any);
+    mockClient.query.mockResolvedValueOnce({ rows } as unknown as DbResult);
   });
   mockedTransaction.mockImplementationOnce(async (cb: (client: PoolClient) => Promise<unknown>) => cb(mockClient as unknown as PoolClient));
   return mockClient;
@@ -526,7 +529,7 @@ describe('skill-order.service - completeOrder', () => {
 
     // 不应调用 INSERT INTO reviews
     const insertCalls = mockClient.query.mock.calls.filter(
-      (call: any[]) => typeof call[0] === 'string' && call[0].includes('INSERT INTO reviews'),
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('INSERT INTO reviews'),
     );
     expect(insertCalls).toHaveLength(0);
   });
@@ -561,7 +564,7 @@ describe('skill-order.service - disputeOrder', () => {
 
     // UPDATE SQL 应携带 previous_status 与 dispute_reason
     const updateCalls = mockClient.query.mock.calls.filter(
-      (call: any[]) => typeof call[0] === 'string' && call[0].includes("status = 'disputed'"),
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].includes("status = 'disputed'"),
     );
     expect(updateCalls).toHaveLength(1);
     expect(updateCalls[0][1]).toEqual(['order-1', 'accepted', '卖家不响应']);
@@ -609,7 +612,7 @@ describe('skill-order.service - resolveDispute', () => {
     expect(mockedCreditService.unfreezeCredits).not.toHaveBeenCalled();
     // UPDATE SQL 应携带 previous_status
     const updateCalls = mockClient.query.mock.calls.filter(
-      (call: any[]) => typeof call[0] === 'string' && call[0].includes('resolved_at = NOW()'),
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('resolved_at = NOW()'),
     );
     expect(updateCalls).toHaveLength(1);
     expect(updateCalls[0][1]).toEqual(['order-1', 'accepted', '继续履行', 'admin-1']);
@@ -660,7 +663,7 @@ describe('skill-order.service - resolveDispute', () => {
 
   it('非法 action 应抛 BadRequestError', async () => {
     await expect(
-      skillOrderService.resolveDispute('order-1', 'admin-1', '说明', 'invalid' as any),
+      skillOrderService.resolveDispute('order-1', 'admin-1', '说明', 'invalid' as ResolveAction),
     ).rejects.toBeInstanceOf(BadRequestError);
   });
 
@@ -692,8 +695,8 @@ describe('skill-order.service - getOrderList', () => {
       seller_avatar: 's-avatar',
     };
     // COUNT + LIST 两次 query
-    mockedQuery.mockResolvedValueOnce({ rows: [{ count: '1' }] } as any);
-    mockedQuery.mockResolvedValueOnce({ rows: [orderRow] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult);
+    mockedQuery.mockResolvedValueOnce({ rows: [orderRow] } as unknown as DbResult);
 
     const result = await skillOrderService.getOrderList('buyer-1');
 
@@ -705,8 +708,8 @@ describe('skill-order.service - getOrderList', () => {
   });
 
   it('携带 status 筛选时 WHERE 条件追加 status 子句', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] } as any);
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await skillOrderService.getOrderList('buyer-1', { status: 'completed' }, 2, 10);
 
@@ -729,7 +732,7 @@ describe('skill-order.service - getOrderById', () => {
       seller_nickname: '卖家B',
       seller_avatar: null,
     };
-    mockedQuery.mockResolvedValueOnce({ rows: [orderRow] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [orderRow] } as unknown as DbResult);
 
     const result = await skillOrderService.getOrderById('order-1', 'buyer-1');
 
@@ -739,14 +742,14 @@ describe('skill-order.service - getOrderById', () => {
   });
 
   it('订单不存在应抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(
       skillOrderService.getOrderById('order-missing', 'buyer-1'),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('非买家/卖家查询应抛 PermissionDeniedError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [buildOrderRow()] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [buildOrderRow()] } as unknown as DbResult);
     await expect(
       skillOrderService.getOrderById('order-1', 'stranger-1'),
     ).rejects.toBeInstanceOf(PermissionDeniedError);

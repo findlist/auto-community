@@ -19,14 +19,14 @@ vi.mock('../../config/database', () => ({
 vi.mock('../cache.service', () => ({
   // kitchenPostCache.get 直接调用 fetchFn，便于测试 DB 查询逻辑
   kitchenPostCache: {
-    get: vi.fn((_id: string, fetchFn: () => Promise<any>) => fetchFn()),
+    get: vi.fn((_id: string, fetchFn: () => Promise<unknown>) => fetchFn()),
     invalidate: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
 // mock sanitize，避免实际 xss 库依赖
 vi.mock('../../utils/sanitize', () => ({
-  sanitizeObject: vi.fn(<T extends Record<string, any>>(data: T): T => data),
+  sanitizeObject: vi.fn(<T extends Record<string, unknown>>(data: T): T => data),
   sanitizeXss: vi.fn((v: unknown) => v),
   validateImageUrls: vi.fn(),
 }));
@@ -39,10 +39,14 @@ import { NotFoundError, PermissionDeniedError } from '../../utils/errors';
 const mockedQuery = vi.mocked(query);
 const mockedCache = vi.mocked(kitchenPostCache);
 
+// 局部类型别名：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需 rows
+// 用 as unknown as DbResult 替代显式 any 断言以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
+
 // 构造一条 kitchen_posts 行（含 join 出来的 user 字段）
 // 设计原因：pickup_time/created_at/updated_at 用 Date 对象，反映 pg TIMESTAMP 列的实际解析行为，
 // 与 KitchenPostRow 类型定义对齐，避免 toKitchenPostResponse 入参类型不匹配
-function mockRow(overrides: Record<string, any> = {}) {
+function mockRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 'k1',
     user_id: 'u1',
@@ -106,7 +110,7 @@ describe('kitchen.service - toKitchenPostResponse', () => {
 
 describe('kitchen.service - create', () => {
   it('创建美食分享并返回响应对象', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [mockRow()] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult);
 
     const result = await kitchenService.create('u1', {
       type: 'offer',
@@ -116,7 +120,7 @@ describe('kitchen.service - create', () => {
       price: 20,
       quantity: 5,
       images: ['https://cdn.example.com/1.png'],
-    } as any);
+    });
 
     expect(result.title).toBe('红烧肉');
     expect(result.price).toBe(20);
@@ -129,8 +133,8 @@ describe('kitchen.service - create', () => {
 describe('kitchen.service - getList', () => {
   it('按 type/category/keyword 多条件查询', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as any)
-      .mockResolvedValueOnce({ rows: [mockRow()] } as any);
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult);
 
     const result = await kitchenService.getList({
       type: 'offer',
@@ -150,8 +154,8 @@ describe('kitchen.service - getList', () => {
 
   it('无条件时返回全部', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as any)
-      .mockResolvedValueOnce({ rows: [] } as any);
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     const result = await kitchenService.getList({}, 1, 20);
     expect(result.total).toBe(0);
@@ -161,7 +165,7 @@ describe('kitchen.service - getList', () => {
 
 describe('kitchen.service - getById', () => {
   it('命中数据库后返回详情', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [mockRow()] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult);
 
     const result = await kitchenService.getById('k1');
 
@@ -171,14 +175,14 @@ describe('kitchen.service - getById', () => {
   });
 
   it('帖子不存在抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(kitchenService.getById('k-x')).rejects.toBeInstanceOf(NotFoundError);
   });
 });
 
 describe('kitchen.service - update', () => {
   it('非作者更新抛 PermissionDeniedError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ user_id: 'u-author' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ user_id: 'u-author' }] } as unknown as DbResult);
 
     await expect(
       kitchenService.update('k1', 'u-other', { title: '篡改' }),
@@ -186,14 +190,14 @@ describe('kitchen.service - update', () => {
   });
 
   it('帖子不存在抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(kitchenService.update('k-x', 'u1', { title: 'x' })).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('作者更新字段后清除缓存', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ user_id: 'u1' }] } as any) // SELECT 权限校验
-      .mockResolvedValueOnce({ rows: [mockRow({ title: '新标题' })] } as any); // UPDATE RETURNING
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u1' }] } as unknown as DbResult) // SELECT 权限校验
+      .mockResolvedValueOnce({ rows: [mockRow({ title: '新标题' })] } as unknown as DbResult); // UPDATE RETURNING
 
     const result = await kitchenService.update('k1', 'u1', { title: '新标题' });
 
@@ -204,8 +208,8 @@ describe('kitchen.service - update', () => {
 
   it('无字段更新时走 getById 分支', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ user_id: 'u1' }] } as any) // SELECT 权限校验
-      .mockResolvedValueOnce({ rows: [mockRow()] } as any); // getById 内部 SELECT
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u1' }] } as unknown as DbResult) // SELECT 权限校验
+      .mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult); // getById 内部 SELECT
 
     const result = await kitchenService.update('k1', 'u1', {});
 
@@ -218,8 +222,8 @@ describe('kitchen.service - update', () => {
   // 一次性传入全部字段可覆盖所有字段映射分支，验证 SQL SET 子句拼装正确性
   it('更新全部字段时 SQL 包含所有 SET 子句', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ user_id: 'u1' }] } as any) // SELECT 权限校验
-      .mockResolvedValueOnce({ rows: [mockRow({ title: '新标题' })] } as any); // UPDATE RETURNING
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u1' }] } as unknown as DbResult) // SELECT 权限校验
+      .mockResolvedValueOnce({ rows: [mockRow({ title: '新标题' })] } as unknown as DbResult); // UPDATE RETURNING
 
     await kitchenService.update('k1', 'u1', {
       title: '新标题',
@@ -258,8 +262,8 @@ describe('kitchen.service - update', () => {
 
   it('仅更新 images 字段时触发 validateImageUrls', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ user_id: 'u1' }] } as any)
-      .mockResolvedValueOnce({ rows: [mockRow()] } as any);
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u1' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult);
 
     await kitchenService.update('k1', 'u1', { images: ['https://cdn.example.com/x.png'] });
 
@@ -291,14 +295,14 @@ describe('kitchen.service - create 默认值分支', () => {
   // 覆盖 create 中各字段 || 默认值分支：price || 0、pickupTime || null、pickupLocation || null、
   // pickupType || 'self_pickup'、images || []、allergens || []、healthCert || false
   it('未传可选字段时使用默认值', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [mockRow()] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult);
 
     await kitchenService.create('u1', {
       type: 'offer',
       title: '简餐',
       category: '简餐',
       quantity: 1,
-    } as any);
+    });
 
     // 验证 INSERT 参数：price=0、pickupType='self_pickup'、images=[]、allergens=[]、healthCert=false
     const insertParams = mockedQuery.mock.calls[0][1] as unknown[];
@@ -316,8 +320,8 @@ describe('kitchen.service - create 默认值分支', () => {
 describe('kitchen.service - remove', () => {
   it('作者软删除帖子并清除缓存', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ user_id: 'u1' }] } as any) // SELECT 权限校验
-      .mockResolvedValueOnce({ rows: [] } as any); // UPDATE 软删除
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u1' }] } as unknown as DbResult) // SELECT 权限校验
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult); // UPDATE 软删除
 
     const result = await kitchenService.remove('k1', 'u1');
 
@@ -331,12 +335,12 @@ describe('kitchen.service - remove', () => {
   });
 
   it('非作者删除抛 PermissionDeniedError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ user_id: 'u-author' }] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [{ user_id: 'u-author' }] } as unknown as DbResult);
     await expect(kitchenService.remove('k1', 'u-other')).rejects.toBeInstanceOf(PermissionDeniedError);
   });
 
   it('帖子不存在抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(kitchenService.remove('k-x', 'u1')).rejects.toBeInstanceOf(NotFoundError);
   });
 });
