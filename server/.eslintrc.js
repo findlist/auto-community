@@ -27,8 +27,8 @@ module.exports = {
     // 未使用变量告警（TS 版本）：忽略以 _ 开头的参数，与 TS 编译器 noUnusedParameters 行为一致
     // 便于 Express 错误处理中间件等必须保留参数签名但参数未使用的场景
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
-    // 警告 any 类型使用，逐步收敛类型边界
-    '@typescript-eslint/no-explicit-any': 'warn',
+    // 禁止 any 类型：前后端 any 已全部清零，升级为 error 防止未来退化
+    '@typescript-eslint/no-explicit-any': 'error',
     // 关闭 console 限制，日志体系由 Task 23 统一处理
     'no-console': 'off',
     // 强制 const 声明，避免误用 let

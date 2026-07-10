@@ -27,8 +27,8 @@ module.exports = {
   plugins: ['@typescript-eslint', 'react-hooks', 'react-refresh'],
   // 规则配置
   rules: {
-    // 允许使用 any，但给出警告（避免阻塞开发）
-    '@typescript-eslint/no-explicit-any': 'warn',
+    // 禁止 any 类型：前端 any 已全部清零，升级为 error 防止退化
+    '@typescript-eslint/no-explicit-any': 'error',
     // 禁止未使用的变量
     '@typescript-eslint/no-unused-vars': 'error',
     // 强制 Hooks 规则
