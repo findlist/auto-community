@@ -119,6 +119,8 @@ services:
       OSS_CUSTOM_DOMAIN: ${OSS_CUSTOM_DOMAIN:-}
       # 图片白名单域名
       IMAGES_WHITELIST_DOMAINS: ${IMAGES_WHITELIST_DOMAINS:-trae-api-cn.mchost.guru}
+      # 备份目录（定时任务每日 2 点执行 pg_dump，需持久化避免容器重建后丢失）
+      BACKUP_DIR: ${BACKUP_DIR:-/app/backups}
     # 生产环境不暴露 server 端口，仅通过 nginx 反代对外提供服务
     healthcheck:
       # 调用 /api/health 端点验证服务存活与数据库连接状态
@@ -131,6 +133,8 @@ services:
       # 本地上传文件持久化（OSS 未启用时使用）
       # 路径与 storage-adapter.ts 中 path.resolve(__dirname, '../../uploads') 对齐
       - server_uploads:/app/uploads
+      # 数据库备份持久化（定时任务每日 2 点执行 pg_dump）
+      - server_backups:/app/backups
     networks:
       - linli-network
 
@@ -151,6 +155,7 @@ volumes:
   postgres_data:
   redis_data:
   server_uploads:
+  server_backups:
 
 networks:
   linli-network:
