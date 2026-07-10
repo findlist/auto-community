@@ -6,7 +6,8 @@
 #   - STAGING_USER / PRODUCTION_USER：SSH 登录用户
 #   - STAGING_SSH_KEY / PRODUCTION_SSH_KEY：SSH 私钥
 #   - STAGING_DEPLOY_PATH / PRODUCTION_DEPLOY_PATH：远程服务器上 docker-compose.prod.yml 所在目录
-#   - GHCR_OWNER（Variables）：GHCR 命名空间，镜像地址为 ghcr.io/<GHCR_OWNER>/server|client
+#   - GHCR_OWNER（Variables）：GHCR 命名空间（格式：owner/repo，如 findlist/auto-community），镜像地址为 ghcr.io/<GHCR_OWNER>/server|client
+#     未配置时默认使用 github.repository（owner/repo 格式），与 docker/metadata-action 的 images 路径对齐
 #   - 服务器需预装 Docker + Docker Compose，并已放置 docker-compose.prod.yml + .env
 #   - 服务器需已登录 GHCR（echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin）
 name: CD
@@ -197,7 +198,7 @@ jobs:
           # prod compose 文件使用 image: 字段，必须显式 -f 指定
           script: |
             cd ${{ secrets.STAGING_DEPLOY_PATH }}
-            export GHCR_OWNER=${{ vars.GHCR_OWNER || github.repository_owner }}
+            export GHCR_OWNER=${{ vars.GHCR_OWNER || github.repository }}
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
@@ -250,7 +251,7 @@ jobs:
               export SERVER_IMAGE_TAG=${TAG_NAME#v}
               export CLIENT_IMAGE_TAG=${TAG_NAME#v}
             fi
-            export GHCR_OWNER=${{ vars.GHCR_OWNER || github.repository_owner }}
+            export GHCR_OWNER=${{ vars.GHCR_OWNER || github.repository }}
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
