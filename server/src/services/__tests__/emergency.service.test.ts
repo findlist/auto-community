@@ -18,7 +18,7 @@ const mockClient = {
 
 vi.mock('../../config/database', () => ({
   query: vi.fn(),
-  transaction: vi.fn((cb: (client: typeof mockClient) => Promise<any>) => cb(mockClient)),
+  transaction: vi.fn((cb: (client: typeof mockClient) => Promise<unknown>) => cb(mockClient)),
   pool: {},
 }));
 
@@ -51,7 +51,7 @@ vi.mock('../reputation.service', () => ({
 
 // mock sanitize：直接透传，避免 xss 库依赖
 vi.mock('../../utils/sanitize', () => ({
-  sanitizeObject: vi.fn(<T extends Record<string, any>>(data: T): T => data),
+  sanitizeObject: vi.fn(<T extends Record<string, unknown>>(data: T): T => data),
   sanitizeXss: vi.fn((v: unknown) => v),
   validateImageUrls: vi.fn(),
 }));
@@ -80,6 +80,10 @@ import {
 
 const mockedQuery = vi.mocked(query);
 const mockedTransaction = vi.mocked(transaction);
+
+// 局部类型别名：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需 rows
+// 用 as unknown as DbResult 替代 as unknown as DbResult 以消除 no-explicit-any warning
+type DbResult = Awaited<ReturnType<typeof query>>;
 const mockedAi = vi.mocked(aiService.callLLM);
 const mockedIdempotency = vi.mocked(idempotency.checkIdempotency);
 const mockedNotify = vi.mocked(notificationService.notifyEmergencyResponse);
@@ -91,7 +95,7 @@ beforeEach(() => {
   mockedAi.mockReset();
   mockedAi.mockResolvedValue(null); // 默认 AI 不可用
   mockedIdempotency.mockReset();
-  mockedIdempotency.mockResolvedValue({ hit: false } as any);
+  mockedIdempotency.mockResolvedValue({ hit: false });
   mockedNotify.mockClear();
 });
 
@@ -145,7 +149,7 @@ describe('emergency.service - createRequest', () => {
         created_at: new Date('2026-01-01'),
         updated_at: new Date('2026-01-01'),
       }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await emergencyService.createRequest('u1', {
       category: '医疗',
@@ -170,7 +174,7 @@ describe('emergency.service - createRequest', () => {
         is_anonymous: false, images: [], status: 'open',
         timeout_at: new Date(), created_at: new Date(), updated_at: new Date(),
       }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await emergencyService.createRequest('u1', {
       category: '医疗',
@@ -187,7 +191,7 @@ describe('emergency.service - createRequest', () => {
 describe('emergency.service - getRequests', () => {
   it('按 type/status 筛选并返回分页结构', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as any)
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
       .mockResolvedValueOnce({
         rows: [{
           id: 'e1', user_id: 'u1', type: 'emergency', category: '医疗',
@@ -196,7 +200,7 @@ describe('emergency.service - getRequests', () => {
           is_anonymous: false, images: [], status: 'open',
           timeout_at: new Date(), created_at: new Date(), updated_at: new Date(),
         }],
-      } as any);
+      } as unknown as DbResult);
 
     const result = await emergencyService.getRequests({ type: 'emergency', status: 'open', page: 1, pageSize: 20 });
 
@@ -210,8 +214,8 @@ describe('emergency.service - getRequests', () => {
 
   it('deleted_at IS NULL 为必备条件', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as any)
-      .mockResolvedValueOnce({ rows: [] } as any);
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await emergencyService.getRequests({ type: undefined, status: undefined, page: 1, pageSize: 20 });
 
@@ -222,7 +226,7 @@ describe('emergency.service - getRequests', () => {
 
 describe('emergency.service - getRequestById', () => {
   it('求助不存在抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(emergencyService.getRequestById('e-x')).rejects.toBeInstanceOf(NotFoundError);
   });
 
@@ -236,9 +240,9 @@ describe('emergency.service - getRequestById', () => {
           is_anonymous: false, images: [], status: 'open',
           timeout_at: new Date(), created_at: new Date(), updated_at: new Date(),
         }],
-      } as any)
-      .mockResolvedValueOnce({ rows: [] } as any)  // responses
-      .mockResolvedValueOnce({ rows: [] } as any); // reviews
+      } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult)  // responses
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult); // reviews
 
     const result = await emergencyService.getRequestById('e1', undefined);
     expect(result.contactPhone).toBeNull();
@@ -254,7 +258,7 @@ describe('emergency.service - getRequestById', () => {
           is_anonymous: false, images: [], status: 'responding',
           timeout_at: new Date(), created_at: new Date(), updated_at: new Date(),
         }],
-      } as any)
+      } as unknown as DbResult)
       .mockResolvedValueOnce({
         rows: [{
           id: 'r1', request_id: 'e1', responder_id: 'u-responder',
@@ -263,8 +267,8 @@ describe('emergency.service - getRequestById', () => {
           created_at: new Date(), updated_at: new Date(),
           responder_nickname: '李四', responder_avatar: null,
         }],
-      } as any)
-      .mockResolvedValueOnce({ rows: [] } as any); // reviews
+      } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult); // reviews
 
     const result = await emergencyService.getRequestById('e1', 'u-responder');
     // 响应者可见完整手机号
@@ -274,7 +278,7 @@ describe('emergency.service - getRequestById', () => {
 
 describe('emergency.service - respondToRequest', () => {
   it('求助不存在抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(
       emergencyService.respondToRequest('u1', 'e-x', { message: '帮忙' }),
     ).rejects.toBeInstanceOf(NotFoundError);
@@ -283,7 +287,7 @@ describe('emergency.service - respondToRequest', () => {
   it('求助状态非 open/responding 抛 OrderStatusInvalidError', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'e1', user_id: 'u1', status: 'resolved' }],
-    } as any);
+    } as unknown as DbResult);
 
     await expect(
       emergencyService.respondToRequest('u1', 'e1', { message: '帮忙' }),
@@ -292,8 +296,8 @@ describe('emergency.service - respondToRequest', () => {
 
   it('重复响应抛 ConflictError', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'e1', user_id: 'u1', status: 'open' }] } as any)
-      .mockResolvedValueOnce({ rows: [{ id: 'r1' }] } as any); // 已有响应
+      .mockResolvedValueOnce({ rows: [{ id: 'e1', user_id: 'u1', status: 'open' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [{ id: 'r1' }] } as unknown as DbResult); // 已有响应
 
     await expect(
       emergencyService.respondToRequest('u1', 'e1', { message: '帮忙' }),
@@ -302,9 +306,9 @@ describe('emergency.service - respondToRequest', () => {
 
   it('成功响应后发送通知给求助者', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'e1', user_id: 'u-requester', status: 'open' }] } as any)
-      .mockResolvedValueOnce({ rows: [] } as any) // 无重复响应
-      .mockResolvedValueOnce({ rows: [{ nickname: '李四' }] } as any) // 响应者昵称
+      .mockResolvedValueOnce({ rows: [{ id: 'e1', user_id: 'u-requester', status: 'open' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult) // 无重复响应
+      .mockResolvedValueOnce({ rows: [{ nickname: '李四' }] } as unknown as DbResult) // 响应者昵称
       .mockResolvedValueOnce({
         rows: [{
           id: 'r1', request_id: 'e1', responder_id: 'u1',
@@ -312,8 +316,8 @@ describe('emergency.service - respondToRequest', () => {
           timeout_at: new Date(), arrived_at: null, completed_at: null,
           created_at: new Date(), updated_at: new Date(),
         }],
-      } as any)
-      .mockResolvedValueOnce({ rows: [] } as any); // UPDATE 求助状态
+      } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult); // UPDATE 求助状态
 
     await emergencyService.respondToRequest('u1', 'e1', { message: '马上到', eta: 10 });
 
@@ -322,7 +326,7 @@ describe('emergency.service - respondToRequest', () => {
   });
 
   it('幂等命中时直接返回缓存结果', async () => {
-    mockedIdempotency.mockResolvedValueOnce({ hit: true, data: { id: 'cached-r1' } } as any);
+    mockedIdempotency.mockResolvedValueOnce({ hit: true, data: { id: 'cached-r1' } });
 
     const result = await emergencyService.respondToRequest('u1', 'e1', { message: '帮忙' });
 
@@ -334,22 +338,22 @@ describe('emergency.service - respondToRequest', () => {
 
 describe('emergency.service - createReport', () => {
   it('求助不存在抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(emergencyService.createReport('u1', 'e-x', '虚假求助')).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('重复举报抛 ConflictError', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'e1' }] } as any)
-      .mockResolvedValueOnce({ rows: [{ id: 'f1' }] } as any); // 已举报
+      .mockResolvedValueOnce({ rows: [{ id: 'e1' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [{ id: 'f1' }] } as unknown as DbResult); // 已举报
 
     await expect(emergencyService.createReport('u1', 'e1', '虚假求助')).rejects.toBeInstanceOf(ConflictError);
   });
 
   it('成功创建举报记录', async () => {
     mockedQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'e1' }] } as any)
-      .mockResolvedValueOnce({ rows: [] } as any) // 无重复
+      .mockResolvedValueOnce({ rows: [{ id: 'e1' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult) // 无重复
       .mockResolvedValueOnce({
         rows: [{
           id: 'f1', request_id: 'e1', reporter_id: 'u1', reason: '虚假求助',
@@ -357,7 +361,7 @@ describe('emergency.service - createReport', () => {
           resolution: null, resolved_at: null, resolved_by: null,
           created_at: new Date(), updated_at: new Date(),
         }],
-      } as any);
+      } as unknown as DbResult);
 
     const result = await emergencyService.createReport('u1', 'e1', '虚假求助');
     expect(result.id).toBe('f1');
@@ -373,7 +377,7 @@ describe('emergency.service - resolveFalseReport', () => {
   });
 
   it('举报不存在抛 NotFoundError', async () => {
-    mockClient.query.mockResolvedValueOnce({ rows: [] } as any);
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await expect(
       emergencyService.resolveFalseReport('f-x', 'admin-1', 'warning', '处理意见'),
@@ -383,7 +387,7 @@ describe('emergency.service - resolveFalseReport', () => {
   it('举报已处理（非 pending）抛 BadRequestError', async () => {
     mockClient.query.mockResolvedValueOnce({
       rows: [{ id: 'f1', status: 'resolved', request_id: 'e1' }],
-    } as any);
+    } as unknown as DbResult);
 
     await expect(
       emergencyService.resolveFalseReport('f1', 'admin-1', 'warning', '处理意见'),
@@ -394,8 +398,8 @@ describe('emergency.service - resolveFalseReport', () => {
     mockClient.query
       .mockResolvedValueOnce({
         rows: [{ id: 'f1', status: 'pending', request_id: 'e1', reporter_id: 'u-reporter' }],
-      } as any)
-      .mockResolvedValueOnce({ rows: [{ user_id: 'u-requester' }] } as any) // 查询求助者
+      } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u-requester' }] } as unknown as DbResult) // 查询求助者
       .mockResolvedValueOnce({
         rows: [{
           id: 'f1', request_id: 'e1', reporter_id: 'u-reporter', reason: '虚假',
@@ -403,7 +407,7 @@ describe('emergency.service - resolveFalseReport', () => {
           resolution: '仅警告', resolved_at: new Date(), resolved_by: 'admin-1',
           created_at: new Date(), updated_at: new Date(),
         }],
-      } as any); // UPDATE 举报
+      } as unknown as DbResult); // UPDATE 举报
 
     const result = await emergencyService.resolveFalseReport('f1', 'admin-1', 'warning', '仅警告');
 
@@ -417,12 +421,12 @@ describe('emergency.service - resolveFalseReport', () => {
     mockClient.query
       .mockResolvedValueOnce({
         rows: [{ id: 'f1', status: 'pending', request_id: 'e1', reporter_id: 'u-reporter' }],
-      } as any)
-      .mockResolvedValueOnce({ rows: [{ user_id: 'u-requester' }] } as any)
+      } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u-requester' }] } as unknown as DbResult)
       .mockResolvedValueOnce({
         rows: [{ id: 'f1', status: 'resolved', penalty: 'permanent', resolution: '永封', resolved_at: new Date(), resolved_by: 'admin-1', request_id: 'e1', reporter_id: 'u-reporter', reason: '虚假', evidence: null, created_at: new Date(), updated_at: new Date() }],
-      } as any)
-      .mockResolvedValueOnce({ rows: [] } as any); // UPDATE users 永久封禁
+      } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult); // UPDATE users 永久封禁
 
     await emergencyService.resolveFalseReport('f1', 'admin-1', 'permanent', '永封');
 
@@ -437,12 +441,12 @@ describe('emergency.service - resolveFalseReport', () => {
     mockClient.query
       .mockResolvedValueOnce({
         rows: [{ id: 'f1', status: 'pending', request_id: 'e1', reporter_id: 'u-reporter' }],
-      } as any)
-      .mockResolvedValueOnce({ rows: [{ user_id: 'u-requester' }] } as any)
+      } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u-requester' }] } as unknown as DbResult)
       .mockResolvedValueOnce({
         rows: [{ id: 'f1', status: 'resolved', penalty: 'ban_7d', resolution: '封7天', resolved_at: new Date(), resolved_by: 'admin-1', request_id: 'e1', reporter_id: 'u-reporter', reason: '虚假', evidence: null, created_at: new Date(), updated_at: new Date() }],
-      } as any)
-      .mockResolvedValueOnce({ rows: [] } as any); // UPDATE users 限时封禁
+      } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult); // UPDATE users 限时封禁
 
     await emergencyService.resolveFalseReport('f1', 'admin-1', 'ban_7d', '封7天');
 
@@ -454,7 +458,7 @@ describe('emergency.service - resolveFalseReport', () => {
 
 describe('emergency.service - updateResponseStatus', () => {
   it('响应记录不存在抛 NotFoundError', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as any);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
     await expect(
       emergencyService.updateResponseStatus('u1', 'r-x', 'arrived'),
     ).rejects.toBeInstanceOf(NotFoundError);
@@ -463,7 +467,7 @@ describe('emergency.service - updateResponseStatus', () => {
   it('arrived 状态：非响应者本人抛 PermissionDeniedError', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'r1', responder_id: 'u-responder', request_id: 'e1' }],
-    } as any);
+    } as unknown as DbResult);
 
     await expect(
       emergencyService.updateResponseStatus('u-other', 'r1', 'arrived'),
@@ -473,7 +477,7 @@ describe('emergency.service - updateResponseStatus', () => {
   it('arrived 状态：响应者本人标记到达', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'r1', responder_id: 'u1', request_id: 'e1' }],
-    } as any);
+    } as unknown as DbResult);
     mockedQuery.mockResolvedValueOnce({
       rows: [{
         id: 'r1', request_id: 'e1', responder_id: 'u1',
@@ -481,7 +485,7 @@ describe('emergency.service - updateResponseStatus', () => {
         timeout_at: new Date(), arrived_at: new Date(), completed_at: null,
         created_at: new Date(), updated_at: new Date(),
       }],
-    } as any);
+    } as unknown as DbResult);
 
     const result = await emergencyService.updateResponseStatus('u1', 'r1', 'arrived');
     expect(result.status).toBe('arrived');
@@ -490,7 +494,7 @@ describe('emergency.service - updateResponseStatus', () => {
   it('无效状态抛 BadRequestError', async () => {
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'r1', responder_id: 'u1', request_id: 'e1' }],
-    } as any);
+    } as unknown as DbResult);
 
     await expect(
       emergencyService.updateResponseStatus('u1', 'r1', 'invalid'),
