@@ -1170,7 +1170,9 @@ const EXPORT_CONFIG: Record<ExportType, ExportConfig> = {
         params.push(filter.endDate);
       }
       return {
-        sql: `SELECT id, user_id, action, status, ip, created_at, metadata
+        // audit_logs 表无 metadata 字段，真实字段名为 request_body（007_audit_log.sql）
+        // 此前误用 metadata 会导致导出审计日志时报 column does not exist
+        sql: `SELECT id, user_id, action, status, ip, created_at, request_body
               FROM audit_logs WHERE ${conditions.join(' AND ')}
               ORDER BY created_at DESC LIMIT ${EXPORT_MAX_ROWS}`,
         params,
@@ -1183,7 +1185,7 @@ const EXPORT_CONFIG: Record<ExportType, ExportConfig> = {
       { field: 'status', header: '状态' },
       { field: 'ip', header: 'IP地址' },
       { field: 'created_at', header: '操作时间' },
-      { field: 'metadata', header: '元数据' },
+      { field: 'request_body', header: '请求体' },
     ],
   },
 };
