@@ -340,7 +340,8 @@ async function rankCandidates(
       });
     } catch (err) {
       // 变体分配失败时降级使用完整 AI 匹配
-      logger.debug({ err, userId }, '[AI] A/B 测试变体分配失败，使用默认算法');
+      // 用 warn 而非 debug：A/B 测试分配失败在生产环境应可观测，便于排查分桶异常
+      logger.warn({ err, userId }, '[AI] A/B 测试变体分配失败，使用默认算法');
     }
   }
 
@@ -437,7 +438,9 @@ ${candidateList}`;
       }
     }
   } catch (err) {
-    logger.error({ err }, '[AI] 匹配度解析失败，降级为类别匹配');
+    // 降级场景用 warn：匹配度解析失败但有类别匹配兜底，业务未中断
+    // 用 error 会在生产环境触发告警噪音，掩盖真正需要人工介入的故障
+    logger.warn({ err }, '[AI] 匹配度解析失败，降级为类别匹配');
   }
   return scoreMap;
 }
@@ -618,7 +621,8 @@ export async function classifyContent(text: string): Promise<ContentClassificati
         }
       }
     } catch (err) {
-      logger.error({ err }, '[AI] 分类解析失败，降级为关键词匹配');
+      // 降级场景用 warn：LLM 分类失败但有关键词匹配兜底，业务未中断
+      logger.warn({ err }, '[AI] 分类解析失败，降级为关键词匹配');
     }
   }
 
@@ -734,7 +738,8 @@ async function evaluateRiskByLLM(
       };
     }
   } catch (err) {
-    logger.error({ err }, '[AI] 风控评分解析失败，使用规则评分');
+    // 降级场景用 warn：LLM 风控评分失败但有规则评分兜底，业务未中断
+    logger.warn({ err }, '[AI] 风控评分解析失败，使用规则评分');
   }
   return null;
 }
@@ -836,14 +841,16 @@ export async function processPostPipeline(
   try {
     classification = await classifyContent(text);
   } catch (err) {
-    logger.error({ err }, '[Pipeline] 分类步骤失败，使用默认值');
+    // 降级场景用 warn：分类步骤失败但有默认值兜底，Pipeline 继续执行
+    logger.warn({ err }, '[Pipeline] 分类步骤失败，使用默认值');
   }
 
   let riskAssessment = { score: 0, isAbnormal: false, reason: '正常' };
   try {
     riskAssessment = await detectAbnormalBehavior(userId);
   } catch (err) {
-    logger.error({ err }, '[Pipeline] 风控步骤失败，使用默认值');
+    // 降级场景用 warn：风控步骤失败但有默认值兜底，Pipeline 继续执行
+    logger.warn({ err }, '[Pipeline] 风控步骤失败，使用默认值');
   }
 
   let preMatches: PipelineResult['preMatches'] = [];
@@ -855,7 +862,8 @@ export async function processPostPipeline(
       matchScore: r.similarity,
     }));
   } catch (err) {
-    logger.error({ err }, '[Pipeline] 匹配预推荐步骤失败，返回空数组');
+    // 降级场景用 warn：匹配预推荐失败返回空数组，用户仍可手动浏览
+    logger.warn({ err }, '[Pipeline] 匹配预推荐步骤失败，返回空数组');
   }
 
   return { classification, riskAssessment, preMatches };
