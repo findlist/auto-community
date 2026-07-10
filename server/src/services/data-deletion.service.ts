@@ -291,6 +291,9 @@ async function executeAnonymization(userId: string): Promise<void> {
 
   await transaction(async (client) => {
     // 更新用户表：匿名化 PII 字段，设置 deleted_at
+    // 注意：users 表无 id_card_hash 字段（该字段在 verification_requests 表），
+    // 实名认证敏感数据通过下方 DELETE FROM verification_requests 统一清理，
+    // 此处仅清理 users 表中的 id_card_encrypted 字段
     await client.query(
       `UPDATE users
        SET nickname = $1,
@@ -299,7 +302,6 @@ async function executeAnonymization(userId: string): Promise<void> {
            avatar = NULL,
            real_name = NULL,
            id_card_encrypted = NULL,
-           id_card_hash = NULL,
            status = 'deleted',
            deleted_at = NOW(),
            updated_at = NOW()
