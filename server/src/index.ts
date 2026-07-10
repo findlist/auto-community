@@ -61,6 +61,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api', routes);
 
 // 健康检查（含数据库连接探测）
+// 同时挂载在 / 和 /api 下：/health 供内部直接访问，/api/health 供 Docker/CD 健康检查使用
+app.use('/api', healthRouter);
 app.use('/', healthRouter);
 
 // 404处理

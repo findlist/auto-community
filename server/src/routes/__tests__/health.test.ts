@@ -18,6 +18,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import http from 'node:http';
 import express from 'express';
 import type { AddressInfo } from 'node:net';
+import type { Request, Response, NextFunction } from 'express';
 
 // 设置必需的环境变量，避免 env 模块加载时退出进程
 process.env.JWT_SECRET = 'test-jwt-secret';
@@ -29,11 +30,15 @@ const {
   mockGetSystemMetrics,
   mockGetAlertLogs,
   mockClearAlertLogs,
+  mockAuthenticate,
+  mockRequireRoleMiddleware,
 } = vi.hoisted(() => ({
   mockPool: { connect: vi.fn() },
   mockGetSystemMetrics: vi.fn(),
   mockGetAlertLogs: vi.fn(),
   mockClearAlertLogs: vi.fn(),
+  mockAuthenticate: vi.fn(),
+  mockRequireRoleMiddleware: vi.fn(),
 }));
 
 // mock 路径相对于测试文件解析：routes/__tests__/ → 上一层到 routes/ → 再上一层到 src/
@@ -42,6 +47,12 @@ vi.mock('../../services/metrics.service', () => ({
   getSystemMetrics: mockGetSystemMetrics,
   getAlertLogs: mockGetAlertLogs,
   clearAlertLogs: mockClearAlertLogs,
+}));
+// mock 认证中间件：/health/metrics 与 /health/metrics/alerts 需管理员权限
+// 默认行为：authenticate 设置 req.user 并放行，requireRole 直接放行
+vi.mock('../../middleware/auth', () => ({
+  authenticate: mockAuthenticate,
+  requireRole: vi.fn(() => mockRequireRoleMiddleware),
 }));
 
 // 必须在 vi.mock 之后 import 被测模块，确保 mock 生效
@@ -78,6 +89,14 @@ describe('health 路由集成测试', () => {
     mockGetSystemMetrics.mockResolvedValue({ database: { status: 'healthy' } });
     mockGetAlertLogs.mockReturnValue([]);
     mockClearAlertLogs.mockReset();
+    // 认证中间件默认放行：设置 req.user 并调用 next()
+    mockAuthenticate.mockImplementation((req: Request, _res: Response, next: NextFunction) => {
+      req.user = { id: 'admin-001', nickname: 'admin' };
+      next();
+    });
+    mockRequireRoleMiddleware.mockImplementation((_req: Request, _res: Response, next: NextFunction) => {
+      next();
+    });
     ({ server, baseUrl } = await startServer());
   });
 

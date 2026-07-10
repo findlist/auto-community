@@ -218,7 +218,8 @@ router.put('/false-reports/:id/resolve', authenticate, requireRole('admin'), val
   success(res, result, '举报已处理');
 }));
 
-router.get('/resources', asyncHandler(async (req: Request, res: Response) => {
+// 应急资源列表：未登录可查看（资源信息为公开应急信息），登录后可获取更多详情
+router.get('/resources', optionalAuth, asyncHandler(async (req: Request, res: Response) => {
   const { page, pageSize } = getPagination(req);
   // 收窄 query 类型：ParsedQs → string | undefined，避免解构变量类型泛滥
   const { type } = req.query as Record<string, string | undefined>;
@@ -260,8 +261,8 @@ router.delete('/resources/:id', authenticate, requireRole('admin'), asyncHandler
   success(res, null, '删除成功');
 }));
 
-// 地理编码：地址转经纬度
-router.get('/map/geocode', asyncHandler(async (req: Request, res: Response) => {
+// 地理编码：地址转经纬度（需登录，防止第三方 API 被滥用为免费代理）
+router.get('/map/geocode', authenticate, asyncHandler(async (req: Request, res: Response) => {
   // 收窄 query 类型：ParsedQs → string | undefined，避免解构变量类型泛滥
   const { address } = req.query as Record<string, string | undefined>;
   if (!address || typeof address !== 'string') {
@@ -271,8 +272,8 @@ router.get('/map/geocode', asyncHandler(async (req: Request, res: Response) => {
   success(res, result);
 }));
 
-// 逆地理编码：经纬度转地址
-router.get('/map/regeo', asyncHandler(async (req: Request, res: Response) => {
+// 逆地理编码：经纬度转地址（需登录，防止第三方 API 被滥用为免费代理）
+router.get('/map/regeo', authenticate, asyncHandler(async (req: Request, res: Response) => {
   // 收窄 query 类型：ParsedQs → string | undefined，避免解构变量类型泛滥
   const { lng, lat } = req.query as Record<string, string | undefined>;
   const lngNum = parseFloat(lng as string);

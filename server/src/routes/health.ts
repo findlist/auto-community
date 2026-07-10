@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../config/database';
 import { getSystemMetrics, getAlertLogs, clearAlertLogs } from '../services/metrics.service';
+import { authenticate, requireRole } from '../middleware/auth';
 
 const router = Router();
 
@@ -29,7 +30,8 @@ router.get('/health', async (req: Request, res: Response) => {
 });
 
 // 系统指标接口：返回数据库、Redis、服务器状态及告警日志
-router.get('/health/metrics', async (req: Request, res: Response) => {
+// 需要管理员权限：暴露系统内部运行状态，非管理员不可访问
+router.get('/health/metrics', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
   try {
     const metrics = await getSystemMetrics();
     const alerts = getAlertLogs(50);
@@ -50,8 +52,8 @@ router.get('/health/metrics', async (req: Request, res: Response) => {
   }
 });
 
-// 清除告警日志接口
-router.delete('/health/metrics/alerts', (req: Request, res: Response) => {
+// 清除告警日志接口：需要管理员权限，避免任意用户清除运维告警记录
+router.delete('/health/metrics/alerts', authenticate, requireRole('admin'), (req: Request, res: Response) => {
   clearAlertLogs();
   res.json({
     code: 0,
