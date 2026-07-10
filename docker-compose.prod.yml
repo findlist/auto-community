@@ -1,0 +1,157 @@
+# 邻里圈 — 生产环境 Docker Compose
+# 使用 GHCR 预构建镜像部署，不本地构建源码
+#
+# 镜像地址：ghcr.io/<GHCR_OWNER>/server|client:<TAG>
+# CD 流水线通过环境变量注入 GHCR_OWNER / SERVER_IMAGE_TAG / CLIENT_IMAGE_TAG
+#
+# 使用方法（手动部署）：
+#   1. 在服务器上放置本文件与 .env
+#   2. export GHCR_OWNER=<你的 GitHub 用户名/仓库>
+#   3. docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
+
+services:
+  # ==================== PostgreSQL 数据库 ====================
+  postgres:
+    image: postgres:16-alpine
+    container_name: linli-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-linli_circle}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD 必须在 .env 中配置}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # 生产环境不暴露数据库端口到宿主机，仅容器网络内部可达，降低攻击面
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-linli_circle}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - linli-network
+
+  # ==================== Redis 缓存 ====================
+  redis:
+    image: redis:7-alpine
+    container_name: linli-redis
+    restart: unless-stopped
+    # 生产环境必须配置密码，command 通过参数注入
+    command: redis-server ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    # 生产环境不暴露 Redis 端口到宿主机
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - linli-network
+
+  # ==================== 后端 API 服务 ====================
+  # 镜像来源：GHCR 预构建镜像，tag 由 CD 流水线或手动部署时注入
+  server:
+    image: ghcr.io/${GHCR_OWNER:-findlist/auto-community}/server:${SERVER_IMAGE_TAG:-latest}
+    container_name: linli-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # 数据库容器内部寻址（服务名即主机名）
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-linli_circle}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD 必须在 .env 中配置}
+      # Redis 容器内部寻址
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: ${REDIS_DB:-0}
+      # JWT 配置
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET 必须在 .env 中配置}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-2h}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
+      # CORS：生产环境必须配置为实际访问域名
+      CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN 必须在 .env 中配置}
+      # 限流
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+      # PII 加密密钥（生产必填，用于加密手机号等敏感字段）
+      PII_ENCRYPT_KEY: ${PII_ENCRYPT_KEY:-}
+      # AI 服务（可选，留空时降级为规则匹配）
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_API_BASE: ${AI_API_BASE:-https://api.openai.com/v1}
+      AI_MODEL: ${AI_MODEL:-gpt-3.5-turbo}
+      # 高德地图（可选，留空时应急资源地图降级为列表模式）
+      AMAP_KEY: ${AMAP_KEY:-}
+      # 通知通道（可选，凭证齐全时启用，否则降级为本地日志）
+      NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-false}
+      NOTIFICATION_SMS_ENABLED: ${NOTIFICATION_SMS_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMS_PROVIDER: ${SMS_PROVIDER:-}
+      SMS_ACCESS_KEY: ${SMS_ACCESS_KEY:-}
+      SMS_ACCESS_SECRET: ${SMS_ACCESS_SECRET:-}
+      SMS_SIGN_NAME: ${SMS_SIGN_NAME:-}
+      SMS_TEMPLATE_CODE: ${SMS_TEMPLATE_CODE:-}
+      SMS_ENDPOINT: ${SMS_ENDPOINT:-dysmsapi.aliyuncs.com}
+      SMS_TENCENT_SECRET_ID: ${SMS_TENCENT_SECRET_ID:-}
+      SMS_TENCENT_SECRET_KEY: ${SMS_TENCENT_SECRET_KEY:-}
+      SMS_TENCENT_SDK_APP_ID: ${SMS_TENCENT_SDK_APP_ID:-}
+      SMS_TENCENT_SIGN_NAME: ${SMS_TENCENT_SIGN_NAME:-}
+      SMS_TENCENT_TEMPLATE_ID: ${SMS_TENCENT_TEMPLATE_ID:-}
+      SMS_TENCENT_REGION: ${SMS_TENCENT_REGION:-ap-guangzhou}
+      # OSS 云存储（可选，未启用时使用本地磁盘）
+      OSS_ENABLED: ${OSS_ENABLED:-false}
+      OSS_ENDPOINT: ${OSS_ENDPOINT:-}
+      OSS_BUCKET: ${OSS_BUCKET:-}
+      OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID:-}
+      OSS_ACCESS_KEY_SECRET: ${OSS_ACCESS_KEY_SECRET:-}
+      OSS_CUSTOM_DOMAIN: ${OSS_CUSTOM_DOMAIN:-}
+      # 图片白名单域名
+      IMAGES_WHITELIST_DOMAINS: ${IMAGES_WHITELIST_DOMAINS:-trae-api-cn.mchost.guru}
+    # 生产环境不暴露 server 端口，仅通过 nginx 反代对外提供服务
+    healthcheck:
+      # 调用 /api/health 端点验证服务存活与数据库连接状态
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      # 本地上传文件持久化（OSS 未启用时使用）
+      # 路径与 storage-adapter.ts 中 path.resolve(__dirname, '../../uploads') 对齐
+      - server_uploads:/app/uploads
+    networks:
+      - linli-network
+
+  # ==================== 前端 Web 服务（Nginx） ====================
+  client:
+    image: ghcr.io/${GHCR_OWNER:-findlist/auto-community}/client:${CLIENT_IMAGE_TAG:-latest}
+    container_name: linli-client
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    networks:
+      - linli-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  server_uploads:
+
+networks:
+  linli-network:
+    driver: bridge

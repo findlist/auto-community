@@ -15,6 +15,11 @@ export default defineConfig({
         target: "http://localhost:3000",
         changeOrigin: true,
       },
+      // 上传文件代理到后端，与 nginx.conf 的 /uploads/ location 对齐
+      "/uploads": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+      },
     },
   },
 });

@@ -201,9 +201,20 @@ jobs:
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
-            # 等待服务启动并检查健康状态
-            sleep 5
-            docker compose -f docker-compose.prod.yml ps
+            # 健康检查：轮询 /api/health 端点，验证 nginx→server→db 全链路可用
+            # 最多等待 60 秒（12 次 × 5 秒间隔），超时则部署失败
+            for i in $(seq 1 12); do
+              if curl -sf http://localhost/api/health > /dev/null 2>&1; then
+                echo "健康检查通过（第 $i 次尝试）"
+                docker compose -f docker-compose.prod.yml ps
+                exit 0
+              fi
+              echo "等待服务就绪...（第 $i/12 次）"
+              sleep 5
+            done
+            echo "健康检查失败：服务在 60 秒内未就绪"
+            docker compose -f docker-compose.prod.yml logs --tail=50
+            exit 1
 
   # ============ 部署到生产环境（需手动批准） ============
   # 依赖测试环境部署成功；打 v* 版本标签或手动选择 production 时触发
@@ -243,5 +254,17 @@ jobs:
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker image prune -f
-            sleep 5
-            docker compose -f docker-compose.prod.yml ps
+            # 健康检查：轮询 /api/health 端点，验证 nginx→server→db 全链路可用
+            # 最多等待 60 秒（12 次 × 5 秒间隔），超时则部署失败并输出日志便于排查
+            for i in $(seq 1 12); do
+              if curl -sf http://localhost/api/health > /dev/null 2>&1; then
+                echo "健康检查通过（第 $i 次尝试）"
+                docker compose -f docker-compose.prod.yml ps
+                exit 0
+              fi
+              echo "等待服务就绪...（第 $i/12 次）"
+              sleep 5
+            done
+            echo "健康检查失败：服务在 60 秒内未就绪"
+            docker compose -f docker-compose.prod.yml logs --tail=50
+            exit 1
