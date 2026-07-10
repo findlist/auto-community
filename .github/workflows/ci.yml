@@ -45,9 +45,10 @@ jobs:
       - name: Build
         run: npm run build --workspace server
 
-  # 前端构建验证（可选，确保 client 可正常构建）
+  # 前端质量保障：lint / test / build，与 server job 对齐
+  # 原仅运行 build，缺少 lint 与 test 门禁，无法拦截样式问题与测试回归
   client:
-    name: Client Build
+    name: Client Lint & Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -62,5 +63,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # 代码静态检查，拦截未使用变量、any 逃逸等问题
+      - name: Run lint
+        run: npm run lint --workspace client
+
+      # 执行单元测试，确保业务逻辑不回归
+      - name: Run tests
+        run: npm test --workspace client
+
+      # 构建验证（tsc -b 类型检查 + vite build 打包）
       - name: Build
         run: npm run build --workspace client

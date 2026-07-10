@@ -38,9 +38,44 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  # ============ 测试门禁：构建镜像前必须全量测试通过 ============
+  # 符合规范"自动测试构建"要求：先跑测试，测试失败则中止构建与部署
+  test:
+    name: Test Gate (Server + Client)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 后端测试：lint + typecheck + test
+      - name: Server lint
+        run: npm run lint --workspace server
+      - name: Server typecheck
+        run: npm run typecheck --workspace server
+      - name: Server test
+        run: npm test --workspace server
+
+      # 前端测试：lint + test + build
+      - name: Client lint
+        run: npm run lint --workspace client
+      - name: Client test
+        run: npm test --workspace client
+      - name: Client build
+        run: npm run build --workspace client
+
   # ============ 构建并推送后端镜像 ============
   build-server:
     name: Build & Push Server Image
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -92,6 +127,7 @@ jobs:
   # ============ 构建并推送前端镜像 ============
   build-client:
     name: Build & Push Client Image
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
