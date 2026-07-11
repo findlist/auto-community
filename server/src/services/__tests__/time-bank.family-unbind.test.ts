@@ -96,7 +96,7 @@ function setupBindingMock(binding: {
   let selectCount = 0;
 
   mockClient.query.mockImplementation(async (text: string) => {
-    if (text.includes('SELECT * FROM family_bindings WHERE id = $1')) {
+    if (text.includes('FROM family_bindings WHERE id = $1')) {
       selectCount++;
       // 首次查询返回原记录（含存在性判断）；更新后第二次查询返回 unbound 记录
       if (selectCount === 1) {

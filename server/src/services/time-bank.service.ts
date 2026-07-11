@@ -59,6 +59,12 @@ interface TimeServiceRow extends QueryResultRow {
 const TIME_ORDER_COLUMNS = `id, service_id, provider_id, requester_id, duration_minutes, status,
   started_at, completed_at, cancelled_at, created_at, updated_at`;
 
+/**
+ * family_bindings 表显式查询列：替代 SELECT *，列结构简单（7 字段全为小类型），
+ * 主要价值是显式化字段需求与防御未来新增字段。
+ */
+const FAMILY_BINDING_COLUMNS = `id, user_id, parent_id, relationship, status, created_at, updated_at`;
+
 // time_orders 表行类型：与数据库列结构对齐
 interface TimeOrderRow extends QueryResultRow {
   id: string;
@@ -905,7 +911,7 @@ async function createFamilyBinding(userId: string, parentPhone: string, relation
 async function confirmFamilyBinding(bindingId: string, userId: string) {
   // 事务 + FOR UPDATE 行锁：确保并发 confirm/reject 串行化，避免同时通过 pending 状态检查
   const updated = await transaction(async (client) => {
-    const bindingResult = await client.query('SELECT * FROM family_bindings WHERE id = $1 FOR UPDATE', [bindingId]);
+    const bindingResult = await client.query('SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1 FOR UPDATE', [bindingId]);
     if (bindingResult.rows.length === 0) throw new NotFoundError('绑定记录');
     const binding = bindingResult.rows[0];
 
@@ -913,7 +919,7 @@ async function confirmFamilyBinding(bindingId: string, userId: string) {
     if (binding.status !== 'pending') throw new OrderStatusInvalidError('绑定状态不允许此操作');
 
     await client.query("UPDATE family_bindings SET status = 'confirmed', updated_at = NOW() WHERE id = $1", [bindingId]);
-    const updatedResult = await client.query('SELECT * FROM family_bindings WHERE id = $1', [bindingId]);
+    const updatedResult = await client.query('SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1', [bindingId]);
     return updatedResult.rows[0];
   });
 
@@ -926,7 +932,7 @@ async function confirmFamilyBinding(bindingId: string, userId: string) {
 async function rejectFamilyBinding(bindingId: string, userId: string) {
   // 事务 + FOR UPDATE 行锁：与 confirmFamilyBinding 共享同一行锁策略，避免并发 confirm/reject 竞态
   const updated = await transaction(async (client) => {
-    const bindingResult = await client.query('SELECT * FROM family_bindings WHERE id = $1 FOR UPDATE', [bindingId]);
+    const bindingResult = await client.query('SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1 FOR UPDATE', [bindingId]);
     if (bindingResult.rows.length === 0) throw new NotFoundError('绑定记录');
     const binding = bindingResult.rows[0];
 
@@ -934,7 +940,7 @@ async function rejectFamilyBinding(bindingId: string, userId: string) {
     if (binding.status !== 'pending') throw new OrderStatusInvalidError('绑定状态不允许此操作');
 
     await client.query("UPDATE family_bindings SET status = 'rejected', updated_at = NOW() WHERE id = $1", [bindingId]);
-    const updatedResult = await client.query('SELECT * FROM family_bindings WHERE id = $1', [bindingId]);
+    const updatedResult = await client.query('SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1', [bindingId]);
     return updatedResult.rows[0];
   });
 
@@ -950,7 +956,7 @@ async function rejectFamilyBinding(bindingId: string, userId: string) {
 async function unbindFamilyBinding(bindingId: string, userId: string) {
   // 事务 + FOR UPDATE 行锁：避免并发解绑导致状态机不一致（如双方同时点击解绑）
   const { otherId, updated } = await transaction(async (client) => {
-    const bindingResult = await client.query('SELECT * FROM family_bindings WHERE id = $1 FOR UPDATE', [bindingId]);
+    const bindingResult = await client.query('SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1 FOR UPDATE', [bindingId]);
     if (bindingResult.rows.length === 0) throw new NotFoundError('绑定记录');
     const binding = bindingResult.rows[0];
 
@@ -960,7 +966,7 @@ async function unbindFamilyBinding(bindingId: string, userId: string) {
     if (binding.status !== 'confirmed') throw new OrderStatusInvalidError('仅已确认的绑定可解绑');
 
     await client.query("UPDATE family_bindings SET status = 'unbound', updated_at = NOW() WHERE id = $1", [bindingId]);
-    const updatedResult = await client.query('SELECT * FROM family_bindings WHERE id = $1', [bindingId]);
+    const updatedResult = await client.query('SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1', [bindingId]);
     // 通知另一方：绑定已被解绑（通知失败不阻塞主流程）
     const otherId = binding.user_id === userId ? binding.parent_id : binding.user_id;
     return { otherId, updated: updatedResult.rows[0] };
