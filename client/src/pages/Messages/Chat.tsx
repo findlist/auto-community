@@ -69,21 +69,30 @@ export default function Chat() {
   useEffect(() => {
     if (!orderId) return;
 
+    // cancelled 标志防止竞态：用户快速切换会话时，旧请求返回后不再覆盖新数据
+    let cancelled = false;
+
     const loadMessages = async () => {
       setLoading(true);
       try {
         // 游标分页：第一页 cursor 为空，查询最新记录
         const res = await getMessages(orderId, undefined, 50, orderType);
+        if (cancelled) return;
         setMessages(res.data.list);
         await markMessagesAsRead(orderId, orderType);
       } catch (error) {
+        if (cancelled) return;
         toast.error(getErrorMessage(error, "加载消息失败"));
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     loadMessages();
+
+    return () => {
+      cancelled = true;
+    };
   }, [orderId, orderType]);
 
   // WebSocket 连接（使用封装的 WebSocketClient）

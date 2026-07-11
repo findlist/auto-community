@@ -18,6 +18,7 @@ import { LoadingButton } from "@/components/Button";
 import LocationPicker from "@/components/Map/LocationPicker";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { validateRequired, validateMinLength, validateMaxLength, validatePhone } from "@/utils/formValidation";
+import { escapeHtml } from "@/utils/format";
 
 // 紧急程度色点（列表项左侧小圆点，替代粗边框卡片）
 const URGENCY_DOT: Record<string, string> = {
@@ -428,7 +429,7 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
           const marker = new window.AMap.Marker({
             position: [lng, lat],
             title: r.name,
-            content: `<div class="px-2 py-1 bg-red-500 text-white text-xs rounded shadow-lg whitespace-nowrap">${r.name}</div>`,
+            content: `<div class="px-2 py-1 bg-red-500 text-white text-xs rounded shadow-lg whitespace-nowrap">${escapeHtml(r.name)}</div>`,
           });
           marker.setMap(map);
         }
@@ -658,16 +659,21 @@ function DetailView({ requestId }: { requestId: string }) {
       setCompleting(false);
       setReviewContent("");
       fetchRequest();
-    } catch {
+    } catch (err) {
       setCompleting(false);
+      setError(err instanceof ApiError ? err.message : "完成操作失败");
     }
   };
 
   const handleReport = async () => {
     if (!reportReason.trim()) return;
-    await submitFalseReport(requestId, reportReason.trim());
-    setShowReportInput(false);
-    setReportReason("");
+    try {
+      await submitFalseReport(requestId, reportReason.trim());
+      setShowReportInput(false);
+      setReportReason("");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "举报提交失败");
+    }
   };
 
   if (loading) {
@@ -911,6 +917,8 @@ function ListView() {
       const params = activeTab ? { type: activeTab } : undefined;
       const res = await getRequests(params);
       setRequests(res.data.list);
+    } catch (err) {
+      console.error("加载求助列表失败:", err);
     } finally {
       setLoading(false);
     }

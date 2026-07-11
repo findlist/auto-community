@@ -61,6 +61,9 @@ export default function LocationPicker({
   useEffect(() => {
     if (!mapLoaded || !containerRef.current || !window.AMap) return;
 
+    // cancelled 标志防止组件卸载后 geolocation 回调仍更新状态
+    let cancelled = false;
+
     // 创建地图实例
     const map = new window.AMap.Map(containerRef.current, {
       zoom: 15,
@@ -103,6 +106,7 @@ export default function LocationPicker({
           timeout: 10000,
         });
         geolocation.getCurrentPosition(async (status: string, result: { position: AMapLngLat }) => {
+          if (cancelled) return;
           if (status === 'complete') {
             const pos = result.position;
             const newLocation = { lng: pos.lng, lat: pos.lat };
@@ -125,6 +129,7 @@ export default function LocationPicker({
     }
 
     return () => {
+      cancelled = true;
       map.destroy();
     };
     // 地图仅在 SDK 加载完成时初始化一次；initialLocation/location/onLocationChange 变化时

@@ -216,7 +216,7 @@ export default function Layout() {
     if (isAuthenticated) {
       getUnreadCount()
         .then((res) => setUnreadCount(res.data.unreadCount))
-        .catch(() => {});
+        .catch((err) => console.error("获取未读消息数失败:", err));
     }
   }, [isAuthenticated]);
 

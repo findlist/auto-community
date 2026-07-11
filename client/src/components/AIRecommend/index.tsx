@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Sparkles, Star, MapPin, Loader2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { matchSkill, matchTimeService, type MatchCandidate } from "@/api/ai";
+import { ApiError } from "@/api/client";
 import { trackEvent } from "@/utils/ab-test";
 
 interface AIRecommendProps {
@@ -129,7 +130,8 @@ export default function AIRecommend({ postId, type, title }: AIRecommendProps) {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err?.response?.data?.message || "推荐加载失败");
+          // 错误已被 axios 拦截器统一封装为 ApiError，直接读取 message 即可
+          setError(err instanceof ApiError ? err.message : "推荐加载失败");
           setLoading(false);
         }
       });

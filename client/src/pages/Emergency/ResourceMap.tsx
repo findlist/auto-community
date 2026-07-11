@@ -5,6 +5,7 @@ import {
   AlertCircle, Locate, Navigation2, Shield,
 } from "lucide-react";
 import { getResources } from "@/api/emergency";
+import { escapeHtml } from "@/utils/format";
 import type { EmergencyResource } from "@/types";
 
 // 资源类型元数据：用于列表图标与标记颜色区分，未命中时回退为通用样式
@@ -214,7 +215,7 @@ export default function ResourceMap() {
       const meta = RESOURCE_TYPE_META[r.type] || { label: r.type, color: "#6b7280" };
       const marker = new window.AMap.Marker({
         position: [coord.lng, coord.lat],
-        content: `<div style="background:${meta.color};color:#fff;font-size:12px;padding:4px 8px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.2);">${r.name}</div>`,
+        content: `<div style="background:${meta.color};color:#fff;font-size:12px;padding:4px 8px;border-radius:12px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.2);">${escapeHtml(r.name)}</div>`,
         offset: new window.AMap.Pixel(0, -12),
       });
       marker.on("click", () => {
@@ -248,13 +249,14 @@ export default function ResourceMap() {
     const statusLabel = RESOURCE_STATUS_LABEL[resource.status] || resource.status;
 
     // 拼接信息窗体 HTML，点击导航按钮触发外部跳转（通过 data 属性传递参数）
+    // 后端字段（name/address/contactPhone）经 escapeHtml 转义，防止存储型 XSS
     const content = `
       <div style="min-width:200px;max-width:260px;padding:4px;">
-        <div style="font-weight:600;font-size:14px;color:#111827;margin-bottom:4px;">${resource.name}</div>
+        <div style="font-weight:600;font-size:14px;color:#111827;margin-bottom:4px;">${escapeHtml(resource.name)}</div>
         <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">${meta.label} · ${statusLabel}</div>
         ${distance ? `<div style="font-size:12px;color:#10b981;margin-bottom:6px;">距您约 ${distance}</div>` : ""}
-        ${resource.address ? `<div style="font-size:12px;color:#6b7280;margin-bottom:4px;">📍 ${resource.address}</div>` : ""}
-        ${resource.contactPhone ? `<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">📞 ${resource.contactPhone}</div>` : ""}
+        ${resource.address ? `<div style="font-size:12px;color:#6b7280;margin-bottom:4px;">📍 ${escapeHtml(resource.address)}</div>` : ""}
+        ${resource.contactPhone ? `<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">📞 ${escapeHtml(resource.contactPhone)}</div>` : ""}
         <button id="res-nav-btn" style="width:100%;background:#10b981;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;">路线导航</button>
       </div>`;
     infoWindowRef.current.setContent(content);

@@ -19,6 +19,17 @@ export function formatDate(dateStr: string): string {
   return `${year}-${month}-${day}`;
 }
 
+// HTML 转义：用于将后端返回的文本安全拼接进 HTML 模板字符串（如高德地图 content）
+// 防止存储型 XSS：攻击者若在 name/address 等字段注入 <script> 或 onerror 等标签将被转义为实体
+export function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // 别名，与 formatDate 功能相同
 export const formatDistanceToNow = formatDate;
 

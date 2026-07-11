@@ -42,7 +42,10 @@ export default function ServiceDetail() {
     setError("");
     getService(id)
       .then(res => setService(res.data))
-      .catch(() => setError("加载失败"))
+      .catch((err) => {
+        console.error("加载时间银行服务详情失败:", err);
+        setError("加载失败");
+      })
       .finally(() => setLoading(false));
   }, [id]);
 

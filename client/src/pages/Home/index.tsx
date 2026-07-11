@@ -127,14 +127,14 @@ export default function Home() {
         setTotalUsers(res.data.totalUsers);
         setTotalMutualAids(res.data.totalMutualAids);
       })
-      .catch(() => {});
+      .catch((err) => console.error("加载首页统计失败:", err));
     // 拉取管理员配置的首页展示图片，未配置时保持默认图
     client
       .get<never, ApiResponse<{ url: string | null }>>("/public/homepage-image")
       .then((res) => {
         if (res.data.url) setHeroImage(res.data.url);
       })
-      .catch(() => {});
+      .catch((err) => console.error("加载首页图片失败:", err));
   }, []);
 
   const usersText = totalUsers !== null ? formatCount(totalUsers) : "——";
