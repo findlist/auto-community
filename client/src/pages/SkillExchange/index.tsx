@@ -5,6 +5,7 @@ import { getPosts } from "@/api/skills";
 import type { SkillPost } from "@/types";
 import { SkeletonListCard } from "@/components/Skeleton";
 import { LoadingButton } from "@/components/Button";
+import { toast } from "@/components/Toast";
 
 const tabs = [
   { key: "offer", label: "提供技能" },
@@ -49,6 +50,7 @@ export default function SkillExchange() {
       setPage(newPage + 1);
     } catch (error) {
       console.error("加载失败:", error);
+      toast.error("加载技能列表失败，请稍后重试");
     } finally {
       setLoading(false);
     }

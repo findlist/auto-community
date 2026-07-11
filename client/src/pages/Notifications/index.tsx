@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from "@/api/notifications";
 import type { Notification, NotificationType } from "@/types";
 import { formatDate } from "@/utils/format";
+import { toast } from "@/components/Toast";
 
 // 通知类型图标映射
 const NOTIFICATION_ICONS: Record<NotificationType, React.ComponentType<{ className?: string }>> = {
@@ -41,6 +42,7 @@ export default function Notifications() {
       setHasMore(res.data.hasNext);
     } catch (err) {
       console.error("加载通知失败:", err);
+      toast.error("加载通知失败，请稍后重试");
     } finally {
       setLoading(false);
     }
@@ -82,6 +84,7 @@ export default function Notifications() {
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       console.error("标记已读失败:", err);
+      toast.error("标记已读失败");
     }
   };
 
@@ -95,6 +98,7 @@ export default function Notifications() {
       setUnreadCount(0);
     } catch (err) {
       console.error("全部标记已读失败:", err);
+      toast.error("操作失败，请稍后重试");
     }
   };
 

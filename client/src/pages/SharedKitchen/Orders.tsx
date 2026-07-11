@@ -36,6 +36,7 @@ export default function Orders() {
       setPage(newPage + 1);
     } catch (error) {
       console.error("加载失败:", error);
+      toast.error("加载订单列表失败，请稍后重试");
     } finally {
       setLoading(false);
     }

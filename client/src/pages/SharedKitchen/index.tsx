@@ -5,6 +5,7 @@ import { getFoodShares, getGroupOrders } from "@/api/kitchen";
 import type { KitchenPost, GroupOrder } from "@/types";
 import { SkeletonCard, SkeletonListCard } from "@/components/Skeleton";
 import { LoadingButton } from "@/components/Button";
+import { toast } from "@/components/Toast";
 
 // Tab 配置
 const tabs = [
@@ -48,6 +49,7 @@ export default function SharedKitchen() {
       setPage(newPage + 1);
     } catch (error) {
       console.error("加载失败:", error);
+      toast.error("加载美食分享失败，请稍后重试");
     } finally {
       setLoading(false);
     }
@@ -68,6 +70,7 @@ export default function SharedKitchen() {
       setPage(newPage + 1);
     } catch (error) {
       console.error("加载失败:", error);
+      toast.error("加载拼单列表失败，请稍后重试");
     } finally {
       setLoading(false);
     }

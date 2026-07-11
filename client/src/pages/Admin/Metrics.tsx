@@ -6,6 +6,7 @@ import {
   type DashboardMetric,
   type MetricTrendItem,
 } from "@/api/admin";
+import { toast } from "@/components/Toast";
 
 // 核心指标配置
 const METRIC_CONFIG = {
@@ -63,6 +64,7 @@ export default function Metrics() {
       setDashboardData(response.data || []);
     } catch (error) {
       console.error("加载仪表盘数据失败:", error);
+      toast.error("加载仪表盘数据失败，请稍后重试");
     } finally {
       setLoading(false);
     }
@@ -80,6 +82,7 @@ export default function Metrics() {
       setTrendData((prev) => ({ ...prev, [metricName]: response.data || [] }));
     } catch (error) {
       console.error(`加载 ${metricName} 趋势数据失败:`, error);
+      toast.error("加载趋势数据失败，请稍后重试");
     } finally {
       setTrendLoading((prev) => ({ ...prev, [metricName]: false }));
     }
