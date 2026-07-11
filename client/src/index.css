@@ -224,6 +224,10 @@ button {
   from { opacity: 0; transform: translateX(20px); }
   to { opacity: 1; transform: translateX(0); }
 }
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
@@ -244,6 +248,9 @@ button {
 }
 .animate-slide-in-right {
   animation: slideInRight var(--transition-base) var(--ease-out);
+}
+.animate-slide-in-left {
+  animation: slideInLeft var(--transition-base) var(--ease-out);
 }
 /* Hero 图像缓慢放大，制造氛围感 */
 @keyframes heroImg {

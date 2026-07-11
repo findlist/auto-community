@@ -39,7 +39,7 @@ export default function TimeBank() {
       {/* 页面标题 + 发布 */}
       <div className="flex items-end justify-between mb-6 lg:mb-8">
         <div>
-          <p className="text-xs tracking-widest text-neutral-400 mb-2 font-mono">—— 时间银行</p>
+          <p className="text-xs tracking-widest mb-2 font-mono" style={{ color: "var(--color-module-timebank)" }}>—— 时间银行</p>
           <h1 className="text-3xl lg:text-4xl font-semibold text-neutral-900 tracking-tight">
             {activeTab === "provide" ? "邻居愿意花时间帮你" : "邻居需要你的一小时"}
           </h1>
@@ -74,16 +74,16 @@ export default function TimeBank() {
         ))}
       </div>
 
-      {/* 二级功能入口：横向排列，移动端自适应换行 */}
+      {/* 二级功能入口：横向排列，移动端自适应换行，沿用时间银行模块紫 */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {quickEntries.map(({ path, label, icon: Icon, desc }) => (
           <button
             key={path}
             onClick={() => navigate(path)}
-            className="bg-white rounded-xl p-3 lg:p-4 border border-neutral-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-200 text-left group"
+            className="bg-white rounded-xl p-3 lg:p-4 border border-neutral-100 shadow-sm hover:shadow-md hover:border-violet-200 transition-all duration-200 text-left group"
           >
-            <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center mb-2 group-hover:bg-emerald-100 transition-colors">
-              <Icon className="w-4 h-4 text-emerald-600" />
+            <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center mb-2 group-hover:bg-violet-100 transition-colors">
+              <Icon className="w-4 h-4 text-violet-600" />
             </div>
             <div className="text-sm font-medium text-neutral-900 mb-0.5">{label}</div>
             <div className="text-xs text-neutral-400 hidden lg:block truncate">{desc}</div>

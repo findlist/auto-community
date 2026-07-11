@@ -184,7 +184,7 @@ export default function SharedKitchen() {
       {/* 页面标题 + 发布 */}
       <div className="flex items-end justify-between mb-6 lg:mb-8">
         <div>
-          <p className="text-xs tracking-widest text-neutral-400 mb-2 font-mono">—— 共享厨房</p>
+          <p className="text-xs tracking-widest mb-2 font-mono" style={{ color: "var(--color-module-kitchen)" }}>—— 共享厨房</p>
           <h1 className="text-3xl lg:text-4xl font-semibold text-neutral-900 tracking-tight">
             {activeTab === "group" ? "一起买，更便宜" : activeTab === "offer" ? "今天，谁在开火" : "邻居们想吃点啥"}
           </h1>

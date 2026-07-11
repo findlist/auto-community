@@ -53,6 +53,13 @@ export default function ForgotPassword() {
   if (success) {
     return (
       <div className="relative min-h-[calc(100svh-3.5rem)] lg:min-h-[calc(100svh-4rem)] flex items-center justify-center px-4 py-12 overflow-hidden">
+        {/* 氛围背景图：与登录页一致 */}
+        <img
+          src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Soft%20warm%20photograph%20of%20a%20windowsill%20with%20a%20cup%20of%20tea%20and%20a%20small%20potted%20plant%20at%20golden%20hour%2C%20gentle%20bokeh%20of%20a%20cozy%20neighborhood%20outside%2C%20calm%20earthy%20tones%2C%20shallow%20depth%20of%20field%2C%20documentary%20lifestyle%20photography%2C%20no%20text%20no%20people&image_size=landscape_16_9"
+          alt=""
+          aria-hidden
+          className="absolute inset-0 w-full h-full object-cover"
+        />
         <div className="absolute inset-0 bg-neutral-900/55 backdrop-blur-sm" />
         <div className="relative w-full max-w-md text-center animate-fade-in-up">
           <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mb-5">
@@ -78,7 +85,14 @@ export default function ForgotPassword() {
 
   return (
     <div className="relative min-h-[calc(100svh-3.5rem)] lg:min-h-[calc(100svh-4rem)] flex items-center justify-center px-4 py-12 overflow-hidden">
-      {/* 氛围背景：与登录页一致的暗化遮罩，保证表单区可读 */}
+      {/* 氛围背景图：与登录页一致，温暖邻里生活一隅 */}
+      <img
+        src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Soft%20warm%20photograph%20of%20a%20windowsill%20with%20a%20cup%20of%20tea%20and%20a%20small%20potted%20plant%20at%20golden%20hour%2C%20gentle%20bokeh%20of%20a%20cozy%20neighborhood%20outside%2C%20calm%20earthy%20tones%2C%20shallow%20depth%20of%20field%2C%20documentary%20lifestyle%20photography%2C%20no%20text%20no%20people&image_size=landscape_16_9"
+        alt=""
+        aria-hidden
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      {/* 暗化遮罩：保证表单区可读 */}
       <div className="absolute inset-0 bg-neutral-900/55 backdrop-blur-sm" />
 
       {/* 内容容器：品牌 + 表单 */}

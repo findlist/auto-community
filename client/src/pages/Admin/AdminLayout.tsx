@@ -26,7 +26,7 @@ export default function AdminLayout() {
     return end ? location.pathname === path : location.pathname.startsWith(path);
   };
 
-  // 渲染侧边栏导航项
+  // 渲染侧边栏导航项：激活态增加左侧色条，强化当前位置指示
   const renderNavItems = () => (
     <nav className="flex flex-col gap-1 p-3">
       {navItems.map(({ path, label, icon: Icon, end }) => {
@@ -36,12 +36,16 @@ export default function AdminLayout() {
             key={path}
             to={path}
             onClick={() => setSidebarOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+            className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
               active
                 ? "bg-emerald-50 text-emerald-700 font-medium"
                 : "text-neutral-600 hover:bg-neutral-100"
             }`}
           >
+            {/* 激活态左侧色条：编辑式位置标记 */}
+            {active && (
+              <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-emerald-600" />
+            )}
             <Icon className="w-5 h-5" />
             <span>{label}</span>
           </Link>
@@ -81,14 +85,14 @@ export default function AdminLayout() {
           {renderNavItems()}
         </aside>
 
-        {/* 移动端抽屉式侧边栏 */}
+        {/* 移动端抽屉式侧边栏：遮罩淡入 + 抽屉滑入 */}
         {sidebarOpen && (
           <>
             <div
-              className="md:hidden fixed inset-0 z-30 bg-black/40"
+              className="md:hidden fixed inset-0 z-30 bg-black/40 animate-fade-in"
               onClick={() => setSidebarOpen(false)}
             />
-            <aside className="md:hidden fixed left-0 top-14 bottom-0 z-40 w-60 bg-white border-r border-neutral-200 overflow-y-auto">
+            <aside className="md:hidden fixed left-0 top-14 bottom-0 z-40 w-60 bg-white border-r border-neutral-200 overflow-y-auto animate-slide-in-left">
               {renderNavItems()}
             </aside>
           </>
