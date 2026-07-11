@@ -12,10 +12,19 @@ import { creditService } from './credit.service';
 import { notificationService } from './notification.service';
 
 /**
+ * skill_orders 表显式查询列：替代 SELECT *，避免返回 timeout_at（scheduler 专用字段，
+ * 业务层不消费）及未来新增字段意外泄露。列为硬编码常量非用户输入，模板插值无注入风险。
+ */
+const SKILL_ORDER_COLUMNS = `id, post_id, buyer_id, seller_id, credit_amount, status,
+  completed_at, cancelled_at, created_at, updated_at,
+  dispute_reason, dispute_time, previous_status, resolution, resolved_at, resolved_by`;
+
+/**
  * skill_orders 表行类型
  * credit_amount 为 string：pg DECIMAL 默认解析为 string，业务侧消费时由调用方按需 Number() 转换
  * 争议相关字段（dispute_reason/dispute_time/previous_status/resolution/resolved_at/resolved_by）
  * 均为 nullable：仅在 disputed 状态下写入，其余状态为 null
+ * 注：不含 timeout_at（scheduler 定时超时专用字段，业务层不消费）
  */
 interface SkillOrderRow {
   id: string;
@@ -82,7 +91,8 @@ async function createOrder(buyerId: string, postId: string) {
   if (cached.hit) return cached.data as ReturnType<typeof toSkillOrder>;
 
   const postResult = await query(
-    'SELECT * FROM skill_posts WHERE id = $1 AND deleted_at IS NULL',
+    // 仅查询 createOrder 实际消费的 5 个字段，避免返回 description TEXT/images TEXT[] 等大字段
+    'SELECT id, user_id, status, expires_at, credit_price FROM skill_posts WHERE id = $1 AND deleted_at IS NULL',
     [postId],
   );
   if (postResult.rows.length === 0) throw new NotFoundError('技能帖子');
@@ -124,7 +134,7 @@ async function createOrder(buyerId: string, postId: string) {
 async function acceptOrder(orderId: string, sellerId: string) {
   return transaction(async (client) => {
     const orderResult = await client.query<SkillOrderRow>(
-      'SELECT * FROM skill_orders WHERE id = $1 FOR UPDATE',
+      'SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1 FOR UPDATE',
       [orderId],
     );
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
@@ -157,7 +167,7 @@ async function acceptOrder(orderId: string, sellerId: string) {
     );
 
     const updatedResult = await client.query<SkillOrderRow>(
-      'SELECT * FROM skill_orders WHERE id = $1',
+      'SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1',
       [orderId],
     );
     const updatedOrder = toSkillOrder(updatedResult.rows[0]);
@@ -177,7 +187,7 @@ async function acceptOrder(orderId: string, sellerId: string) {
 async function rejectOrder(orderId: string, sellerId: string) {
   return transaction(async (client) => {
     const orderResult = await client.query<SkillOrderRow>(
-      'SELECT * FROM skill_orders WHERE id = $1 FOR UPDATE',
+      'SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1 FOR UPDATE',
       [orderId],
     );
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
@@ -202,7 +212,7 @@ async function rejectOrder(orderId: string, sellerId: string) {
     );
 
     const updatedResult = await client.query<SkillOrderRow>(
-      'SELECT * FROM skill_orders WHERE id = $1',
+      'SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1',
       [orderId],
     );
     const updatedOrder = toSkillOrder(updatedResult.rows[0]);
@@ -222,7 +232,7 @@ async function rejectOrder(orderId: string, sellerId: string) {
 async function completeOrder(orderId: string, userId: string, rating?: number, review?: string) {
   return transaction(async (client) => {
     const orderResult = await client.query<SkillOrderRow>(
-      'SELECT * FROM skill_orders WHERE id = $1 FOR UPDATE',
+      'SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1 FOR UPDATE',
       [orderId],
     );
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
@@ -252,7 +262,7 @@ async function completeOrder(orderId: string, userId: string, rating?: number, r
     }
 
     const updatedResult = await client.query<SkillOrderRow>(
-      'SELECT * FROM skill_orders WHERE id = $1',
+      'SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1',
       [orderId],
     );
     const updatedOrder = toSkillOrder(updatedResult.rows[0]);
@@ -273,7 +283,7 @@ async function completeOrder(orderId: string, userId: string, rating?: number, r
 async function cancelOrder(orderId: string, userId: string) {
   return transaction(async (client) => {
     const orderResult = await client.query<SkillOrderRow>(
-      'SELECT * FROM skill_orders WHERE id = $1 FOR UPDATE',
+      'SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1 FOR UPDATE',
       [orderId],
     );
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
@@ -331,7 +341,7 @@ async function cancelOrder(orderId: string, userId: string) {
     }
 
     const updatedResult = await client.query<SkillOrderRow>(
-      'SELECT * FROM skill_orders WHERE id = $1',
+      'SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1',
       [orderId],
     );
     const updatedOrder = toSkillOrder(updatedResult.rows[0]);
@@ -361,7 +371,7 @@ async function disputeOrder(orderId: string, userId: string, reason: string) {
   return transaction(async (client) => {
     // 行锁锁定订单，防止并发状态变更
     const orderResult = await client.query<SkillOrderRow>(
-      'SELECT * FROM skill_orders WHERE id = $1 FOR UPDATE',
+      'SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1 FOR UPDATE',
       [orderId],
     );
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
@@ -392,7 +402,7 @@ async function disputeOrder(orderId: string, userId: string, reason: string) {
     );
 
     const updatedResult = await client.query<SkillOrderRow>(
-      'SELECT * FROM skill_orders WHERE id = $1',
+      'SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1',
       [orderId],
     );
     return toSkillOrder(updatedResult.rows[0]);
@@ -420,7 +430,7 @@ async function resolveDispute(
 
   return transaction(async (client) => {
     const orderResult = await client.query<SkillOrderRow>(
-      'SELECT * FROM skill_orders WHERE id = $1 FOR UPDATE',
+      'SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1 FOR UPDATE',
       [orderId],
     );
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
@@ -469,7 +479,7 @@ async function resolveDispute(
     }
 
     const updatedResult = await client.query<SkillOrderRow>(
-      'SELECT * FROM skill_orders WHERE id = $1',
+      'SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1',
       [orderId],
     );
     return toSkillOrder(updatedResult.rows[0]);
