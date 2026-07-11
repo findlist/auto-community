@@ -3,6 +3,13 @@ import { QueryResultRow } from 'pg';
 import { NotFoundError, BadRequestError } from '../utils/errors';
 
 /**
+ * emergency_resources 表显式查询列：替代 SELECT *，与数据库实际列结构对齐（12 字段，不含 deleted_at）。
+ * 列为硬编码常量非用户输入，模板插值无注入风险。
+ */
+const EMERGENCY_RESOURCE_COLUMNS = `id, community_id, type, name, description, location, address,
+  contact_phone, status, last_check, created_at, updated_at`;
+
+/**
  * 地理点：lng 经度，lat 纬度
  */
 interface GeoPoint {
@@ -112,7 +119,7 @@ async function getResources(params: { type?: string; page: number; pageSize: num
 
   const [listResult, countResult] = await Promise.all([
     query(
-      `SELECT * FROM emergency_resources ${whereClause} ORDER BY created_at DESC LIMIT $${paramOffset + 1} OFFSET $${paramOffset + 2}`,
+      `SELECT ${EMERGENCY_RESOURCE_COLUMNS} FROM emergency_resources ${whereClause} ORDER BY created_at DESC LIMIT $${paramOffset + 1} OFFSET $${paramOffset + 2}`,
       [...values, pageSize, offset]
     ),
     query(
@@ -132,7 +139,7 @@ async function getResources(params: { type?: string; page: number; pageSize: num
 
 async function getResourceById(id: string) {
   const result = await query(
-    'SELECT * FROM emergency_resources WHERE id = $1 AND deleted_at IS NULL',
+    `SELECT ${EMERGENCY_RESOURCE_COLUMNS} FROM emergency_resources WHERE id = $1 AND deleted_at IS NULL`,
     [id]
   );
 
