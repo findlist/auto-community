@@ -40,14 +40,20 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * - 数组：递归转换每个元素（数组本身键为数字索引，不转换）
  * - 纯对象：转换每个键名，并递归转换对应值
  * - 其他类型（Blob/Date/FormData 等）：原样返回，避免破坏类实例
+ *
+ * 采用函数重载：公开签名保留泛型 T（调用方看到 T → T），
+ * 实现签名用 unknown（内部无需 as unknown as T 双重断言）。
+ * 设计原因：TypeScript 无法表达"转换键名后类型结构不变"，
+ * 泛型 T 仅用于对外类型约束，实现内部统一按 unknown 处理。
  */
-export function convertKeys<T>(value: T, convert: (key: string) => string): T {
+export function convertKeys<T>(value: T, convert: (key: string) => string): T;
+export function convertKeys(value: unknown, convert: (key: string) => string): unknown {
   // null/undefined/基本类型直接返回，避免无意义递归
   if (value === null || value === undefined) return value;
 
   // 数组：仅递归转换元素，不转换数组索引
   if (Array.isArray(value)) {
-    return value.map((item) => convertKeys(item, convert)) as unknown as T;
+    return value.map((item) => convertKeys(item, convert));
   }
 
   // 纯对象：转换键名并递归转换值
@@ -56,7 +62,7 @@ export function convertKeys<T>(value: T, convert: (key: string) => string): T {
     for (const [key, val] of Object.entries(value)) {
       result[convert(key)] = convertKeys(val, convert);
     }
-    return result as unknown as T;
+    return result;
   }
 
   // 其他类型（Date/Blob/FormData/RegExp/Error 等）原样返回，保留类实例语义
