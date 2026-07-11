@@ -11,6 +11,15 @@ import { createPaginatedResponse } from '../utils/pagination';
 import { creditService } from './credit.service';
 import { notificationService } from './notification.service';
 
+/**
+ * kitchen_orders 表显式查询列：替代 SELECT *，与数据库实际列结构对齐。
+ * 含 seller_id/pickup_time/remark（迁移 002_shared_kitchen.sql 添加）。
+ * 列为硬编码常量非用户输入，模板插值无注入风险。
+ */
+const KITCHEN_ORDER_COLUMNS = `id, post_id, user_id, seller_id, portions, credit_amount,
+  pickup_type, pickup_time, delivery_address, remark, status,
+  completed_at, cancelled_at, timeout_at, created_at, updated_at`;
+
 // 设计原因：原 toOrderResponse(row: any, post?: any, buyer?: any, seller?: any) 四个 any 参数
 // 让字段误用静默通过编译，定义精确接口后编译期即可发现拼写错误或类型不匹配
 interface KitchenOrderRow {
@@ -99,8 +108,9 @@ async function create(userId: string, data: {
 
   const result = await transaction(async (client) => {
     // 1. 查询美食信息并锁定
+    // 仅查询 createOrder 实际消费的 6 个字段，避免返回 description TEXT/allergens TEXT[] 等大字段
     const postResult = await client.query(
-      'SELECT * FROM kitchen_posts WHERE id = $1 AND deleted_at IS NULL FOR UPDATE',
+      'SELECT id, user_id, title, images, remaining_portions, credit_price FROM kitchen_posts WHERE id = $1 AND deleted_at IS NULL FOR UPDATE',
       [data.postId]
     );
     if (postResult.rows.length === 0) {
@@ -145,7 +155,7 @@ async function create(userId: string, data: {
       `INSERT INTO kitchen_orders 
        (post_id, user_id, seller_id, portions, credit_amount, pickup_type, pickup_time, delivery_address, remark, status, timeout_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', NOW() + INTERVAL '30 minutes')
-       RETURNING *`,
+       RETURNING ${KITCHEN_ORDER_COLUMNS}`,
       [
         data.postId,
         userId,
@@ -176,7 +186,7 @@ async function confirm(orderId: string, sellerId: string) {
   // 使用事务 + FOR UPDATE 行锁，防止并发确认破坏订单状态机一致性
   const order = await transaction(async (client) => {
     const result = await client.query<KitchenOrderRow>(
-      'SELECT * FROM kitchen_orders WHERE id = $1 FOR UPDATE',
+      `SELECT ${KITCHEN_ORDER_COLUMNS} FROM kitchen_orders WHERE id = $1 FOR UPDATE`,
       [orderId]
     );
 
@@ -223,7 +233,7 @@ async function complete(orderId: string, userId: string, reviewData: {
   return await transaction(async (client) => {
     // 1. 查询订单
     const orderResult = await client.query(
-      'SELECT * FROM kitchen_orders WHERE id = $1 FOR UPDATE',
+      `SELECT ${KITCHEN_ORDER_COLUMNS} FROM kitchen_orders WHERE id = $1 FOR UPDATE`,
       [orderId]
     );
     if (orderResult.rows.length === 0) {
@@ -285,7 +295,7 @@ async function cancel(orderId: string, userId: string) {
   return await transaction(async (client) => {
     // 1. 查询订单
     const orderResult = await client.query(
-      'SELECT * FROM kitchen_orders WHERE id = $1 FOR UPDATE',
+      `SELECT ${KITCHEN_ORDER_COLUMNS} FROM kitchen_orders WHERE id = $1 FOR UPDATE`,
       [orderId]
     );
     if (orderResult.rows.length === 0) {
