@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, AlertCircle, Save, Check } from "lucide-react";
 import { getHomepageImage, setHomepageImage } from "@/api/admin";
 import { uploadImage } from "@/api/upload";
@@ -11,6 +11,14 @@ export default function HomepageImage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  // 保存成功提示定时器引用：组件卸载时清理，避免 setState 作用于已卸载组件
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
+  }, []);
 
   // 加载当前首页图片
   const loadImage = async () => {
@@ -59,7 +67,7 @@ export default function HomepageImage() {
     try {
       await setHomepageImage(url.trim());
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 2500);
+      successTimerRef.current = setTimeout(() => setSuccess(false), 2500);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "保存失败");
     } finally {

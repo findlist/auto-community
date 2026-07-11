@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Phone, Lock, KeyRound, ArrowRight, ArrowLeft } from "lucide-react";
 import { resetPassword } from "@/api/auth";
@@ -17,12 +17,20 @@ export default function ResetPassword() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  // 跳转定时器引用：组件卸载时清理，避免 navigate 作用于已卸载组件
+  const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (phoneFromQuery) {
       setPhone(phoneFromQuery);
     }
   }, [phoneFromQuery]);
+
+  useEffect(() => {
+    return () => {
+      if (navigateTimerRef.current) clearTimeout(navigateTimerRef.current);
+    };
+  }, []);
 
   const validate = () => {
     const errors: Record<string, string> = {};
@@ -51,7 +59,7 @@ export default function ResetPassword() {
       await resetPassword({ phone, code, password });
       setSuccess(true);
       // 2秒后跳转到登录页面
-      setTimeout(() => {
+      navigateTimerRef.current = setTimeout(() => {
         navigate("/login");
       }, 2000);
     } catch (err) {
