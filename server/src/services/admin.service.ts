@@ -1065,10 +1065,12 @@ const EXPORT_CONFIG: Record<ExportType, ExportConfig> = {
         conditions.push(`status = $${paramIndex++}`);
         params.push(filter.status);
       }
+      // LIMIT 参数化：避免模板插值风格扩散到存在用户输入的场景
+      params.push(EXPORT_MAX_ROWS);
       return {
         sql: `SELECT id, phone, nickname, role, status, reputation_score, credit_balance, created_at
               FROM users WHERE ${conditions.join(' AND ')}
-              ORDER BY created_at DESC LIMIT ${EXPORT_MAX_ROWS}`,
+              ORDER BY created_at DESC LIMIT $${paramIndex}`,
         params,
       };
     },
@@ -1102,10 +1104,12 @@ const EXPORT_CONFIG: Record<ExportType, ExportConfig> = {
         conditions.push(`created_at <= $${paramIndex++}`);
         params.push(filter.endDate);
       }
+      // LIMIT 参数化：避免模板插值风格扩散到存在用户输入的场景
+      params.push(EXPORT_MAX_ROWS);
       return {
         sql: `SELECT id, ${cfg.buyerColumn}, ${cfg.sellerColumn}, ${cfg.amountColumn}, status, created_at
               FROM ${cfg.table} WHERE ${conditions.join(' AND ')}
-              ORDER BY created_at DESC LIMIT ${EXPORT_MAX_ROWS}`,
+              ORDER BY created_at DESC LIMIT $${paramIndex}`,
         params,
       };
     },
@@ -1127,6 +1131,8 @@ const EXPORT_CONFIG: Record<ExportType, ExportConfig> = {
         conditions.push(`status = $${paramIndex++}`);
         params.push(filter.status);
       }
+      // LIMIT 参数化：避免模板插值风格扩散到存在用户输入的场景
+      params.push(EXPORT_MAX_ROWS);
       return {
         sql: `SELECT r.id, r.reporter_id, r.target_type, r.target_id, r.reason, r.status,
                      r.handler_id, r.handle_note, r.created_at, r.handled_at,
@@ -1136,7 +1142,7 @@ const EXPORT_CONFIG: Record<ExportType, ExportConfig> = {
               LEFT JOIN users reporter ON r.reporter_id = reporter.id
               LEFT JOIN users handler ON r.handler_id = handler.id
               WHERE ${conditions.join(' AND ')}
-              ORDER BY r.created_at DESC LIMIT ${EXPORT_MAX_ROWS}`,
+              ORDER BY r.created_at DESC LIMIT $${paramIndex}`,
         params,
       };
     },
@@ -1170,12 +1176,14 @@ const EXPORT_CONFIG: Record<ExportType, ExportConfig> = {
         conditions.push(`created_at <= $${paramIndex++}`);
         params.push(filter.endDate);
       }
+      // LIMIT 参数化：避免模板插值风格扩散到存在用户输入的场景
+      params.push(EXPORT_MAX_ROWS);
       return {
         // audit_logs 表无 metadata 字段，真实字段名为 request_body（007_audit_log.sql）
         // 此前误用 metadata 会导致导出审计日志时报 column does not exist
         sql: `SELECT id, user_id, action, status, ip, created_at, request_body
               FROM audit_logs WHERE ${conditions.join(' AND ')}
-              ORDER BY created_at DESC LIMIT ${EXPORT_MAX_ROWS}`,
+              ORDER BY created_at DESC LIMIT $${paramIndex}`,
         params,
       };
     },

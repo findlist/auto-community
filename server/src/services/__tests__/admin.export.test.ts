@@ -73,7 +73,8 @@ describe('admin.service - 数据导出 getExportData', () => {
 
     const [sql, params] = mockedQuery.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain('status = $1');
-    expect(params).toEqual(['banned']);
+    // 末尾参数为 EXPORT_MAX_ROWS(10000)，通过占位符传递避免 SQL 模板插值
+    expect(params).toEqual(['banned', 10000]);
   });
 
   it('orders 导出：默认 orderType=skill，SQL 查询 skill_orders 表', async () => {
@@ -134,7 +135,8 @@ describe('admin.service - 数据导出 getExportData', () => {
     expect(sql).toContain('status = $1');
     expect(sql).toContain('created_at >= $2');
     expect(sql).toContain('created_at <= $3');
-    expect(params).toEqual(['completed', '2026-01-01', '2026-12-31']);
+    // 末尾参数为 EXPORT_MAX_ROWS(10000)，通过占位符传递避免 SQL 模板插值
+    expect(params).toEqual(['completed', '2026-01-01', '2026-12-31', 10000]);
   });
 
   it('reports 导出：SQL 联表查询举报人与处理人昵称', async () => {
@@ -169,7 +171,8 @@ describe('admin.service - 数据导出 getExportData', () => {
     expect(sql).toContain('FROM audit_logs');
     expect(sql).toContain('created_at >= $1');
     expect(sql).toContain('created_at <= $2');
-    expect(params).toEqual(['2026-01-01', '2026-12-31']);
+    // 末尾参数为 EXPORT_MAX_ROWS(10000)，通过占位符传递避免 SQL 模板插值
+    expect(params).toEqual(['2026-01-01', '2026-12-31', 10000]);
   });
 
   it('所有导出类型 SQL 均包含 LIMIT 保护，避免全表扫描', async () => {
@@ -179,9 +182,10 @@ describe('admin.service - 数据导出 getExportData', () => {
       await adminService.getExportData(type, type === 'orders' ? { orderType: 'skill' } : {});
     }
 
+    // LIMIT 通过参数化占位符传递（LIMIT $N），避免 SQL 模板插值
     for (const call of mockedQuery.mock.calls) {
       const sql = call[0] as string;
-      expect(sql).toMatch(/LIMIT \d+/);
+      expect(sql).toMatch(/LIMIT \$\d+/);
     }
   });
 
