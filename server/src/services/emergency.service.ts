@@ -666,9 +666,10 @@ async function resolveFalseReport(
     if (penaltyConfig.status) {
       if (penaltyConfig.banInterval) {
         // 限时封禁：设置 status=banned 与 ban_until=NOW()+interval
+        // 参数化 interval：banInterval 虽来自硬编码常量无注入风险，但参数化可统一 SQL 规范、避免拼接风格扩散
         await client.query(
-          `UPDATE users SET status = $1, ban_until = NOW() + INTERVAL '${penaltyConfig.banInterval}', updated_at = NOW() WHERE id = $2`,
-          [penaltyConfig.status, requesterId]
+          `UPDATE users SET status = $1, ban_until = NOW() + $2::interval, updated_at = NOW() WHERE id = $3`,
+          [penaltyConfig.status, penaltyConfig.banInterval, requesterId]
         );
       } else {
         // 永久封禁：status=permanent_banned，ban_until 置空

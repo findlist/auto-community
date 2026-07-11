@@ -451,8 +451,11 @@ describe('emergency.service - resolveFalseReport', () => {
     await emergencyService.resolveFalseReport('f1', 'admin-1', 'ban_7d', '封7天');
 
     const banSql = mockClient.query.mock.calls[3][0];
-    expect(banSql).toContain("INTERVAL '7 days'");
-    expect(banSql).toContain('ban_until = NOW()');
+    // 参数化后 SQL 使用 $2::interval 占位符，不再含字面量 INTERVAL '7 days'
+    expect(banSql).toContain("$2::interval");
+    expect(banSql).toContain('ban_until = NOW() + $2::interval');
+    // 参数列表：[status, interval, userId]
+    expect(mockClient.query.mock.calls[3][1]).toEqual(['banned', '7 days', 'u-requester']);
   });
 });
 
