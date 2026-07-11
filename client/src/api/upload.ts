@@ -19,12 +19,13 @@ export async function uploadImage(file: File): Promise<UploadResult> {
   formData.append('file', file);
 
   try {
-    const response = await client.post<UploadResult>('/upload/image', formData, {
+    // 泛型第二参数 R 指定响应拦截器返回的实际类型（拦截器 return response.data）
+    // 与其他 api 文件统一写法 client.post<never, R>，避免 as unknown as 双重断言
+    return await client.post<never, UploadResult>('/upload/image', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     });
-    return response as unknown as UploadResult;
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
@@ -41,12 +42,11 @@ export async function uploadImages(files: File[]): Promise<MultiUploadResult> {
   });
 
   try {
-    const response = await client.post<MultiUploadResult>('/upload/images', formData, {
+    return await client.post<never, MultiUploadResult>('/upload/images', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     });
-    return response as unknown as MultiUploadResult;
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
