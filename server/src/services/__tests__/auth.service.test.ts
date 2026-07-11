@@ -29,8 +29,8 @@ const {
   mockDecryptPhone,
   mockHashPhone,
   mockMaskPhone,
-  mockBcryptHashSync,
-  mockBcryptCompareSync,
+  mockBcryptHash,
+  mockBcryptCompare,
   mockJwtDecode,
 } = vi.hoisted(() => ({
   mockQuery: vi.fn(),
@@ -46,8 +46,8 @@ const {
   mockDecryptPhone: vi.fn(),
   mockHashPhone: vi.fn(),
   mockMaskPhone: vi.fn(),
-  mockBcryptHashSync: vi.fn(),
-  mockBcryptCompareSync: vi.fn(),
+  mockBcryptHash: vi.fn(),
+  mockBcryptCompare: vi.fn(),
   mockJwtDecode: vi.fn(),
 }));
 
@@ -93,11 +93,12 @@ vi.mock('../../utils/mask', () => ({
   maskPhone: mockMaskPhone,
 }));
 
-// mock bcryptjs：避免 hashSync/compareSync 真实执行（耗时且依赖随机 salt）
+// mock bcryptjs：避免 hash/compare 真实执行（耗时且依赖随机 salt）
+// 设计原因：auth.service 已改为异步 bcrypt.hash/compare，mock 需返回 Promise
 vi.mock('bcryptjs', () => ({
   default: {
-    hashSync: mockBcryptHashSync,
-    compareSync: mockBcryptCompareSync,
+    hash: mockBcryptHash,
+    compare: mockBcryptCompare,
   },
 }));
 
@@ -164,7 +165,8 @@ beforeEach(() => {
   mockEncryptPhone.mockReturnValue(ENCRYPTED_PHONE);
   mockDecryptPhone.mockReturnValue(PHONE);
   mockMaskPhone.mockReturnValue('138****5678');
-  mockBcryptHashSync.mockReturnValue('hashed-password');
+  // 异步 mock：bcrypt.hash 返回 Promise，resolved 值为哈希字符串
+  mockBcryptHash.mockResolvedValue('hashed-password');
   mockGenerateAccessToken.mockReturnValue(ACCESS_TOKEN);
   mockGenerateRefreshToken.mockReturnValue(REFRESH_TOKEN);
 });
@@ -289,8 +291,8 @@ describe('auth.service - login', () => {
   it('登录成功：返回 token / refreshToken / user', async () => {
     const userRow = createMockUserRow({ password_hash: 'hashed-password' });
     mockQuery.mockResolvedValueOnce({ rows: [userRow] });
-    // 密码校验通过
-    mockBcryptCompareSync.mockReturnValue(true);
+    // 密码校验通过（异步 compare 返回 Promise<true>）
+    mockBcryptCompare.mockResolvedValue(true);
 
     const result = await authService.login(PHONE, PASSWORD);
 
@@ -309,14 +311,14 @@ describe('auth.service - login', () => {
 
     await expect(authService.login(PHONE, PASSWORD)).rejects.toBeInstanceOf(UnauthorizedError);
     // 用户不存在时不应执行密码校验
-    expect(mockBcryptCompareSync).not.toHaveBeenCalled();
+    expect(mockBcryptCompare).not.toHaveBeenCalled();
   });
 
   it('密码错误时抛 UnauthorizedError', async () => {
     const userRow = createMockUserRow({ password_hash: 'hashed-password' });
     mockQuery.mockResolvedValueOnce({ rows: [userRow] });
-    // 密码校验失败
-    mockBcryptCompareSync.mockReturnValue(false);
+    // 密码校验失败（异步 compare 返回 Promise<false>）
+    mockBcryptCompare.mockResolvedValue(false);
 
     await expect(authService.login(PHONE, PASSWORD)).rejects.toBeInstanceOf(UnauthorizedError);
     // 密码错误不应签发 token

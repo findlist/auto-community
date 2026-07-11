@@ -92,7 +92,8 @@ async function register(phone: string, password: string, nickname: string, priva
     throw new ConflictError('该手机号已注册');
   }
 
-  const passwordHash = bcrypt.hashSync(password, 10);
+  // 异步哈希：避免 hashSync 阻塞 Node 事件循环（cost=10 约 100ms），影响高并发吞吐量
+  const passwordHash = await bcrypt.hash(password, 10);
   // 加密手机号：写入数据库的是密文，不可逆查询
   const encryptedPhone = encryptPhone(phone);
 
@@ -135,7 +136,8 @@ async function login(phone: string, password: string) {
   }
 
   const row = result.rows[0];
-  const isValidPassword = bcrypt.compareSync(password, row.password_hash);
+  // 异步比较：避免 compareSync 阻塞事件循环，与 register/resetPassword 保持一致的异步风格
+  const isValidPassword = await bcrypt.compare(password, row.password_hash);
   if (!isValidPassword) {
     throw new UnauthorizedError('手机号或密码错误');
   }
@@ -267,8 +269,8 @@ async function resetPassword(phone: string, code: string, newPassword: string): 
     throw new NotFoundError('用户不存在');
   }
 
-  // 更新密码
-  const passwordHash = bcrypt.hashSync(newPassword, 10);
+  // 异步哈希：与 register 保持一致，避免阻塞事件循环
+  const passwordHash = await bcrypt.hash(newPassword, 10);
   await query(
     'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
     [passwordHash, result.rows[0].id]
