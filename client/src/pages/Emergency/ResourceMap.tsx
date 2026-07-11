@@ -101,11 +101,30 @@ function useAMapScript() {
       setLoaded(true);
       return;
     }
+
+    let cancelled = false;
+    // 统一 script id 便于卸载时精确移除，避免 DOM 标签堆积
+    const scriptId = "amap-sdk-script";
     const script = document.createElement("script");
+    script.id = scriptId;
     script.src = `https://webapi.amap.com/maps?v=2.0&key=${window._AMAP_KEY}`;
-    script.onload = () => setLoaded(true);
-    script.onerror = () => setError("地图加载失败，请检查网络连接");
+    script.onload = () => {
+      if (!cancelled) setLoaded(true);
+    };
+    script.onerror = () => {
+      if (!cancelled) setError("地图加载失败，请检查网络连接");
+    };
     document.head.appendChild(script);
+
+    // 组件卸载时移除 script 标签，避免多次进出页面导致 DOM 标签堆积
+    // 注意：不移除 window.AMap，SDK 加载后持久缓存，下次进入页面直接复用
+    return () => {
+      cancelled = true;
+      const existingScript = document.getElementById(scriptId);
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
   }, [hasKey]);
 
   return { loaded, error, hasKey };
