@@ -102,8 +102,8 @@ function setupMockClient(opts: {
       }
       return { rows: [] };
     }
-    // time_accounts 行锁查询
-    if (text.includes('SELECT * FROM time_accounts WHERE user_id = $1 FOR UPDATE')) {
+    // time_accounts 行锁查询（按列名替换，去掉 SELECT * 前缀改为 FROM 匹配）
+    if (text.includes('FROM time_accounts WHERE user_id = $1 FOR UPDATE')) {
       const userId = params[0] as string;
       if (accountState[userId] !== undefined) {
         return { rows: [{ user_id: userId, balance: accountState[userId] }] };

@@ -83,15 +83,21 @@ interface TimeOrderRow extends QueryResultRow {
 // time_accounts 表行类型：与数据库列结构对齐
 // 设计原因：原 Map<string, any> 导致 .balance 等字段访问失去类型保护，
 // 列重命名（如 balance → credit）不会触发编译期告警
+// 注：time_accounts 表无 created_at 列（见迁移 002_time_bank.sql），仅 6 字段
 interface TimeAccountRow extends QueryResultRow {
   id: string;
   user_id: string;
   balance: number;
   total_earned: number;
   total_spent: number;
-  created_at: Date;
   updated_at: Date;
 }
+
+/**
+ * time_accounts 表显式查询列：替代 SELECT *，与数据库实际列结构对齐。
+ * 列为硬编码常量非用户输入，模板插值无注入风险。
+ */
+const TIME_ACCOUNT_COLUMNS = `id, user_id, balance, total_earned, total_spent, updated_at`;
 
 // SQL 参数联合类型复用 database.ts 的 SqlParam，避免本地定义与全局类型不一致
 // 设计原因：原本地 SqlParam 含 object 类型过宽（含函数、Symbol 等），改用全局统一类型
@@ -137,12 +143,15 @@ function toOrder(row: TimeOrderRow) {
 
 async function getOrCreateAccount(client: PoolClient, userId: string): Promise<TimeAccountRow> {
   // 事务内查询并加行锁，防止并发场景下余额丢失更新
-  const result = await client.query('SELECT * FROM time_accounts WHERE user_id = $1 FOR UPDATE', [userId]);
+  const result = await client.query<TimeAccountRow>(
+    `SELECT ${TIME_ACCOUNT_COLUMNS} FROM time_accounts WHERE user_id = $1 FOR UPDATE`,
+    [userId],
+  );
   if (result.rows.length > 0) return result.rows[0] as TimeAccountRow;
 
-  const insertResult = await client.query(
+  const insertResult = await client.query<TimeAccountRow>(
     `INSERT INTO time_accounts (user_id, balance, total_earned, total_spent)
-     VALUES ($1, 0, 0, 0) RETURNING *`,
+     VALUES ($1, 0, 0, 0) RETURNING ${TIME_ACCOUNT_COLUMNS}`,
     [userId],
   );
   return insertResult.rows[0] as TimeAccountRow;

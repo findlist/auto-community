@@ -419,8 +419,8 @@ describe('time-bank.service completeOrder', () => {
         const u = opts.users[id as string];
         return { rows: u ? [{ id, time_balance: u.timeBalance, nickname: u.nickname }] : [] };
       }
-      // 5. getOrCreateAccount：SELECT * FROM time_accounts WHERE user_id = $1 FOR UPDATE
-      if (text.includes('SELECT * FROM time_accounts WHERE user_id = $1 FOR UPDATE')) {
+      // 5. getOrCreateAccount：显式列名查询 time_accounts（已替代 SELECT *）
+      if (text.includes('FROM time_accounts WHERE user_id = $1 FOR UPDATE')) {
         const userId = params[0];
         const acc = opts.accounts[userId as string];
         return { rows: acc ? [{ user_id: userId, balance: acc.balance }] : [] };
