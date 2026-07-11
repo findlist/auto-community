@@ -52,6 +52,13 @@ interface TimeServiceRow extends QueryResultRow {
   reputation_score?: string | null;
 }
 
+/**
+ * time_orders 表显式查询列：替代 SELECT *，防止未来新增字段意外泄露。
+ * 列为硬编码常量非用户输入，模板插值无注入风险。
+ */
+const TIME_ORDER_COLUMNS = `id, service_id, provider_id, requester_id, duration_minutes, status,
+  started_at, completed_at, cancelled_at, created_at, updated_at`;
+
 // time_orders 表行类型：与数据库列结构对齐
 interface TimeOrderRow extends QueryResultRow {
   id: string;
@@ -454,7 +461,7 @@ async function createOrder(userId: string, serviceId: string) {
 async function updateOrderStatus(orderId: string, userId: string, action: string) {
   // 使用事务 + FOR UPDATE 行锁，防止并发状态变更破坏订单状态机一致性
   const order = await transaction(async (client) => {
-    const orderResult = await client.query('SELECT * FROM time_orders WHERE id = $1 FOR UPDATE', [orderId]);
+    const orderResult = await client.query('SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1 FOR UPDATE', [orderId]);
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
     const order = orderResult.rows[0];
 
@@ -489,7 +496,7 @@ async function updateOrderStatus(orderId: string, userId: string, action: string
     }
 
     // 事务内重新查询更新后的订单行
-    const updatedResult = await client.query('SELECT * FROM time_orders WHERE id = $1', [orderId]);
+    const updatedResult = await client.query('SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1', [orderId]);
     return updatedResult.rows[0];
   });
 
@@ -517,7 +524,7 @@ async function completeOrder(
 ) {
   return transaction(async (client) => {
     const orderResult = await client.query(
-      'SELECT * FROM time_orders WHERE id = $1 FOR UPDATE',
+      'SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1 FOR UPDATE',
       [orderId],
     );
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
@@ -654,7 +661,7 @@ async function completeOrder(
       await reputationService.updateReputationScore(client, order.provider_id);
     }
 
-    const updatedResult = await client.query('SELECT * FROM time_orders WHERE id = $1', [orderId]);
+    const updatedResult = await client.query('SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1', [orderId]);
 
     // 通知服务提供者：订单已完成（仅 requester 可确认完成，通知 provider）
     notificationService.notifyOrderStatusChange(
@@ -1000,7 +1007,7 @@ async function createReview(orderId: string, reviewerId: string, rating: number,
 
   // 使用事务保证评价写入与信誉分更新的一致性；FOR UPDATE 锁定订单行防止并发评价竞态
   return transaction(async (client) => {
-    const orderResult = await client.query('SELECT * FROM time_orders WHERE id = $1 FOR UPDATE', [orderId]);
+    const orderResult = await client.query('SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1 FOR UPDATE', [orderId]);
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
     const order = orderResult.rows[0];
 
@@ -1038,7 +1045,7 @@ async function createDispute(
   description?: string,
   evidence?: string[],
 ) {
-  const orderResult = await query('SELECT * FROM time_orders WHERE id = $1', [orderId]);
+  const orderResult = await query('SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1', [orderId]);
   if (orderResult.rows.length === 0) throw new NotFoundError('订单');
   const order = orderResult.rows[0];
 

@@ -402,7 +402,7 @@ describe('time-bank.service completeOrder', () => {
 
     mockClient.query.mockImplementation(async (text: string, params: unknown[] = []) => {
       // 1. SELECT order FOR UPDATE（事务内首条）
-      if (text.includes('SELECT * FROM time_orders WHERE id = $1 FOR UPDATE')) {
+      if (text.includes('FROM time_orders WHERE id = $1 FOR UPDATE')) {
         return { rows: [opts.order] };
       }
       // 2. completedCount 查询
@@ -435,7 +435,7 @@ describe('time-bank.service completeOrder', () => {
         return { rows: [{ id: 'review-1', rating: opts.rating }] };
       }
       // 8. 最后 SELECT * FROM time_orders WHERE id = $1（无 FOR UPDATE，返回更新后订单）
-      if (text.includes('SELECT * FROM time_orders WHERE id = $1') && !text.includes('FOR UPDATE')) {
+      if (text.includes('FROM time_orders WHERE id = $1') && !text.includes('FOR UPDATE')) {
         return { rows: [completedOrderRow] };
       }
       // 其余 UPDATE / INSERT 均返回空 rows
