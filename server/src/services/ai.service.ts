@@ -554,17 +554,23 @@ export async function searchByEmbedding(
     // 行数据先按 EmbeddingRow 收窄，再统一映射
     const rows = result.rows as EmbeddingRow[];
     const scored = rows
-      .map((row) => {
+      .map((row): { postId: string; similarity: number } | null => {
         // embedding 可能是 number[] 或 JSON 字符串（pg 返回形态不固定）
-        // JSON.parse 返回 unknown，这里显式断言为 number[]，cosineSimilarity 内部会做长度校验
-        const storedEmbedding: number[] = Array.isArray(row.embedding)
+        // 解析后做运行时校验：若数据库存储的 JSON 结构异常（非 number[]），
+        // 跳过该记录避免 NaN 传播到 cosineSimilarity 计算结果
+        const parsed: unknown = Array.isArray(row.embedding)
           ? row.embedding
-          : (JSON.parse(row.embedding) as number[]);
+          : JSON.parse(row.embedding);
+        if (!Array.isArray(parsed) || !parsed.every((v: unknown) => typeof v === 'number')) {
+          logger.warn({ postId: row.post_id }, '[AI] embedding 数据格式异常，跳过该记录');
+          return null;
+        }
         return {
           postId: row.post_id,
-          similarity: cosineSimilarity(queryEmbedding, storedEmbedding),
+          similarity: cosineSimilarity(queryEmbedding, parsed),
         };
       })
+      .filter((item): item is { postId: string; similarity: number } => item !== null)
       .filter((item) => item.similarity > 0)
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, limit);
