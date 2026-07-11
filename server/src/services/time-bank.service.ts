@@ -467,7 +467,7 @@ async function createOrder(userId: string, serviceId: string) {
 async function updateOrderStatus(orderId: string, userId: string, action: string) {
   // 使用事务 + FOR UPDATE 行锁，防止并发状态变更破坏订单状态机一致性
   const order = await transaction(async (client) => {
-    const orderResult = await client.query('SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1 FOR UPDATE', [orderId]);
+    const orderResult = await client.query(`SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1 FOR UPDATE`, [orderId]);
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
     const order = orderResult.rows[0];
 
@@ -502,7 +502,7 @@ async function updateOrderStatus(orderId: string, userId: string, action: string
     }
 
     // 事务内重新查询更新后的订单行
-    const updatedResult = await client.query('SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1', [orderId]);
+    const updatedResult = await client.query(`SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1`, [orderId]);
     return updatedResult.rows[0];
   });
 
@@ -530,7 +530,7 @@ async function completeOrder(
 ) {
   return transaction(async (client) => {
     const orderResult = await client.query(
-      'SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1 FOR UPDATE',
+      `SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1 FOR UPDATE`,
       [orderId],
     );
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
@@ -667,7 +667,7 @@ async function completeOrder(
       await reputationService.updateReputationScore(client, order.provider_id);
     }
 
-    const updatedResult = await client.query('SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1', [orderId]);
+    const updatedResult = await client.query(`SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1`, [orderId]);
 
     // 通知服务提供者：订单已完成（仅 requester 可确认完成，通知 provider）
     notificationService.notifyOrderStatusChange(
@@ -911,7 +911,7 @@ async function createFamilyBinding(userId: string, parentPhone: string, relation
 async function confirmFamilyBinding(bindingId: string, userId: string) {
   // 事务 + FOR UPDATE 行锁：确保并发 confirm/reject 串行化，避免同时通过 pending 状态检查
   const updated = await transaction(async (client) => {
-    const bindingResult = await client.query('SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1 FOR UPDATE', [bindingId]);
+    const bindingResult = await client.query(`SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1 FOR UPDATE`, [bindingId]);
     if (bindingResult.rows.length === 0) throw new NotFoundError('绑定记录');
     const binding = bindingResult.rows[0];
 
@@ -919,7 +919,7 @@ async function confirmFamilyBinding(bindingId: string, userId: string) {
     if (binding.status !== 'pending') throw new OrderStatusInvalidError('绑定状态不允许此操作');
 
     await client.query("UPDATE family_bindings SET status = 'confirmed', updated_at = NOW() WHERE id = $1", [bindingId]);
-    const updatedResult = await client.query('SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1', [bindingId]);
+    const updatedResult = await client.query(`SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1`, [bindingId]);
     return updatedResult.rows[0];
   });
 
@@ -932,7 +932,7 @@ async function confirmFamilyBinding(bindingId: string, userId: string) {
 async function rejectFamilyBinding(bindingId: string, userId: string) {
   // 事务 + FOR UPDATE 行锁：与 confirmFamilyBinding 共享同一行锁策略，避免并发 confirm/reject 竞态
   const updated = await transaction(async (client) => {
-    const bindingResult = await client.query('SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1 FOR UPDATE', [bindingId]);
+    const bindingResult = await client.query(`SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1 FOR UPDATE`, [bindingId]);
     if (bindingResult.rows.length === 0) throw new NotFoundError('绑定记录');
     const binding = bindingResult.rows[0];
 
@@ -940,7 +940,7 @@ async function rejectFamilyBinding(bindingId: string, userId: string) {
     if (binding.status !== 'pending') throw new OrderStatusInvalidError('绑定状态不允许此操作');
 
     await client.query("UPDATE family_bindings SET status = 'rejected', updated_at = NOW() WHERE id = $1", [bindingId]);
-    const updatedResult = await client.query('SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1', [bindingId]);
+    const updatedResult = await client.query(`SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1`, [bindingId]);
     return updatedResult.rows[0];
   });
 
@@ -956,7 +956,7 @@ async function rejectFamilyBinding(bindingId: string, userId: string) {
 async function unbindFamilyBinding(bindingId: string, userId: string) {
   // 事务 + FOR UPDATE 行锁：避免并发解绑导致状态机不一致（如双方同时点击解绑）
   const { otherId, updated } = await transaction(async (client) => {
-    const bindingResult = await client.query('SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1 FOR UPDATE', [bindingId]);
+    const bindingResult = await client.query(`SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1 FOR UPDATE`, [bindingId]);
     if (bindingResult.rows.length === 0) throw new NotFoundError('绑定记录');
     const binding = bindingResult.rows[0];
 
@@ -966,7 +966,7 @@ async function unbindFamilyBinding(bindingId: string, userId: string) {
     if (binding.status !== 'confirmed') throw new OrderStatusInvalidError('仅已确认的绑定可解绑');
 
     await client.query("UPDATE family_bindings SET status = 'unbound', updated_at = NOW() WHERE id = $1", [bindingId]);
-    const updatedResult = await client.query('SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1', [bindingId]);
+    const updatedResult = await client.query(`SELECT ${FAMILY_BINDING_COLUMNS} FROM family_bindings WHERE id = $1`, [bindingId]);
     // 通知另一方：绑定已被解绑（通知失败不阻塞主流程）
     const otherId = binding.user_id === userId ? binding.parent_id : binding.user_id;
     return { otherId, updated: updatedResult.rows[0] };
@@ -1013,7 +1013,7 @@ async function createReview(orderId: string, reviewerId: string, rating: number,
 
   // 使用事务保证评价写入与信誉分更新的一致性；FOR UPDATE 锁定订单行防止并发评价竞态
   return transaction(async (client) => {
-    const orderResult = await client.query('SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1 FOR UPDATE', [orderId]);
+    const orderResult = await client.query(`SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1 FOR UPDATE`, [orderId]);
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
     const order = orderResult.rows[0];
 
@@ -1051,7 +1051,7 @@ async function createDispute(
   description?: string,
   evidence?: string[],
 ) {
-  const orderResult = await query('SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1', [orderId]);
+  const orderResult = await query(`SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1`, [orderId]);
   if (orderResult.rows.length === 0) throw new NotFoundError('订单');
   const order = orderResult.rows[0];
 
