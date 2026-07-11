@@ -6,7 +6,7 @@
  * - 成功场景：状态更新为 unbound、通知另一方
  * - 权限场景：发起方(user_id)与家长(parent_id)均可解绑
  *
- * 测试策略：mock database 模块的 query 函数，按 SQL 文本匹配返回相应数据，
+ * 测试策略：mock database 的 transaction 函数注入 mockClient，按 SQL 文本匹配返回相应数据，
  *           验证调用参数与通知触发正确性。
  */
 
@@ -16,14 +16,16 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.DB_PASSWORD = 'test-db-password';
 
-// mock database 的 query 函数（unbindFamilyBinding 不使用 transaction，仅用 query）
+// mock database 的 transaction 函数（unbindFamilyBinding 已改为事务 + FOR UPDATE）
 // 用 vi.hoisted 提升变量，避免 vi.mock 工厂函数引用未初始化变量导致 TDZ
-const { mockQuery } = vi.hoisted(() => ({
+const { mockQuery, mockTransaction, mockClient } = vi.hoisted(() => ({
   mockQuery: vi.fn(),
+  mockTransaction: vi.fn(),
+  mockClient: { query: vi.fn() },
 }));
 vi.mock('../../config/database', () => ({
   query: mockQuery,
-  transaction: vi.fn(),
+  transaction: mockTransaction,
   pool: {},
 }));
 
@@ -60,13 +62,17 @@ const mockedNotifyFamilyBindingChange = vi.mocked(notificationService.notifyFami
 
 beforeEach(() => {
   mockQuery.mockReset();
+  mockClient.query.mockReset();
+  mockTransaction.mockReset();
+  // unbindFamilyBinding 已改为事务模式，配置 mockTransaction 注入 mockClient
+  mockTransaction.mockImplementation(async (cb: (client: typeof mockClient) => Promise<unknown>) => cb(mockClient));
   mockedNotifyFamilyBindingChange.mockReset();
   // mockResolvedValue 需要 NotificationData 形状，用双重断言替代裸 any 以满足类型约束
   mockedNotifyFamilyBindingChange.mockResolvedValue({} as unknown as Awaited<ReturnType<typeof notificationService.notifyFamilyBindingChange>>);
 });
 
 /**
- * 构造绑定记录 mock 数据：第一次 query（SELECT）返回绑定记录，
+ * 构造绑定记录 mock 数据：第一次 query（SELECT FOR UPDATE）返回绑定记录，
  * 最后一次 query（SELECT 更新后）返回更新后的记录，中间的 UPDATE 返回空 rows。
  */
 function setupBindingMock(binding: {
@@ -89,7 +95,7 @@ function setupBindingMock(binding: {
   // 用 selectCount 区分首次查询（返回原记录）与更新后查询（返回 unbound 记录）
   let selectCount = 0;
 
-  mockQuery.mockImplementation(async (text: string) => {
+  mockClient.query.mockImplementation(async (text: string) => {
     if (text.includes('SELECT * FROM family_bindings WHERE id = $1')) {
       selectCount++;
       // 首次查询返回原记录（含存在性判断）；更新后第二次查询返回 unbound 记录
@@ -148,7 +154,7 @@ describe('timeBankService.unbindFamilyBinding', () => {
 
     expect(result.status).toBe('unbound');
     // 验证 UPDATE 语句被调用
-    const updateCall = mockQuery.mock.calls.find(c => String(c[0]).includes('UPDATE family_bindings SET status'));
+    const updateCall = mockClient.query.mock.calls.find(c => String(c[0]).includes('UPDATE family_bindings SET status'));
     expect(updateCall).toBeDefined();
     // 通知应发送给另一方（家长 u2）
     expect(mockedNotifyFamilyBindingChange).toHaveBeenCalledWith('u2', 'b1', 'unbound');
