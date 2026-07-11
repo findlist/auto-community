@@ -840,16 +840,17 @@ async function getReputationDistribution() {
 }
 
 async function getModuleActivity() {
-  const since = "NOW() - INTERVAL '30 days'";
+  // 30 天间隔直接内联到 SQL 字面量：纯字面量无注入风险，且使用数据库服务器时间 NOW() 避免应用服务器时钟漂移
+  // 原实现用 const since = "NOW() - INTERVAL '30 days'" + ${since} 拼接，虽无注入风险但不符合参数化 SQL 规范
   const [skillPosts, skillOrders, kitchenPosts, kitchenOrders, timeServices, timeOrders, emergencyRequests] =
     await Promise.all([
-      query(`SELECT COUNT(*) FROM skill_posts WHERE created_at >= ${since} AND deleted_at IS NULL`),
-      query(`SELECT COUNT(*) FROM skill_orders WHERE created_at >= ${since}`),
-      query(`SELECT COUNT(*) FROM kitchen_posts WHERE created_at >= ${since} AND deleted_at IS NULL`),
-      query(`SELECT COUNT(*) FROM kitchen_orders WHERE created_at >= ${since}`),
-      query(`SELECT COUNT(*) FROM time_services WHERE created_at >= ${since} AND deleted_at IS NULL`),
-      query(`SELECT COUNT(*) FROM time_orders WHERE created_at >= ${since}`),
-      query(`SELECT COUNT(*) FROM emergency_requests WHERE created_at >= ${since} AND deleted_at IS NULL`),
+      query(`SELECT COUNT(*) FROM skill_posts WHERE created_at >= NOW() - INTERVAL '30 days' AND deleted_at IS NULL`),
+      query(`SELECT COUNT(*) FROM skill_orders WHERE created_at >= NOW() - INTERVAL '30 days'`),
+      query(`SELECT COUNT(*) FROM kitchen_posts WHERE created_at >= NOW() - INTERVAL '30 days' AND deleted_at IS NULL`),
+      query(`SELECT COUNT(*) FROM kitchen_orders WHERE created_at >= NOW() - INTERVAL '30 days'`),
+      query(`SELECT COUNT(*) FROM time_services WHERE created_at >= NOW() - INTERVAL '30 days' AND deleted_at IS NULL`),
+      query(`SELECT COUNT(*) FROM time_orders WHERE created_at >= NOW() - INTERVAL '30 days'`),
+      query(`SELECT COUNT(*) FROM emergency_requests WHERE created_at >= NOW() - INTERVAL '30 days' AND deleted_at IS NULL`),
     ]);
 
   return [
