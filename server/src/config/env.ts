@@ -17,12 +17,17 @@ for (const envPath of envCandidates) {
 }
 
 // 敏感变量校验：JWT_SECRET 与 DB_PASSWORD 必须显式配置，避免使用不安全的默认值导致生产环境风险
-if (!process.env.JWT_SECRET) {
+// 校验后赋值给局部变量实现类型收窄（string | undefined → string），避免后续 as string 断言
+// 设计原因：若后续重构移动了校验代码，as string 会静默将 undefined 当作 string 传递，
+// 收窄后编译器即可在调用方捕获未校验的访问
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
   logger.error('JWT_SECRET 环境变量必须配置，请参考 .env.example 并在 .env 中设置高强度随机字符串');
   process.exit(1);
 }
 
-if (!process.env.DB_PASSWORD) {
+const dbPassword = process.env.DB_PASSWORD;
+if (!dbPassword) {
   logger.error('DB_PASSWORD 环境变量必须配置，请参考 .env.example 并在 .env 中设置数据库密码');
   process.exit(1);
 }
@@ -56,7 +61,7 @@ const productionChecks: ConfigCheck[] = [
     isValid: () => {
       // 常见不安全默认值清单：命中任一即视为未替换
       const defaultSecrets = ['your-secret-key', 'secret', 'jwt-secret', 'change-me'];
-      return !defaultSecrets.includes(process.env.JWT_SECRET || '');
+      return !defaultSecrets.includes(jwtSecret);
     },
     message: 'JWT_SECRET 使用了默认值：生产环境必须使用高强度随机字符串',
   },
@@ -96,7 +101,7 @@ export const env = {
   DB_PORT: parseInt(process.env.DB_PORT || '5432', 10),
   DB_NAME: process.env.DB_NAME || 'linli_circle',
   DB_USER: process.env.DB_USER || 'postgres',
-  DB_PASSWORD: process.env.DB_PASSWORD as string,
+  DB_PASSWORD: dbPassword,
 
   // Redis配置（共享实例时 community 用 DB 0，emotion 用 DB 1）
   REDIS_HOST: process.env.REDIS_HOST || 'localhost',
@@ -105,7 +110,7 @@ export const env = {
   REDIS_DB: parseInt(process.env.REDIS_DB || '0', 10),
 
   // JWT配置
-  JWT_SECRET: process.env.JWT_SECRET as string,
+  JWT_SECRET: jwtSecret,
   JWT_EXPIRES_IN: jwtExpiresIn,
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
 

@@ -36,7 +36,9 @@ vi.mock('fs', () => ({
   default: mockFs,
 }));
 
-// mock env：提供固定的数据库配置，避免依赖真实环境变量与 .env 加载
+// mock env：提供固定的数据库配置与备份目录，避免依赖真实环境变量与 .env 加载
+// 设计原因：backup.service 的 getBackupConfig 统一从 env 读取配置（含 BACKUP_DIR），
+// mock 需覆盖所有被读取字段，否则 backupDir 为 undefined 导致 path.join 抛错
 vi.mock('../../config/env', () => ({
   env: {
     DB_HOST: 'localhost',
@@ -44,6 +46,7 @@ vi.mock('../../config/env', () => ({
     DB_NAME: 'testdb',
     DB_USER: 'testuser',
     DB_PASSWORD: 'testpass',
+    BACKUP_DIR: '/tmp/test-backups',
   },
 }));
 

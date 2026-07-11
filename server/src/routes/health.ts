@@ -7,10 +7,12 @@ const router = Router();
 
 // 健康检查接口：检测服务存活与数据库连接状态
 router.get('/health', async (req: Request, res: Response) => {
+  // 在 try 外声明 client，确保 finally 能访问到；release 必须在 finally 中执行，
+  // 防止后续维护在 try 内插入新逻辑时因异常导致连接泄漏（连接池耗尽将拖垮整个服务）
+  let client;
   try {
     // 检查数据库连接
-    const client = await pool.connect();
-    client.release();
+    client = await pool.connect();
 
     res.json({
       status: 'ok',
@@ -26,6 +28,9 @@ router.get('/health', async (req: Request, res: Response) => {
       database: 'disconnected',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
+  } finally {
+    // 无论成功还是异常都释放连接回连接池，杜绝泄漏
+    client?.release();
   }
 });
 

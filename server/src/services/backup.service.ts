@@ -28,10 +28,11 @@ interface BackupResult {
 }
 
 // 获取备份配置
+// 设计原因：BACKUP_DIR 统一从 env.BACKUP_DIR 读取，避免与 env.ts 中的默认值逻辑重复，
+// 后续 env.ts 调整默认值或增加校验时此处自动生效，杜绝配置入口分裂
 function getBackupConfig(): BackupConfig {
-  const backupDir = process.env.BACKUP_DIR || path.resolve(process.cwd(), 'backups');
   return {
-    backupDir,
+    backupDir: env.BACKUP_DIR,
     dbHost: env.DB_HOST,
     dbPort: env.DB_PORT,
     dbName: env.DB_NAME,

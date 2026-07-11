@@ -77,6 +77,9 @@ function recordAlert(
 
 // 获取数据库连接池状态
 async function getDatabaseMetrics(): Promise<SystemMetrics['database']> {
+  // 在 try 外声明 client，确保 finally 能访问到；release 必须在 finally 中执行，
+  // 防止后续维护在 try 内插入新逻辑时因异常导致连接泄漏
+  let client;
   try {
     // 获取连接池状态
     const poolStatus = {
@@ -86,8 +89,7 @@ async function getDatabaseMetrics(): Promise<SystemMetrics['database']> {
     };
 
     // 检查数据库连接是否正常
-    const client = await pool.connect();
-    client.release();
+    client = await pool.connect();
 
     // 检查告警条件：等待数 > 10
     if (poolStatus.waitingCount > ALERT_THRESHOLDS.dbWaitingCount) {
@@ -118,6 +120,9 @@ async function getDatabaseMetrics(): Promise<SystemMetrics['database']> {
       idleConnections: pool.idleCount,
       waitingCount: pool.waitingCount,
     };
+  } finally {
+    // 无论成功还是异常都释放连接回连接池，杜绝泄漏
+    client?.release();
   }
 }
 
