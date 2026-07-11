@@ -104,7 +104,8 @@ export class WebSocketClient {
     };
 
     this.ws.onerror = (error) => {
-      console.error("WebSocket 错误:", error);
+      // 不在此处 console.error：onError 回调已由调用方处理，
+      // 重复输出会在生产环境控制台产生噪音且可能泄露 WebSocket 内部实现细节
       this.options.onError(error);
     };
 
@@ -216,7 +217,11 @@ export class WebSocketClient {
       this.ws.send(JSON.stringify(data));
       return true;
     }
-    console.warn("WebSocket 未连接，消息发送失败");
+    // 仅开发环境提示调用方错误：生产环境调用方应通过返回值 false 判断发送失败，
+    // 避免在用户控制台产生噪音（非系统级错误，属调用方使用不当）
+    if (import.meta.env.DEV) {
+      console.warn("WebSocket 未连接，消息发送失败");
+    }
     return false;
   }
 
