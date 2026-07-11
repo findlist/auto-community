@@ -353,7 +353,7 @@ describe('Chat 聊天交互', () => {
 
     await screen.findByText('暂无消息');
 
-    // 模拟 getReconnectAttempts 返回 2 次，触发重连提示
+    // 模拟 getReconnectAttempts 返回 2 次，+1 后显示"第 3 次"（对齐 websocket.ts 内部日志计数方式）
     mockWsInstance.getReconnectAttempts.mockReturnValue(2);
 
     act(() => {
@@ -361,7 +361,7 @@ describe('Chat 聊天交互', () => {
     });
 
     expect(screen.getByText(/重连中/)).toBeInTheDocument();
-    expect(screen.getByText(/第 2 次/)).toBeInTheDocument();
+    expect(screen.getByText(/第 3 次/)).toBeInTheDocument();
   });
 
   it('WebSocket 断开状态显示"连接已断开"提示', async () => {

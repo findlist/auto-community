@@ -144,7 +144,10 @@ export default function Chat() {
         setConnectionStatus(status);
         if (status === "reconnecting") {
           wasReconnecting = true;
-          setReconnectCount(wsClient.getReconnectAttempts());
+          // +1 对齐 websocket.ts 内部日志的计数方式：onStatusChange("reconnecting") 触发时
+          // reconnectAttempts 尚未递增（递增在 setTimeout 回调中执行），显示"第 N+1 次"更符合用户直觉
+          // 闭包说明：wsClient 是 useEffect 内局部变量，getReconnectAttempts 是实例方法读取当前状态，不存在闭包陷阱
+          setReconnectCount(wsClient.getReconnectAttempts() + 1);
         }
       },
     });
