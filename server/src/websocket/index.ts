@@ -214,3 +214,16 @@ export function initWebSocket(server: Server) {
 export function getOnlineUsers(): string[] {
   return Array.from(userSockets.keys());
 }
+
+// 关闭 WebSocket 服务与 Redis pub/sub 订阅连接，供优雅关闭流程调用
+// 设计原因：pubSub 由 redisClient.duplicate() 创建的独立连接，disconnectRedis 不会自动关闭它
+export async function closeWebSocket(): Promise<void> {
+  try {
+    await pubSub.quit();
+  } catch (err) {
+    logger.error({
+      module: 'websocket',
+      error: err instanceof Error ? err.message : String(err),
+    }, '关闭 Redis pub/sub 连接失败');
+  }
+}

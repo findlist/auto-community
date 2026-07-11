@@ -592,30 +592,35 @@ describe('time-bank.service getTransactions', () => {
 
 // ===================== createFamilyBinding =====================
 describe('time-bank.service createFamilyBinding', () => {
+  // createFamilyBinding 已改为事务模式，配置 mockTransaction 注入 mockClient
+  beforeEach(() => {
+    mockTransaction.mockImplementation(async (cb: (client: typeof mockClient) => Promise<unknown>) => cb(mockClient));
+  });
+
   it('家长不存在时抛 NotFoundError', async () => {
-    mockQuery.mockResolvedValue({ rows: [] });
+    mockClient.query.mockResolvedValue({ rows: [] });
 
     await expect(timeBankService.createFamilyBinding('user-1', '13800000000', 'parent')).rejects.toThrow(NotFoundError);
   });
 
   it('与自己绑定时抛 BadRequestError', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ id: 'user-1' }] });
+    mockClient.query.mockResolvedValue({ rows: [{ id: 'user-1' }] });
 
     await expect(timeBankService.createFamilyBinding('user-1', '13800000000', 'parent')).rejects.toThrow(BadRequestError);
   });
 
   it('已存在确认绑定时抛 BadRequestError', async () => {
     // 第一次：查家长存在；第二次：查已存在绑定
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'user-2' }] });
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'fb-1' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'user-2' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'fb-1' }] });
 
     await expect(timeBankService.createFamilyBinding('user-1', '13800000000', 'parent')).rejects.toThrow(BadRequestError);
   });
 
   it('正常创建：INSERT 并通知家长', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'user-2' }] });
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', relationship: 'parent' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'user-2' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', relationship: 'parent' }] });
 
     const result = await timeBankService.createFamilyBinding('user-1', '13800000000', 'parent');
 
@@ -627,28 +632,33 @@ describe('time-bank.service createFamilyBinding', () => {
 
 // ===================== confirmFamilyBinding =====================
 describe('time-bank.service confirmFamilyBinding', () => {
+  // confirmFamilyBinding 已改为事务 + FOR UPDATE，配置 mockTransaction 注入 mockClient
+  beforeEach(() => {
+    mockTransaction.mockImplementation(async (cb: (client: typeof mockClient) => Promise<unknown>) => cb(mockClient));
+  });
+
   it('绑定不存在时抛 NotFoundError', async () => {
-    mockQuery.mockResolvedValue({ rows: [] });
+    mockClient.query.mockResolvedValue({ rows: [] });
 
     await expect(timeBankService.confirmFamilyBinding('nonexistent', 'user-1')).rejects.toThrow(NotFoundError);
   });
 
   it('非 parent 时抛 PermissionDeniedError', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'pending' }] });
+    mockClient.query.mockResolvedValue({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'pending' }] });
 
     await expect(timeBankService.confirmFamilyBinding('fb-1', 'user-3')).rejects.toThrow(PermissionDeniedError);
   });
 
   it('状态非 pending 时抛 OrderStatusInvalidError', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'confirmed' }] });
+    mockClient.query.mockResolvedValue({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'confirmed' }] });
 
     await expect(timeBankService.confirmFamilyBinding('fb-1', 'user-2')).rejects.toThrow(OrderStatusInvalidError);
   });
 
   it('正常确认：更新状态并通知发起方', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'pending' }] });
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'confirmed' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'pending' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'confirmed' }] });
 
     const result = await timeBankService.confirmFamilyBinding('fb-1', 'user-2');
 
@@ -660,28 +670,33 @@ describe('time-bank.service confirmFamilyBinding', () => {
 
 // ===================== rejectFamilyBinding =====================
 describe('time-bank.service rejectFamilyBinding', () => {
+  // rejectFamilyBinding 与 confirm 共享事务 + FOR UPDATE 策略
+  beforeEach(() => {
+    mockTransaction.mockImplementation(async (cb: (client: typeof mockClient) => Promise<unknown>) => cb(mockClient));
+  });
+
   it('绑定不存在时抛 NotFoundError', async () => {
-    mockQuery.mockResolvedValue({ rows: [] });
+    mockClient.query.mockResolvedValue({ rows: [] });
 
     await expect(timeBankService.rejectFamilyBinding('nonexistent', 'user-1')).rejects.toThrow(NotFoundError);
   });
 
   it('非 parent 时抛 PermissionDeniedError', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'pending' }] });
+    mockClient.query.mockResolvedValue({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'pending' }] });
 
     await expect(timeBankService.rejectFamilyBinding('fb-1', 'user-3')).rejects.toThrow(PermissionDeniedError);
   });
 
   it('状态非 pending 时抛 OrderStatusInvalidError', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'rejected' }] });
+    mockClient.query.mockResolvedValue({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'rejected' }] });
 
     await expect(timeBankService.rejectFamilyBinding('fb-1', 'user-2')).rejects.toThrow(OrderStatusInvalidError);
   });
 
   it('正常拒绝：更新状态并通知发起方', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'pending' }] });
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'rejected' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'pending' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', status: 'rejected' }] });
 
     const result = await timeBankService.rejectFamilyBinding('fb-1', 'user-2');
 
@@ -721,6 +736,11 @@ describe('time-bank.service getFamilyBindings', () => {
 
 // ===================== createReview =====================
 describe('time-bank.service createReview', () => {
+  // createReview 已改为事务 + FOR UPDATE，配置 mockTransaction 注入 mockClient
+  beforeEach(() => {
+    mockTransaction.mockImplementation(async (cb: (client: typeof mockClient) => Promise<unknown>) => cb(mockClient));
+  });
+
   it('rating < 1 时抛 ValidationError', async () => {
     await expect(timeBankService.createReview('order-1', 'user-1', 0)).rejects.toThrow(ValidationError);
   });
@@ -730,40 +750,41 @@ describe('time-bank.service createReview', () => {
   });
 
   it('订单不存在时抛 NotFoundError', async () => {
-    mockQuery.mockResolvedValue({ rows: [] });
+    mockClient.query.mockResolvedValue({ rows: [] });
 
     await expect(timeBankService.createReview('nonexistent', 'user-1', 5)).rejects.toThrow(NotFoundError);
   });
 
   it('订单未完成时抛 OrderStatusInvalidError', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ provider_id: 'user-2', requester_id: 'user-1', status: 'in_progress' }] });
+    mockClient.query.mockResolvedValue({ rows: [{ provider_id: 'user-2', requester_id: 'user-1', status: 'in_progress' }] });
 
     await expect(timeBankService.createReview('order-1', 'user-1', 5)).rejects.toThrow(OrderStatusInvalidError);
   });
 
   it('非双方当事人时抛 PermissionDeniedError', async () => {
-    mockQuery.mockResolvedValue({ rows: [{ provider_id: 'user-2', requester_id: 'user-3', status: 'completed' }] });
+    mockClient.query.mockResolvedValue({ rows: [{ provider_id: 'user-2', requester_id: 'user-3', status: 'completed' }] });
 
     await expect(timeBankService.createReview('order-1', 'user-1', 5)).rejects.toThrow(PermissionDeniedError);
   });
 
   it('已评价时抛 BadRequestError', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ provider_id: 'user-2', requester_id: 'user-1', status: 'completed' }] });
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'review-1' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ provider_id: 'user-2', requester_id: 'user-1', status: 'completed' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'review-1' }] });
 
     await expect(timeBankService.createReview('order-1', 'user-1', 5)).rejects.toThrow(BadRequestError);
   });
 
   it('正常评价：provider 评价 requester，触发信誉分更新', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'completed' }] });
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'review-1', rating: 5 }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ provider_id: 'user-1', requester_id: 'user-2', status: 'completed' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'review-1', rating: 5 }] });
 
     const result = await timeBankService.createReview('order-1', 'user-1', 5, '好评');
 
     expect(result.id).toBe('review-1');
     // 评价后应更新被评价方信誉分（revieweeId = requester = user-2）
-    expect(mockReputationUpdate).toHaveBeenCalledWith('user-2');
+    // 事务内调用 updateReputationScore(client, revieweeId)，第一个参数为事务 client
+    expect(mockReputationUpdate).toHaveBeenCalledWith(mockClient, 'user-2');
   });
 });
 

@@ -866,102 +866,103 @@ async function getTransactions(
 }
 
 async function createFamilyBinding(userId: string, parentPhone: string, relationship: string) {
-  const parentResult = await query('SELECT id FROM users WHERE phone = $1', [parentPhone]);
-  if (parentResult.rows.length === 0) throw new NotFoundError('用户');
-  const parent = parentResult.rows[0];
+  // 事务包裹"查家长→查重复→插入"全流程，保证原子性；通知逻辑置于事务外 fire-and-forget
+  const { parentId, binding } = await transaction(async (client) => {
+    const parentResult = await client.query('SELECT id FROM users WHERE phone = $1', [parentPhone]);
+    if (parentResult.rows.length === 0) throw new NotFoundError('用户');
+    const parent = parentResult.rows[0];
 
-  if (userId === parent.id) throw new BadRequestError('不能与自己绑定');
+    if (userId === parent.id) throw new BadRequestError('不能与自己绑定');
 
-  const existResult = await query(
-    `SELECT id FROM family_bindings
-     WHERE user_id = $1 AND parent_id = $2 AND status = 'confirmed'`,
-    [userId, parent.id],
-  );
-  if (existResult.rows.length > 0) throw new BadRequestError('已存在确认的绑定关系');
+    const existResult = await client.query(
+      `SELECT id FROM family_bindings
+       WHERE user_id = $1 AND parent_id = $2 AND status = 'confirmed'`,
+      [userId, parent.id],
+    );
+    if (existResult.rows.length > 0) throw new BadRequestError('已存在确认的绑定关系');
 
-  const result = await query(
-    `INSERT INTO family_bindings (user_id, parent_id, relationship)
-     VALUES ($1, $2, $3) RETURNING *`,
-    [userId, parent.id, relationship],
-  );
+    const insertResult = await client.query(
+      `INSERT INTO family_bindings (user_id, parent_id, relationship)
+       VALUES ($1, $2, $3) RETURNING *`,
+      [userId, parent.id, relationship],
+    );
+    return { parentId: parent.id, binding: insertResult.rows[0] };
+  });
 
-  // 通知对方：收到新的亲情绑定请求（通知失败不影响主流程）
-  notificationService.notifyFamilyBindingChange(
-    parent.id,
-    result.rows[0].id,
-    'request',
-  ).catch(() => {});
+  // 通知对方：收到新的亲情绑定请求（事务外 fire-and-forget，失败不阻塞主流程）
+  notificationService.notifyFamilyBindingChange(parentId, binding.id, 'request').catch(() => {});
 
-  return result.rows[0];
+  return binding;
 }
 
 async function confirmFamilyBinding(bindingId: string, userId: string) {
-  const bindingResult = await query('SELECT * FROM family_bindings WHERE id = $1', [bindingId]);
-  if (bindingResult.rows.length === 0) throw new NotFoundError('绑定记录');
-  const binding = bindingResult.rows[0];
+  // 事务 + FOR UPDATE 行锁：确保并发 confirm/reject 串行化，避免同时通过 pending 状态检查
+  const updated = await transaction(async (client) => {
+    const bindingResult = await client.query('SELECT * FROM family_bindings WHERE id = $1 FOR UPDATE', [bindingId]);
+    if (bindingResult.rows.length === 0) throw new NotFoundError('绑定记录');
+    const binding = bindingResult.rows[0];
 
-  if (binding.parent_id !== userId) throw new PermissionDeniedError();
-  if (binding.status !== 'pending') throw new OrderStatusInvalidError('绑定状态不允许此操作');
+    if (binding.parent_id !== userId) throw new PermissionDeniedError();
+    if (binding.status !== 'pending') throw new OrderStatusInvalidError('绑定状态不允许此操作');
 
-  await query("UPDATE family_bindings SET status = 'confirmed', updated_at = NOW() WHERE id = $1", [bindingId]);
+    await client.query("UPDATE family_bindings SET status = 'confirmed', updated_at = NOW() WHERE id = $1", [bindingId]);
+    const updatedResult = await client.query('SELECT * FROM family_bindings WHERE id = $1', [bindingId]);
+    return updatedResult.rows[0];
+  });
 
-  // 通知发起方：亲情绑定已被对方确认
-  notificationService.notifyFamilyBindingChange(
-    binding.user_id,
-    bindingId,
-    'confirmed',
-  ).catch(() => {});
+  // 通知发起方：亲情绑定已被对方确认（事务外 fire-and-forget，失败不阻塞主流程）
+  notificationService.notifyFamilyBindingChange(updated.user_id, bindingId, 'confirmed').catch(() => {});
 
-  const updatedResult = await query('SELECT * FROM family_bindings WHERE id = $1', [bindingId]);
-  return updatedResult.rows[0];
+  return updated;
 }
 
 async function rejectFamilyBinding(bindingId: string, userId: string) {
-  const bindingResult = await query('SELECT * FROM family_bindings WHERE id = $1', [bindingId]);
-  if (bindingResult.rows.length === 0) throw new NotFoundError('绑定记录');
-  const binding = bindingResult.rows[0];
+  // 事务 + FOR UPDATE 行锁：与 confirmFamilyBinding 共享同一行锁策略，避免并发 confirm/reject 竞态
+  const updated = await transaction(async (client) => {
+    const bindingResult = await client.query('SELECT * FROM family_bindings WHERE id = $1 FOR UPDATE', [bindingId]);
+    if (bindingResult.rows.length === 0) throw new NotFoundError('绑定记录');
+    const binding = bindingResult.rows[0];
 
-  if (binding.parent_id !== userId) throw new PermissionDeniedError();
-  if (binding.status !== 'pending') throw new OrderStatusInvalidError('绑定状态不允许此操作');
+    if (binding.parent_id !== userId) throw new PermissionDeniedError();
+    if (binding.status !== 'pending') throw new OrderStatusInvalidError('绑定状态不允许此操作');
 
-  await query("UPDATE family_bindings SET status = 'rejected', updated_at = NOW() WHERE id = $1", [bindingId]);
+    await client.query("UPDATE family_bindings SET status = 'rejected', updated_at = NOW() WHERE id = $1", [bindingId]);
+    const updatedResult = await client.query('SELECT * FROM family_bindings WHERE id = $1', [bindingId]);
+    return updatedResult.rows[0];
+  });
 
-  // 通知发起方：亲情绑定被对方拒绝
-  notificationService.notifyFamilyBindingChange(
-    binding.user_id,
-    bindingId,
-    'rejected',
-  ).catch(() => {});
+  // 通知发起方：亲情绑定被对方拒绝（事务外 fire-and-forget，失败不阻塞主流程）
+  notificationService.notifyFamilyBindingChange(updated.user_id, bindingId, 'rejected').catch(() => {});
 
-  const updatedResult = await query('SELECT * FROM family_bindings WHERE id = $1', [bindingId]);
-  return updatedResult.rows[0];
+  return updated;
 }
 
 // 解绑亲情绑定：仅已确认（confirmed）的绑定可解绑，双方均可发起
 // 设计原因：原流程仅支持 pending→rejected，已确认的绑定无法解除；
 // 新增 unbound 终态保留解绑历史，避免直接删除记录导致关系链断裂
 async function unbindFamilyBinding(bindingId: string, userId: string) {
-  const bindingResult = await query('SELECT * FROM family_bindings WHERE id = $1', [bindingId]);
-  if (bindingResult.rows.length === 0) throw new NotFoundError('绑定记录');
-  const binding = bindingResult.rows[0];
+  // 事务 + FOR UPDATE 行锁：避免并发解绑导致状态机不一致（如双方同时点击解绑）
+  const { otherId, updated } = await transaction(async (client) => {
+    const bindingResult = await client.query('SELECT * FROM family_bindings WHERE id = $1 FOR UPDATE', [bindingId]);
+    if (bindingResult.rows.length === 0) throw new NotFoundError('绑定记录');
+    const binding = bindingResult.rows[0];
 
-  // 仅绑定双方（发起方 user_id 或家长 parent_id）可解绑，避免第三方越权
-  if (binding.user_id !== userId && binding.parent_id !== userId) throw new PermissionDeniedError();
-  // 仅已确认的绑定可解绑：pending 应走 reject 流程，rejected/unbound 已是终态
-  if (binding.status !== 'confirmed') throw new OrderStatusInvalidError('仅已确认的绑定可解绑');
+    // 仅绑定双方（发起方 user_id 或家长 parent_id）可解绑，避免第三方越权
+    if (binding.user_id !== userId && binding.parent_id !== userId) throw new PermissionDeniedError();
+    // 仅已确认的绑定可解绑：pending 应走 reject 流程，rejected/unbound 已是终态
+    if (binding.status !== 'confirmed') throw new OrderStatusInvalidError('仅已确认的绑定可解绑');
 
-  await query("UPDATE family_bindings SET status = 'unbound', updated_at = NOW() WHERE id = $1", [bindingId]);
+    await client.query("UPDATE family_bindings SET status = 'unbound', updated_at = NOW() WHERE id = $1", [bindingId]);
+    const updatedResult = await client.query('SELECT * FROM family_bindings WHERE id = $1', [bindingId]);
+    // 通知另一方：绑定已被解绑（通知失败不阻塞主流程）
+    const otherId = binding.user_id === userId ? binding.parent_id : binding.user_id;
+    return { otherId, updated: updatedResult.rows[0] };
+  });
 
-  // 通知另一方：绑定已被解绑（通知失败不阻塞主流程）
-  const otherId = binding.user_id === userId ? binding.parent_id : binding.user_id;
-  notificationService.notifyFamilyBindingChange(
-    otherId,
-    bindingId,
-    'unbound',
-  ).catch(() => {});
+  // 通知另一方（事务外 fire-and-forget，失败不阻塞主流程）
+  notificationService.notifyFamilyBindingChange(otherId, bindingId, 'unbound').catch(() => {});
 
-  const updatedResult = await query('SELECT * FROM family_bindings WHERE id = $1', [bindingId]);
-  return updatedResult.rows[0];
+  return updated;
 }
 
 async function getFamilyBindings(userId: string) {
@@ -997,34 +998,37 @@ async function getFamilyBindings(userId: string) {
 async function createReview(orderId: string, reviewerId: string, rating: number, content?: string) {
   if (rating < 1 || rating > 5) throw new ValidationError('评分必须在1-5之间');
 
-  const orderResult = await query('SELECT * FROM time_orders WHERE id = $1', [orderId]);
-  if (orderResult.rows.length === 0) throw new NotFoundError('订单');
-  const order = orderResult.rows[0];
+  // 使用事务保证评价写入与信誉分更新的一致性；FOR UPDATE 锁定订单行防止并发评价竞态
+  return transaction(async (client) => {
+    const orderResult = await client.query('SELECT * FROM time_orders WHERE id = $1 FOR UPDATE', [orderId]);
+    if (orderResult.rows.length === 0) throw new NotFoundError('订单');
+    const order = orderResult.rows[0];
 
-  if (order.status !== 'completed') throw new OrderStatusInvalidError('订单未完成，无法评价');
+    if (order.status !== 'completed') throw new OrderStatusInvalidError('订单未完成，无法评价');
 
-  const isProvider = order.provider_id === reviewerId;
-  const isRequester = order.requester_id === reviewerId;
-  if (!isProvider && !isRequester) throw new PermissionDeniedError();
+    const isProvider = order.provider_id === reviewerId;
+    const isRequester = order.requester_id === reviewerId;
+    if (!isProvider && !isRequester) throw new PermissionDeniedError();
 
-  const revieweeId = isProvider ? order.requester_id : order.provider_id;
+    const revieweeId = isProvider ? order.requester_id : order.provider_id;
 
-  const existResult = await query(
-    'SELECT id FROM reviews WHERE order_id = $1 AND reviewer_id = $2',
-    [orderId, reviewerId],
-  );
-  if (existResult.rows.length > 0) throw new BadRequestError('已评价过此订单');
+    const existResult = await client.query(
+      'SELECT id FROM reviews WHERE order_id = $1 AND reviewer_id = $2 FOR UPDATE',
+      [orderId, reviewerId],
+    );
+    if (existResult.rows.length > 0) throw new BadRequestError('已评价过此订单');
 
-  const result = await query(
-    `INSERT INTO reviews (reviewer_id, reviewed_id, order_id, order_type, rating, content)
-     VALUES ($1, $2, $3, 'time', $4, $5) RETURNING *`,
-    [reviewerId, revieweeId, orderId, rating, content || null],
-  );
+    const result = await client.query(
+      `INSERT INTO reviews (reviewer_id, reviewed_id, order_id, order_type, rating, content)
+       VALUES ($1, $2, $3, 'time', $4, $5) RETURNING *`,
+      [reviewerId, revieweeId, orderId, rating, content || null],
+    );
 
-  // 事务外调用：直接使用连接池更新信誉分
-  await reputationService.updateReputationScore(revieweeId);
+    // 事务内调用：复用传入的 client，保证信誉分更新与评价写入在同一事务内提交/回滚
+    await reputationService.updateReputationScore(client, revieweeId);
 
-  return result.rows[0];
+    return result.rows[0];
+  });
 }
 
 async function createDispute(

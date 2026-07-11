@@ -7,7 +7,7 @@ import swaggerUi from 'swagger-ui-express';
 import path from 'path';
 import { env } from './config/env';
 import { swaggerSpec } from './config/swagger';
-import { initWebSocket } from './websocket';
+import { initWebSocket, closeWebSocket } from './websocket';
 import { errorHandler } from './middleware/errorHandler';
 import { AppError } from './utils/errors';
 import { apiLimiter } from './middleware/rateLimiter';
@@ -133,8 +133,10 @@ async function gracefulShutdown(signal: string): Promise<void> {
     logger.error({ err: error }, '[优雅关闭] 停止定时任务失败');
   }
 
-  // 5. 关闭 WebSocket 服务
+  // 5. 关闭 WebSocket 服务与 Redis pub/sub 订阅连接
+  // pubSub 是 duplicate() 出的独立连接，需在 wss.close() 前显式关闭，避免连接泄漏
   try {
+    await closeWebSocket();
     wss?.close();
   } catch (error) {
     logger.error({ err: error }, '[优雅关闭] 关闭 WebSocket 服务失败');

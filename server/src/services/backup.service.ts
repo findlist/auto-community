@@ -130,17 +130,19 @@ async function executeBackup(config: BackupConfig): Promise<BackupResult> {
 
     if (isWindows) {
       // Windows: 使用 PowerShell 管道
+      // PGPASSWORD 已通过 envVars 注入子进程环境，不再拼入命令字符串，避免密码含特殊字符导致命令注入或命令异常
       command = 'powershell';
       args = [
         '-Command',
-        `& { $env:PGPASSWORD='${config.dbPassword}'; pg_dump ${pgDumpArgs.join(' ')} | gzip > "${filePath}" }`,
+        `& { pg_dump ${pgDumpArgs.join(' ')} | gzip > "${filePath}" }`,
       ];
     } else {
       // Unix/Linux: 使用 shell 管道
+      // PGPASSWORD 已通过 envVars 注入子进程环境，不再拼入命令字符串，避免密码含特殊字符导致命令注入或命令异常
       command = 'sh';
       args = [
         '-c',
-        `PGPASSWORD='${config.dbPassword}' pg_dump ${pgDumpArgs.join(' ')} | gzip > "${filePath}"`,
+        `pg_dump ${pgDumpArgs.join(' ')} | gzip > "${filePath}"`,
       ];
     }
 
