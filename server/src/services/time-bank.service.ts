@@ -99,6 +99,20 @@ interface TimeAccountRow extends QueryResultRow {
  */
 const TIME_ACCOUNT_COLUMNS = `id, user_id, balance, total_earned, total_spent, updated_at`;
 
+/**
+ * time_services 表显式查询列：替代 SELECT *，与数据库实际列结构对齐。
+ * 含 description TEXT/certification JSONB/images TEXT[] 等大字段，部分场景可改用精确子集避免返回大字段。
+ * 列为硬编码常量非用户输入，模板插值无注入风险。
+ */
+const TIME_SERVICE_COLUMNS = `id, user_id, category, type, title, description, duration_minutes,
+  certification, location, address, images, status, created_at, updated_at, deleted_at`;
+
+/**
+ * time_transactions 表显式查询列：替代 SELECT *，与数据库实际列结构对齐（10 字段）。
+ * 列为硬编码常量非用户输入，模板插值无注入风险。
+ */
+const TIME_TRANSACTION_COLUMNS = `id, service_id, from_user_id, to_user_id, amount, type, status, remark, created_at, completed_at`;
+
 // SQL 参数联合类型复用 database.ts 的 SqlParam，避免本地定义与全局类型不一致
 // 设计原因：原本地 SqlParam 含 object 类型过宽（含函数、Symbol 等），改用全局统一类型
 
@@ -386,7 +400,10 @@ async function updateService(id: string, userId: string, data: Partial<{
   status: string;
   images: string[];
 }>) {
-  const serviceResult = await query('SELECT * FROM time_services WHERE id = $1 AND deleted_at IS NULL', [id]);
+  const serviceResult = await query(
+    `SELECT ${TIME_SERVICE_COLUMNS} FROM time_services WHERE id = $1 AND deleted_at IS NULL`,
+    [id],
+  );
   if (serviceResult.rows.length === 0) throw new NotFoundError('服务');
   const service = serviceResult.rows[0];
 
@@ -429,7 +446,7 @@ async function updateService(id: string, userId: string, data: Partial<{
   params.push(id);
 
   const result = await query(
-    `UPDATE time_services SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+    `UPDATE time_services SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING ${TIME_SERVICE_COLUMNS}`,
     params,
   );
 
@@ -447,7 +464,11 @@ async function createOrder(userId: string, serviceId: string) {
   // INSERT RETURNING 的 { id, status } 行，因此断言为 Pick<TimeOrderRow, 'id' | 'status'> 是安全的
   if (cached.hit) return cached.data as Pick<TimeOrderRow, 'id' | 'status'>;
 
-  const serviceResult = await query('SELECT * FROM time_services WHERE id = $1 AND deleted_at IS NULL', [serviceId]);
+  // 仅查询 createOrder 实际消费的 4 个字段，避免返回 description TEXT/certification JSONB/images TEXT[] 等大字段
+  const serviceResult = await query(
+    'SELECT id, user_id, status, duration_minutes FROM time_services WHERE id = $1 AND deleted_at IS NULL',
+    [serviceId],
+  );
   if (serviceResult.rows.length === 0) throw new NotFoundError('服务');
   const service = serviceResult.rows[0];
 
@@ -691,7 +712,7 @@ async function completeOrder(
 }
 
 async function getAccount(userId: string) {
-  const result = await query('SELECT * FROM time_accounts WHERE user_id = $1', [userId]);
+  const result = await query(`SELECT ${TIME_ACCOUNT_COLUMNS} FROM time_accounts WHERE user_id = $1`, [userId]);
   if (result.rows.length > 0) {
     const row = result.rows[0];
     return {
@@ -859,7 +880,7 @@ async function getTransactions(
   // 游标分页：第一页时 cursor 为空，查询最新记录
   // 查询条件：WHERE id < cursor ORDER BY id DESC LIMIT limit
   const params: SqlParam[] = [userId, limit];
-  let sql = `SELECT * FROM time_transactions WHERE from_user_id = $1 OR to_user_id = $1`;
+  let sql = `SELECT ${TIME_TRANSACTION_COLUMNS} FROM time_transactions WHERE from_user_id = $1 OR to_user_id = $1`;
 
   if (cursor) {
     sql += ' AND id < $3 ORDER BY id DESC LIMIT $2';
