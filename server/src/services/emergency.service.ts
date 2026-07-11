@@ -14,6 +14,27 @@ import { aiService } from './ai.service';
 import { sanitizeObject, sanitizeXss, validateImageUrls } from '../utils/sanitize';
 import { notificationService } from './notification.service';
 
+/**
+ * emergency_requests 表显式查询列：替代 SELECT *，与数据库实际列结构对齐（17 字段，不含 deleted_at）。
+ * 含 type（迁移 002_emergency.sql 添加）。列为硬编码常量非用户输入，模板插值无注入风险。
+ */
+const EMERGENCY_REQUEST_COLUMNS = `id, user_id, type, category, title, description, urgency, location, address,
+  contact_phone, is_anonymous, images, status, timeout_at, created_at, updated_at`;
+
+/**
+ * emergency_responses 表显式查询列：替代 SELECT *，与数据库实际列结构对齐（11 字段）。
+ * 含 eta/timeout_at（迁移 002_emergency.sql 添加）。列为硬编码常量非用户输入，模板插值无注入风险。
+ */
+const EMERGENCY_RESPONSE_COLUMNS = `id, request_id, responder_id, message, status, eta, timeout_at,
+  arrived_at, completed_at, created_at, updated_at`;
+
+/**
+ * false_reports 表显式查询列：替代 SELECT *，与数据库实际列结构对齐（12 字段）。
+ * 含 resolution（迁移 009_emergency_enhancements.sql 添加）。列为硬编码常量非用户输入，模板插值无注入风险。
+ */
+const FALSE_REPORT_COLUMNS = `id, request_id, reporter_id, reason, evidence, status, penalty, resolution,
+  resolved_at, resolved_by, created_at, updated_at`;
+
 // 导出供 routes 层收窄 req.body 类型，避免重复定义
 export interface CreateRequestData {
   type?: string;
@@ -386,7 +407,7 @@ async function respondToRequest(userId: string, requestId: string, data: { messa
   if (cached.hit) return cached.data as ReturnType<typeof toResponseResponse>;
 
   const requestResult = await query(
-    'SELECT * FROM emergency_requests WHERE id = $1 AND deleted_at IS NULL',
+    `SELECT ${EMERGENCY_REQUEST_COLUMNS} FROM emergency_requests WHERE id = $1 AND deleted_at IS NULL`,
     [requestId]
   );
 
@@ -452,7 +473,7 @@ async function updateResponseStatus(
 ) {
   // 事务外先查响应记录，用于 arrived 路径以及获取 request_id
   const responseResult = await query(
-    'SELECT * FROM emergency_responses WHERE id = $1',
+    `SELECT ${EMERGENCY_RESPONSE_COLUMNS} FROM emergency_responses WHERE id = $1`,
     [responseId]
   );
 
@@ -482,7 +503,7 @@ async function updateResponseStatus(
   const result = await transaction(async (client) => {
     // 先锁 emergency_requests 行，再锁 emergency_responses 行（固定加锁顺序，避免死锁）
     const requestResult = await client.query(
-      'SELECT * FROM emergency_requests WHERE id = $1 FOR UPDATE',
+      `SELECT ${EMERGENCY_REQUEST_COLUMNS} FROM emergency_requests WHERE id = $1 FOR UPDATE`,
       [response.request_id]
     );
     if (requestResult.rows.length === 0) {
@@ -492,7 +513,7 @@ async function updateResponseStatus(
 
     // 加锁查询当前响应，确保基于最新数据做状态校验
     const lockedResponseResult = await client.query(
-      'SELECT * FROM emergency_responses WHERE id = $1 FOR UPDATE',
+      `SELECT ${EMERGENCY_RESPONSE_COLUMNS} FROM emergency_responses WHERE id = $1 FOR UPDATE`,
       [responseId]
     );
     if (lockedResponseResult.rows.length === 0) {
@@ -630,7 +651,7 @@ async function resolveFalseReport(
   return transaction(async (client) => {
     // 行锁查询举报记录，确保并发审核安全
     const reportResult = await client.query(
-      'SELECT * FROM false_reports WHERE id = $1 FOR UPDATE',
+      `SELECT ${FALSE_REPORT_COLUMNS} FROM false_reports WHERE id = $1 FOR UPDATE`,
       [reportId]
     );
     if (reportResult.rows.length === 0) {
