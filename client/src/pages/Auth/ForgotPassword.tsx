@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Phone, Lock, ArrowRight, ArrowLeft } from "lucide-react";
-import { simpleResetPassword } from "@/api/auth";
+import { Phone, ArrowRight, ArrowLeft, Send } from "lucide-react";
+import { forgotPassword } from "@/api/auth";
 import { ApiError } from "@/api/client";
 
-// 简化版忘记密码：无需短信验证码，仅凭注册手机号 + 新密码即可重置
+// 忘记密码第一步：仅输入手机号触发验证码下发，后续重置在 /reset-password 完成
+// 设计原因：原 simpleResetPassword 端点仅凭手机号即可重置密码，存在任意账号接管风险；
+// 改为 forgotPassword → 下发验证码（开发环境打印到后端日志）→ resetPassword 校验验证码两步流程
 export default function ForgotPassword() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,12 +28,6 @@ export default function ForgotPassword() {
     if (!/^1[3-9]\d{9}$/.test(phone)) {
       errors.phone = "请输入正确的手机号";
     }
-    if (password.length < 6) {
-      errors.password = "密码至少6位";
-    }
-    if (password !== confirmPassword) {
-      errors.confirmPassword = "两次密码不一致";
-    }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -44,14 +38,16 @@ export default function ForgotPassword() {
     if (!validate()) return;
     setLoading(true);
     try {
-      await simpleResetPassword({ phone, password });
+      // 调用 forgotPassword 触发后端生成验证码：开发环境验证码输出到 server 日志，
+      // 生产环境接入短信服务后由短信通道下发；此处不区分环境，逻辑一致
+      await forgotPassword({ phone });
       setSuccess(true);
-      // 2秒后跳转到登录页面
+      // 2秒后带 phone 参数跳转到重置密码页，免去用户重复输入
       navigateTimerRef.current = setTimeout(() => {
-        navigate("/login");
+        navigate(`/reset-password?phone=${encodeURIComponent(phone)}`);
       }, 2000);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "重置密码失败");
+      setError(err instanceof ApiError ? err.message : "验证码发送失败");
     } finally {
       setLoading(false);
     }
@@ -73,17 +69,17 @@ export default function ForgotPassword() {
           <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mb-5">
             <span className="text-emerald-300 text-3xl">✓</span>
           </div>
-          <h1 className="text-white text-2xl font-bold mb-2">密码重置成功</h1>
+          <h1 className="text-white text-2xl font-bold mb-2">验证码已发送</h1>
           <p className="text-white/70 text-sm mb-6">
-            您的密码已重置，请使用新密码登录。
+            验证码已发送至 {phone}
             <br />
-            即将跳转到登录页面...
+            开发环境可在后端日志查看，即将跳转到重置页...
           </p>
           <Link
-            to="/login"
+            to={`/reset-password?phone=${encodeURIComponent(phone)}`}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-neutral-900 text-sm font-semibold hover:bg-neutral-100 transition-colors"
           >
-            立即登录
+            去输入验证码
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -108,10 +104,10 @@ export default function ForgotPassword() {
         {/* 品牌字标 */}
         <div className="text-center mb-8 animate-fade-in-up">
           <h1 className="text-white text-4xl lg:text-5xl font-bold tracking-tight mb-2">
-            重置密码
+            忘记密码
           </h1>
           <p className="text-white/70 text-sm tracking-wide">
-            输入注册手机号和新密码即可重置
+            输入注册手机号获取验证码
           </p>
         </div>
 
@@ -148,60 +144,6 @@ export default function ForgotPassword() {
             )}
           </div>
 
-          {/* 新密码 */}
-          <div>
-            <label htmlFor="password" className="block text-xs font-medium text-white/80 mb-2 tracking-wide">
-              新密码
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setFieldErrors((prev) => ({ ...prev, password: "" }));
-                }}
-                placeholder="请输入新密码（至少6位）"
-                autoComplete="new-password"
-                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all ${
-                  fieldErrors.password ? "border-red-400/70" : "border-white/20"
-                }`}
-              />
-            </div>
-            {fieldErrors.password && (
-              <p className="mt-1.5 text-xs text-red-300">{fieldErrors.password}</p>
-            )}
-          </div>
-
-          {/* 确认密码 */}
-          <div>
-            <label htmlFor="confirmPassword" className="block text-xs font-medium text-white/80 mb-2 tracking-wide">
-              确认密码
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
-              <input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  setFieldErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                }}
-                placeholder="请再次输入新密码"
-                autoComplete="new-password"
-                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all ${
-                  fieldErrors.confirmPassword ? "border-red-400/70" : "border-white/20"
-                }`}
-              />
-            </div>
-            {fieldErrors.confirmPassword && (
-              <p className="mt-1.5 text-xs text-red-300">{fieldErrors.confirmPassword}</p>
-            )}
-          </div>
-
           {error && (
             <div className="px-3.5 py-2.5 rounded-xl bg-red-500/20 border border-red-400/30 text-red-200 text-sm">
               {error}
@@ -216,12 +158,12 @@ export default function ForgotPassword() {
             {loading ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-neutral-900/30 border-t-neutral-900 rounded-full animate-spin" />
-                重置中...
+                发送中...
               </span>
             ) : (
               <>
-                重置密码
-                <ArrowRight className="w-4 h-4" />
+                <Send className="w-4 h-4" />
+                发送验证码
               </>
             )}
           </button>

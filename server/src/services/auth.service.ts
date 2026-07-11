@@ -280,44 +280,6 @@ async function resetPassword(phone: string, code: string, newPassword: string): 
   logger.info({ phone: maskPhone(phone) }, '密码重置成功');
 }
 
-/**
- * 简化版重置密码：仅凭注册账号（手机号）即可重置密码
- * 适用于尚未接入短信服务的环境；接入短信后应停用此方法，改用带验证码的 resetPassword。
- * @param phone 手机号
- * @param newPassword 新密码
- */
-async function simpleResetPassword(phone: string, newPassword: string): Promise<void> {
-  // 校验手机号格式
-  if (!/^1[3-9]\d{9}$/.test(phone)) {
-    throw new BadRequestError('手机号格式不正确');
-  }
-
-  // 校验密码长度
-  if (!newPassword || newPassword.length < 6) {
-    throw new BadRequestError('密码至少6位');
-  }
-
-  // 按手机号哈希查询用户，phone 字段已加密无法等值查询
-  const phoneHash = hashPhone(phone);
-  const result = await query(
-    'SELECT id FROM users WHERE phone_hash = $1 AND deleted_at IS NULL',
-    [phoneHash],
-  );
-
-  if (result.rows.length === 0) {
-    // 安全考虑：不直接暴露用户是否存在，使用统一提示
-    throw new NotFoundError('账号不存在');
-  }
-
-  const passwordHash = bcrypt.hashSync(newPassword, 10);
-  await query(
-    'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
-    [passwordHash, result.rows[0].id],
-  );
-
-  logger.info({ phone: maskPhone(phone) }, '简化版密码重置成功（免验证码）');
-}
-
 export const authService = {
   register,
   login,
@@ -325,5 +287,4 @@ export const authService = {
   logout,
   forgotPassword,
   resetPassword,
-  simpleResetPassword
 };

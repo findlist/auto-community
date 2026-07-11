@@ -39,11 +39,6 @@ interface ResetPasswordBody {
   password: string;
 }
 
-interface SimpleResetPasswordBody {
-  phone: string;
-  password: string;
-}
-
 /**
  * @openapi
  * /auth/register:
@@ -312,47 +307,6 @@ router.post('/reset-password', authLimiter, validate([
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResetPasswordBody>, res: Response) => {
   const { phone, code, password } = req.body;
   await authService.resetPassword(phone, code, password);
-  success(res, null, '密码重置成功，请登录');
-}));
-
-/**
- * @openapi
- * /auth/simple-reset-password:
- *   post:
- *     tags: [认证]
- *     summary: 简化版重置密码（免验证码）
- *     description: 仅凭注册手机号与新密码即可重置密码，适用于尚未接入短信服务的环境。
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [phone, password]
- *             properties:
- *               phone:
- *                 type: string
- *                 description: 注册手机号
- *                 example: "13800138000"
- *               password:
- *                 type: string
- *                 minLength: 6
- *                 description: 新密码（至少6位）
- *     responses:
- *       200:
- *         description: 密码重置成功
- *       404:
- *         description: 账号不存在
- *       422:
- *         description: 参数校验失败
- */
-// POST /simple-reset-password - 简化版重置密码（免验证码）
-router.post('/simple-reset-password', authLimiter, validate([
-  body('phone').matches(/^1[3-9]\d{9}$/).withMessage('手机号格式不正确'),
-  body('password').isLength({ min: 6 }).withMessage('密码至少6位')
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, SimpleResetPasswordBody>, res: Response) => {
-  const { phone, password } = req.body;
-  await authService.simpleResetPassword(phone, password);
   success(res, null, '密码重置成功，请登录');
 }));
 

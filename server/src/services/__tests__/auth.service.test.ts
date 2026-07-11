@@ -1,7 +1,7 @@
 /**
  * auth.service 单元测试
  *
- * 测试目标：覆盖 toUserResponse / register / login / refreshToken / logout / forgotPassword / resetPassword / simpleResetPassword
+ * 测试目标：覆盖 toUserResponse / register / login / refreshToken / logout / forgotPassword / resetPassword
  * 测试策略：使用 vitest mock 替换 database、redis、auth middleware、tokenBlacklist、crypto、mask、bcryptjs、jsonwebtoken，
  *           避免触发真实 env 校验与 DB / Redis 连接，集中验证业务分支、加密/脱敏/校验逻辑。
  *           mock 路径相对测试文件解析（与 auth.service.ts 中相对路径解析为同一绝对模块）。
@@ -489,44 +489,5 @@ describe('auth.service - resetPassword', () => {
     expect(mockQuery).toHaveBeenCalledTimes(1);
     // 用户不存在时不应删除验证码（避免验证码被恶意消耗）
     expect(mockRedisDel).not.toHaveBeenCalled();
-  });
-});
-
-describe('auth.service - simpleResetPassword', () => {
-  it('重置成功：更新密码', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'user-1' }] }); // 查询用户存在
-    mockQuery.mockResolvedValueOnce({ rows: [] }); // 更新密码
-
-    await authService.simpleResetPassword(PHONE, 'newpass123');
-
-    // 第一次 query 为 SELECT，第二次为 UPDATE
-    expect(mockQuery).toHaveBeenCalledTimes(2);
-    expect(mockQuery.mock.calls[1][0]).toContain('UPDATE users SET password_hash');
-    // 应调用 bcrypt.hashSync 加密新密码
-    expect(mockBcryptHashSync).toHaveBeenCalledWith('newpass123', 10);
-  });
-
-  it('手机号格式错误时抛 BadRequestError', async () => {
-    await expect(
-      authService.simpleResetPassword('12345', 'newpass123'),
-    ).rejects.toBeInstanceOf(BadRequestError);
-    expect(mockQuery).not.toHaveBeenCalled();
-  });
-
-  it('密码太短时抛 BadRequestError', async () => {
-    await expect(
-      authService.simpleResetPassword(PHONE, '12345'),
-    ).rejects.toBeInstanceOf(BadRequestError);
-    expect(mockQuery).not.toHaveBeenCalled();
-  });
-
-  it('用户不存在时抛 NotFoundError', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-
-    await expect(
-      authService.simpleResetPassword(PHONE, 'newpass123'),
-    ).rejects.toBeInstanceOf(NotFoundError);
-    // 只查询未更新
-    expect(mockQuery).toHaveBeenCalledTimes(1);
   });
 });

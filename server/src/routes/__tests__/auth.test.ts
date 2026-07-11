@@ -1,7 +1,7 @@
 /**
  * auth 路由集成测试
  *
- * 测试目标：覆盖注册、登录、刷新令牌、登出、忘记密码、重置密码、简化重置密码全链路
+ * 测试目标：覆盖注册、登录、刷新令牌、登出、忘记密码、重置密码全链路
  * 测试策略：
  * - mock middleware/auth 的 authenticate（仅在 /logout 路由生效，动态决定通过/拒绝）
  * - mock middleware/rateLimiter 的 authLimiter（限流中间件直接放行，聚焦业务逻辑验证）
@@ -32,7 +32,6 @@ const {
   mockLogout,
   mockForgotPassword,
   mockResetPassword,
-  mockSimpleResetPassword,
 } = vi.hoisted(() => ({
   mockAuthenticate: vi.fn(),
   // authLimiter 与 auditMiddleware 为高阶中间件，mock 为直接放行的 pass-through 函数
@@ -45,7 +44,6 @@ const {
   mockLogout: vi.fn(),
   mockForgotPassword: vi.fn(),
   mockResetPassword: vi.fn(),
-  mockSimpleResetPassword: vi.fn(),
 }));
 
 vi.mock('../../middleware/auth', () => ({ authenticate: mockAuthenticate }));
@@ -59,7 +57,6 @@ vi.mock('../../services/auth.service', () => ({
     logout: mockLogout,
     forgotPassword: mockForgotPassword,
     resetPassword: mockResetPassword,
-    simpleResetPassword: mockSimpleResetPassword,
   },
 }));
 
@@ -379,46 +376,6 @@ describe('auth 路由集成测试', () => {
       expect(res.status).toBe(400);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
-    });
-  });
-
-  // ===================== POST /simple-reset-password =====================
-  describe('POST /simple-reset-password', () => {
-    it('合法请求体简化重置密码成功返回 200', async () => {
-      mockSimpleResetPassword.mockResolvedValue(undefined);
-      const body = { phone: '13800138000', password: 'newpassword' };
-      const res = await fetch(`${baseUrl}/simple-reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      expect(res.status).toBe(200);
-      expect(mockSimpleResetPassword).toHaveBeenCalledWith('13800138000', 'newpassword');
-    });
-
-    it('密码少于 6 位时 validate 返回 422', async () => {
-      const body = { phone: '13800138000', password: '12345' };
-      const res = await fetch(`${baseUrl}/simple-reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'password')).toBe(true);
-    });
-
-    it('账号不存在时 NotFoundError 标准化为 404', async () => {
-      mockSimpleResetPassword.mockRejectedValue(new NotFoundError('账号不存在'));
-      const body = { phone: '13800138000', password: 'newpassword' };
-      const res = await fetch(`${baseUrl}/simple-reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      expect(res.status).toBe(404);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect(data.code).toBe('NOT_FOUND');
     });
   });
 });

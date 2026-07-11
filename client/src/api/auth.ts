@@ -23,11 +23,6 @@ export interface ResetPasswordParams {
   password: string;
 }
 
-export interface SimpleResetPasswordParams {
-  phone: string;
-  password: string;
-}
-
 export interface TokenData {
   token: string;
   refreshToken: string;
@@ -56,9 +51,4 @@ export function forgotPassword(data: ForgotPasswordParams) {
 
 export function resetPassword(data: ResetPasswordParams) {
   return client.post<never, ApiResponse<null>>("/auth/reset-password", data);
-}
-
-// 简化版重置密码：仅凭手机号 + 新密码，免验证码（适用于未接入短信服务的环境）
-export function simpleResetPassword(data: SimpleResetPasswordParams) {
-  return client.post<never, ApiResponse<null>>("/auth/simple-reset-password", data);
 }
