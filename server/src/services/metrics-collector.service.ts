@@ -109,7 +109,8 @@ export async function getMetricTrend(
   name: string,
   startDate?: string,
   endDate?: string,
-  granularity: 'day' | 'week' | 'month' = 'day'
+  // 放宽为 string 接受 route 层透传的未断言值，内部通过 ALLOWED_GRANULARITIES 校验兜底
+  granularity: string = 'day'
 ): Promise<MetricTrendItem[]> {
   const conditions: string[] = ['name = $1'];
   // params 仅承载 string 类型入参（name/startDate/endDate），用 SqlParam 收紧以对齐 query 函数签名
@@ -128,13 +129,14 @@ export async function getMetricTrend(
 
   const whereClause = conditions.join(' AND ');
 
-  // 根据粒度选择日期截取方式
-  const dateTruncMap = {
-    day: 'day',
-    week: 'week',
-    month: 'month',
-  };
-  const truncUnit = dateTruncMap[granularity];
+  // 防御性校验：route 层用 as 断言绕过了 TS 类型检查，非法 granularity 值
+  // 会导致 dateTruncMap 查找不到返回 undefined，进而生成 DATE_TRUNC('undefined', ...) 触发 500。
+  // 此处做 defense-in-depth：未映射值统一回退为 'day'，保证 SQL 始终合法
+  const ALLOWED_GRANULARITIES = ['day', 'week', 'month'] as const;
+  const safeGranularity = ALLOWED_GRANULARITIES.includes(granularity as (typeof ALLOWED_GRANULARITIES)[number])
+    ? granularity
+    : 'day';
+  const truncUnit = safeGranularity;
 
   const { rows } = await query(
     `SELECT

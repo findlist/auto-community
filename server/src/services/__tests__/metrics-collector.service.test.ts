@@ -183,6 +183,19 @@ describe('metrics-collector.service', () => {
       expect(sql).toContain("DATE_TRUNC('month'");
     });
 
+    it('非法 granularity 回退为 day，避免 DATE_TRUNC(\'undefined\') 触发 500', async () => {
+      // 防御性校验：route 层 as 断言可能放过非法值，service 层必须兜底
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+
+      await getMetricTrend('response_time', undefined, undefined, 'hour');
+
+      const [sql] = mockQuery.mock.calls[0];
+      // 非法值 'hour' 应被回退为 'day'，SQL 不应出现 'undefined' 或 'hour'
+      expect(sql).toContain("DATE_TRUNC('day'");
+      expect(sql).not.toContain('undefined');
+      expect(sql).not.toContain("'hour'");
+    });
+
     it('有日期范围时 WHERE 条件正确拼接', async () => {
       mockQuery.mockResolvedValueOnce({ rows: [] });
 

@@ -128,11 +128,18 @@ router.get('/:name/trend', asyncHandler(async (req: Request, res: Response) => {
   // 收窄 query 类型：ParsedQs → string | undefined，避免解构变量类型泛滥
   const { startDate, endDate, granularity } = req.query as Record<string, string | undefined>;
 
+  // granularity 白名单校验：移除原 as 断言（绕过 TS 检查），非法值回退 'day'
+  // service 层亦做 defense-in-depth，此处前置校验可更早拦截并减少无效入参透传
+  const VALID_GRANULARITIES = ['day', 'week', 'month'] as const;
+  const safeGranularity = granularity && (VALID_GRANULARITIES as readonly string[]).includes(granularity)
+    ? granularity
+    : 'day';
+
   const trend = await metricsCollectorService.getMetricTrend(
     name,
-    startDate as string | undefined,
-    endDate as string | undefined,
-    (granularity as 'day' | 'week' | 'month') || 'day'
+    startDate,
+    endDate,
+    safeGranularity,
   );
 
   success(res, trend);
