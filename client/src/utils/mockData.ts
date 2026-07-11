@@ -130,7 +130,7 @@ const toInitiator = (u: User) => ({
 
 // ==================== 技能帖子数据 ====================
 
-export const mockSkillPosts: SkillPostRaw[] = [
+export const mockSkillPosts: SkillPost[] = [
   {
     id: "sp1",
     userId: user3.id,

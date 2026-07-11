@@ -78,9 +78,8 @@ function filterSkillPosts(params: QueryParams): PaginatedResponse<SkillPost> {
         p.description.toLowerCase().includes(kw)
     );
   }
-  // SkillPostRaw 含 creditPrice，与 SkillPost 的 creditsRequired 字段不同
-  // 但运行时结构一致，直接转换为分页结构
-  return paginate(list as unknown as SkillPost[], params);
+  // mockSkillPosts 已使用 SkillPost 类型（creditPrice 字段），无需转换
+  return paginate(list, params);
 }
 
 // 根据查询参数过滤厨房帖子

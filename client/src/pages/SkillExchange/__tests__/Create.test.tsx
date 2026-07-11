@@ -96,7 +96,7 @@ describe('SkillExchange/Create 发布技能表单', () => {
     expect(screen.queryByPlaceholderText('设置每次服务的积分价格')).not.toBeInTheDocument();
   });
 
-  it('request 类型不显示积分价格，提交时不传 creditsRequired 校验', async () => {
+  it('request 类型不显示积分价格，提交时 creditPrice 为 0 校验', async () => {
     renderCreatePage();
     act(() => { fireEvent.click(screen.getByRole('button', { name: '需求技能' })); });
     fireEvent.change(screen.getByPlaceholderText('例如：想学英语、需要家教'), { target: { value: '想学英语口语' } });
@@ -110,7 +110,7 @@ describe('SkillExchange/Create 发布技能表单', () => {
     await waitFor(() => {
       expect(createPostMock).toHaveBeenCalledWith(expect.objectContaining({
         type: 'request',
-        creditsRequired: 0,
+        creditPrice: 0,
       }));
     });
   });
@@ -174,7 +174,7 @@ describe('SkillExchange/Create 发布技能表单', () => {
         type: 'offer',
         title: '专业电脑维修服务',
         category: '电脑维修',
-        creditsRequired: 50,
+        creditPrice: 50,
         location: '3号楼1单元',
       }));
       expect(toastSuccessMock).toHaveBeenCalledWith('发布成功');

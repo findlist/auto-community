@@ -18,7 +18,10 @@ export interface SkillPost {
   title: string;
   description: string;
   category: string;
-  creditsRequired: number;
+  // 积分价格：与后端 skill_posts.credit_price 对齐，service 层 toSkillPost 已转为 camelCase
+  // 设计原因：原字段名 creditsRequired 与后端实际返回 creditPrice 不一致，
+  // 导致消费方需 SkillPostRaw + 双重断言绕过类型检查，统一字段名消除类型逃逸
+  creditPrice: number;
   location?: string;
   images: string[];
   status: "active" | "closed" | "completed";

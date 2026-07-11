@@ -6,7 +6,7 @@ export interface CreatePostParams {
   title: string;
   description: string;
   category: string;
-  creditsRequired: number;
+  creditPrice: number;
   location?: string;
   images?: string[];
 }

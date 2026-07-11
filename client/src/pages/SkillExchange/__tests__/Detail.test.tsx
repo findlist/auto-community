@@ -33,7 +33,6 @@ const { mockOwner, mockOtherUser, mockActivePost, mockClosedPost } = vi.hoisted(
     createdAt: '2024-01-01T00:00:00.000Z',
   };
   // active 帖子：发布者本人视角可见编辑/删除，他人视角可见可点击的"发起交易"
-  // 注：Detail.tsx 的 SkillPostRaw 接口用 creditPrice 字段（Omit creditsRequired）
   const activePost = {
     id: 'post-active-1',
     userId: 'user-owner',
@@ -136,6 +135,7 @@ describe('SkillExchange/Detail 帖子详情', () => {
     vi.clearAllMocks();
     // 默认发布者视角 + active 帖子
     switchUser(mockOwner);
+    // mockActivePost.user 仅含测试必要子集（缺少 phone/creditBalance 等），用双重断言绕过 User 完整性校验
     vi.mocked(getPost).mockResolvedValue({ code: 0, message: 'ok', data: mockActivePost as unknown as SkillPost });
     user = userEvent.setup();
   });

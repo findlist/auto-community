@@ -6,10 +6,6 @@ import type { SkillPost } from "@/types";
 import { SkeletonListCard } from "@/components/Skeleton";
 import { LoadingButton } from "@/components/Button";
 
-interface SkillPostRaw extends Omit<SkillPost, "creditsRequired"> {
-  creditPrice: number;
-}
-
 const tabs = [
   { key: "offer", label: "提供技能" },
   { key: "request", label: "需求技能" },
@@ -26,7 +22,7 @@ export default function SkillExchange() {
   const [keyword, setKeyword] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("全部");
-  const [posts, setPosts] = useState<SkillPostRaw[]>([]);
+  const [posts, setPosts] = useState<SkillPost[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -45,9 +41,9 @@ export default function SkillExchange() {
       });
       const { list, hasNext } = res.data;
       if (reset) {
-        setPosts(list as unknown as SkillPostRaw[]);
+        setPosts(list);
       } else {
-        setPosts(prev => [...prev, ...(list as unknown as SkillPostRaw[])]);
+        setPosts(prev => [...prev, ...list]);
       }
       setHasMore(hasNext);
       setPage(newPage + 1);
@@ -76,7 +72,7 @@ export default function SkillExchange() {
   }, [searchInput]);
 
   // 编辑式列表项：无卡片，靠分隔线与留白组织信息
-  const renderItem = (post: SkillPostRaw) => (
+  const renderItem = (post: SkillPost) => (
     <div
       key={post.id}
       onClick={() => navigate(`/skills/${post.id}`)}

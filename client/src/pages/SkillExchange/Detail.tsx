@@ -30,7 +30,7 @@ export default function Detail() {
     // 清空历史错误，避免上一次失败的状态污染本次加载
     setError("");
     getPost(id)
-      .then(res => setPost(res.data as unknown as SkillPostRaw))
+      .then(res => setPost(res.data))
       .catch((err: unknown) => {
         // 记录错误信息优先展示，避免被"帖子不存在"分支掩盖真实原因（404/500/403）
         setError(err instanceof ApiError ? err.message : "加载失败");

@@ -67,7 +67,7 @@ export default function Create() {
         title: title.trim(),
         description: description.trim(),
         category,
-        creditsRequired: Number(creditPrice) || 0,
+        creditPrice: Number(creditPrice) || 0,
         location: location.trim() || undefined,
         // 仅在有图片时传 images，避免发送空数组
         images: images.length > 0 ? images : undefined,
