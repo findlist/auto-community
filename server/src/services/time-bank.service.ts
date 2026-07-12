@@ -11,6 +11,7 @@ import {
 import { idempotency } from '../utils/idempotency';
 import { createPaginatedResponse, createCursorPaginatedResponse, CursorPaginatedResponse } from '../utils/pagination';
 import { reputationService } from './reputation.service';
+import { REVIEW_COLUMNS } from './review.service';
 import { logger } from '../utils/logger';
 import { timeServiceCache } from './cache.service';
 import { notificationService } from './notification.service';
@@ -112,6 +113,11 @@ const TIME_SERVICE_COLUMNS = `id, user_id, category, type, title, description, d
  * 列为硬编码常量非用户输入，模板插值无注入风险。
  */
 const TIME_TRANSACTION_COLUMNS = `id, service_id, from_user_id, to_user_id, amount, type, status, remark, created_at, completed_at`;
+
+// service_disputes 表响应构造列：覆盖 createDispute 返回行所需字段
+// 设计原因：RETURNING * 会返回全部字段，显式列名避免未来新增字段意外泄露到响应
+const SERVICE_DISPUTE_COLUMNS = `id, order_id, initiator_id, reason, evidence, status, resolution,
+  resolved_at, resolved_by, created_at, updated_at`;
 
 // SQL 参数联合类型复用 database.ts 的 SqlParam，避免本地定义与全局类型不一致
 // 设计原因：原本地 SqlParam 含 object 类型过宽（含函数、Symbol 等），改用全局统一类型
@@ -727,7 +733,7 @@ async function getAccount(userId: string) {
 
   const insertResult = await query(
     `INSERT INTO time_accounts (user_id, balance, total_earned, total_spent)
-     VALUES ($1, 0, 0, 0) RETURNING *`,
+     VALUES ($1, 0, 0, 0) RETURNING ${TIME_ACCOUNT_COLUMNS}`,
     [userId],
   );
   const row = insertResult.rows[0];
@@ -926,7 +932,7 @@ async function createFamilyBinding(userId: string, parentPhone: string, relation
 
     const insertResult = await client.query(
       `INSERT INTO family_bindings (user_id, parent_id, relationship)
-       VALUES ($1, $2, $3) RETURNING *`,
+       VALUES ($1, $2, $3) RETURNING ${FAMILY_BINDING_COLUMNS}`,
       [userId, parent.id, relationship],
     );
     return { parentId: parent.id, binding: insertResult.rows[0] };
@@ -1063,7 +1069,7 @@ async function createReview(orderId: string, reviewerId: string, rating: number,
 
     const result = await client.query(
       `INSERT INTO reviews (reviewer_id, reviewed_id, order_id, order_type, rating, content)
-       VALUES ($1, $2, $3, 'time', $4, $5) RETURNING *`,
+       VALUES ($1, $2, $3, 'time', $4, $5) RETURNING ${REVIEW_COLUMNS}`,
       [reviewerId, revieweeId, orderId, rating, content || null],
     );
 
@@ -1091,7 +1097,7 @@ async function createDispute(
 
   const result = await query(
     `INSERT INTO service_disputes (order_id, initiator_id, reason, evidence)
-     VALUES ($1, $2, $3, $4) RETURNING *`,
+     VALUES ($1, $2, $3, $4) RETURNING ${SERVICE_DISPUTE_COLUMNS}`,
     [orderId, reporterId, reason, evidence || null],
   );
 

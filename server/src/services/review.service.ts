@@ -6,6 +6,11 @@ import { BadRequestError } from '../utils/errors';
  * rating 为 string：pg DECIMAL 默认解析为 string，parseFloat(row.rating) 安全转换
  * content 为 string | null：评价内容可选（用户可能只打分不留言）
  */
+
+// reviews 表响应构造列：覆盖 toReview 所需字段（不含 LEFT JOIN users 引入的 reviewer_nickname/reviewer_avatar）
+// 设计原因：RETURNING * 会返回全部字段，显式列名避免未来新增字段意外泄露；导出供 time-bank.service 复用避免列名分裂
+export const REVIEW_COLUMNS = `id, reviewer_id, reviewed_id, order_id, order_type, rating, content, created_at, updated_at`;
+
 interface ReviewRow {
   id: string;
   reviewer_id: string;
@@ -69,7 +74,7 @@ async function createReview(
 
   const result = await query<ReviewListRow>(
     `INSERT INTO reviews (reviewer_id, reviewed_id, order_id, order_type, rating, content)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING ${REVIEW_COLUMNS}`,
     [reviewerId, reviewedId, orderId, orderType, rating, content || null],
   );
 
