@@ -20,6 +20,16 @@ export type ReportTargetType = 'skill' | 'kitchen' | 'time_bank' | 'emergency' |
 // 设计原因：50 条既能覆盖典型后台审核场景，又能在异常情况下快速回滚
 const BATCH_LIMIT = 50;
 
+// admin 强制取消订单时查询的列：仅包含取消逻辑消费的字段，避免返回不必要数据
+// 设计原因：admin.service 的 FOR UPDATE 查询只需判断状态和退款金额，无需订单全部字段；
+// 各表完整列常量定义在对应业务 service 中，此处不复用避免跨模块耦合
+const ADMIN_SKILL_ORDER_COLUMNS = 'id, buyer_id, seller_id, credit_amount, status';
+const ADMIN_KITCHEN_ORDER_COLUMNS = 'id, post_id, user_id, seller_id, credit_amount, status';
+const ADMIN_TIME_ORDER_COLUMNS = 'id, status';
+// verification_requests 包含加密身份证号(id_card_encrypted)等敏感字段，
+// 显式列名避免 SELECT * 返回敏感数据，仅返回审核逻辑消费的 3 个字段
+const VERIFICATION_REQUEST_COLUMNS = 'id, user_id, status';
+
 // ===================== 用户管理 =====================
 
 // 分页查询用户列表，支持按手机号/昵称搜索
@@ -619,7 +629,7 @@ async function forceCancelOrder(type: OrderType, orderId: string, reason: string
 async function forceCancelSkillOrder(orderId: string, reason: string, adminId: string) {
   return transaction(async (client) => {
     const orderResult = await client.query(
-      'SELECT * FROM skill_orders WHERE id = $1 FOR UPDATE',
+      `SELECT ${ADMIN_SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1 FOR UPDATE`,
       [orderId],
     );
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
@@ -673,7 +683,7 @@ async function forceCancelSkillOrder(orderId: string, reason: string, adminId: s
 async function forceCancelKitchenOrder(orderId: string, reason: string, adminId: string) {
   return transaction(async (client) => {
     const orderResult = await client.query(
-      'SELECT * FROM kitchen_orders WHERE id = $1 FOR UPDATE',
+      `SELECT ${ADMIN_KITCHEN_ORDER_COLUMNS} FROM kitchen_orders WHERE id = $1 FOR UPDATE`,
       [orderId],
     );
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
@@ -738,7 +748,7 @@ async function forceCancelKitchenOrder(orderId: string, reason: string, adminId:
 async function forceCancelTimeOrder(orderId: string, reason: string, adminId: string) {
   return transaction(async (client) => {
     const orderResult = await client.query(
-      'SELECT * FROM time_orders WHERE id = $1 FOR UPDATE',
+      `SELECT ${ADMIN_TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1 FOR UPDATE`,
       [orderId],
     );
     if (orderResult.rows.length === 0) throw new NotFoundError('订单');
@@ -1344,7 +1354,7 @@ async function reviewVerificationRequest(
 ) {
   // 查询申请记录
   const requestResult = await query(
-    'SELECT * FROM verification_requests WHERE id = $1',
+    `SELECT ${VERIFICATION_REQUEST_COLUMNS} FROM verification_requests WHERE id = $1`,
     [requestId],
   );
   if (requestResult.rows.length === 0) {
