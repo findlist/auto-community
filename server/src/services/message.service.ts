@@ -105,7 +105,7 @@ async function sendMessage(
   const { rows } = await query<MessageRow>(
     `INSERT INTO messages (sender_id, receiver_id, order_id, order_type, content, type)
      VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING *`,
+     RETURNING ${MESSAGE_COLUMNS}`,
     [senderId, receiverId, orderId, orderType, content, type],
   );
 

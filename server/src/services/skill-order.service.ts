@@ -116,10 +116,10 @@ async function createOrder(buyerId: string, postId: string) {
       'skill_order',
     );
 
-    // 创建订单
+    // 创建订单：RETURNING 显式列名，避免新增字段意外泄露到响应
     const orderResult = await client.query<SkillOrderRow>(
       `INSERT INTO skill_orders (post_id, buyer_id, seller_id, credit_amount, status)
-       VALUES ($1, $2, $3, $4, 'pending') RETURNING *`,
+       VALUES ($1, $2, $3, $4, 'pending') RETURNING ${SKILL_ORDER_COLUMNS}`,
       [postId, buyerId, post.user_id, post.credit_price],
     );
 

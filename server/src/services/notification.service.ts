@@ -76,11 +76,11 @@ function toNotification(row: NotificationRow): NotificationData {
 
 // 创建通知并实时推送
 async function createNotification(params: CreateNotificationParams): Promise<NotificationData> {
-  // 泛型 NotificationRow：INSERT RETURNING * 结果传给 toNotification，需精确类型
+  // 泛型 NotificationRow：INSERT RETURNING 显式列名，结果传给 toNotification，需精确类型
   const { rows } = await query<NotificationRow>(
     `INSERT INTO notifications (user_id, type, title, content, reference_id, reference_type)
      VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING *`,
+     RETURNING ${NOTIFICATION_COLUMNS}`,
     [params.userId, params.type, params.title, params.content || null, params.referenceId || null, params.referenceType || null],
   );
 
