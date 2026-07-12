@@ -134,11 +134,3 @@ export async function calculateAIRecommendationAccuracy(): Promise<MetricResult>
     return { value: 0, tags: { error: true } };
   }
 }
-
-export const metricsCalculationService = {
-  calculateEmergencyResponseTime,
-  calculateMatchSuccessRate,
-  calculateOrderCompletionRate,
-  calculateUserSatisfactionScore,
-  calculateAIRecommendationAccuracy,
-};
