@@ -46,11 +46,15 @@ export interface UserRow {
   created_at: Date;
 }
 
-// users 表登录查询列：仅返回 login 逻辑消费的字段（UserRow 字段 + password_hash）
+// users 表响应构造列：覆盖 toUserResponse 所需字段 + password_hash（登录密码校验用）
 // 设计原因：users 表含 phone_hash/id_card_encrypted/id_card_hash 等敏感字段，
-// SELECT * 会返回全部字段，显式列名仅返回登录必需字段，降低敏感数据暴露面
-const USER_LOGIN_COLUMNS = `id, phone, nickname, avatar, credit_balance, time_balance,
+// SELECT */RETURNING * 会返回全部字段，显式列名仅返回响应构造与登录校验必需字段，
+// 降低敏感数据暴露面。auth/user 两个 service 共享此常量避免列名定义分裂
+export const USER_COLUMNS = `id, phone, nickname, avatar, credit_balance, time_balance,
   reputation_score, role, created_at, password_hash`;
+
+// 兼容历史命名：登录查询专用列即 USER_COLUMNS，保留导出避免破坏外部引用
+export const USER_LOGIN_COLUMNS = USER_COLUMNS;
 
 /**
  * 将数据库行转换为用户响应对象
@@ -104,8 +108,9 @@ async function register(phone: string, password: string, nickname: string, priva
   const encryptedPhone = encryptPhone(phone);
 
   const result = await transaction(async (client) => {
+    // RETURNING 显式列名：仅返回 toUserResponse 所需字段，避免 phone_hash/id_card_encrypted 等敏感字段出现在结果集
     const userResult = await client.query<UserRow>(
-      'INSERT INTO users (phone, phone_hash, password_hash, nickname, credit_balance, privacy_consent_version, privacy_consent_at) VALUES ($1, $2, $3, $4, 100, $5, NOW()) RETURNING *',
+      `INSERT INTO users (phone, phone_hash, password_hash, nickname, credit_balance, privacy_consent_version, privacy_consent_at) VALUES ($1, $2, $3, $4, 100, $5, NOW()) RETURNING ${USER_COLUMNS}`,
       [encryptedPhone, phoneHash, passwordHash, nickname, privacyConsentVersion]
     );
     const user = userResult.rows[0];

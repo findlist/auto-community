@@ -51,9 +51,11 @@ vi.mock('../cache.service', () => ({
   },
 }));
 
-// mock auth.service 的 toUserResponse，直接回显 row 模拟序列化结果
+// mock auth.service：补充 USER_COLUMNS 导出，避免 vi.mock 拦截后 user.service 取不到常量导致 ReferenceError
 vi.mock('../auth.service', () => ({
   toUserResponse: (row: unknown) => row,
+  USER_COLUMNS: 'id, phone, nickname, avatar, credit_balance, time_balance, reputation_score, role, created_at, password_hash',
+  USER_LOGIN_COLUMNS: 'id, phone, nickname, avatar, credit_balance, time_balance, reputation_score, role, created_at, password_hash',
 }));
 
 // mock crypto 模块：避免依赖 PII_ENCRYPT_KEY 环境变量，返回固定值便于断言

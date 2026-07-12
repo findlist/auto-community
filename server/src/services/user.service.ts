@@ -1,6 +1,6 @@
 import { query, transaction, SqlParam } from '../config/database';
 import { NotFoundError, BadRequestError, ConflictError } from '../utils/errors';
-import { toUserResponse, UserRow } from './auth.service';
+import { toUserResponse, UserRow, USER_COLUMNS } from './auth.service';
 import { userCache } from './cache.service';
 import { encryptIdCard, hashIdCard } from '../utils/crypto';
 import { validateImageUrl } from '../utils/sanitize';
@@ -94,8 +94,9 @@ async function updateProfile(userId: string, data: { nickname?: string; avatar?:
   fields.push('updated_at = NOW()');
   values.push(userId);
 
+  // RETURNING 显式列名：仅返回 toUserResponse 所需字段，避免 phone_hash/id_card_encrypted 等敏感字段泄露
   const { rows } = await query<UserRow>(
-    `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex} AND deleted_at IS NULL RETURNING *`,
+    `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex} AND deleted_at IS NULL RETURNING ${USER_COLUMNS}`,
     values,
   );
   if (rows.length === 0) throw new NotFoundError('用户');
