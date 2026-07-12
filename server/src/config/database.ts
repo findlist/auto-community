@@ -93,18 +93,6 @@ export async function transaction<T>(callback: (client: PoolClient) => Promise<T
   }
 }
 
-// 测试数据库连接
-export async function testConnection(): Promise<boolean> {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    logger.info({ now: result.rows[0] }, '数据库连接成功');
-    return true;
-  } catch (error) {
-    logger.error({ err: error }, '数据库连接失败');
-    return false;
-  }
-}
-
 // 关闭连接池
 export async function closePool(): Promise<void> {
   await pool.end();

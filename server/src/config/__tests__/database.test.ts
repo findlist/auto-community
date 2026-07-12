@@ -10,7 +10,7 @@
  *   - 函数/Symbol 拒绝
  *
  * 测试策略：isSqlParam 是纯函数无副作用，直接断言返回值。
- *           query/transaction/testConnection/closePool 依赖 pg.Pool 真实连接，
+ *           query/transaction/closePool 依赖 pg.Pool 真实连接，
  *           单元测试中难以隔离（所有 service 测试已 mock database 模块覆盖调用路径），
  *           本测试文件聚焦 isSqlParam 的运行时类型守卫逻辑。
  */
