@@ -7,6 +7,16 @@ import { notificationService } from './notification.service';
 // 成团后(ongoing)退出的部分退款比例：退还参与者 90%，10% 作为已发生成本补偿给发起人
 const ONGOING_REFUND_RATE = 0.9;
 
+// group_orders 表列名常量：显式列名替代 SELECT *，防御未来新增字段意外泄露
+// 字段对齐 GroupOrderRow 接口声明（不含 deleted_at/cancel_reason/cancelled_at/completed_at：
+// 查询条件已过滤 deleted_at，其余字段在 SELECT 后不被读取，仅在 UPDATE 中设置）
+const GROUP_ORDER_COLUMNS = `id, initiator_id, title, description, target_amount, current_amount,
+  min_participants, max_participants, current_participants, address, deadline, status,
+  created_at, updated_at`;
+
+// group_order_participants 表列名常量：显式列名防御未来字段泄露
+const GROUP_ORDER_PARTICIPANT_COLUMNS = `id, group_order_id, user_id, amount, status, created_at`;
+
 // 拼单 DB Row：与 group_orders 表结构对齐
 interface GroupOrderRow {
   id: string;
@@ -138,7 +148,7 @@ async function join(groupOrderId: string, userId: string, amount: number) {
   return await transaction(async (client) => {
     // 1. 查询拼单
     const orderResult = await client.query(
-      'SELECT * FROM group_orders WHERE id = $1 AND deleted_at IS NULL FOR UPDATE',
+      `SELECT ${GROUP_ORDER_COLUMNS} FROM group_orders WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
       [groupOrderId]
     );
     if (orderResult.rows.length === 0) {
@@ -233,7 +243,7 @@ async function exit(groupOrderId: string, userId: string): Promise<void> {
   await transaction(async (client) => {
     // 1. 锁定拼单行，防止并发修改
     const orderResult = await client.query(
-      'SELECT * FROM group_orders WHERE id = $1 AND deleted_at IS NULL FOR UPDATE',
+      `SELECT ${GROUP_ORDER_COLUMNS} FROM group_orders WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
       [groupOrderId],
     );
     if (orderResult.rows.length === 0) {
@@ -248,7 +258,7 @@ async function exit(groupOrderId: string, userId: string): Promise<void> {
 
     // 3. 查询参与者记录
     const participantResult = await client.query(
-      'SELECT * FROM group_order_participants WHERE group_order_id = $1 AND user_id = $2',
+      `SELECT ${GROUP_ORDER_PARTICIPANT_COLUMNS} FROM group_order_participants WHERE group_order_id = $1 AND user_id = $2`,
       [groupOrderId, userId],
     );
     if (participantResult.rows.length === 0) {
@@ -438,7 +448,7 @@ async function cancel(groupOrderId: string, userId: string, reason?: string): Pr
   await transaction(async (client) => {
     // 1. 锁定拼单行，防止并发修改
     const orderResult = await client.query(
-      'SELECT * FROM group_orders WHERE id = $1 AND deleted_at IS NULL FOR UPDATE',
+      `SELECT ${GROUP_ORDER_COLUMNS} FROM group_orders WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
       [groupOrderId],
     );
     if (orderResult.rows.length === 0) {
@@ -511,7 +521,7 @@ async function complete(groupOrderId: string, userId: string): Promise<void> {
   await transaction(async (client) => {
     // 1. 锁定拼单行
     const orderResult = await client.query(
-      'SELECT * FROM group_orders WHERE id = $1 AND deleted_at IS NULL FOR UPDATE',
+      `SELECT ${GROUP_ORDER_COLUMNS} FROM group_orders WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
       [groupOrderId],
     );
     if (orderResult.rows.length === 0) {
