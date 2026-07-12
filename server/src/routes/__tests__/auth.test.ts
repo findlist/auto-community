@@ -62,7 +62,7 @@ vi.mock('../../services/auth.service', () => ({
 
 import authRouter from '../auth';
 import { errorHandler } from '../../middleware/errorHandler';
-import { UnauthorizedError, BadRequestError, NotFoundError } from '../../utils/errors';
+import { UnauthorizedError, BadRequestError } from '../../utils/errors';
 
 /**
  * 启动临时 Express 服务器到随机端口
