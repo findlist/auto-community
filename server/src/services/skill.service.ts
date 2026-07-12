@@ -2,6 +2,7 @@ import { query, SqlParam } from '../config/database';
 import { NotFoundError, BadRequestError, PermissionDeniedError } from '../utils/errors';
 import { sanitizeObject, validateImageUrls } from '../utils/sanitize';
 import { skillPostCache } from './cache.service';
+import { prefixColumns } from '../utils/sql';
 
 // 技能帖子过期处理已由 scheduler.ts 的 handleSkillPostExpiry 统一调度（每小时执行），
 // 将 status='active' AND expires_at < NOW() 的帖子置为 expired，无需在此重复实现
@@ -144,7 +145,7 @@ async function getPostList(filters: SkillPostFilters, page: number, pageSize: nu
   const [countResult, listResult] = await Promise.all([
     query<{ count: string }>(`SELECT COUNT(*) FROM skill_posts sp WHERE ${whereClause}`, values),
     query<SkillPostRow>(
-      `SELECT sp.*, u.nickname, u.avatar, u.reputation_score
+      `SELECT ${prefixColumns(SKILL_POST_COLUMNS, 'sp')}, u.nickname, u.avatar, u.reputation_score
        FROM skill_posts sp
        LEFT JOIN users u ON sp.user_id = u.id
        WHERE ${whereClause}
@@ -169,7 +170,7 @@ async function getPostById(id: string) {
   // 使用缓存：先查缓存，未命中时查数据库并缓存结果
   return skillPostCache.get(id, async () => {
     const { rows } = await query<SkillPostRow>(
-      `SELECT sp.*, u.nickname, u.avatar, u.reputation_score
+      `SELECT ${prefixColumns(SKILL_POST_COLUMNS, 'sp')}, u.nickname, u.avatar, u.reputation_score
        FROM skill_posts sp
        LEFT JOIN users u ON sp.user_id = u.id
        WHERE sp.id = $1 AND sp.deleted_at IS NULL`,
@@ -258,7 +259,7 @@ async function getUserPosts(userId: string, page: number, pageSize: number) {
       [userId],
     ),
     query<SkillPostRow>(
-      `SELECT sp.*, u.nickname, u.avatar, u.reputation_score
+      `SELECT ${prefixColumns(SKILL_POST_COLUMNS, 'sp')}, u.nickname, u.avatar, u.reputation_score
        FROM skill_posts sp
        LEFT JOIN users u ON sp.user_id = u.id
        WHERE sp.user_id = $1 AND sp.deleted_at IS NULL

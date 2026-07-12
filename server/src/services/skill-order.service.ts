@@ -10,6 +10,7 @@ import { reputationService } from './reputation.service';
 import { createPaginatedResponse } from '../utils/pagination';
 import { creditService } from './credit.service';
 import { notificationService } from './notification.service';
+import { prefixColumns } from '../utils/sql';
 
 /**
  * skill_orders 表显式查询列：替代 SELECT *，避免返回 timeout_at（scheduler 专用字段，
@@ -510,7 +511,7 @@ async function getOrderList(
   const [countResult, listResult] = await Promise.all([
     query<{ count: string }>(`SELECT COUNT(*) FROM skill_orders so WHERE ${whereClause}`, params),
     query<SkillOrderListRow>(
-      `SELECT so.*,
+      `SELECT ${prefixColumns(SKILL_ORDER_COLUMNS, 'so')},
               sp.title as post_title, sp.images as post_images, sp.credit_price as post_credit_price,
               buyer.nickname as buyer_nickname, buyer.avatar as buyer_avatar,
               seller.nickname as seller_nickname, seller.avatar as seller_avatar
@@ -552,7 +553,7 @@ async function getOrderList(
 
 async function getOrderById(orderId: string, userId: string) {
   const result = await query<SkillOrderListRow>(
-    `SELECT so.*,
+    `SELECT ${prefixColumns(SKILL_ORDER_COLUMNS, 'so')},
             sp.title as post_title, sp.images as post_images, sp.credit_price as post_credit_price,
             buyer.nickname as buyer_nickname, buyer.avatar as buyer_avatar,
             seller.nickname as seller_nickname, seller.avatar as seller_avatar
