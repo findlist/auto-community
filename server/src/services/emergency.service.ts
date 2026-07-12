@@ -268,7 +268,7 @@ async function createRequest(userId: string, data: CreateRequestData) {
     `INSERT INTO emergency_requests
       (user_id, type, category, title, description, urgency, location, address, contact_phone, is_anonymous, images, status, timeout_at)
      VALUES ($1,$2,$3,$4,$5,$6,$7::point,$8,$9,$10,$11,'open', NOW() + INTERVAL '30 minutes')
-     RETURNING *`,
+     RETURNING ${EMERGENCY_REQUEST_COLUMNS}`,
     [
       userId,
       sanitized.type || 'emergency',
@@ -439,7 +439,7 @@ async function respondToRequest(userId: string, requestId: string, data: { messa
   const result = await query(
     `INSERT INTO emergency_responses (request_id, responder_id, message, eta, status, timeout_at)
      VALUES ($1, $2, $3, $4, 'accepted', NOW() + INTERVAL '15 minutes')
-     RETURNING *`,
+     RETURNING ${EMERGENCY_RESPONSE_COLUMNS}`,
     [requestId, userId, sanitizedMessage, data.eta || null]
   );
 
@@ -489,7 +489,7 @@ async function updateResponseStatus(
       throw new PermissionDeniedError('只有响应者可以标记到达');
     }
     const result = await query(
-      "UPDATE emergency_responses SET status = 'arrived', arrived_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *",
+      `UPDATE emergency_responses SET status = 'arrived', arrived_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING ${EMERGENCY_RESPONSE_COLUMNS}`,
       [responseId]
     );
     return toResponseResponse(result.rows[0] as EmergencyResponseRow);
@@ -543,7 +543,7 @@ async function updateResponseStatus(
 
     // 更新当前响应为已完成
     const updatedResponse = await client.query(
-      "UPDATE emergency_responses SET status = 'completed', completed_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *",
+      `UPDATE emergency_responses SET status = 'completed', completed_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING ${EMERGENCY_RESPONSE_COLUMNS}`,
       [responseId]
     );
 
@@ -614,7 +614,7 @@ async function createReport(userId: string, requestId: string, reason: string) {
   const result = await query(
     `INSERT INTO false_reports (request_id, reporter_id, reason, status)
      VALUES ($1, $2, $3, 'pending')
-     RETURNING *`,
+     RETURNING ${FALSE_REPORT_COLUMNS}`,
     [requestId, userId, reason]
   );
 
@@ -679,7 +679,7 @@ async function resolveFalseReport(
       `UPDATE false_reports
        SET status = 'resolved', penalty = $1, resolution = $2, resolved_by = $3, resolved_at = NOW(), updated_at = NOW()
        WHERE id = $4
-       RETURNING *`,
+       RETURNING ${FALSE_REPORT_COLUMNS}`,
       [penalty, resolution, adminId, reportId]
     );
 
