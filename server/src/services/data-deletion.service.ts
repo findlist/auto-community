@@ -28,6 +28,10 @@ export interface DeletionRequestList {
   totalPages: number;
 }
 
+// deletion_requests 表审核查询列：仅返回审核逻辑消费的 3 个字段
+// 设计原因：reviewDeletionRequest 只需校验 status 和获取 user_id，无需返回 reason 等字段
+const DELETION_REQUEST_REVIEW_COLUMNS = 'id, user_id, status';
+
 // ===================== 匿名化工具函数 =====================
 
 /**
@@ -235,7 +239,7 @@ async function reviewDeletionRequest(
 ): Promise<{ id: string; status: string }> {
   // 查询申请记录
   const requestResult = await query(
-    'SELECT * FROM deletion_requests WHERE id = $1',
+    `SELECT ${DELETION_REQUEST_REVIEW_COLUMNS} FROM deletion_requests WHERE id = $1`,
     [requestId],
   );
   if (requestResult.rows.length === 0) {

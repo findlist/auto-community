@@ -301,7 +301,7 @@ describe('auth.service - login', () => {
     expect(result.user.id).toBe('user-1');
     // login 应按 phone_hash 查询
     expect(mockQuery).toHaveBeenCalledWith(
-      expect.stringContaining('SELECT * FROM users WHERE phone_hash = $1'),
+      expect.stringContaining('FROM users WHERE phone_hash = $1'),
       [PHONE_HASH],
     );
   });

@@ -46,6 +46,12 @@ export interface UserRow {
   created_at: Date;
 }
 
+// users 表登录查询列：仅返回 login 逻辑消费的字段（UserRow 字段 + password_hash）
+// 设计原因：users 表含 phone_hash/id_card_encrypted/id_card_hash 等敏感字段，
+// SELECT * 会返回全部字段，显式列名仅返回登录必需字段，降低敏感数据暴露面
+const USER_LOGIN_COLUMNS = `id, phone, nickname, avatar, credit_balance, time_balance,
+  reputation_score, role, created_at, password_hash`;
+
 /**
  * 将数据库行转换为用户响应对象
  * @param row 数据库行（phone 字段为密文）
@@ -127,7 +133,7 @@ async function login(phone: string, password: string) {
   // 按 phone_hash 查询：phone 字段已加密，无法直接等值查询
   const phoneHash = hashPhone(phone);
   const result = await query<UserRow & { password_hash: string }>(
-    'SELECT * FROM users WHERE phone_hash = $1 AND deleted_at IS NULL',
+    `SELECT ${USER_LOGIN_COLUMNS} FROM users WHERE phone_hash = $1 AND deleted_at IS NULL`,
     [phoneHash]
   );
 
