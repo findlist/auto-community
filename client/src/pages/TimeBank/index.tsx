@@ -53,7 +53,7 @@ export default function TimeBank() {
         </button>
       </div>
 
-      {/* Tab 切换：下划线式 */}
+      {/* Tab 切换：下划线式，激活态下划线使用时间银行模块紫 */}
       {/* overflow-x-auto + whitespace-nowrap：移动端窄屏 Tab 文字不换行、可横向滚动，避免下划线动效错位 */}
       <div className="flex items-center gap-6 border-b border-neutral-200 mb-6 overflow-x-auto pb-1">
         {tabs.map(({ key, label }) => (
@@ -66,7 +66,7 @@ export default function TimeBank() {
           >
             {label}
             <span
-              className={`absolute bottom-0 left-0 right-0 h-0.5 bg-neutral-900 transition-transform duration-200 ${
+              className={`absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 transition-transform duration-200 ${
                 activeTab === key ? "scale-x-100" : "scale-x-0"
               }`}
             />

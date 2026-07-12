@@ -74,6 +74,7 @@ export default function SkillExchange() {
   }, [searchInput]);
 
   // 编辑式列表项：无卡片，靠分隔线与留白组织信息
+  // 悬停态与价格/分类色采用技能模块蓝，强化模块身份
   const renderItem = (post: SkillPost) => (
     <div
       key={post.id}
@@ -84,10 +85,10 @@ export default function SkillExchange() {
         <div className="flex-1 min-w-0">
           {/* 标题行：标题 + 价格 */}
           <div className="flex items-baseline gap-3 mb-1.5">
-            <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-emerald-700 transition-colors">
+            <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-blue-700 transition-colors">
               {post.title}
             </h3>
-            <span className="text-emerald-700 font-semibold whitespace-nowrap text-sm tabular-nums">
+            <span className="text-blue-700 font-semibold whitespace-nowrap text-sm tabular-nums">
               {post.creditPrice}<span className="text-xs text-neutral-400 ml-0.5">积分</span>
             </span>
           </div>
@@ -95,7 +96,7 @@ export default function SkillExchange() {
           <p className="text-sm text-neutral-500 mb-2.5 line-clamp-1">{post.description}</p>
           {/* 元信息：分类 + 位置 */}
           <div className="flex items-center gap-3 text-xs text-neutral-400">
-            <span className="text-emerald-700/80">{post.category}</span>
+            <span className="text-blue-700/80">{post.category}</span>
             {post.location && (
               <span className="flex items-center gap-0.5">
                 <MapPin className="w-3 h-3" />
@@ -136,7 +137,7 @@ export default function SkillExchange() {
         </button>
       </div>
 
-      {/* Tab 切换：简洁下划线式 */}
+      {/* Tab 切换：简洁下划线式，激活态下划线使用技能模块蓝 */}
       {/* overflow-x-auto + whitespace-nowrap：移动端窄屏 Tab 文字不换行、可横向滚动，避免下划线动效错位 */}
       <div className="flex items-center gap-6 border-b border-neutral-200 mb-5 overflow-x-auto pb-1">
         {tabs.map(({ key, label }) => (
@@ -149,7 +150,7 @@ export default function SkillExchange() {
           >
             {label}
             <span
-              className={`absolute bottom-0 left-0 right-0 h-0.5 bg-neutral-900 transition-transform duration-200 ${
+              className={`absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 transition-transform duration-200 ${
                 activeTab === key ? "scale-x-100" : "scale-x-0"
               }`}
             />

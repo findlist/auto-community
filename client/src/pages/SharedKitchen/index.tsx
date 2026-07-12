@@ -99,6 +99,7 @@ export default function SharedKitchen() {
   };
 
   // 美食列表项：左图右文，分隔线组织，悬停轻底色
+  // 悬停态与价格色采用厨房模块橙，强化模块身份
   const renderFoodItem = (post: KitchenPost) => (
     <div
       key={post.id}
@@ -119,10 +120,10 @@ export default function SharedKitchen() {
       <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
         <div>
           <div className="flex items-baseline gap-2.5 mb-1">
-            <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-emerald-700 transition-colors">
+            <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-orange-700 transition-colors">
               {post.title}
             </h3>
-            <span className="text-emerald-700 font-semibold whitespace-nowrap text-sm tabular-nums">
+            <span className="text-orange-700 font-semibold whitespace-nowrap text-sm tabular-nums">
               {post.price === 0 ? "免费" : `${post.price}积分`}
             </span>
           </div>
@@ -147,6 +148,7 @@ export default function SharedKitchen() {
   );
 
   // 拼单列表项：标题 + 进度条内联
+  // 进度条与百分比色采用厨房模块橙，与美食列表项保持模块身份一致
   const renderGroupItem = (order: GroupOrder) => {
     const percent = Math.min(100, Math.round((order.currentAmount / order.targetAmount) * 100));
     return (
@@ -156,10 +158,10 @@ export default function SharedKitchen() {
         className="group border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6"
       >
         <div className="flex items-baseline justify-between gap-3 mb-2">
-          <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-emerald-700 transition-colors">
+          <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-orange-700 transition-colors">
             {order.title}
           </h3>
-          <span className="text-sm font-semibold text-emerald-700 tabular-nums whitespace-nowrap">
+          <span className="text-sm font-semibold text-orange-700 tabular-nums whitespace-nowrap">
             {percent}%
           </span>
         </div>
@@ -167,7 +169,7 @@ export default function SharedKitchen() {
         {/* 进度条：细线，无圆角卡片 */}
         <div className="h-1 bg-neutral-200 rounded-full overflow-hidden mb-2.5">
           <div
-            className="h-full bg-emerald-600 transition-all duration-500"
+            className="h-full bg-orange-600 transition-all duration-500"
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -201,7 +203,7 @@ export default function SharedKitchen() {
         </button>
       </div>
 
-      {/* Tab 切换：下划线式 */}
+      {/* Tab 切换：下划线式，激活态下划线使用厨房模块橙 */}
       {/* overflow-x-auto + whitespace-nowrap：移动端窄屏 Tab 文字不换行、可横向滚动，避免下划线动效错位 */}
       <div className="flex items-center gap-6 border-b border-neutral-200 mb-5 overflow-x-auto pb-1">
         {tabs.map(({ key, label }) => (
@@ -214,7 +216,7 @@ export default function SharedKitchen() {
           >
             {label}
             <span
-              className={`absolute bottom-0 left-0 right-0 h-0.5 bg-neutral-900 transition-transform duration-200 ${
+              className={`absolute bottom-0 left-0 right-0 h-0.5 bg-orange-600 transition-transform duration-200 ${
                 activeTab === key ? "scale-x-100" : "scale-x-0"
               }`}
             />
