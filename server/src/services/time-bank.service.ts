@@ -16,6 +16,7 @@ import { logger } from '../utils/logger';
 import { timeServiceCache } from './cache.service';
 import { notificationService } from './notification.service';
 import { sanitizeObject, validateImageUrls } from '../utils/sanitize';
+import { prefixColumns } from '../utils/sql';
 
 const DAILY_EARN_LIMIT = 480;
 const FIRST_SERVICE_BONUS = 30;
@@ -300,7 +301,7 @@ async function getServiceList(
   const [countResult, listResult] = await Promise.all([
     query(`SELECT COUNT(*) FROM time_services ts WHERE ${whereClause}`, params),
     query(
-      `SELECT ts.*,
+      `SELECT ${prefixColumns(TIME_SERVICE_COLUMNS, 'ts')},
               u.nickname, u.avatar, u.reputation_score
        FROM time_services ts
        LEFT JOIN users u ON ts.user_id = u.id
@@ -344,7 +345,7 @@ async function getServiceById(id: string, viewerUserId?: string) {
   // 使用缓存：先查缓存，未命中时查数据库并缓存结果
   const cachedData = await timeServiceCache.get(id, async () => {
     const result = await query(
-      `SELECT ts.*,
+      `SELECT ${prefixColumns(TIME_SERVICE_COLUMNS, 'ts')},
               u.nickname, u.avatar, u.reputation_score
        FROM time_services ts
        LEFT JOIN users u ON ts.user_id = u.id
@@ -1016,7 +1017,7 @@ async function unbindFamilyBinding(bindingId: string, userId: string) {
 
 async function getFamilyBindings(userId: string) {
   const result = await query(
-    `SELECT fb.*,
+    `SELECT ${prefixColumns(FAMILY_BINDING_COLUMNS, 'fb')},
             CASE WHEN fb.user_id = $1 THEN u1.nickname ELSE u2.nickname END AS other_nickname,
             CASE WHEN fb.user_id = $1 THEN u1.avatar ELSE u2.avatar END AS other_avatar,
             CASE WHEN fb.user_id = $1 THEN u1.id ELSE u2.id END AS other_id
@@ -1118,7 +1119,7 @@ async function getDisputes(
       [userId],
     ),
     query(
-      `SELECT sd.*, o.provider_id, o.requester_id
+      `SELECT ${prefixColumns(SERVICE_DISPUTE_COLUMNS, 'sd')}, o.provider_id, o.requester_id
        FROM service_disputes sd
        JOIN time_orders o ON sd.order_id = o.id
        WHERE sd.initiator_id = $1 OR o.provider_id = $1 OR o.requester_id = $1
@@ -1162,7 +1163,7 @@ async function getOrders(
       [userId],
     ),
     query(
-      `SELECT o.*,
+      `SELECT ${prefixColumns(TIME_ORDER_COLUMNS, 'o')},
               ts.title AS service_title, ts.category AS service_category, ts.type AS service_type,
               CASE
                 WHEN o.provider_id = $1 THEN req.nickname

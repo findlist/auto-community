@@ -13,6 +13,8 @@ import { success, paginated, created, deleted } from '../utils/response';
 import { query, SqlParam } from '../config/database';
 import { body } from 'express-validator';
 import { BadRequestError } from '../utils/errors';
+import { prefixColumns } from '../utils/sql';
+import { REVIEW_COLUMNS } from '../services/review.service';
 
 const router = Router();
 
@@ -447,7 +449,7 @@ router.get('/reviews',
 
     const offset = (page - 1) * pageSize;
     const listResult = await query(
-      `SELECT r.*, u.nickname as reviewer_nickname, u.avatar as reviewer_avatar
+      `SELECT ${prefixColumns(REVIEW_COLUMNS, 'r')}, u.nickname as reviewer_nickname, u.avatar as reviewer_avatar
        FROM reviews r
        LEFT JOIN users u ON r.reviewer_id = u.id
        WHERE ${whereClause}
