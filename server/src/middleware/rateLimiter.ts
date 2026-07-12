@@ -139,28 +139,3 @@ export const orderLimiter = createRedisRateLimiter({
   keyPrefix: 'order',
   message: '操作过于频繁，请稍后再试',
 });
-
-// 聊天消息限流
-export const chatLimiter = createRedisRateLimiter({
-  windowMs: 60 * 1000, // 1 分钟
-  max: 60,
-  keyPrefix: 'chat',
-  message: '消息发送过于频繁，请稍后再试',
-});
-
-// 短信验证码限流
-export const smsLimiter = createRedisRateLimiter({
-  windowMs: 60 * 1000, // 1 分钟
-  max: 1,
-  keyPrefix: 'sms',
-  message: '短信发送过于频繁，请稍后再试',
-  keyGenerator: (req) => req.body?.phone || req.ip || 'unknown',
-});
-
-// 搜索限流
-export const searchLimiter = createRedisRateLimiter({
-  windowMs: 60 * 1000, // 1 分钟
-  max: 60,
-  keyPrefix: 'search',
-  message: '搜索过于频繁，请稍后再试',
-});
