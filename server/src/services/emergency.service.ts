@@ -13,6 +13,8 @@ import { maskPhone } from '../utils/mask';
 import { aiService } from './ai.service';
 import { sanitizeObject, sanitizeXss, validateImageUrls } from '../utils/sanitize';
 import { notificationService } from './notification.service';
+import { prefixColumns } from '../utils/sql';
+import { REVIEW_COLUMNS } from './review.service';
 
 /**
  * emergency_requests 表显式查询列：替代 SELECT *，与数据库实际列结构对齐（17 字段，不含 deleted_at）。
@@ -311,7 +313,7 @@ async function getRequests(params: { type?: string; status?: string; page: numbe
   );
 
   const listResult = await query(
-    `SELECT er.*, u.id AS requester_id, u.nickname AS requester_nickname, u.avatar AS requester_avatar
+    `SELECT ${prefixColumns(EMERGENCY_REQUEST_COLUMNS, 'er')}, u.id AS requester_id, u.nickname AS requester_nickname, u.avatar AS requester_avatar
      FROM emergency_requests er
      LEFT JOIN users u ON er.user_id = u.id
      WHERE ${where}
@@ -331,7 +333,7 @@ async function getRequests(params: { type?: string; status?: string; page: numbe
 
 async function getRequestById(id: string, viewerUserId?: string) {
   const result = await query(
-    `SELECT er.*, u.id AS requester_id, u.nickname AS requester_nickname, u.avatar AS requester_avatar
+    `SELECT ${prefixColumns(EMERGENCY_REQUEST_COLUMNS, 'er')}, u.id AS requester_id, u.nickname AS requester_nickname, u.avatar AS requester_avatar
      FROM emergency_requests er
      LEFT JOIN users u ON er.user_id = u.id
      WHERE er.id = $1 AND er.deleted_at IS NULL`,
@@ -345,7 +347,7 @@ async function getRequestById(id: string, viewerUserId?: string) {
   const requestRow = result.rows[0] as EmergencyRequestRow;
 
   const responsesResult = await query(
-    `SELECT r.*, u.id AS responder_id, u.nickname AS responder_nickname, u.avatar AS responder_avatar
+    `SELECT ${prefixColumns(EMERGENCY_RESPONSE_COLUMNS, 'r')}, u.id AS responder_id, u.nickname AS responder_nickname, u.avatar AS responder_avatar
      FROM emergency_responses r
      LEFT JOIN users u ON r.responder_id = u.id
      WHERE r.request_id = $1
@@ -354,7 +356,7 @@ async function getRequestById(id: string, viewerUserId?: string) {
   );
 
   const reviewsResult = await query(
-    `SELECT rv.*, u.nickname AS reviewer_nickname, u.avatar AS reviewer_avatar
+    `SELECT ${prefixColumns(REVIEW_COLUMNS, 'rv')}, u.nickname AS reviewer_nickname, u.avatar AS reviewer_avatar
      FROM reviews rv
      LEFT JOIN users u ON rv.reviewer_id = u.id
      WHERE rv.order_id = $1 AND rv.order_type = 'emergency'
