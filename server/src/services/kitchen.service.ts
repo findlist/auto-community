@@ -6,6 +6,13 @@ import { kitchenPostCache } from './cache.service';
 // kitchen_posts 表行类型：与数据库列结构对齐，避免 row: any 逃逸类型检查
 // 设计原因：原 row: any 让字段拼写错误无法在编译期暴露，列变更不触发类型告警；
 // 收紧后访问不存在的字段会立即报错，减少运行时「undefined 静默传递」的隐患
+
+// kitchen_posts 表响应构造列：覆盖 toKitchenPostResponse 所需字段，不含 deleted_at
+// 设计原因：INSERT/UPDATE RETURNING * 会返回 deleted_at 等未消费字段，显式列名避免未来新增字段意外泄露
+const KITCHEN_POST_COLUMNS = `id, user_id, type, title, description, category, portions, remaining_portions,
+  credit_price, pickup_type, pickup_time, pickup_address, images, allergens, health_cert,
+  status, created_at, updated_at`;
+
 interface KitchenPostRow {
   id: string;
   user_id: string;
@@ -101,7 +108,7 @@ async function create(userId: string, data: {
      (user_id, type, title, description, category, credit_price, portions, remaining_portions,
       pickup_time, pickup_address, pickup_type, images, allergens, health_cert, status)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9, $10, $11, $12, $13, 'active')
-     RETURNING *`,
+     RETURNING ${KITCHEN_POST_COLUMNS}`,
     [
       userId,
       sanitized.type,
@@ -303,7 +310,7 @@ async function update(id: string, userId: string, data: Partial<{
 
   // UPDATE RETURNING * 的结果传给 toKitchenPostResponse，需泛型 KitchenPostRow 精确化
   const result = await query<KitchenPostRow>(
-    `UPDATE kitchen_posts SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+    `UPDATE kitchen_posts SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING ${KITCHEN_POST_COLUMNS}`,
     params
   );
 

@@ -9,6 +9,13 @@ import { skillPostCache } from './cache.service';
 // 设计原因：原 toSkillPost(row: any) 让 row 字段误用静默通过编译，
 // 定义 SkillPostRow 与 SELECT 列对齐（含 LEFT JOIN users 后的 nickname/avatar/reputation_score），
 // 编译期即可发现字段名拼写错误或类型不匹配
+
+// skill_posts 表响应构造列：覆盖 toSkillPost 在 INSERT/UPDATE 场景所需字段
+// 设计原因：RETURNING * 会返回 deleted_at 等未消费字段，显式列名避免未来新增字段意外泄露；
+// nickname/avatar/reputation_score 是 LEFT JOIN users 字段，不属于 skill_posts 表，不放入此常量
+const SKILL_POST_COLUMNS = `id, user_id, type, category, title, description, credit_price,
+  images, tags, location, address, status, expires_at, created_at, updated_at`;
+
 interface SkillPostRow {
   id: string;
   user_id: string;
@@ -94,7 +101,7 @@ async function createPost(userId: string, data: CreateSkillPostDTO) {
   const { rows } = await query<SkillPostRow>(
     `INSERT INTO skill_posts (user_id, type, category, title, description, credit_price, images, tags, location, address, expires_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-     RETURNING *`,
+     RETURNING ${SKILL_POST_COLUMNS}`,
     [
       userId, sanitized.type, sanitized.category, sanitized.title, sanitized.description ?? null,
       sanitized.credit_price || 0, sanitized.images || [], sanitized.tags || [],
@@ -218,7 +225,7 @@ async function updatePost(id: string, userId: string, data: UpdateSkillPostDTO) 
   values.push(id);
 
   const { rows } = await query<SkillPostRow>(
-    `UPDATE skill_posts SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+    `UPDATE skill_posts SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING ${SKILL_POST_COLUMNS}`,
     values,
   );
 
