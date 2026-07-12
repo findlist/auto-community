@@ -3,6 +3,7 @@ import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors'
 import { creditService } from './credit.service';
 import { logger } from '../utils/logger';
 import { notificationService } from './notification.service';
+import { prefixColumns } from '../utils/sql';
 
 // 成团后(ongoing)退出的部分退款比例：退还参与者 90%，10% 作为已发生成本补偿给发起人
 const ONGOING_REFUND_RATE = 0.9;
@@ -385,7 +386,7 @@ async function getList(filters: {
   // 查询列表
   const offset = (page - 1) * pageSize;
   const listResult = await query<GroupOrderListRow>(
-    `SELECT go.*, u.id as initiator_uid, u.nickname as initiator_nickname, u.avatar as initiator_avatar
+    `SELECT ${prefixColumns(GROUP_ORDER_COLUMNS, 'go')}, u.id as initiator_uid, u.nickname as initiator_nickname, u.avatar as initiator_avatar
      FROM group_orders go
      LEFT JOIN users u ON go.initiator_id = u.id
      WHERE ${whereClause}
@@ -408,7 +409,7 @@ async function getList(filters: {
 // 获取拼单详情
 async function getById(id: string) {
   const orderResult = await query<GroupOrderListRow>(
-    `SELECT go.*, u.id as initiator_uid, u.nickname as initiator_nickname, u.avatar as initiator_avatar
+    `SELECT ${prefixColumns(GROUP_ORDER_COLUMNS, 'go')}, u.id as initiator_uid, u.nickname as initiator_nickname, u.avatar as initiator_avatar
      FROM group_orders go
      LEFT JOIN users u ON go.initiator_id = u.id
      WHERE go.id = $1 AND go.deleted_at IS NULL`,
@@ -422,7 +423,7 @@ async function getById(id: string) {
 
   // 查询参与人列表
   const participantsResult = await query<GroupOrderParticipantRow>(
-    `SELECT gop.*, u.nickname, u.avatar
+    `SELECT ${prefixColumns(GROUP_ORDER_PARTICIPANT_COLUMNS, 'gop')}, u.nickname, u.avatar
      FROM group_order_participants gop
      LEFT JOIN users u ON gop.user_id = u.id
      WHERE gop.group_order_id = $1
