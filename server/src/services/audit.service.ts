@@ -1,6 +1,11 @@
 import { pool, query, SqlParam } from '../config/database';
 import { logger } from '../utils/logger';
 import { createPaginatedResponse } from '../utils/pagination';
+import { prefixColumns } from '../utils/sql';
+
+// audit_logs 表列常量：仅包含 toAuditLog 消费的字段，排除 user_agent TEXT 与 request_body JSONB 大字段
+// 设计原因：列表查询 SELECT a.* 会无谓返回两个大字段，列表场景从不消费，显式列名可减少网络传输与内存占用
+const AUDIT_LOG_COLUMNS = `id, user_id, action, resource_type, resource_id, ip, status, error_message, created_at`;
 
 // 审计日志写入参数
 export interface AuditLogParams {
@@ -148,7 +153,7 @@ async function getAuditLogs(
   // 查询列表（关联用户表获取昵称）：LEFT JOIN users 引入 nickname，泛型 AuditLogListRow 精确化
   const offset = (page - 1) * pageSize;
   const listResult = await query<AuditLogListRow>(
-    `SELECT a.*, u.nickname
+    `SELECT ${prefixColumns(AUDIT_LOG_COLUMNS, 'a')}, u.nickname
      FROM audit_logs a
      LEFT JOIN users u ON a.user_id = u.id
      ${whereClause}

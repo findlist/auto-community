@@ -1,5 +1,6 @@
 import { query } from '../config/database';
 import { BadRequestError } from '../utils/errors';
+import { prefixColumns } from '../utils/sql';
 
 /**
  * reviews 表行类型
@@ -101,7 +102,7 @@ async function getReviewsByUser(userId: string, page: number = 1, pageSize: numb
 
   const [dataResult, countResult] = await Promise.all([
     query<ReviewListRow>(
-      `SELECT r.*, u.nickname AS reviewer_nickname, u.avatar AS reviewer_avatar
+      `SELECT ${prefixColumns(REVIEW_COLUMNS, 'r')}, u.nickname AS reviewer_nickname, u.avatar AS reviewer_avatar
        FROM reviews r
        LEFT JOIN users u ON r.reviewer_id = u.id
        WHERE r.reviewed_id = $1
