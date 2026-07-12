@@ -1,6 +1,11 @@
 import { query, transaction, SqlParam } from '../config/database';
 import { NotFoundError } from '../utils/errors';
 
+// delivery_addresses 表显式查询列：替代 SELECT *，防御未来新增字段意外泄露
+// 字段对齐 DeliveryAddressRow 接口声明，列为硬编码常量非用户输入，模板插值无注入风险
+const DELIVERY_ADDRESS_COLUMNS = `id, user_id, recipient, phone, address, is_default,
+  created_at, updated_at`;
+
 // delivery_addresses 表行类型：与数据库列结构对齐，所有字段均为 NOT NULL
 // 设计原因：原 row: any 让字段拼写错误静默通过编译，收紧后访问错误字段立即报错
 interface DeliveryAddressRow {
@@ -32,7 +37,7 @@ function toAddress(row: DeliveryAddressRow) {
 async function listByUser(userId: string) {
   // 泛型 DeliveryAddressRow：SELECT * 结果传给 toAddress，需精确类型
   const { rows } = await query<DeliveryAddressRow>(
-    `SELECT * FROM delivery_addresses
+    `SELECT ${DELIVERY_ADDRESS_COLUMNS} FROM delivery_addresses
      WHERE user_id = $1
      ORDER BY is_default DESC, updated_at DESC`,
     [userId],
@@ -83,7 +88,7 @@ async function update(
   return transaction(async (client) => {
     // 校验地址归属权：SELECT * FOR UPDATE 结果含完整行，泛型 DeliveryAddressRow 精确化
     const existing = await client.query<DeliveryAddressRow>(
-      'SELECT * FROM delivery_addresses WHERE id = $1 AND user_id = $2 FOR UPDATE',
+      `SELECT ${DELIVERY_ADDRESS_COLUMNS} FROM delivery_addresses WHERE id = $1 AND user_id = $2 FOR UPDATE`,
       [id, userId],
     );
     if (existing.rows.length === 0) throw new NotFoundError('地址');
@@ -131,7 +136,7 @@ async function remove(id: string, userId: string) {
   return transaction(async (client) => {
     // SELECT * 结果用于访问 is_default，泛型 DeliveryAddressRow 精确化
     const existing = await client.query<DeliveryAddressRow>(
-      'SELECT * FROM delivery_addresses WHERE id = $1 AND user_id = $2',
+      `SELECT ${DELIVERY_ADDRESS_COLUMNS} FROM delivery_addresses WHERE id = $1 AND user_id = $2`,
       [id, userId],
     );
     if (existing.rows.length === 0) throw new NotFoundError('地址');
