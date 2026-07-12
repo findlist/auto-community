@@ -2,6 +2,7 @@ import { query, SqlParam } from '../config/database';
 import { NotFoundError, PermissionDeniedError } from '../utils/errors';
 import { sanitizeObject, validateImageUrls } from '../utils/sanitize';
 import { kitchenPostCache } from './cache.service';
+import { prefixColumns } from '../utils/sql';
 
 // kitchen_posts 表行类型：与数据库列结构对齐，避免 row: any 逃逸类型检查
 // 设计原因：原 row: any 让字段拼写错误无法在编译期暴露，列变更不触发类型告警；
@@ -165,7 +166,7 @@ async function getList(filters: {
   // 查询列表：LEFT JOIN users 引入 nickname/avatar/reputation_score，用 KitchenPostListRow 覆盖
   const offset = (page - 1) * pageSize;
   const listResult = await query<KitchenPostListRow>(
-    `SELECT kp.*, u.id as user_id, u.nickname, u.avatar, u.reputation_score
+    `SELECT ${prefixColumns(KITCHEN_POST_COLUMNS, 'kp')}, u.id as user_id, u.nickname, u.avatar, u.reputation_score
      FROM kitchen_posts kp
      LEFT JOIN users u ON kp.user_id = u.id
      WHERE ${whereClause}
@@ -193,7 +194,7 @@ async function getById(id: string) {
   return kitchenPostCache.get(id, async () => {
     // 详情查询与列表相同的 JOIN 结构，复用 KitchenPostListRow 精确化 row 字段
     const result = await query<KitchenPostListRow>(
-      `SELECT kp.*, u.id as user_id, u.nickname, u.avatar, u.reputation_score
+      `SELECT ${prefixColumns(KITCHEN_POST_COLUMNS, 'kp')}, u.id as user_id, u.nickname, u.avatar, u.reputation_score
        FROM kitchen_posts kp
        LEFT JOIN users u ON kp.user_id = u.id
        WHERE kp.id = $1 AND kp.deleted_at IS NULL`,

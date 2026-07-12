@@ -10,6 +10,7 @@ import { reputationService } from './reputation.service';
 import { createPaginatedResponse } from '../utils/pagination';
 import { creditService } from './credit.service';
 import { notificationService } from './notification.service';
+import { prefixColumns } from '../utils/sql';
 
 /**
  * kitchen_orders 表显式查询列：替代 SELECT *，与数据库实际列结构对齐。
@@ -399,7 +400,7 @@ async function getList(userId: string, filters: {
   // 查询列表
   const offset = (page - 1) * pageSize;
   const listResult = await query<KitchenOrderListRow>(
-    `SELECT ko.*, 
+    `SELECT ${prefixColumns(KITCHEN_ORDER_COLUMNS, 'ko')}, 
             kp.title as post_title, kp.images as post_images,
             buyer.nickname as buyer_nickname, buyer.avatar as buyer_avatar,
             seller.nickname as seller_nickname, seller.avatar as seller_avatar
