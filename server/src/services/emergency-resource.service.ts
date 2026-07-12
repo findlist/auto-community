@@ -177,7 +177,7 @@ async function create(data: ResourceMutationData) {
   const result = await query(
     `INSERT INTO emergency_resources (${fullColumns})
      VALUES (${fullPlaceholders})
-     RETURNING *`,
+     RETURNING ${EMERGENCY_RESOURCE_COLUMNS}`,
     [...values, location]
   );
 
@@ -222,7 +222,7 @@ async function update(id: string, data: ResourceMutationData) {
 
   values.push(id);
   const result = await query(
-    `UPDATE emergency_resources SET ${setClauses.join(', ')} WHERE id = $${idx} RETURNING *`,
+    `UPDATE emergency_resources SET ${setClauses.join(', ')} WHERE id = $${idx} RETURNING ${EMERGENCY_RESOURCE_COLUMNS}`,
     values
   );
 

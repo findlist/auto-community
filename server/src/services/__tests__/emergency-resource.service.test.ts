@@ -267,8 +267,9 @@ describe('emergency-resource.service create', () => {
 
     const call = mockQuery.mock.calls[0];
     const sql = call[0] as string;
-    // description 不应出现在 INSERT 列中
-    expect(sql).not.toContain('description');
+    // description 不应出现在 INSERT 列中（仅检查 INSERT INTO (...) 子句，RETURNING 列常量包含 description 不影响）
+    const insertColumns = sql.match(/INSERT INTO emergency_resources \(([^)]*)\)/)?.[1] || '';
+    expect(insertColumns).not.toContain('description');
   });
 });
 

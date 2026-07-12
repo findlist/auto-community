@@ -110,7 +110,7 @@ async function create(userId: string, data: {
     `INSERT INTO group_orders
      (initiator_id, title, description, target_amount, min_participants, max_participants, address, deadline, status)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'open')
-     RETURNING *`,
+     RETURNING ${GROUP_ORDER_COLUMNS}`,
     [
       userId,
       data.title,

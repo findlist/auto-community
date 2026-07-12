@@ -67,11 +67,11 @@ async function create(
     );
     const isFirst = parseInt(countResult.rows[0].count, 10) === 0;
 
-    // INSERT RETURNING * 结果传给 toAddress，泛型 DeliveryAddressRow 精确化
+    // INSERT RETURNING 显式列名，避免新增字段意外泄露到响应
     const { rows } = await client.query<DeliveryAddressRow>(
       `INSERT INTO delivery_addresses (user_id, recipient, phone, address, is_default)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
+       RETURNING ${DELIVERY_ADDRESS_COLUMNS}`,
       [userId, data.recipient, data.phone, data.address, data.isDefault || isFirst],
     );
 
@@ -121,9 +121,9 @@ async function update(
     }
     fields.push('updated_at = NOW()');
 
-    // UPDATE RETURNING * 结果传给 toAddress，泛型 DeliveryAddressRow 精确化
+    // UPDATE RETURNING 显式列名，避免新增字段意外泄露到响应
     const { rows } = await client.query<DeliveryAddressRow>(
-      `UPDATE delivery_addresses SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      `UPDATE delivery_addresses SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING ${DELIVERY_ADDRESS_COLUMNS}`,
       [...values, id],
     );
 
