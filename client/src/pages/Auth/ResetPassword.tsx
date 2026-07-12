@@ -127,10 +127,10 @@ export default function ResetPassword() {
           </p>
         </div>
 
-        {/* 表单：玻璃态卡片，与登录页一致 */}
+        {/* 表单：玻璃态卡片，与登录页一致；悬停轻提、焦点环细化 */}
         <form
           onSubmit={handleSubmit}
-          className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 lg:p-8 space-y-5 animate-fade-in-up shadow-2xl"
+          className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 lg:p-8 space-y-5 animate-fade-in-up shadow-2xl transition-shadow duration-300 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]"
           style={{ animationDelay: "120ms" }}
         >
           {/* 手机号 */}
@@ -139,7 +139,7 @@ export default function ResetPassword() {
               手机号
             </label>
             <div className="relative">
-              <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+              <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 transition-colors" />
               <input
                 id="phone"
                 type="tel"
@@ -147,7 +147,7 @@ export default function ResetPassword() {
                 onChange={(e) => { setPhone(e.target.value); setFieldErrors(prev => ({ ...prev, phone: "" })); }}
                 placeholder="请输入手机号"
                 autoComplete="tel"
-                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all ${fieldErrors.phone ? "border-red-400/70" : "border-white/20"}`}
+                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-all ${fieldErrors.phone ? "border-red-400/70" : "border-white/20"}`}
               />
             </div>
             {fieldErrors.phone && <p className="mt-1.5 text-xs text-red-300">{fieldErrors.phone}</p>}
@@ -159,7 +159,7 @@ export default function ResetPassword() {
               验证码
             </label>
             <div className="relative">
-              <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+              <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 transition-colors" />
               <input
                 id="code"
                 type="text"
@@ -168,7 +168,7 @@ export default function ResetPassword() {
                 onChange={(e) => { setCode(e.target.value.replace(/\D/g, "")); setFieldErrors(prev => ({ ...prev, code: "" })); }}
                 placeholder="请输入6位验证码"
                 inputMode="numeric"
-                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all tracking-widest ${fieldErrors.code ? "border-red-400/70" : "border-white/20"}`}
+                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-all tracking-widest ${fieldErrors.code ? "border-red-400/70" : "border-white/20"}`}
               />
             </div>
             {fieldErrors.code && <p className="mt-1.5 text-xs text-red-300">{fieldErrors.code}</p>}
@@ -180,7 +180,7 @@ export default function ResetPassword() {
               新密码
             </label>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 transition-colors" />
               <input
                 id="password"
                 type="password"
@@ -188,7 +188,7 @@ export default function ResetPassword() {
                 onChange={(e) => { setPassword(e.target.value); setFieldErrors(prev => ({ ...prev, password: "" })); }}
                 placeholder="请输入新密码（至少6位）"
                 autoComplete="new-password"
-                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all ${fieldErrors.password ? "border-red-400/70" : "border-white/20"}`}
+                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-all ${fieldErrors.password ? "border-red-400/70" : "border-white/20"}`}
               />
             </div>
             {fieldErrors.password && <p className="mt-1.5 text-xs text-red-300">{fieldErrors.password}</p>}
@@ -200,7 +200,7 @@ export default function ResetPassword() {
               确认密码
             </label>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 transition-colors" />
               <input
                 id="confirmPassword"
                 type="password"
@@ -208,7 +208,7 @@ export default function ResetPassword() {
                 onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors(prev => ({ ...prev, confirmPassword: "" })); }}
                 placeholder="请再次输入新密码"
                 autoComplete="new-password"
-                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all ${fieldErrors.confirmPassword ? "border-red-400/70" : "border-white/20"}`}
+                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-all ${fieldErrors.confirmPassword ? "border-red-400/70" : "border-white/20"}`}
               />
             </div>
             {fieldErrors.confirmPassword && <p className="mt-1.5 text-xs text-red-300">{fieldErrors.confirmPassword}</p>}

@@ -111,10 +111,10 @@ export default function ForgotPassword() {
           </p>
         </div>
 
-        {/* 表单：玻璃态卡片，与登录页一致 */}
+        {/* 表单：玻璃态卡片，与登录页一致；悬停轻提、焦点环细化 */}
         <form
           onSubmit={handleSubmit}
-          className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 lg:p-8 space-y-5 animate-fade-in-up shadow-2xl"
+          className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 lg:p-8 space-y-5 animate-fade-in-up shadow-2xl transition-shadow duration-300 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]"
           style={{ animationDelay: "120ms" }}
         >
           {/* 手机号 */}
@@ -123,7 +123,7 @@ export default function ForgotPassword() {
               手机号
             </label>
             <div className="relative">
-              <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+              <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 transition-colors" />
               <input
                 id="phone"
                 type="tel"
@@ -134,7 +134,7 @@ export default function ForgotPassword() {
                 }}
                 placeholder="请输入注册手机号"
                 autoComplete="tel"
-                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all ${
+                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-all ${
                   fieldErrors.phone ? "border-red-400/70" : "border-white/20"
                 }`}
               />
