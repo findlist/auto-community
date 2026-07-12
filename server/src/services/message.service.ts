@@ -5,6 +5,11 @@ import { createCursorPaginatedResponse, CursorPaginatedResponse } from '../utils
 // 支持的业务模块类型
 export type OrderType = 'skill' | 'kitchen' | 'time' | 'emergency';
 
+// messages 表显式查询列：替代 SELECT *，防御未来新增字段意外泄露
+// 字段对齐 MessageRow 接口声明，列为硬编码常量非用户输入，模板插值无注入风险
+const MESSAGE_COLUMNS = `id, sender_id, receiver_id, order_id, order_type, content, type,
+  read_at, created_at`;
+
 /**
  * messages 表行类型
  * 设计原因：原 toMessage(row: any) 让 row 各字段为 any，编译期无法发现字段拼写错误；
@@ -120,7 +125,7 @@ async function getMessages(
   // 游标分页：第一页时 cursor 为空，查询最新记录
   // 查询条件：WHERE id < cursor ORDER BY id DESC LIMIT limit
   const params: SqlParam[] = [orderId, orderType, limit];
-  let sql = `SELECT * FROM messages WHERE order_id = $1 AND order_type = $2`;
+  let sql = `SELECT ${MESSAGE_COLUMNS} FROM messages WHERE order_id = $1 AND order_type = $2`;
 
   if (cursor) {
     sql += ' AND id < $4 ORDER BY id DESC LIMIT $3';

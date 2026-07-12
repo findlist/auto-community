@@ -6,6 +6,11 @@ import { dispatchExternalChannels } from './notification-channels';
 // 通知类型：订单状态变更、求助响应、举报结果、系统通知
 export type NotificationType = 'order_status' | 'emergency_response' | 'report_result' | 'system';
 
+// notifications 表显式查询列：替代 SELECT *，防御未来新增字段意外泄露
+// 字段对齐 NotificationRow 接口声明，列为硬编码常量非用户输入，模板插值无注入风险
+const NOTIFICATION_COLUMNS = `id, user_id, type, title, content, reference_id, reference_type,
+  read_at, created_at`;
+
 // 关联类型：技能订单、厨房订单、时间银行订单、拼单、应急求助、家庭绑定
 // 扩展原因：原本仅覆盖 skill/kitchen/emergency，time-bank 与 group-order 接入通知后需要对应关联类型
 export type ReferenceType = 'skill_order' | 'kitchen_order' | 'time_order' | 'group_order' | 'emergency_request' | 'family_binding';
@@ -103,7 +108,7 @@ async function getNotifications(
     // COUNT 返回字符串，需泛型 { count: string } 让 parseInt 拿到字符串
     query<{ count: string }>('SELECT COUNT(*) FROM notifications WHERE user_id = $1', [userId]),
     query<NotificationRow>(
-      `SELECT * FROM notifications WHERE user_id = $1
+      `SELECT ${NOTIFICATION_COLUMNS} FROM notifications WHERE user_id = $1
        ORDER BY created_at DESC
        LIMIT $2 OFFSET $3`,
       [userId, pageSize, offset],
