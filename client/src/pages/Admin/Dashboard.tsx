@@ -207,7 +207,7 @@ export default function Dashboard() {
           return (
             <div
               key={key}
-              className="bg-white rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:shadow-md transition-all duration-200 stagger-item"
+              className="bg-white rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 stagger-item"
               style={{ animationDelay: `${idx * 40}ms` }}
             >
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${bg}`}>
