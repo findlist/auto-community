@@ -5,6 +5,11 @@ import { userCache } from './cache.service';
 import { encryptIdCard, hashIdCard } from '../utils/crypto';
 import { validateImageUrl } from '../utils/sanitize';
 
+// credit_transactions 表显式查询列：替代 SELECT *，防御未来新增字段意外泄露
+// 字段对齐 CreditTransactionRow 接口声明，列为硬编码常量非用户输入，模板插值无注入风险
+const CREDIT_TRANSACTION_COLUMNS = `id, user_id, type, amount, balance_after, reference_id,
+  reference_type, description, created_at`;
+
 // 积分流水 DB Row：与 credit_transactions 表结构对齐
 interface CreditTransactionRow {
   id: string;
@@ -122,7 +127,7 @@ async function getCreditHistory(userId: string, page: number, pageSize: number) 
   const [countResult, listResult] = await Promise.all([
     query<{ count: string }>(`SELECT COUNT(*) FROM credit_transactions WHERE user_id = $1`, [userId]),
     query<CreditTransactionRow>(
-      `SELECT * FROM credit_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+      `SELECT ${CREDIT_TRANSACTION_COLUMNS} FROM credit_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
       [userId, pageSize, offset],
     ),
   ]);
@@ -147,7 +152,7 @@ async function getTimeHistory(userId: string, page: number, pageSize: number) {
       [userId],
     ),
     query<CreditTransactionRow>(
-      `SELECT * FROM credit_transactions
+      `SELECT ${CREDIT_TRANSACTION_COLUMNS} FROM credit_transactions
        WHERE user_id = $1 AND type IN ('time_earn', 'time_spend')
        ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
       [userId, pageSize, offset],
