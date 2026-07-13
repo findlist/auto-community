@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
-import { CreditCard, ArrowUpRight, ArrowDownRight, Snowflake, RotateCcw, Clock, TrendingUp } from "lucide-react";
+import { CreditCard, ArrowUpRight, ArrowDownRight, Snowflake, RotateCcw, Clock, TrendingUp, ArrowLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { getCreditHistory } from "@/api/user";
@@ -97,11 +97,13 @@ export default function PointsDetail() {
     <div className="max-w-2xl mx-auto px-4 py-4">
       {/* 返回按钮 + 标题 */}
       <div className="flex items-center gap-3 mb-4">
+        {/* 触控区域标准：py-1.5 px-2 ≥40px，-ml-2 抵消父容器 px-4 保持视觉对齐 */}
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center justify-center w-8 h-8 rounded-lg bg-white text-gray-500 hover:bg-gray-100"
+          className="flex items-center gap-1 text-gray-600 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors"
         >
-          &larr;
+          <ArrowLeft className="w-4 h-4" />
+          返回
         </button>
         <h2 className="text-lg font-semibold text-gray-900">积分明细</h2>
       </div>

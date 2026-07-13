@@ -85,8 +85,13 @@ export default function Create() {
     // max-w-2xl mx-auto：表单页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="pb-24 max-w-2xl mx-auto">
       <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
-        <button onClick={() => navigate(-1)} className="p-1">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        {/* 触控区域标准：py-1.5 px-2 ≥40px，-ml-2 抵消父容器 px-4 保持视觉对齐 */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1 py-1.5 px-2 -ml-2 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          返回
         </button>
         <h1 className="text-lg font-medium text-gray-900">发布技能</h1>
       </div>

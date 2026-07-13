@@ -293,8 +293,8 @@ describe('Profile/PointsDetail 积分明细页', () => {
     await waitFor(() => {
       expect(screen.getByText('积分明细')).toBeInTheDocument();
     });
-    // 返回按钮含 &larr; 字符；用 act 包裹同步事件避免 state 更新未包裹警告
-    const backBtn = screen.getByText('←');
+    // 返回按钮含 ArrowLeft 图标 + "返回"文案；用 act 包裹同步事件避免 state 更新未包裹警告
+    const backBtn = screen.getByRole('button', { name: /返回/ });
     act(() => { backBtn.click(); });
     expect(mockNavigate).toHaveBeenCalledWith(-1);
   });
