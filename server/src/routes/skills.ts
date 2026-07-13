@@ -14,6 +14,7 @@ import { skillOrderService } from '../services/skill-order.service';
 import type { ResolveAction } from '../services/skill-order.service';
 import { aiService, processPostPipeline } from '../services/ai.service';
 import { logger } from '../utils/logger';
+import { safeNotify } from '../utils/safeNotify';
 import { BadRequestError } from '../utils/errors';
 
 const router = Router();
@@ -133,14 +134,20 @@ router.post('/posts', authenticate, createPostLimiter, validate([
   body('title').notEmpty().isLength({ max: 100 }).withMessage('title 必填且不超过100字符'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateSkillPostBody>, res: Response) => {
   const post = await skillService.createPost(req.user!.id, req.body);
-  aiService.storeEmbedding(post.id, 'skill', `${post.title} ${post.description}`).catch(() => {});
+  // 向量入库 + Pipeline 处理均为 fire-and-forget，失败不阻塞主流程但需记录日志便于排查
+  // 保留 .then 内的成功 info 日志，对 .then 链整体用 safeNotify 包装吞错并加 warn 日志
+  safeNotify(
+    aiService.storeEmbedding(post.id, 'skill', `${post.title} ${post.description}`),
+    { userId: req.user!.id, postId: post.id, type: 'skill' },
+  );
   created(res, post);
   const postText = `${req.body.title} ${req.body.description}`;
-  processPostPipeline(postText, req.user!.id, 'skill')
-    .then((result) => {
+  safeNotify(
+    processPostPipeline(postText, req.user!.id, 'skill').then((result) => {
       logger.info({ postId: post.id, classification: result.classification, riskScore: result.riskAssessment.score }, '[Pipeline] 技能帖子处理完成');
-    })
-    .catch(() => {});
+    }),
+    { userId: req.user!.id, postId: post.id, type: 'skill' },
+  );
 }));
 
 router.put('/posts/:id', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateSkillPostBody>, res: Response) => {

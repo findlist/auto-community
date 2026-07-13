@@ -9,6 +9,7 @@ import { kitchenService } from '../services/kitchen.service';
 import { kitchenOrderService } from '../services/kitchen-order.service';
 import { groupOrderService } from '../services/group-order.service';
 import { aiService } from '../services/ai.service';
+import { safeNotify } from '../utils/safeNotify';
 import { success, paginated, created, deleted } from '../utils/response';
 import { query, SqlParam } from '../config/database';
 import { body } from 'express-validator';
@@ -100,7 +101,11 @@ router.post('/posts',
       throw new BadRequestError('提供美食分享时必须持有健康证');
     }
     const result = await kitchenService.create(req.user!.id, req.body);
-    aiService.storeEmbedding(result.id, 'kitchen', `${result.title} ${result.description || ''}`).catch(() => {});
+    // 帖子向量入库为 fire-and-forget 调用，失败不应阻塞主流程，但需记录日志便于排查向量索引缺失问题
+    safeNotify(
+      aiService.storeEmbedding(result.id, 'kitchen', `${result.title} ${result.description || ''}`),
+      { userId: req.user!.id, postId: result.id, type: 'kitchen' },
+    );
     created(res, result, '发布成功');
   })
 );

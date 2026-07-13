@@ -8,6 +8,7 @@ import { getPagination } from '../middleware/validator';
 import { timeBankService } from '../services/time-bank.service';
 import { aiService, processPostPipeline } from '../services/ai.service';
 import { logger } from '../utils/logger';
+import { safeNotify } from '../utils/safeNotify';
 import { BadRequestError } from '../utils/errors';
 
 const router = Router();
@@ -159,15 +160,20 @@ router.get('/services/:id', optionalAuth, asyncHandler(async (req, res) => {
 router.post('/services', authenticate, createPostLimiter, asyncHandler(async (req: Request<Record<string, string>, unknown, CreateTimeServiceBody>, res: Response) => {
   const { type, category, title, description, duration_minutes, location, address, certification, images } = req.body;
   const result = await timeBankService.createService(req.user!.id, { type, category, title, description, duration_minutes, location, address, certification, images });
-  aiService.storeEmbedding(result.id, 'time_service', `${title} ${description || ''}`).catch(() => {});
+  // 向量入库 + Pipeline 处理均为 fire-and-forget，失败不阻塞主流程但需记录日志便于排查
+  safeNotify(
+    aiService.storeEmbedding(result.id, 'time_service', `${title} ${description || ''}`),
+    { userId: req.user!.id, serviceId: result.id, type: 'time_service' },
+  );
   created(res, result);
 
   const serviceText = `${title} ${description}`;
-  processPostPipeline(serviceText, req.user!.id, 'time_service')
-    .then((pipelineResult) => {
+  safeNotify(
+    processPostPipeline(serviceText, req.user!.id, 'time_service').then((pipelineResult) => {
       logger.info({ serviceId: result.id, classification: pipelineResult.classification, riskScore: pipelineResult.riskAssessment.score }, '[Pipeline] 时间银行服务处理完成');
-    })
-    .catch(() => {});
+    }),
+    { userId: req.user!.id, serviceId: result.id, type: 'time_service' },
+  );
 }));
 
 router.put('/services/:id', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateTimeServiceBody>, res: Response) => {
