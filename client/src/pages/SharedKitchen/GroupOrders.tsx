@@ -73,11 +73,14 @@ export default function GroupOrders() {
       toast.success("创建成功");
       setShowCreateModal(false);
       loadOrders(true);
-      // 重置表单
+      // 重置表单：补齐 deadline/minParticipants/maxParticipants，避免下次打开残留上次数据
       setTitle("");
       setDescription("");
       setTargetAmount(100);
       setAddress("");
+      setDeadline("");
+      setMinParticipants(3);
+      setMaxParticipants(10);
     } catch (error) {
       toast.error(getErrorMessage(error, "创建失败"));
     }

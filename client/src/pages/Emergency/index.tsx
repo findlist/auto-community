@@ -19,6 +19,8 @@ import LocationPicker from "@/components/Map/LocationPicker";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { validateRequired, validateMinLength, validateMaxLength, validatePhone } from "@/utils/formValidation";
 import { escapeHtml } from "@/utils/format";
+import { toast } from "@/components/Toast";
+import { getErrorMessage } from "@/utils/error";
 
 // 紧急程度色点（列表项左侧小圆点，替代粗边框卡片）
 const URGENCY_DOT: Record<string, string> = {
@@ -221,6 +223,8 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
       });
       onSuccess();
       onClose();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "发布求助失败，请稍后重试"));
     } finally {
       setSubmitting(false);
     }
@@ -370,6 +374,8 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
     try {
       const res = await getResources(typeFilter ? { type: typeFilter } : undefined);
       setResources(res.data.list);
+    } catch (err) {
+      toast.error(getErrorMessage(err, "加载应急资源失败"));
     } finally {
       setLoading(false);
     }
@@ -381,20 +387,23 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (!showMap) return;
 
-    const loadAMap = () => {
-      if (window.AMap) {
-        setMapLoaded(true);
-        return;
+    if (window.AMap) {
+      setMapLoaded(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://webapi.amap.com/maps?v=2.0&key=${window._AMAP_KEY || ''}`;
+    script.onload = () => setMapLoaded(true);
+    script.onerror = () => console.error('地图加载失败');
+    document.head.appendChild(script);
+
+    // cleanup：组件卸载或 showMap 关闭时移除未加载完成的 script，避免 DOM 堆积
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
       }
-
-      const script = document.createElement('script');
-      script.src = `https://webapi.amap.com/maps?v=2.0&key=${window._AMAP_KEY || ''}`;
-      script.onload = () => setMapLoaded(true);
-      script.onerror = () => console.error('地图加载失败');
-      document.head.appendChild(script);
     };
-
-    loadAMap();
   }, [showMap]);
 
   // 初始化地图并显示资源标记
@@ -564,6 +573,8 @@ function ResponseItem({
     try {
       await updateResponseStatus(response.id, { status: "arrived" });
       onStatusChange();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "确认到达失败，请稍后重试"));
     } finally {
       setUpdating(false);
     }
@@ -641,6 +652,8 @@ function DetailView({ requestId }: { requestId: string }) {
       setShowRespondInput(false);
       setResponseMsg("");
       fetchRequest();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "响应求助失败，请稍后重试"));
     } finally {
       setResponding(false);
     }
