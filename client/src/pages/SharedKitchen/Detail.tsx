@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { getFoodShareById, createFoodOrder } from "@/api/kitchen";
 import { ApiError } from "@/api/client";
 import type { KitchenPost } from "@/types";
@@ -97,6 +98,14 @@ export default function Detail() {
   return (
     // max-w-2xl mx-auto：详情页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="pb-20 max-w-2xl mx-auto">
+      {/* 二级页面返回按钮：触控区域 ≥40px（py-1.5 px-2），与项目其他页面统一 */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 rounded hover:bg-gray-100 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        返回
+      </button>
       {/* 图片 */}
       <div className="h-64 bg-gray-100">
         {post.images?.[0] ? (

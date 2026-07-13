@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { getOrders, updateOrderStatus } from "@/api/skills";
 import { useAuth } from "@/hooks/useAuth";
 import type { SkillOrder } from "@/types";
@@ -191,6 +192,14 @@ export default function SkillExchangeOrders() {
   return (
     // max-w-2xl mx-auto：订单列表页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="px-4 py-4 pb-20 max-w-2xl mx-auto">
+      {/* 二级页面返回按钮：触控区域 ≥40px（py-1.5 px-2），与项目其他页面统一 */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        返回
+      </button>
       <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
         {statusOptions.map((opt) => (
           <button
