@@ -235,3 +235,83 @@ describe('review.service getReviewsByUser', () => {
     expect(result.list[0].reviewer).toBeUndefined();
   });
 });
+
+describe('review.service getReviewsByOrderType', () => {
+  it('不传 userId 时 SQL 仅含 order_type 必备条件，count 参数为 [orderType]', async () => {
+    // Promise.all 第1项：list 查询；第2项：count 查询
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] });
+
+    const result = await reviewService.getReviewsByOrderType('kitchen', { page: 1, pageSize: 10 });
+
+    expect(result.total).toBe(0);
+    expect(result.list).toEqual([]);
+
+    // list 查询是第1次调用：参数为 [orderType, pageSize, offset]
+    const listCall = mockQuery.mock.calls[0];
+    expect(listCall[1]).toEqual(['kitchen', 10, 0]);
+    // list SQL WHERE 仅含 r.order_type = $1 条件，不含 reviewed_id = 过滤
+    // 注意：SELECT 列名含 r.reviewed_id 是正常的，只验证 WHERE 子句无 reviewed_id = 条件
+    expect(listCall[0]).toContain('r.order_type = $1');
+    expect(listCall[0]).not.toContain('reviewed_id = ');
+
+    // count 查询是第2次调用：参数仅 [orderType]（无前缀的 whereClause）
+    const countCall = mockQuery.mock.calls[1];
+    expect(countCall[1]).toEqual(['kitchen']);
+    expect(countCall[0]).toContain('order_type = $1');
+    expect(countCall[0]).not.toContain('r.order_type');
+  });
+
+  it('传 userId 时 SQL 含 order_type + reviewed_id，参数对应增长', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        id: 'rev-1',
+        reviewer_id: 'r1',
+        reviewed_id: 'user-1',
+        order_id: 'o1',
+        order_type: 'kitchen',
+        rating: '5',
+        content: '好评',
+        created_at: new Date('2026-07-08T10:00:00Z'),
+        updated_at: new Date('2026-07-08T10:00:00Z'),
+        reviewer_nickname: '李四',
+        reviewer_avatar: '/uploads/b.png',
+      }],
+    });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '1' }] });
+
+    const result = await reviewService.getReviewsByOrderType('kitchen', {
+      userId: 'user-1',
+      page: 1,
+      pageSize: 10,
+    });
+
+    expect(result.list).toHaveLength(1);
+    expect(result.total).toBe(1);
+
+    // list 查询参数：[orderType, userId, pageSize, offset]
+    const listCall = mockQuery.mock.calls[0];
+    expect(listCall[1]).toEqual(['kitchen', 'user-1', 10, 0]);
+    // list SQL WHERE 含 r.order_type = $1 和 r.reviewed_id = $2
+    expect(listCall[0]).toContain('r.order_type = $1');
+    expect(listCall[0]).toContain('r.reviewed_id = $2');
+
+    // count 查询参数：[orderType, userId]
+    const countCall = mockQuery.mock.calls[1];
+    expect(countCall[1]).toEqual(['kitchen', 'user-1']);
+  });
+
+  it('默认 page=1, pageSize=10（不传 options 时使用默认值）', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] });
+
+    const result = await reviewService.getReviewsByOrderType('skill');
+
+    expect(result.page).toBe(1);
+    expect(result.pageSize).toBe(10);
+
+    // list 查询参数：[orderType, pageSize, offset]
+    const listCall = mockQuery.mock.calls[0];
+    expect(listCall[1]).toEqual(['skill', 10, 0]);
+  });
+});

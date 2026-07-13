@@ -6,8 +6,7 @@
  * - mock middleware/auth 的 authenticate（默认放行设置 req.user）
  * - mock middleware/rateLimiter 的 createPostLimiter/orderLimiter（直接中间件，mock 为 pass-through）
  * - mock middleware/auditLog 的 auditMiddleware（高阶函数，mock 为返回 pass-through 的工厂）
- * - mock 4 个 service（kitchen/kitchenOrder/groupOrder/ai）避免真实 DB 读写
- * - mock config/database 的 query（GET /reviews 直接查库不走 service）
+ * - mock 5 个 service（kitchen/kitchenOrder/groupOrder/ai/review）避免真实 DB 读写
  * - 真实挂载 validate 与 getPagination 验证校验与分页链路
  */
 
@@ -45,6 +44,7 @@ const {
   mockGroupComplete,
   mockGroupExit,
   mockStoreEmbedding,
+  mockGetReviewsByOrderType,
   mockQuery,
 } = vi.hoisted(() => ({
   mockAuthenticate: vi.fn(),
@@ -70,8 +70,11 @@ const {
   mockGroupCancel: vi.fn(),
   mockGroupComplete: vi.fn(),
   mockGroupExit: vi.fn(),
-  // storeEmbedding 为 fire-and-forget 调用（.catch(() => {})），必须返回 Promise
+  // storeEmbedding 为 fire-and-forget 调用（safeNotify 包装），必须返回 Promise
   mockStoreEmbedding: vi.fn().mockResolvedValue(undefined),
+  // getReviewsByOrderType 为 review.service 评价列表查询入口，mock 返回分页结构
+  mockGetReviewsByOrderType: vi.fn(),
+  // mockQuery 保留给 routes/kitchen.ts 中其他可能直接调 query 的场景（如未来扩展）
   mockQuery: vi.fn(),
 }));
 
@@ -113,6 +116,12 @@ vi.mock('../../services/group-order.service', () => ({
 vi.mock('../../services/ai.service', () => ({
   aiService: {
     storeEmbedding: mockStoreEmbedding,
+  },
+}));
+// mock review.service：评价列表 SQL 已下沉至 service 层，路由层仅调用 service
+vi.mock('../../services/review.service', () => ({
+  reviewService: {
+    getReviewsByOrderType: mockGetReviewsByOrderType,
   },
 }));
 vi.mock('../../config/database', () => ({ query: mockQuery }));
@@ -572,78 +581,84 @@ describe('kitchen 路由集成测试', () => {
 
   // ===================== GET /reviews =====================
   describe('GET /reviews', () => {
-    it('返回分页评价列表（带 userId 筛选）', async () => {
-      // mockQuery 按调用顺序返回 count 结果与 list 结果
-      mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: '2' }] })
-        .mockResolvedValueOnce({
-          rows: [
-            {
-              id: 'review-1',
-              reviewer_id: 'reviewer-1',
-              reviewer_nickname: '张三',
-              reviewer_avatar: 'avatar-url',
-              reviewed_id: 'user-uuid-001',
-              order_id: 'order-1',
-              rating: '5',
-              content: '很棒',
-              created_at: '2026-07-08T00:00:00Z',
-            },
-            {
-              id: 'review-2',
-              reviewer_id: 'reviewer-2',
-              reviewer_nickname: null,
-              reviewer_avatar: null,
-              reviewed_id: 'user-uuid-001',
-              order_id: 'order-2',
-              rating: '4',
-              content: null,
-              created_at: '2026-07-08T01:00:00Z',
-            },
-          ],
-        });
+    it('带 userId 筛选时透传给 service.getReviewsByOrderType', async () => {
+      // mock service 返回分页结构（与 review.service.getReviewsByOrderType 真实返回一致）
+      mockGetReviewsByOrderType.mockResolvedValue({
+        list: [
+          {
+            id: 'review-1',
+            reviewerId: 'reviewer-1',
+            reviewer: { id: 'reviewer-1', nickname: '张三', avatar: 'avatar-url' },
+            reviewedId: 'user-uuid-001',
+            orderId: 'order-1',
+            orderType: 'kitchen',
+            rating: 5,
+            content: '很棒',
+            createdAt: '2026-07-08T00:00:00Z',
+            updatedAt: '2026-07-08T00:00:00Z',
+          },
+        ],
+        total: 1,
+        page: 1,
+        pageSize: 10,
+        totalPages: 1,
+      });
+
       const res = await fetch(`${baseUrl}/reviews?userId=user-uuid-001&page=1&pageSize=10`);
       expect(res.status).toBe(200);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       const dataData = data.data as Record<string, unknown>;
-      expect(dataData.total).toBe(2);
+      expect(dataData.total).toBe(1);
       const list = dataData.list as Record<string, unknown>[];
-      expect(list).toHaveLength(2);
-      // 验证 rating string→number 转换（parseFloat）
-      expect(list[0].rating).toBe(5);
-      // 验证 reviewer 对象构建
+      expect(list).toHaveLength(1);
+      // 验证 reviewer 对象结构（service 层 toReview 已构造）
       expect((list[0].reviewer as Record<string, unknown>).nickname).toBe('张三');
-      // 验证 nickname 为 null 时 reviewer 仍构建为对象
-      expect((list[1].reviewer as Record<string, unknown>).nickname).toBeNull();
-      // 验证 query 调用 2 次（count + list）
-      expect(mockQuery).toHaveBeenCalledTimes(2);
-      // 验证第一次 query（count）SQL 含 reviewed_id 条件
-      const firstCallArgs = mockQuery.mock.calls[0];
-      expect(firstCallArgs[0]).toContain("reviewed_id = $1");
-      expect(firstCallArgs[1]).toEqual(['user-uuid-001']);
+
+      // 关键断言：路由层只透传 orderType='kitchen' + userId + 分页参数给 service
+      expect(mockGetReviewsByOrderType).toHaveBeenCalledWith('kitchen', {
+        userId: 'user-uuid-001',
+        page: 1,
+        pageSize: 10,
+      });
     });
 
-    it('不带 userId 筛选时 SQL 不含 reviewed_id 条件', async () => {
-      mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: '0' }] })
-        .mockResolvedValueOnce({ rows: [] });
+    it('不带 userId 筛选时 userId 字段为 undefined', async () => {
+      // 不传 page/pageSize 时 getPagination 默认 pageSize=20（路由层默认值，与 service 层默认 10 不同）
+      mockGetReviewsByOrderType.mockResolvedValue({
+        list: [],
+        total: 0,
+        page: 1,
+        pageSize: 20,
+        totalPages: 0,
+      });
+
       const res = await fetch(`${baseUrl}/reviews`);
       expect(res.status).toBe(200);
       const data = (await res.json()) as Record<string, unknown>;
       const dataData = data.data as Record<string, unknown>;
       expect(dataData.total).toBe(0);
       expect(dataData.list).toHaveLength(0);
-      // 验证第一次 query（count）SQL 不含 reviewed_id 条件
-      const firstCallArgs = mockQuery.mock.calls[0];
-      expect(firstCallArgs[0]).not.toContain("reviewed_id");
-      expect(firstCallArgs[1]).toEqual([]);
+
+      // 验证未传 userId 时 options.userId 为 undefined（service 层据此跳过 reviewed_id 条件）
+      // 用 mock.calls[0] 直接断言，避免 toHaveBeenCalledWith 对含 undefined 字段对象对比的边界差异
+      const callArgs = mockGetReviewsByOrderType.mock.calls[0];
+      expect(callArgs[0]).toBe('kitchen');
+      expect(callArgs[1].page).toBe(1);
+      // 路由层 getPagination 默认 pageSize=20，service 收到的即为 20（非 service 层默认 10）
+      expect(callArgs[1].pageSize).toBe(20);
+      expect(callArgs[1].userId).toBeUndefined();
     });
 
     it('空结果正常返回', async () => {
-      mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: '0' }] })
-        .mockResolvedValueOnce({ rows: [] });
+      mockGetReviewsByOrderType.mockResolvedValue({
+        list: [],
+        total: 0,
+        page: 1,
+        pageSize: 10,
+        totalPages: 0,
+      });
+
       const res = await fetch(`${baseUrl}/reviews?userId=empty-user`);
       expect(res.status).toBe(200);
       const data = (await res.json()) as Record<string, unknown>;

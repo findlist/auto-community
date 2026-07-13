@@ -11,11 +11,9 @@ import { groupOrderService } from '../services/group-order.service';
 import { aiService } from '../services/ai.service';
 import { safeNotify } from '../utils/safeNotify';
 import { success, paginated, created, deleted } from '../utils/response';
-import { query, SqlParam } from '../config/database';
 import { body } from 'express-validator';
 import { BadRequestError } from '../utils/errors';
-import { prefixColumns } from '../utils/sql';
-import { REVIEW_COLUMNS } from '../services/review.service';
+import { reviewService } from '../services/review.service';
 
 const router = Router();
 
@@ -428,53 +426,17 @@ router.post('/group-orders/:id/exit',
 // ==================== 评价 API ====================
 
 // GET /api/kitchen/reviews - 获取评价列表
+// 设计原因：SQL 已下沉至 review.service.getReviewsByOrderType，路由层只负责参数解析与响应包装，
+// 避免路由层直接拼接 SQL 违反 routes → service 分层规范
 router.get('/reviews',
   asyncHandler(async (req: Request, res: Response) => {
     const { page, pageSize } = getPagination(req);
-    // userId 来自查询参数，收窄为 string | undefined 以匹配 SqlParam 类型
+    // userId 来自查询参数，收窄为 string | undefined 以匹配 service 层 options.userId 类型
     const userId = req.query.userId as string | undefined;
 
-    const conditions = ["order_type = 'kitchen'"];
-    // params 承载 userId（string），用 SqlParam 收紧以对齐 query 函数签名
-    const params: SqlParam[] = [];
-    let paramIndex = 1;
+    const result = await reviewService.getReviewsByOrderType('kitchen', { userId, page, pageSize });
 
-    if (userId) {
-      conditions.push(`reviewed_id = $${paramIndex++}`);
-      params.push(userId);
-    }
-
-    const whereClause = conditions.join(' AND ');
-
-    const countResult = await query(
-      `SELECT COUNT(*) FROM reviews WHERE ${whereClause}`,
-      params
-    );
-    const total = parseInt(countResult.rows[0].count);
-
-    const offset = (page - 1) * pageSize;
-    const listResult = await query(
-      `SELECT ${prefixColumns(REVIEW_COLUMNS, 'r')}, u.nickname as reviewer_nickname, u.avatar as reviewer_avatar
-       FROM reviews r
-       LEFT JOIN users u ON r.reviewer_id = u.id
-       WHERE ${whereClause}
-       ORDER BY r.created_at DESC
-       LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
-      [...params, pageSize, offset]
-    );
-
-    const list = listResult.rows.map(row => ({
-      id: row.id,
-      reviewerId: row.reviewer_id,
-      reviewer: { nickname: row.reviewer_nickname, avatar: row.reviewer_avatar },
-      reviewedId: row.reviewed_id,
-      orderId: row.order_id,
-      rating: parseFloat(row.rating),
-      content: row.content,
-      createdAt: row.created_at
-    }));
-
-    paginated(res, list, total, page, pageSize);
+    paginated(res, result.list, result.total, result.page, result.pageSize);
   })
 );
 

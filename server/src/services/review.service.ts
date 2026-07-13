@@ -1,4 +1,5 @@
 import { query, transaction } from '../config/database';
+import type { SqlParam } from '../config/database';
 import { BadRequestError } from '../utils/errors';
 import { prefixColumns } from '../utils/sql';
 
@@ -127,8 +128,62 @@ async function getReviewsByUser(userId: string, page: number = 1, pageSize: numb
   };
 }
 
+// 按订单类型分页查询评价列表，可选按被评价人 userId 过滤
+// 设计原因：原 routes/kitchen.ts 路由层直接拼接 SQL 违反 routes → service 分层规范，
+// 下沉到 service 层统一管理 SQL 与参数化查询；order_type 强制参数化（不再硬编码字符串字面量）
+async function getReviewsByOrderType(
+  orderType: string,
+  options: { userId?: string; page?: number; pageSize?: number } = {},
+) {
+  const page = options.page ?? 1;
+  const pageSize = options.pageSize ?? 10;
+  const offset = (page - 1) * pageSize;
+
+  // 动态构造 WHERE：order_type 必备，userId 可选
+  // 同一字段名在 list（带 r. 前缀，JOIN 场景）与 count（无前缀，单表场景）两处使用，
+  // 通过 map 加前缀生成 listWhere，避免维护两份条件字符串
+  const conditions: string[] = [`order_type = $1`];
+  const params: SqlParam[] = [orderType];
+  let paramIndex = 2;
+
+  if (options.userId) {
+    conditions.push(`reviewed_id = $${paramIndex++}`);
+    params.push(options.userId);
+  }
+
+  const countWhere = conditions.join(' AND ');
+  const listWhere = conditions.map(c => `r.${c}`).join(' AND ');
+
+  const [dataResult, countResult] = await Promise.all([
+    query<ReviewListRow>(
+      `SELECT ${prefixColumns(REVIEW_COLUMNS, 'r')}, u.nickname AS reviewer_nickname, u.avatar AS reviewer_avatar
+       FROM reviews r
+       LEFT JOIN users u ON r.reviewer_id = u.id
+       WHERE ${listWhere}
+       ORDER BY r.created_at DESC
+       LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+      [...params, pageSize, offset],
+    ),
+    query<{ count: string }>(
+      `SELECT COUNT(*) FROM reviews WHERE ${countWhere}`,
+      params,
+    ),
+  ]);
+
+  const total = parseInt(countResult.rows[0].count);
+
+  return {
+    list: dataResult.rows.map(toReview),
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
+
 export const reviewService = {
   createReview,
   calculateReputation,
   getReviewsByUser,
+  getReviewsByOrderType,
 };
