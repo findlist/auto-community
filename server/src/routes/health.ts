@@ -2,11 +2,14 @@ import { Router, Request, Response } from 'express';
 import { pool } from '../config/database';
 import { getSystemMetrics, getAlertLogs, clearAlertLogs } from '../services/metrics.service';
 import { authenticate, requireRole } from '../middleware/auth';
+import { asyncHandler } from '../middleware/errorHandler';
 
 const router = Router();
 
 // 健康检查接口：检测服务存活与数据库连接状态
-router.get('/health', async (req: Request, res: Response) => {
+// 设计原因：保持自有 try/catch 而不抛给 errorHandler，因 503 响应体结构（status/timestamp/database/uptime）
+// 与 errorHandler 的 ErrorResponse 不同，且此处需要直接返回降级标志位 database: 'disconnected' 供运维识别
+router.get('/health', asyncHandler(async (req: Request, res: Response) => {
   // 在 try 外声明 client，确保 finally 能访问到；release 必须在 finally 中执行，
   // 防止后续维护在 try 内插入新逻辑时因异常导致连接泄漏（连接池耗尽将拖垮整个服务）
   let client;
@@ -32,11 +35,11 @@ router.get('/health', async (req: Request, res: Response) => {
     // 无论成功还是异常都释放连接回连接池，杜绝泄漏
     client?.release();
   }
-});
+}));
 
 // 系统指标接口：返回数据库、Redis、服务器状态及告警日志
 // 需要管理员权限：暴露系统内部运行状态，非管理员不可访问
-router.get('/health/metrics', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
+router.get('/health/metrics', authenticate, requireRole('admin'), asyncHandler(async (req: Request, res: Response) => {
   try {
     const metrics = await getSystemMetrics();
     const alerts = getAlertLogs(50);
@@ -55,7 +58,7 @@ router.get('/health/metrics', authenticate, requireRole('admin'), async (req: Re
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
-});
+}));
 
 // 清除告警日志接口：需要管理员权限，避免任意用户清除运维告警记录
 router.delete('/health/metrics/alerts', authenticate, requireRole('admin'), (req: Request, res: Response) => {

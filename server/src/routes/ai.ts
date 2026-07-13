@@ -4,6 +4,7 @@
  */
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
+import { asyncHandler } from '../middleware/errorHandler';
 import { success, error } from '../utils/response';
 import { aiService } from '../services/ai.service';
 import { logger } from '../utils/logger';
@@ -31,7 +32,9 @@ interface ClassifyBody {
  *     responses:
  *       200: { description: 推荐列表 }
  */
-router.get('/match/skills/:postId', authenticate, async (req, res) => {
+// asyncHandler 兜底未捕获异常：handler 内 try/catch 已全覆盖已知错误并返回 user-friendly 文案，
+// asyncHandler 作为防御层，若未来修改引入未预期 throw，将由 centralized errorHandler 接管
+router.get('/match/skills/:postId', authenticate, asyncHandler(async (req, res) => {
   try {
     const candidates = await aiService.matchSkill(req.params.postId);
     // success/error 为辅助函数，直接传入 res 并内部调用 res.json，不应再包裹
@@ -41,7 +44,7 @@ router.get('/match/skills/:postId', authenticate, async (req, res) => {
     logger.error({ err }, '[AI] 技能匹配失败');
     error(res, '推荐服务暂不可用', 'INTERNAL_ERROR');
   }
-});
+}));
 
 /**
  * @swagger
@@ -51,7 +54,7 @@ router.get('/match/skills/:postId', authenticate, async (req, res) => {
  *     tags: [AI]
  *     security: [{ bearerAuth: [] }]
  */
-router.get('/match/time-bank/:serviceId', authenticate, async (req, res) => {
+router.get('/match/time-bank/:serviceId', authenticate, asyncHandler(async (req, res) => {
   try {
     const candidates = await aiService.matchTimeService(req.params.serviceId);
     success(res, candidates);
@@ -59,7 +62,7 @@ router.get('/match/time-bank/:serviceId', authenticate, async (req, res) => {
     logger.error({ err }, '[AI] 时间银行匹配失败');
     error(res, '推荐服务暂不可用', 'INTERNAL_ERROR');
   }
-});
+}));
 
 /**
  * @swagger
@@ -68,7 +71,7 @@ router.get('/match/time-bank/:serviceId', authenticate, async (req, res) => {
  *     summary: 内容智能分类与紧急程度判断
  *     tags: [AI]
  */
-router.post('/classify', authenticate, async (req: Request<Record<string, string>, unknown, ClassifyBody>, res: Response) => {
+router.post('/classify', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, ClassifyBody>, res: Response) => {
   try {
     const { text } = req.body || {};
     if (!text || typeof text !== 'string') {
@@ -82,6 +85,6 @@ router.post('/classify', authenticate, async (req: Request<Record<string, string
     logger.error({ err }, '[AI] 内容分类失败');
     error(res, '分类服务暂不可用', 'INTERNAL_ERROR');
   }
-});
+}));
 
 export default router;
