@@ -2,6 +2,7 @@ import { query, transaction, SqlParam } from '../config/database';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { creditService } from './credit.service';
 import { logger } from '../utils/logger';
+import { safeNotify } from '../utils/safeNotify';
 import { notificationService } from './notification.service';
 import { prefixColumns } from '../utils/sql';
 
@@ -218,12 +219,16 @@ async function join(groupOrderId: string, userId: string, amount: number) {
 
     // 拼单满员时通知发起人（重要状态变更）；未满员的加入不通知，避免通知噪音
     if (newStatus === 'full') {
-      notificationService.notifyOrderStatusChange(
-        order.initiator_id,
-        groupOrderId,
-        'group_order',
-        'full',
-      ).catch(() => {});
+      // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+      safeNotify(
+        notificationService.notifyOrderStatusChange(
+          order.initiator_id,
+          groupOrderId,
+          'group_order',
+          'full',
+        ),
+        { userId: order.initiator_id, orderId: groupOrderId, groupId: groupOrderId },
+      );
     }
 
     return {
@@ -348,15 +353,18 @@ async function exit(groupOrderId: string, userId: string): Promise<void> {
       '参与者退出拼单并已退款',
     );
 
-    // 通知发起人：有参与者退出拼单（通知失败不影响主流程）
-    notificationService.createNotification({
-      userId: order.initiator_id,
-      type: 'system',
-      title: '有参与者退出拼单',
-      content: '一位参与者已退出您的拼单，相关积分已退还。',
-      referenceId: groupOrderId,
-      referenceType: 'group_order',
-    }).catch(() => {});
+    // 通知发起人：有参与者退出拼单（safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控）
+    safeNotify(
+      notificationService.createNotification({
+        userId: order.initiator_id,
+        type: 'system',
+        title: '有参与者退出拼单',
+        content: '一位参与者已退出您的拼单，相关积分已退还。',
+        referenceId: groupOrderId,
+        referenceType: 'group_order',
+      }),
+      { userId: order.initiator_id, orderId: groupOrderId, groupId: groupOrderId },
+    );
   });
 }
 
@@ -506,13 +514,17 @@ async function cancel(groupOrderId: string, userId: string, reason?: string): Pr
     );
 
     // 6. 通知所有已付款参与者：拼单已取消（批量通知，单个失败不影响整体）
+    // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
     for (const p of participantsResult.rows) {
-      notificationService.notifyOrderStatusChange(
-        p.user_id,
-        groupOrderId,
-        'group_order',
-        'cancelled',
-      ).catch(() => {});
+      safeNotify(
+        notificationService.notifyOrderStatusChange(
+          p.user_id,
+          groupOrderId,
+          'group_order',
+          'cancelled',
+        ),
+        { userId: p.user_id, orderId: groupOrderId, groupId: groupOrderId },
+      );
     }
   });
 }
@@ -571,12 +583,16 @@ async function complete(groupOrderId: string, userId: string): Promise<void> {
       [groupOrderId],
     );
     for (const p of paidParticipantsResult.rows) {
-      notificationService.notifyOrderStatusChange(
-        p.user_id,
-        groupOrderId,
-        'group_order',
-        'completed',
-      ).catch(() => {});
+      // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+      safeNotify(
+        notificationService.notifyOrderStatusChange(
+          p.user_id,
+          groupOrderId,
+          'group_order',
+          'completed',
+        ),
+        { userId: p.user_id, orderId: groupOrderId, groupId: groupOrderId },
+      );
     }
   });
 }

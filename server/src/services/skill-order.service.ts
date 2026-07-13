@@ -8,6 +8,7 @@ import {
 import { idempotency } from '../utils/idempotency';
 import { reputationService } from './reputation.service';
 import { createPaginatedResponse } from '../utils/pagination';
+import { safeNotify } from '../utils/safeNotify';
 import { creditService } from './credit.service';
 import { notificationService } from './notification.service';
 import { prefixColumns } from '../utils/sql';
@@ -174,12 +175,16 @@ async function acceptOrder(orderId: string, sellerId: string) {
     const updatedOrder = toSkillOrder(updatedResult.rows[0]);
 
     // 发送通知给买家：订单已被接受
-    notificationService.notifyOrderStatusChange(
-      order.buyer_id,
-      orderId,
-      'skill_order',
-      'accepted',
-    ).catch(() => {}); // 通知失败不影响主流程
+    // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+    safeNotify(
+      notificationService.notifyOrderStatusChange(
+        order.buyer_id,
+        orderId,
+        'skill_order',
+        'accepted',
+      ),
+      { userId: order.buyer_id, orderId },
+    );
 
     return updatedOrder;
   });
@@ -219,12 +224,16 @@ async function rejectOrder(orderId: string, sellerId: string) {
     const updatedOrder = toSkillOrder(updatedResult.rows[0]);
 
     // 发送通知给买家：订单已被拒绝
-    notificationService.notifyOrderStatusChange(
-      order.buyer_id,
-      orderId,
-      'skill_order',
-      'rejected',
-    ).catch(() => {}); // 通知失败不影响主流程
+    // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+    safeNotify(
+      notificationService.notifyOrderStatusChange(
+        order.buyer_id,
+        orderId,
+        'skill_order',
+        'rejected',
+      ),
+      { userId: order.buyer_id, orderId },
+    );
 
     return updatedOrder;
   });
@@ -269,13 +278,17 @@ async function completeOrder(orderId: string, userId: string, rating?: number, r
     const updatedOrder = toSkillOrder(updatedResult.rows[0]);
 
     // 发送通知给对方：订单已完成
+    // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
     const notifyUserId = userId === order.buyer_id ? order.seller_id : order.buyer_id;
-    notificationService.notifyOrderStatusChange(
-      notifyUserId,
-      orderId,
-      'skill_order',
-      'completed',
-    ).catch(() => {}); // 通知失败不影响主流程
+    safeNotify(
+      notificationService.notifyOrderStatusChange(
+        notifyUserId,
+        orderId,
+        'skill_order',
+        'completed',
+      ),
+      { userId: notifyUserId, orderId },
+    );
 
     return updatedOrder;
   });
@@ -348,13 +361,17 @@ async function cancelOrder(orderId: string, userId: string) {
     const updatedOrder = toSkillOrder(updatedResult.rows[0]);
 
     // 发送通知给对方：订单已取消
+    // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
     const notifyUserId = userId === order.buyer_id ? order.seller_id : order.buyer_id;
-    notificationService.notifyOrderStatusChange(
-      notifyUserId,
-      orderId,
-      'skill_order',
-      'cancelled',
-    ).catch(() => {}); // 通知失败不影响主流程
+    safeNotify(
+      notificationService.notifyOrderStatusChange(
+        notifyUserId,
+        orderId,
+        'skill_order',
+        'cancelled',
+      ),
+      { userId: notifyUserId, orderId },
+    );
 
     return updatedOrder;
   });

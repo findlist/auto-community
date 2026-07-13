@@ -1,5 +1,6 @@
 import { query } from '../config/database';
 import { createPaginatedResponse } from '../utils/pagination';
+import { safeNotify } from '../utils/safeNotify';
 import { sendToUser } from '../websocket/index';
 import { dispatchExternalChannels } from './notification-channels';
 
@@ -90,8 +91,8 @@ async function createNotification(params: CreateNotificationParams): Promise<Not
   sendToUser(params.userId, { type: 'notification', data: notification });
 
   // 外部通道分发（邮件/短信）：由配置开关控制，未启用则内部直接返回
-  // 使用 catch 吞错，确保外部通道故障不影响站内信主流程（与 skill-order 通知调用一致）
-  dispatchExternalChannels(notification).catch(() => {});
+  // safeNotify 吞错确保外部通道故障不影响站内信主流程，同时记录 warn 日志便于监控
+  safeNotify(dispatchExternalChannels(notification), { userId: params.userId, type: params.type });
 
   return notification;
 }

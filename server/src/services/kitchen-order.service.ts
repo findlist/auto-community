@@ -8,6 +8,7 @@ import {
 import { idempotency } from '../utils/idempotency';
 import { reputationService } from './reputation.service';
 import { createPaginatedResponse } from '../utils/pagination';
+import { safeNotify } from '../utils/safeNotify';
 import { creditService } from './credit.service';
 import { notificationService } from './notification.service';
 import { prefixColumns } from '../utils/sql';
@@ -211,13 +212,16 @@ async function confirm(orderId: string, sellerId: string) {
     return result.rows[0];
   });
 
-  // 通知买家：订单已被分享者确认（通知失败不影响主流程）
-  notificationService.notifyOrderStatusChange(
-    order.user_id,
-    orderId,
-    'kitchen_order',
-    'confirmed',
-  ).catch(() => {});
+  // 通知买家：订单已被分享者确认（safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控）
+  safeNotify(
+    notificationService.notifyOrderStatusChange(
+      order.user_id,
+      orderId,
+      'kitchen_order',
+      'confirmed',
+    ),
+    { userId: order.user_id, orderId },
+  );
 
   return { ...toOrderResponse(order), status: 'confirmed' };
 }
@@ -279,13 +283,16 @@ async function complete(orderId: string, userId: string, reviewData: {
       await reputationService.updateReputationScore(client, order.seller_id);
     }
 
-    // 通知卖家：订单已被买家完成（通知失败不影响主流程）
-    notificationService.notifyOrderStatusChange(
-      order.seller_id,
-      orderId,
-      'kitchen_order',
-      'completed',
-    ).catch(() => {});
+    // 通知卖家：订单已被买家完成（safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控）
+    safeNotify(
+      notificationService.notifyOrderStatusChange(
+        order.seller_id,
+        orderId,
+        'kitchen_order',
+        'completed',
+      ),
+      { userId: order.seller_id, orderId },
+    );
 
     return { ...toOrderResponse(order), status: 'completed' };
   });
@@ -350,13 +357,17 @@ async function cancel(orderId: string, userId: string) {
     );
 
     // 通知对方：订单已被取消（取消者是买家则通知卖家，反之亦然）
+    // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
     const otherUserId = userId === order.user_id ? order.seller_id : order.user_id;
-    notificationService.notifyOrderStatusChange(
-      otherUserId,
-      orderId,
-      'kitchen_order',
-      'cancelled',
-    ).catch(() => {});
+    safeNotify(
+      notificationService.notifyOrderStatusChange(
+        otherUserId,
+        orderId,
+        'kitchen_order',
+        'cancelled',
+      ),
+      { userId: otherUserId, orderId },
+    );
 
     return { ...toOrderResponse(order), status: 'cancelled' };
   });

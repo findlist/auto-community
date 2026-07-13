@@ -16,6 +16,7 @@ import { logger } from '../utils/logger';
 import { timeServiceCache } from './cache.service';
 import { notificationService } from './notification.service';
 import { sanitizeObject, validateImageUrls } from '../utils/sanitize';
+import { safeNotify } from '../utils/safeNotify';
 import { prefixColumns } from '../utils/sql';
 
 const DAILY_EARN_LIMIT = 480;
@@ -547,12 +548,16 @@ async function updateOrderStatus(orderId: string, userId: string, action: string
   const isProvider = order.provider_id === userId;
   const otherUserId = isProvider ? order.requester_id : order.provider_id;
   const statusMap: Record<string, string> = { accept: 'accepted', start: 'in_progress', cancel: 'cancelled' };
-  notificationService.notifyOrderStatusChange(
-    otherUserId,
-    orderId,
-    'time_order',
-    statusMap[action],
-  ).catch(() => {});
+  // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+  safeNotify(
+    notificationService.notifyOrderStatusChange(
+      otherUserId,
+      orderId,
+      'time_order',
+      statusMap[action],
+    ),
+    { userId: otherUserId, orderId },
+  );
 
   // 断言为 TimeOrderRow：与 time_orders 表结构对齐
   return toOrder(order as TimeOrderRow);
@@ -707,12 +712,16 @@ async function completeOrder(
     const updatedResult = await client.query(`SELECT ${TIME_ORDER_COLUMNS} FROM time_orders WHERE id = $1`, [orderId]);
 
     // 通知服务提供者：订单已完成（仅 requester 可确认完成，通知 provider）
-    notificationService.notifyOrderStatusChange(
-      order.provider_id,
-      orderId,
-      'time_order',
-      'completed',
-    ).catch(() => {});
+    // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+    safeNotify(
+      notificationService.notifyOrderStatusChange(
+        order.provider_id,
+        orderId,
+        'time_order',
+        'completed',
+      ),
+      { userId: order.provider_id, orderId },
+    );
 
     return toOrder(updatedResult.rows[0] as TimeOrderRow);
   });
@@ -794,13 +803,17 @@ async function transferTime(fromUserId: string, toUserId: string, amount: number
 
     // 通知接收方：携带发送方昵称让接收方知道是谁转赠的（空昵称兜底"一位用户"）
     // 不查询流水 id 避免额外查库，referenceId 落 null
-    notificationService.notifyTimeBankTransaction(
-      toUserId,
-      undefined,
-      'transfer',
-      amount,
-      fromInfo.nickname || undefined,
-    ).catch(() => {});
+    // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+    safeNotify(
+      notificationService.notifyTimeBankTransaction(
+        toUserId,
+        undefined,
+        'transfer',
+        amount,
+        fromInfo.nickname || undefined,
+      ),
+      { userId: toUserId, type: 'transfer', amount },
+    );
 
     return { fromUserId, toUserId, amount };
   });
@@ -867,13 +880,17 @@ async function donateTime(fromUserId: string, toUserId: string, amount: number, 
 
     // 通知接收方：携带发送方昵称让接收方知道是谁捐赠的（空昵称兜底"一位用户"）
     // 不查询流水 id 避免额外查库，referenceId 落 null
-    notificationService.notifyTimeBankTransaction(
-      toUserId,
-      undefined,
-      'donate',
-      amount,
-      fromInfo.nickname || undefined,
-    ).catch(() => {});
+    // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+    safeNotify(
+      notificationService.notifyTimeBankTransaction(
+        toUserId,
+        undefined,
+        'donate',
+        amount,
+        fromInfo.nickname || undefined,
+      ),
+      { userId: toUserId, type: 'donate', amount },
+    );
 
     return { fromUserId, toUserId, amount };
   });
@@ -940,7 +957,11 @@ async function createFamilyBinding(userId: string, parentPhone: string, relation
   });
 
   // 通知对方：收到新的亲情绑定请求（事务外 fire-and-forget，失败不阻塞主流程）
-  notificationService.notifyFamilyBindingChange(parentId, binding.id, 'request').catch(() => {});
+  // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+  safeNotify(
+    notificationService.notifyFamilyBindingChange(parentId, binding.id, 'request'),
+    { userId: parentId, bindingId: binding.id },
+  );
 
   return binding;
 }
@@ -961,7 +982,11 @@ async function confirmFamilyBinding(bindingId: string, userId: string) {
   });
 
   // 通知发起方：亲情绑定已被对方确认（事务外 fire-and-forget，失败不阻塞主流程）
-  notificationService.notifyFamilyBindingChange(updated.user_id, bindingId, 'confirmed').catch(() => {});
+  // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+  safeNotify(
+    notificationService.notifyFamilyBindingChange(updated.user_id, bindingId, 'confirmed'),
+    { userId: updated.user_id, bindingId },
+  );
 
   return updated;
 }
@@ -982,7 +1007,11 @@ async function rejectFamilyBinding(bindingId: string, userId: string) {
   });
 
   // 通知发起方：亲情绑定被对方拒绝（事务外 fire-and-forget，失败不阻塞主流程）
-  notificationService.notifyFamilyBindingChange(updated.user_id, bindingId, 'rejected').catch(() => {});
+  // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+  safeNotify(
+    notificationService.notifyFamilyBindingChange(updated.user_id, bindingId, 'rejected'),
+    { userId: updated.user_id, bindingId },
+  );
 
   return updated;
 }
@@ -1010,7 +1039,11 @@ async function unbindFamilyBinding(bindingId: string, userId: string) {
   });
 
   // 通知另一方（事务外 fire-and-forget，失败不阻塞主流程）
-  notificationService.notifyFamilyBindingChange(otherId, bindingId, 'unbound').catch(() => {});
+  // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+  safeNotify(
+    notificationService.notifyFamilyBindingChange(otherId, bindingId, 'unbound'),
+    { userId: otherId, bindingId },
+  );
 
   return updated;
 }

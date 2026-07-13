@@ -12,6 +12,7 @@ import { reputationService } from './reputation.service';
 import { maskPhone } from '../utils/mask';
 import { aiService } from './ai.service';
 import { sanitizeObject, sanitizeXss, validateImageUrls } from '../utils/sanitize';
+import { safeNotify } from '../utils/safeNotify';
 import { notificationService } from './notification.service';
 import { creditService } from './credit.service';
 import { prefixColumns } from '../utils/sql';
@@ -456,11 +457,15 @@ async function respondToRequest(userId: string, requestId: string, data: { messa
   await idempotency.setIdempotencyResult(idempotencyKey, response);
 
   // 发送通知给求助者：您的求助已有人响应
-  notificationService.notifyEmergencyResponse(
-    request.user_id,
-    requestId,
-    responderNickname,
-  ).catch(() => {}); // 通知失败不影响主流程
+  // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+  safeNotify(
+    notificationService.notifyEmergencyResponse(
+      request.user_id,
+      requestId,
+      responderNickname,
+    ),
+    { userId: request.user_id, requestId },
+  );
 
   return response;
 }
@@ -704,11 +709,15 @@ async function resolveFalseReport(
     // warning 类型：不修改用户状态，仅记录处罚结果到举报表
 
     // 发送通知给举报者：您的举报已处理
-    notificationService.notifyReportResult(
-      report.reporter_id,
-      report.request_id,
-      resolution,
-    ).catch(() => {}); // 通知失败不影响主流程
+    // safeNotify 吞错不阻塞主流程，同时记录 warn 日志便于监控
+    safeNotify(
+      notificationService.notifyReportResult(
+        report.reporter_id,
+        report.request_id,
+        resolution,
+      ),
+      { userId: report.reporter_id, requestId: report.request_id },
+    );
 
     return toReportResponse(updatedReport.rows[0]);
   });
