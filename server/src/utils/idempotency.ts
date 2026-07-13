@@ -4,6 +4,7 @@
 // 改造说明：原内存 Map 实现无法在多实例间共享幂等状态，改为 Redis 后所有实例共用一份缓存
 
 import { redisClient } from '../config/redis';
+import { logger } from './logger';
 
 // 幂等时间窗口：5 秒（与原内存实现保持一致）
 const IDEMPOTENCY_TTL_SECONDS = 5;
@@ -30,7 +31,13 @@ async function checkIdempotency(key: string): Promise<{ hit: boolean; data?: unk
   if (value === null) {
     return { hit: false };
   }
-  return { hit: true, data: JSON.parse(value) };
+  // Redis 值可能因污染/迁移损坏而非法 JSON，解析失败时视为未命中重新执行业务，避免阻塞主流程
+  try {
+    return { hit: true, data: JSON.parse(value) };
+  } catch {
+    logger.warn({ key }, '幂等缓存值解析失败，视为未命中');
+    return { hit: false };
+  }
 }
 
 /**

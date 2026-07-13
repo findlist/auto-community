@@ -85,6 +85,17 @@ describe('idempotency - checkIdempotency', () => {
 
     expect(result.data).toEqual(cached);
   });
+
+  it('Redis 值为非法 JSON 时应视为未命中并返回 hit=false', async () => {
+    // 设计原因：Redis 值可能因污染/迁移损坏而非法 JSON，直接 JSON.parse 会抛错导致请求失败。
+    // 改造后 catch 吞错并视为未命中，让业务重新执行而非阻塞主流程。
+    mockRedisClient.get.mockResolvedValueOnce('not-a-json');
+
+    const result = await idempotency.checkIdempotency('idempotency:user-1:skill_order:post-1');
+
+    expect(result.hit).toBe(false);
+    expect(result.data).toBeUndefined();
+  });
 });
 
 describe('idempotency - setIdempotencyResult', () => {

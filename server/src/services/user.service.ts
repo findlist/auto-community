@@ -247,7 +247,7 @@ async function getVerificationStatus(userId: string) {
             vr.id as request_id, vr.real_name, vr.status as request_status,
             vr.reject_reason, vr.created_at, vr.reviewed_at
      FROM users u
-     LEFT JOIN verification_requests vr ON u.id = vr.user_id AND vr.status != 'rejected' OR vr.status = 'rejected' AND u.verify_status = 'rejected'
+     LEFT JOIN verification_requests vr ON u.id = vr.user_id AND (vr.status != 'rejected' OR (vr.status = 'rejected' AND u.verify_status = 'rejected'))
      WHERE u.id = $1 AND u.deleted_at IS NULL
      ORDER BY vr.created_at DESC LIMIT 1`,
     [userId],

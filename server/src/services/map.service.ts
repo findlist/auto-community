@@ -51,22 +51,29 @@ export async function geocode(address: string): Promise<{ lng: number; lat: numb
     url.searchParams.set('address', address.trim());
     url.searchParams.set('output', 'JSON');
 
-    const response = await fetch(url.toString());
-    const data = await response.json() as AmapGeocodeResponse;
+    // 5 秒超时，避免高德 API 挂起导致请求线程长时间占用
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await fetch(url.toString(), { signal: controller.signal });
+      const data = await response.json() as AmapGeocodeResponse;
 
-    if (data.status !== '1' || !data.geocodes || data.geocodes.length === 0) {
-      logger.warn({ address, status: data.status, info: data.info }, '地理编码失败');
-      return null;
+      if (data.status !== '1' || !data.geocodes || data.geocodes.length === 0) {
+        logger.warn({ address, status: data.status, info: data.info }, '地理编码失败');
+        return null;
+      }
+
+      const location = data.geocodes[0].location;
+      const [lng, lat] = location.split(',').map(Number);
+
+      if (!lng || !lat) {
+        return null;
+      }
+
+      return { lng, lat };
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const location = data.geocodes[0].location;
-    const [lng, lat] = location.split(',').map(Number);
-
-    if (!lng || !lat) {
-      return null;
-    }
-
-    return { lng, lat };
   } catch (error) {
     logger.error({ address, error }, '地理编码请求异常');
     return null;
@@ -97,15 +104,22 @@ export async function regeo(lng: number, lat: number): Promise<string | null> {
     url.searchParams.set('radius', '1000');
     url.searchParams.set('extensions', 'base');
 
-    const response = await fetch(url.toString());
-    const data = await response.json() as AmapRegeoResponse;
+    // 5 秒超时，避免高德 API 挂起导致请求线程长时间占用
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await fetch(url.toString(), { signal: controller.signal });
+      const data = await response.json() as AmapRegeoResponse;
 
-    if (data.status !== '1' || !data.regeocode) {
-      logger.warn({ lng, lat, status: data.status, info: data.info }, '逆地理编码失败');
-      return null;
+      if (data.status !== '1' || !data.regeocode) {
+        logger.warn({ lng, lat, status: data.status, info: data.info }, '逆地理编码失败');
+        return null;
+      }
+
+      return data.regeocode.formatted_address;
+    } finally {
+      clearTimeout(timeout);
     }
-
-    return data.regeocode.formatted_address;
   } catch (error) {
     logger.error({ lng, lat, error }, '逆地理编码请求异常');
     return null;
