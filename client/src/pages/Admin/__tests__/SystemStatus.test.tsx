@@ -299,9 +299,13 @@ describe('SystemStatus 系统状态监控', () => {
     await waitFor(() => {
       expect(screen.getByText('连接池接近上限')).toBeInTheDocument();
     });
-    // 点击"清除告警"按钮
+    // 点击"清除告警"按钮打开确认弹窗（替代原生 confirm）
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /清除告警/ }));
+    });
+    // 弹窗内点击"确定清除"才执行实际清除
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /确定清除/ }));
     });
     // 应调用 clearAlertLogs
     await waitFor(() => {
@@ -323,6 +327,10 @@ describe('SystemStatus 系统状态监控', () => {
     });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /清除告警/ }));
+    });
+    // 弹窗内点击"确定清除"触发实际清除（失败路径）
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /确定清除/ }));
     });
     // 非 ApiError 时走兜底分支，toast.error 提示"清除失败"
     await waitFor(() => {

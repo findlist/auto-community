@@ -77,6 +77,9 @@ export default function SystemStatus() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [clearing, setClearing] = useState(false);
+  // 清除告警确认弹窗状态
+  // 设计原因：原生 confirm() 在移动端样式不可控且阻塞主线程，改用自定义 Modal 统一交互风格
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // 加载系统指标
   const loadMetrics = useCallback(async () => {
@@ -99,9 +102,14 @@ export default function SystemStatus() {
     await loadMetrics();
   };
 
-  // 清除告警日志
-  const handleClearAlerts = async () => {
-    if (!confirm("确定要清除所有告警日志吗？")) return;
+  // 清除告警日志：打开确认弹窗，由弹窗内"确定"按钮触发实际清除
+  const handleClearAlerts = () => {
+    setShowClearConfirm(true);
+  };
+
+  // 确认清除：用户在弹窗中点击"确定"后执行实际清除逻辑
+  const confirmClearAlerts = async () => {
+    setShowClearConfirm(false);
     setClearing(true);
     try {
       await clearAlertLogs();
@@ -357,6 +365,41 @@ export default function SystemStatus() {
           )}
         </div>
       </div>
+
+      {/* 清除告警确认弹窗：替代原生 confirm()，统一移动端交互风格 */}
+      {showClearConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          onClick={() => setShowClearConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-neutral-800 mb-2">
+              清除告警日志
+            </h3>
+            <p className="text-sm text-neutral-600 mb-6">
+              确定要清除所有告警日志吗？此操作不可撤销。
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="px-4 py-2 text-sm text-neutral-600 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmClearAlerts}
+                disabled={clearing}
+                className="px-4 py-2 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                {clearing ? "清除中..." : "确定清除"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
