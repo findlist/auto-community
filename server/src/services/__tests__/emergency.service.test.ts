@@ -595,4 +595,81 @@ describe('emergency.service - updateResponseStatus', () => {
       'emergency',
     );
   });
+
+  // ========== 并发安全测试：补全 updateResponseStatus FOR UPDATE 行锁场景 ==========
+  // 设计原因：completed 路径用 transaction + 双层 FOR UPDATE 行锁防并发重复完成，
+  // 必须覆盖锁内"状态已被另一并发请求改写"的场景，验证不会重复发放积分或写入重复评价
+
+  it('completed 并发：锁内响应状态已变为 completed，抛 OrderStatusInvalidError 不重复发放积分', async () => {
+    // 事务外查询响应记录（旧值，模拟并发场景下读到的 accepted 快照）
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{ id: 'r1', request_id: 'e1', responder_id: 'u-responder', status: 'accepted' }],
+    } as unknown as DbResult);
+
+    // 事务内锁查询：
+    // 1. SELECT emergency_requests FOR UPDATE → 求助者 u1，状态仍为 responding
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 'e1', user_id: 'u1', type: 'emergency', status: 'responding' }],
+    } as unknown as DbResult);
+    // 2. SELECT emergency_responses FOR UPDATE → 响应状态已被另一并发请求改为 completed
+    //    触发 line 538 状态校验失败，应在调用任何 UPDATE 之前抛出
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 'r1', request_id: 'e1', responder_id: 'u-responder', status: 'completed' }],
+    } as unknown as DbResult);
+
+    await expect(
+      emergencyService.updateResponseStatus('u1', 'r1', 'completed'),
+    ).rejects.toBeInstanceOf(OrderStatusInvalidError);
+
+    // 关键断言：未调用任何 UPDATE/INSERT（避免重复完成、重复发积分、重复写评价）
+    // 上面只 mock 了 2 次 SELECT，若代码继续调用第 3 次 query 会拿到 undefined 引发错误
+    // 此处显式断言 earnCredits 未被调用，确保积分不重复发放
+    expect(mockedEarnCredits).not.toHaveBeenCalled();
+  });
+
+  it('completed 并发：锁内求助状态已变为 resolved，抛 OrderStatusInvalidError', async () => {
+    // 事务外查询响应记录
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{ id: 'r1', request_id: 'e1', responder_id: 'u-responder', status: 'accepted' }],
+    } as unknown as DbResult);
+
+    // 事务内锁查询：
+    // 1. SELECT emergency_requests FOR UPDATE → 求助状态已被另一并发请求改为 resolved
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 'e1', user_id: 'u1', type: 'emergency', status: 'resolved' }],
+    } as unknown as DbResult);
+    // 2. SELECT emergency_responses FOR UPDATE → 响应状态仍为 accepted（在请求级联完成前）
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 'r1', request_id: 'e1', responder_id: 'u-responder', status: 'accepted' }],
+    } as unknown as DbResult);
+
+    await expect(
+      emergencyService.updateResponseStatus('u1', 'r1', 'completed'),
+    ).rejects.toBeInstanceOf(OrderStatusInvalidError);
+
+    expect(mockedEarnCredits).not.toHaveBeenCalled();
+  });
+
+  it('completed 权限：非求助者调用完成抛 PermissionDeniedError', async () => {
+    // 事务外查询响应记录
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{ id: 'r1', request_id: 'e1', responder_id: 'u-responder', status: 'accepted' }],
+    } as unknown as DbResult);
+
+    // 事务内锁查询：
+    // 1. SELECT emergency_requests FOR UPDATE → 求助者为 u1（不是调用者 u-other）
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 'e1', user_id: 'u1', type: 'emergency', status: 'responding' }],
+    } as unknown as DbResult);
+    // 2. SELECT emergency_responses FOR UPDATE
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 'r1', request_id: 'e1', responder_id: 'u-responder', status: 'accepted' }],
+    } as unknown as DbResult);
+
+    await expect(
+      emergencyService.updateResponseStatus('u-other', 'r1', 'completed'),
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
+
+    expect(mockedEarnCredits).not.toHaveBeenCalled();
+  });
 });
