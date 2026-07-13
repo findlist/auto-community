@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from "@/api/notifications";
 import type { Notification, NotificationType } from "@/types";
 import { formatDate } from "@/utils/format";
+import Empty from "@/components/Empty";
 import { toast } from "@/components/Toast";
 
 // 通知类型图标映射
@@ -136,7 +137,7 @@ export default function Notifications() {
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllRead}
-              className="text-sm text-emerald-600 hover:text-emerald-700"
+              className="text-sm text-emerald-600 hover:text-emerald-700 py-1.5 px-2 -mr-2 rounded hover:bg-emerald-50 transition-colors"
             >
               全部已读
             </button>
@@ -144,17 +145,14 @@ export default function Notifications() {
         </div>
       </header>
 
-      {/* 通知列表 */}
-      <div className="max-w-lg mx-auto">
+      {/* 通知列表：max-w-2xl 与项目其他列表页保持一致，避免比其他页面更窄 */}
+      <div className="max-w-2xl mx-auto">
         {loading && notifications.length === 0 ? (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
           </div>
         ) : notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-            <Bell className="w-12 h-12 mb-4" />
-            <p>暂无通知</p>
-          </div>
+          <Empty title="暂无通知" description="新消息会在这里显示" icon={<Bell className="w-16 h-16" />} />
         ) : (
           <>
             <ul className="divide-y divide-gray-100">
@@ -189,7 +187,7 @@ export default function Notifications() {
                           )}
                         </div>
                         {notification.content && (
-                          <p className={`mt-1 text-sm ${isUnread ? "text-gray-700" : "text-gray-500"}`}>
+                          <p className={`mt-1 text-sm line-clamp-2 ${isUnread ? "text-gray-700" : "text-gray-500"}`}>
                             {notification.content}
                           </p>
                         )}

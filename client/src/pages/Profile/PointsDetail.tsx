@@ -93,7 +93,8 @@ export default function PointsDetail() {
   }
 
   return (
-    <div className="px-4 py-4">
+    // max-w-2xl mx-auto：桌面端约束内容宽度，与项目其他列表页一致
+    <div className="max-w-2xl mx-auto px-4 py-4">
       {/* 返回按钮 + 标题 */}
       <div className="flex items-center gap-3 mb-4">
         <button

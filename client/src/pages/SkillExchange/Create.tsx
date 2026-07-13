@@ -198,11 +198,12 @@ export default function Create() {
         </div>
       </div>
 
-      <div className="fixed bottom-16 left-0 right-0 bg-white border-t px-4 py-3">
+      {/* 提交按钮：fixed 固定在视口底部（避开移动端 h-16 底部 Tab），left-1/2 + max-w-2xl 约束宽度跟随表单容器，避免桌面端全屏拉伸 */}
+      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-white border-t px-4 py-3">
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50"
+          className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 active:scale-[0.99]"
         >
           {submitting ? "发布中..." : "立即发布"}
         </button>

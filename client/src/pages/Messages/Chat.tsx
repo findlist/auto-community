@@ -7,6 +7,7 @@ import { WebSocketClient, type ConnectionStatus } from "@/utils/websocket";
 import type { Message } from "@/types";
 import { toast } from "@/components/Toast";
 import { getErrorMessage } from "@/utils/error";
+import Empty from "@/components/Empty";
 
 // 合法的订单类型集合，用于校验 URL 传入的 orderType
 const VALID_ORDER_TYPES: OrderType[] = ["skill", "kitchen", "time", "emergency"];
@@ -230,9 +231,7 @@ export default function Chat() {
         )}
 
         {!loading && messages.length === 0 && (
-          <div className="text-center py-12 text-gray-400">
-            <p>暂无消息</p>
-          </div>
+          <Empty title="暂无消息" description="发起对话后这里会显示聊天记录" />
         )}
 
         {messages.map((message) => (
@@ -276,7 +275,7 @@ export default function Chat() {
           <button
             onClick={handleSendMessage}
             disabled={!inputContent.trim()}
-            className="px-4 py-2 bg-emerald-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-600"
+            className="px-4 py-2 bg-emerald-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-600 transition-colors active:scale-95"
           >
             <Send className="w-5 h-5" />
           </button>

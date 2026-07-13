@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { User, CreditCard, Clock, Star, FileText, ShoppingBag, LogOut, ShieldCheck, Trash2, Shield, MapPin, Camera, Loader2, AlertCircle, X } from "lucide-react";
+import { User, CreditCard, Clock, Star, FileText, ShoppingBag, LogOut, ShieldCheck, Trash2, Shield, MapPin, Camera, Loader2, AlertCircle, X, ChevronRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { logout } from "@/api/auth";
 import { updateProfile } from "@/api/user";
@@ -79,7 +79,8 @@ export default function Profile() {
   }
 
   return (
-    <div className="px-4 py-4">
+    // max-w-2xl mx-auto：桌面端约束内容宽度，避免横向拉伸过度影响可读性，与项目其他列表页一致
+    <div className="max-w-2xl mx-auto px-4 py-4">
       <div className="flex items-center gap-4 p-4 bg-white rounded-xl mb-4">
         {/* 头像：点击触发编辑弹窗，相机图标提示可修改 */}
         <button
@@ -135,7 +136,7 @@ export default function Profile() {
           >
             <Icon className={`w-5 h-5 ${danger ? "text-red-500" : "text-gray-500"}`} />
             <span className={`flex-1 ${danger ? "text-red-500" : "text-gray-700"}`}>{label}</span>
-            <span className="text-gray-400">&gt;</span>
+            <ChevronRight className={`w-4 h-4 ${danger ? "text-red-300" : "text-gray-300"}`} />
           </Link>
         ))}
       </div>
