@@ -17,14 +17,16 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.DB_PASSWORD = 'test-db-password';
 
-// mock database 模块：review.service 仅使用 query
-const { mockQuery } = vi.hoisted(() => ({
+// mock database 模块：review.service 使用 query 与 transaction
+// mock transaction 默认执行 callback 并传入 mock client，client.query 复用 mockQuery 便于统一断言
+const { mockQuery, mockTransaction } = vi.hoisted(() => ({
   mockQuery: vi.fn(),
+  mockTransaction: vi.fn(),
 }));
 
 vi.mock('../../config/database', () => ({
   query: mockQuery,
-  transaction: vi.fn(),
+  transaction: mockTransaction,
   pool: {},
 }));
 
@@ -33,6 +35,9 @@ import { BadRequestError } from '../../utils/errors';
 
 beforeEach(() => {
   mockQuery.mockReset();
+  mockTransaction.mockReset();
+  // transaction 默认执行 callback，传入的 client.query 复用 mockQuery 统一断言
+  mockTransaction.mockImplementation(async (cb: (client: { query: typeof mockQuery }) => Promise<unknown>) => cb({ query: mockQuery }));
 });
 
 describe('review.service createReview', () => {
@@ -114,24 +119,26 @@ describe('review.service createReview', () => {
 });
 
 describe('review.service calculateReputation', () => {
-  it('有评价时计算平均分并 UPDATE users', async () => {
-    // 第1次：查询 avg_rating；第2次：UPDATE users
-    mockQuery.mockResolvedValueOnce({ rows: [{ avg_rating: '4.5' }] });
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+  it('有评价时原子计算平均分并 UPDATE users（单条 SQL 消除 lost update）', async () => {
+    // 单条 UPDATE + 子查询 + RETURNING reputation_score，事务内仅 1 次 client.query
+    mockQuery.mockResolvedValueOnce({ rows: [{ reputation_score: '4.5' }] });
 
     const result = await reviewService.calculateReputation('user-1');
 
     expect(result).toBe(4.5);
-    // 验证 UPDATE users 被调用
-    expect(mockQuery).toHaveBeenCalledTimes(2);
-    const updateCall = mockQuery.mock.calls[1];
-    expect(updateCall[0]).toContain('UPDATE users SET reputation_score');
-    expect(updateCall[1]).toEqual([4.5, 'user-1']);
+    // 验证 transaction 被调用
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+    // 验证事务内仅 1 次 query（原实现为 2 次：SELECT AVG + UPDATE）
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    const sql = mockQuery.mock.calls[0][0];
+    expect(sql).toContain('UPDATE users SET reputation_score');
+    expect(sql).toContain('SELECT COALESCE(AVG(rating), 5.0)');
+    // 参数仅 userId（原实现为 [avgRating, userId]）
+    expect(mockQuery.mock.calls[0][1]).toEqual(['user-1']);
   });
 
   it('无评价时 COALESCE 默认 5.0', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ avg_rating: '5.0' }] });
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ reputation_score: '5.0' }] });
 
     const result = await reviewService.calculateReputation('user-2');
 

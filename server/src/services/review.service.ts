@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, transaction } from '../config/database';
 import { BadRequestError } from '../utils/errors';
 import { prefixColumns } from '../utils/sql';
 
@@ -82,19 +82,22 @@ async function createReview(
   return toReview(result.rows[0]);
 }
 
+// 计算并更新用户信誉分
+// 设计原因：原实现先 SELECT AVG 再 UPDATE，两步未包裹事务，并发评价场景下存在 lost update
+// （事务 A/B 均读到旧 AVG，后写覆盖先算）。改用单条 UPDATE + 子查询原子完成计算与写入，
+// 消除读-写间隙；RETURNING 返回更新后的值，保持函数返回平均分的语义
 async function calculateReputation(userId: string) {
-  const result = await query<{ avg_rating: string }>(
-    `SELECT COALESCE(AVG(rating), 5.0) as avg_rating FROM (
-       SELECT rating FROM reviews WHERE reviewed_id = $1 ORDER BY created_at DESC LIMIT 50
-     ) recent`,
-    [userId],
-  );
-
-  const avgRating = parseFloat(result.rows[0].avg_rating);
-
-  await query('UPDATE users SET reputation_score = $1 WHERE id = $2', [avgRating, userId]);
-
-  return avgRating;
+  return transaction(async (client) => {
+    const result = await client.query<{ reputation_score: string }>(
+      `UPDATE users SET reputation_score = (
+         SELECT COALESCE(AVG(rating), 5.0) FROM (
+           SELECT rating FROM reviews WHERE reviewed_id = $1 ORDER BY created_at DESC LIMIT 50
+         ) recent
+       ) WHERE id = $1 RETURNING reputation_score`,
+      [userId],
+    );
+    return parseFloat(result.rows[0].reputation_score);
+  });
 }
 
 async function getReviewsByUser(userId: string, page: number = 1, pageSize: number = 10) {
