@@ -169,7 +169,8 @@ describe('WebSocketClient', () => {
       const ws = connectAndOpen(client);
       // 连接建立后应立即发送 auth 消息，且为第一条发送的消息
       expect(ws.sentMessages.length).toBeGreaterThanOrEqual(1);
-      const firstMessage = JSON.parse(ws.sentMessages[0]);
+      // 上一行已断言 length >= 1，此处用非空断言访问第 0 条消息
+      const firstMessage = JSON.parse(ws.sentMessages[0]!);
       expect(firstMessage).toEqual(authPayload);
     });
 
