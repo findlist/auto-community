@@ -8,6 +8,29 @@ import { query } from '../config/database';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
+// 外部调用超时时间：SMTP/短信网关故障时避免 Promise 长时间挂起占用内存
+const EXTERNAL_CALL_TIMEOUT_MS = 10000;
+
+/**
+ * 为外部调用添加超时保护
+ * 设计原因：SMTP 服务器响应慢或短信网关故障时，Promise 会无限期挂起，
+ * 高并发下积累大量 pending Promise 占用内存。超时后 reject 由
+ * dispatchExternalChannels 的 Promise.allSettled 兜底，不影响主业务流程。
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} 超时（${ms}ms）`)), ms);
+  });
+  // 立即附加 catch 处理器，防止 timeout 的 rejection 在 Promise.race 处理前
+  // 被 Node.js 标记为 unhandled rejection（Promise.race 的 handler 是微任务，
+  // 而 setTimeout 回调是宏任务，存在时序窗口）
+  timeout.catch(() => {});
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
 // 外部通道统一载荷：站内信已由 notification.service.ts 落库 + WS 推送，
 // 此处仅承载外部通道（邮件/短信）所需的最小字段，避免与站内信逻辑耦合
 export interface ExternalNotificationPayload {
@@ -77,12 +100,17 @@ export const emailChannel: NotificationChannel = {
       // from 显式使用 SMTP_FROM，未配置时回退到 SMTP_USER，避免依赖 nodemailer 默认值
       // content 为空时回退到 title，避免空邮件正文
       const fromAddress = env.SMTP_FROM || env.SMTP_USER;
-      await transporter.sendMail({
-        from: fromAddress,
-        to: payload.userEmail,
-        subject: payload.title,
-        text: payload.content || payload.title,
-      });
+      // 超时保护：SMTP 服务器挂起时避免 Promise 长期占用，超时由 allSettled 兜底
+      await withTimeout(
+        transporter.sendMail({
+          from: fromAddress,
+          to: payload.userEmail,
+          subject: payload.title,
+          text: payload.content || payload.title,
+        }),
+        EXTERNAL_CALL_TIMEOUT_MS,
+        '邮件发送',
+      );
     } else {
       // 降级模式：本地日志输出通知内容，便于开发调试观察
       // 不打印用户邮箱完整值，避免日志泄露 PII（与 mask.ts 原则一致）
@@ -235,7 +263,12 @@ export const smsChannel: NotificationChannel = {
           content: payload.content || '',
         }),
       });
-      await aliyunClient.sendSms(request);
+      // 超时保护：阿里云短信网关故障时避免 Promise 长期挂起
+      await withTimeout(
+        aliyunClient.sendSms(request),
+        EXTERNAL_CALL_TIMEOUT_MS,
+        '阿里云短信发送',
+      );
       return;
     }
 
@@ -245,13 +278,18 @@ export const smsChannel: NotificationChannel = {
       // 腾讯云真实发送：构造 SendSms 请求调用 client.SendSms
       // 模板参数用位置数组 TemplateParamSet（与阿里云的 JSON 对象不同），业务方在腾讯云控制台配置模板如 "{1}：{2}"
       // 手机号需转为 E.164 格式（+8613800000000），腾讯云接口强制要求
-      await tencentClient.SendSms({
-        PhoneNumberSet: [formatPhoneForTencent(payload.userPhone)],
-        SmsSdkAppId: env.SMS_TENCENT_SDK_APP_ID,
-        SignName: env.SMS_TENCENT_SIGN_NAME,
-        TemplateId: env.SMS_TENCENT_TEMPLATE_ID,
-        TemplateParamSet: [payload.title, payload.content || ''],
-      });
+      // 超时保护：腾讯云短信网关故障时避免 Promise 长期挂起
+      await withTimeout(
+        tencentClient.SendSms({
+          PhoneNumberSet: [formatPhoneForTencent(payload.userPhone)],
+          SmsSdkAppId: env.SMS_TENCENT_SDK_APP_ID,
+          SignName: env.SMS_TENCENT_SIGN_NAME,
+          TemplateId: env.SMS_TENCENT_TEMPLATE_ID,
+          TemplateParamSet: [payload.title, payload.content || ''],
+        }),
+        EXTERNAL_CALL_TIMEOUT_MS,
+        '腾讯云短信发送',
+      );
       return;
     }
 

@@ -478,6 +478,29 @@ describe('emailChannel.send - 邮件通道', () => {
     ).rejects.toThrow('SMTP 连接失败');
   });
 
+  it('sendMail 超时时抛出超时错误（SMTP 服务器挂起保护）', async () => {
+    mockEnv.SMTP_HOST = 'smtp.example.com';
+    mockEnv.SMTP_USER = 'user';
+    mockEnv.SMTP_PASS = 'pass';
+    // 模拟 sendMail 永不返回（SMTP 服务器挂起）
+    mockTransporter.sendMail.mockReturnValue(new Promise(() => {}));
+
+    vi.useFakeTimers();
+    const sendPromise = emailChannel.send({
+      userId: 'user-1',
+      type: 'system',
+      title: '通知',
+      userEmail: 'test@example.com',
+    });
+    // 预先附加 catch handler，防止推进定时器期间 sendPromise 被 reject 时
+    // 因尚未附加 expect().rejects 处理器而被 Node.js 标记为 unhandled rejection
+    sendPromise.catch(() => {});
+    // 推进 10 秒触发超时
+    await vi.advanceTimersByTimeAsync(10000);
+    await expect(sendPromise).rejects.toThrow('超时');
+    vi.useRealTimers();
+  });
+
   it('transporter 单例复用：多次 send 只创建一次 createTransport', async () => {
     mockEnv.SMTP_HOST = 'smtp.example.com';
     mockEnv.SMTP_USER = 'user';
@@ -660,6 +683,31 @@ describe('smsChannel.send - 短信通道', () => {
     ).rejects.toThrow('腾讯云调用失败');
   });
 
+  it('腾讯云 SendSms 超时时抛出超时错误（网关挂起保护）', async () => {
+    mockEnv.SMS_PROVIDER = 'tencent';
+    mockEnv.SMS_TENCENT_SECRET_ID = 'sid';
+    mockEnv.SMS_TENCENT_SECRET_KEY = 'skey';
+    mockEnv.SMS_TENCENT_SDK_APP_ID = '1400006666';
+    mockEnv.SMS_TENCENT_SIGN_NAME = '邻里圈';
+    mockEnv.SMS_TENCENT_TEMPLATE_ID = '100001';
+    // 模拟 SendSms 永不返回（短信网关挂起）
+    mockTencentSmsClient.SendSms.mockReturnValue(new Promise(() => {}));
+
+    vi.useFakeTimers();
+    const sendPromise = smsChannel.send({
+      userId: 'user-1',
+      type: 'system',
+      title: '通知',
+      userPhone: '13800000000',
+    });
+    // 预先附加 catch handler，防止推进定时器期间 sendPromise 被 reject 时
+    // 因尚未附加 expect().rejects 处理器而被 Node.js 标记为 unhandled rejection
+    sendPromise.catch(() => {});
+    await vi.advanceTimersByTimeAsync(10000);
+    await expect(sendPromise).rejects.toThrow('超时');
+    vi.useRealTimers();
+  });
+
   it('tencentSmsClient 单例复用：多次 send 只创建一次腾讯云 Client 实例', async () => {
     mockEnv.SMS_PROVIDER = 'tencent';
     mockEnv.SMS_TENCENT_SECRET_ID = 'sid';
@@ -693,6 +741,30 @@ describe('smsChannel.send - 短信通道', () => {
         userPhone: '13800000000',
       }),
     ).rejects.toThrow('阿里云调用失败');
+  });
+
+  it('阿里云 sendSms 超时时抛出超时错误（网关挂起保护）', async () => {
+    mockEnv.SMS_PROVIDER = 'aliyun';
+    mockEnv.SMS_ACCESS_KEY = 'ak';
+    mockEnv.SMS_ACCESS_SECRET = 'sk';
+    mockEnv.SMS_SIGN_NAME = '邻里圈';
+    mockEnv.SMS_TEMPLATE_CODE = 'SMS_123456';
+    // 模拟 sendSms 永不返回（短信网关挂起）
+    mockSmsClient.sendSms.mockReturnValue(new Promise(() => {}));
+
+    vi.useFakeTimers();
+    const sendPromise = smsChannel.send({
+      userId: 'user-1',
+      type: 'system',
+      title: '通知',
+      userPhone: '13800000000',
+    });
+    // 预先附加 catch handler，防止推进定时器期间 sendPromise 被 reject 时
+    // 因尚未附加 expect().rejects 处理器而被 Node.js 标记为 unhandled rejection
+    sendPromise.catch(() => {});
+    await vi.advanceTimersByTimeAsync(10000);
+    await expect(sendPromise).rejects.toThrow('超时');
+    vi.useRealTimers();
   });
 
   it('smsClient 单例复用：多次 send 只创建一次 Dysmsapi20170525 实例', async () => {
