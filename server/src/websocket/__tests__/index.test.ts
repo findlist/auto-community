@@ -51,11 +51,10 @@ function startServer(): Promise<{ server: http.Server; port: number }> {
 // connection 回调的 ws.send 可能在 waitForMessage 注册监听前执行，导致消息丢失
 const clientMessages = new WeakMap<WSClient, Array<Record<string, unknown>>>();
 
-// 创建 WebSocket 客户端并连接，token 为可选参数（缺省时连接不带 token）
+// 创建 WebSocket 客户端并连接，token 为可选参数
+// 认证模式：连接建立后发送 { type: 'auth', token } 消息完成认证（不再通过 URL query 传递 token）
 function connectClient(port: number, token?: string): Promise<WSClient> {
-  const url = token
-    ? `ws://127.0.0.1:${port}/ws?token=${encodeURIComponent(token)}`
-    : `ws://127.0.0.1:${port}/ws`;
+  const url = `ws://127.0.0.1:${port}/ws`;
   return new Promise((resolve, reject) => {
     const client = new WSClient(url);
     const buffer: Array<Record<string, unknown>> = [];
@@ -64,7 +63,13 @@ function connectClient(port: number, token?: string): Promise<WSClient> {
     client.on('message', (raw) => {
       buffer.push(JSON.parse((raw as Buffer).toString()));
     });
-    client.on('open', () => resolve(client));
+    client.on('open', () => {
+      // 连接建立后发送认证消息（token 存在时）
+      if (token) {
+        client.send(JSON.stringify({ type: 'auth', token }));
+      }
+      resolve(client);
+    });
     client.on('error', reject);
   });
 }
@@ -204,14 +209,16 @@ describe('websocket 模块', () => {
       wss = initWebSocket(server);
     });
 
-    it('缺少 token 时以 4001 关闭连接', async () => {
+    it('未发送 auth 消息时超时以 4001 关闭连接', async () => {
+      // 连接后不发送 auth 消息，服务器应在 5 秒认证超时后关闭连接
       const client = await connectClient(port);
       clients.push(client);
-      const code = await waitForClose(client);
+      // 认证超时为 5 秒，等待 6 秒确保超时触发
+      const code = await waitForClose(client, 6000);
       expect(code).toBe(4001);
-    });
+    }, 8000);
 
-    it('token 无效时以 4001 关闭连接', async () => {
+    it('auth token 无效时以 4001 关闭连接', async () => {
       mocks.mockJwtVerify.mockImplementation(() => {
         throw new Error('invalid token');
       });
@@ -221,7 +228,7 @@ describe('websocket 模块', () => {
       expect(code).toBe(4001);
     });
 
-    it('token 有效时建立连接并发送 connected 消息', async () => {
+    it('auth 消息认证成功后发送 connected 消息', async () => {
       mocks.mockJwtVerify.mockReturnValue({ id: 'auth-user', phone: '13800138000', nickname: '认证用户' });
       const client = await connectClient(port, 'valid-token');
       clients.push(client);
@@ -242,6 +249,29 @@ describe('websocket 模块', () => {
       expect(code).toBe(4002);
       // 新连接正常收到 connected
       await waitForMessage(client2, 'connected');
+    });
+
+    it('认证前发送 chat 消息应被忽略（不触发 sendMessage）', async () => {
+      // 连接后先发 chat 再发 auth，chat 消息应被忽略
+      const client = new WSClient(`ws://127.0.0.1:${port}/ws`);
+      clients.push(client);
+      const buffer: Array<Record<string, unknown>> = [];
+      clientMessages.set(client, buffer);
+      client.on('message', (raw) => {
+        buffer.push(JSON.parse((raw as Buffer).toString()));
+      });
+      await new Promise<void>((resolve) => client.on('open', () => resolve()));
+
+      // 先发 chat（认证前，应被忽略）
+      client.send(JSON.stringify({ type: 'chat', orderId: 'order-1', content: 'test' }));
+      // 再发 auth
+      mocks.mockJwtVerify.mockReturnValue({ id: 'auth-user', phone: '138', nickname: '测试' });
+      client.send(JSON.stringify({ type: 'auth', token: 'valid-token' }));
+      await waitForMessage(client, 'connected');
+
+      // chat 消息未被处理（sendMessage 未调用）
+      await new Promise((r) => setTimeout(r, 200));
+      expect(mocks.mockMessageService.sendMessage).not.toHaveBeenCalled();
     });
   });
 

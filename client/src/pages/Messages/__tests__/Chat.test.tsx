@@ -412,7 +412,7 @@ describe('Chat 聊天交互', () => {
     expect(mockWsInstance.close).toHaveBeenCalled();
   });
 
-  it('WebSocketClient 构造使用 token 与正确 URL', async () => {
+  it('WebSocketClient 构造使用正确 URL 与 authMessage 认证', async () => {
     renderChat();
 
     await screen.findByText('暂无消息');
@@ -422,10 +422,12 @@ describe('Chat 聊天交互', () => {
       expect.objectContaining({
         maxReconnectAttempts: 5,
         reconnectIntervals: [1000, 2000, 5000, 5000, 5000],
+        // token 通过 authMessage 发送，不再放在 URL query 中
+        authMessage: { type: 'auth', token: 'test-token' },
       })
     );
-    // URL 应包含 token
+    // URL 不应包含 token（避免泄漏到 Nginx 日志/浏览器历史）
     const callArgs = vi.mocked(WebSocketClient).mock.calls[0];
-    expect(callArgs?.[0]).toContain('token=test-token');
+    expect(callArgs?.[0]).not.toContain('token');
   });
 });

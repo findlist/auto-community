@@ -103,10 +103,12 @@ export default function Chat() {
 
     // 创建 WebSocketClient 实例
     // 使用 protocol-relative host（不含端口），避免经过反向代理时泄漏内部端口
+    // token 通过 authMessage 在连接后发送，不再放在 URL query 中（避免泄漏到 Nginx 日志/浏览器历史）
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsClient = new WebSocketClient(`${wsProtocol}//${window.location.host.split(':')[0]}/ws?token=${token}`, {
+    const wsClient = new WebSocketClient(`${wsProtocol}//${window.location.host.split(':')[0]}/ws`, {
       maxReconnectAttempts: 5,
       reconnectIntervals: [1000, 2000, 5000, 5000, 5000],
+      authMessage: { type: 'auth', token },
       onOpen: () => {
         // 重连成功后补齐离线期间错过的消息
         if (wasReconnecting) {

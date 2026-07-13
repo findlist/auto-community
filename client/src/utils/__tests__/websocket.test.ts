@@ -161,6 +161,24 @@ describe('WebSocketClient', () => {
       // 设计原因：subscribe 第一个参数 type 仅用于订阅列表去重，不进入消息体
       expect(newWs.sentMessages.some((m) => m.includes('subscribe') && m.includes('c1'))).toBe(true);
     });
+
+    it('authMessage 在 onOpen 前发送（认证消息优先于业务回调）', () => {
+      // 验证 token 不再通过 URL 传递，改用消息体发送
+      const authPayload = { type: 'auth', token: 'test-jwt-token' };
+      client = new WebSocketClient('ws://test', { authMessage: authPayload });
+      const ws = connectAndOpen(client);
+      // 连接建立后应立即发送 auth 消息，且为第一条发送的消息
+      expect(ws.sentMessages.length).toBeGreaterThanOrEqual(1);
+      const firstMessage = JSON.parse(ws.sentMessages[0]);
+      expect(firstMessage).toEqual(authPayload);
+    });
+
+    it('未设置 authMessage 时不发送额外消息', () => {
+      client = new WebSocketClient('ws://test');
+      const ws = connectAndOpen(client);
+      // 无 authMessage 时，连接后不应发送任何消息
+      expect(ws.sentMessages).toHaveLength(0);
+    });
   });
 
   describe('onmessage 事件', () => {

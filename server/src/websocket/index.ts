@@ -1,7 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
 import jwt from 'jsonwebtoken';
-import { URL } from 'url';
 import { messageService, OrderType } from '../services/message.service';
 import { query } from '../config/database';
 import { env } from '../config/env';
@@ -121,44 +120,70 @@ export function initWebSocket(server: Server) {
     }, 'WebSocket pub/sub 初始化失败');
   });
 
-  wss.on('connection', (ws: WebSocket, req) => {
-    const url = new URL(req.url!, `http://${req.headers.host}`);
-    const token = url.searchParams.get('token');
+  // 认证超时时间：连接后 5 秒内未完成认证则关闭，防止未认证连接长期占用资源
+  const AUTH_TIMEOUT_MS = 5000;
 
-    if (!token) {
-      ws.close(4001, '缺少 token');
-      return;
-    }
+  wss.on('connection', (ws: WebSocket) => {
+    // 认证阶段：userId 尚未确定，先设为 null，认证成功后赋值
+    let userId: string | null = null;
+    let heartbeat: NodeJS.Timeout | null = null;
 
-    let payload: JwtPayload;
-    try {
-      payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
-    } catch {
-      ws.close(4001, 'token 无效');
-      return;
-    }
-
-    const userId = payload.id;
-
-    // 同一用户重复连接时关闭旧连接
-    const oldWs = userSockets.get(userId);
-    if (oldWs && oldWs.readyState === WebSocket.OPEN) {
-      oldWs.close(4002, '被新连接替换');
-    }
-
-    userSockets.set(userId, ws);
-
-    const heartbeat = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.ping();
+    // 认证超时定时器：超时未收到 auth 消息则关闭连接
+    const authTimeout = setTimeout(() => {
+      if (!userId) {
+        ws.close(4001, '认证超时');
       }
-    }, 30000);
-    heartbeatIntervals.set(userId, heartbeat);
+    }, AUTH_TIMEOUT_MS);
 
     ws.on('message', async (raw) => {
+      let data;
       try {
-        const data = JSON.parse(raw.toString());
+        data = JSON.parse(raw.toString());
+      } catch {
+        return; // 非 JSON 消息忽略，避免阻塞认证流程
+      }
 
+      // —— 认证阶段：仅处理 auth 消息 ——
+      // 设计原因：token 不再通过 URL query 传递（会泄漏到 Nginx 日志/浏览器历史），
+      // 改为连接后发送 { type: 'auth', token } 消息完成认证
+      if (!userId) {
+        if (data.type !== 'auth' || !data.token) {
+          return; // 认证前忽略所有非 auth 消息
+        }
+
+        let payload: JwtPayload;
+        try {
+          payload = jwt.verify(data.token, env.JWT_SECRET) as JwtPayload;
+        } catch {
+          clearTimeout(authTimeout);
+          ws.close(4001, 'token 无效');
+          return;
+        }
+
+        userId = payload.id;
+        clearTimeout(authTimeout);
+
+        // 同一用户重复连接时关闭旧连接
+        const oldWs = userSockets.get(userId);
+        if (oldWs && oldWs.readyState === WebSocket.OPEN) {
+          oldWs.close(4002, '被新连接替换');
+        }
+
+        userSockets.set(userId, ws);
+
+        heartbeat = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.ping();
+          }
+        }, 30000);
+        heartbeatIntervals.set(userId, heartbeat);
+
+        ws.send(JSON.stringify({ type: 'connected', data: { userId } }));
+        return;
+      }
+
+      // —— 已认证阶段：处理业务消息 ——
+      try {
         if (data.type === 'chat') {
           // 默认按技能交换模块处理，保持向后兼容
           const orderType: OrderType = (data.orderType as OrderType) || 'skill';
@@ -195,17 +220,18 @@ export function initWebSocket(server: Server) {
     });
 
     ws.on('close', () => {
-      // debug 级别日志，便于排查连接生命周期问题
-      logger.debug({ module: 'websocket', userId }, 'WebSocket 连接关闭');
-      userSockets.delete(userId);
-      const hb = heartbeatIntervals.get(userId);
-      if (hb) {
-        clearInterval(hb);
-        heartbeatIntervals.delete(userId);
+      // 清除认证超时定时器（无论是否已完成认证都需要清理，防止泄漏）
+      clearTimeout(authTimeout);
+      // 仅认证成功的连接才需要清理 userSockets 与心跳
+      if (userId) {
+        logger.debug({ module: 'websocket', userId }, 'WebSocket 连接关闭');
+        userSockets.delete(userId);
+        if (heartbeat) {
+          clearInterval(heartbeat);
+          heartbeatIntervals.delete(userId);
+        }
       }
     });
-
-    ws.send(JSON.stringify({ type: 'connected', data: { userId } }));
   });
 
   return wss;

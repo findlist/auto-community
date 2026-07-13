@@ -21,6 +21,8 @@ export interface WebSocketClientOptions {
   onMessage?: (data: unknown) => void;
   // 连接状态变化回调
   onStatusChange?: (status: ConnectionStatus) => void;
+  // 认证消息：连接建立后立即发送，用于替代 URL query 传递 token（避免 token 泄漏到日志/浏览器历史）
+  authMessage?: unknown;
 }
 
 interface Subscription {
@@ -48,6 +50,7 @@ export class WebSocketClient {
       onError: options.onError ?? (() => {}),
       onMessage: options.onMessage ?? (() => {}),
       onStatusChange: options.onStatusChange ?? (() => {}),
+      authMessage: options.authMessage,
     };
   }
 
@@ -86,9 +89,16 @@ export class WebSocketClient {
       // 重置重连计数
       this.reconnectAttempts = 0;
       this.options.onStatusChange("connected");
+
+      // 认证消息优先发送：连接建立后立即发送，后端在收到 auth 消息前拒绝处理业务消息
+      // 设计原因：token 不再通过 URL query 传递，改用消息体发送避免泄漏到 Nginx 日志/浏览器历史
+      if (this.options.authMessage !== undefined) {
+        this.send(this.options.authMessage);
+      }
+
       this.options.onOpen();
 
-      // 重连成功后恢复之前的订阅
+      // 重连成功后恢复之前的订阅（认证完成后才生效）
       if (wasReconnecting) {
         this.resubscribeAll();
       }
