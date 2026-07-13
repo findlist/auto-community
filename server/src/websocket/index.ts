@@ -17,10 +17,14 @@ const WS_BROADCAST_CHANNEL = 'ws:broadcast';
 // 订阅专用 Redis 连接：duplicate 出独立连接，避免订阅模式阻塞主连接的常规命令
 const pubSub = redisClient.duplicate();
 
+// JWT Payload：与 middleware/auth.ts 保持一致
+// 安全考虑：JWT 中不再携带 phone（避免 token 泄露后暴露 PII），
+// phone 在需要时通过数据库查询并解密获取
 interface JwtPayload {
   id: string;
-  phone: string;
   nickname: string;
+  iat?: number;
+  exp?: number;
 }
 
 // 根据订单类型与订单 ID 查询接收方用户 ID
