@@ -9,6 +9,7 @@ import {
 import { getOrders, forceCancelOrder } from "@/api/admin";
 import { ApiError } from "@/api/client";
 import ExportButton from "@/components/ExportButton";
+import Empty from "@/components/Empty";
 import type { PaginatedResponse } from "@/types";
 
 const PAGE_SIZE = 20;
@@ -202,7 +203,7 @@ export default function OrderManagement() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : list.length === 0 ? (
-        <div className="text-center py-20 text-neutral-500">暂无数据</div>
+        <Empty title="暂无数据" description="订单记录会在这里显示" />
       ) : (
         <>
           {/* 桌面端表格 */}

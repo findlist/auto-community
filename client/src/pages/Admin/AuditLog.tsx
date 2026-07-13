@@ -3,6 +3,7 @@ import { Loader2, AlertCircle, ChevronLeft, ChevronRight, Search } from "lucide-
 import { getAuditLogs, type AuditLog, type AuditLogQuery } from "@/api/admin";
 import { ApiError } from "@/api/client";
 import ExportButton from "@/components/ExportButton";
+import Empty from "@/components/Empty";
 
 const PAGE_SIZE = 20;
 
@@ -150,7 +151,7 @@ export default function AuditLogPage() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : logs.length === 0 ? (
-        <div className="text-center py-20 text-neutral-500">暂无日志记录</div>
+        <Empty title="暂无日志记录" description="操作日志会在这里显示" />
       ) : (
         <>
           {/* 桌面端表格 */}

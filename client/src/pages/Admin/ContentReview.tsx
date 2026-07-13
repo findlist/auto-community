@@ -21,6 +21,7 @@ import { ApiError } from "@/api/client";
 import { toast } from "@/components/Toast";
 import type { PaginatedResponse } from "@/types";
 import ImageUpload from "@/components/Upload/ImageUpload";
+import Empty from "@/components/Empty";
 
 const PAGE_SIZE = 20;
 
@@ -345,7 +346,7 @@ export default function ContentReview() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : list.length === 0 ? (
-        <div className="text-center py-20 text-neutral-500">暂无数据</div>
+        <Empty title="暂无数据" description="待审核内容会在这里显示" />
       ) : (
         <>
           {/* 桌面端表格 */}

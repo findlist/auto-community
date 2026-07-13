@@ -15,6 +15,7 @@ import {
 import { getSettings, setSetting, deleteSetting, type SystemSetting, type SettingValueType } from "@/api/admin";
 import { ApiError } from "@/api/client";
 import { toast } from "@/components/Toast";
+import Empty from "@/components/Empty";
 
 // 受保护配置键：与后端 PROTECTED_SETTING_KEYS 对齐，禁止删除，避免误删核心功能配置
 const PROTECTED_KEYS = ["homepage_hero_image"];
@@ -178,10 +179,7 @@ export default function SystemConfig() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : list.length === 0 ? (
-        <div className="text-center py-20 text-neutral-400">
-          <Settings className="w-12 h-12 mx-auto mb-3" />
-          <p className="text-sm">暂无配置项</p>
-        </div>
+        <Empty title="暂无配置项" description="配置项会在这里显示" icon={<Settings className="w-16 h-16" />} />
       ) : (
         <div className="space-y-6">
           {groupSettings(list).map(group => {
