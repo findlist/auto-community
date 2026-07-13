@@ -13,6 +13,7 @@ import { maskPhone } from '../utils/mask';
 import { aiService } from './ai.service';
 import { sanitizeObject, sanitizeXss, validateImageUrls } from '../utils/sanitize';
 import { notificationService } from './notification.service';
+import { creditService } from './credit.service';
 import { prefixColumns } from '../utils/sql';
 import { REVIEW_COLUMNS } from './review.service';
 
@@ -570,17 +571,15 @@ async function updateResponseStatus(
       );
     }
 
-    // 发放积分给响应者
-    const userResult = await client.query(
-      'UPDATE users SET credit_balance = credit_balance + $1 WHERE id = $2 RETURNING credit_balance',
-      [totalCredit, lockedResponse.responder_id]
-    );
-    const newBalance = userResult.rows[0].credit_balance;
-
-    await client.query(
-      `INSERT INTO credit_transactions (user_id, type, amount, balance_after, reference_id, reference_type, description)
-       VALUES ($1, 'earn', $2, $3, $4, 'emergency', $5)`,
-      [lockedResponse.responder_id, totalCredit, newBalance, response.request_id, '完成求助奖励']
+    // 发放积分给响应者：统一走 creditService.earnCredits，与其他模块（拼单/技能/时间银行）保持一致
+    // 设计原因：若 creditService 未来增加风控 hook 或审计逻辑，emergency 模块不会绕过
+    await creditService.earnCredits(
+      client,
+      lockedResponse.responder_id,
+      totalCredit,
+      '完成求助奖励',
+      response.request_id,
+      'emergency',
     );
 
     // 更新响应者信誉分（基于最近评价，仅在有新评价时刷新）

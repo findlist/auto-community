@@ -49,6 +49,13 @@ vi.mock('../reputation.service', () => ({
   reputationService: { updateReputationScore: vi.fn().mockResolvedValue(undefined) },
 }));
 
+// mock credit.service：验证 earnCredits 调用参数，避免真实 DB 操作
+vi.mock('../credit.service', () => ({
+  creditService: {
+    earnCredits: vi.fn().mockResolvedValue({ balance: 100 }),
+  },
+}));
+
 // mock sanitize：直接透传，避免 xss 库依赖
 vi.mock('../../utils/sanitize', () => ({
   sanitizeObject: vi.fn(<T extends Record<string, unknown>>(data: T): T => data),
@@ -70,6 +77,7 @@ import { query, transaction } from '../../config/database';
 import { aiService } from '../ai.service';
 import { idempotency } from '../../utils/idempotency';
 import { notificationService } from '../notification.service';
+import { creditService } from '../credit.service';
 import {
   NotFoundError,
   ConflictError,
@@ -87,6 +95,7 @@ type DbResult = Awaited<ReturnType<typeof query>>;
 const mockedAi = vi.mocked(aiService.callLLM);
 const mockedIdempotency = vi.mocked(idempotency.checkIdempotency);
 const mockedNotify = vi.mocked(notificationService.notifyEmergencyResponse);
+const mockedEarnCredits = vi.mocked(creditService.earnCredits);
 
 beforeEach(() => {
   mockedQuery.mockReset();
@@ -97,6 +106,8 @@ beforeEach(() => {
   mockedIdempotency.mockReset();
   mockedIdempotency.mockResolvedValue({ hit: false });
   mockedNotify.mockClear();
+  mockedEarnCredits.mockReset();
+  mockedEarnCredits.mockResolvedValue({ balance: 100 });
 });
 
 describe('emergency.service - classifyUrgency', () => {
@@ -502,5 +513,86 @@ describe('emergency.service - updateResponseStatus', () => {
     await expect(
       emergencyService.updateResponseStatus('u1', 'r1', 'invalid'),
     ).rejects.toBeInstanceOf(BadRequestError);
+  });
+
+  it('completed 状态：通过 creditService.earnCredits 发放积分（不手动 UPDATE+INSERT）', async () => {
+    // 事务外查询响应记录
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{ id: 'r1', request_id: 'e1', responder_id: 'u-responder', status: 'accepted' }],
+    } as unknown as DbResult);
+
+    // 事务内查询顺序：
+    // 1. SELECT emergency_requests FOR UPDATE → 求助者为 u1，type=emergency
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 'e1', user_id: 'u1', type: 'emergency', status: 'responding' }],
+    } as unknown as DbResult);
+    // 2. SELECT emergency_responses FOR UPDATE → 响应者为 u-responder，状态 accepted
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 'r1', request_id: 'e1', responder_id: 'u-responder', status: 'accepted' }],
+    } as unknown as DbResult);
+    // 3. UPDATE 其他响应为 cancelled
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+    // 4. UPDATE 当前响应为 completed RETURNING
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'r1', request_id: 'e1', responder_id: 'u-responder', message: '到',
+        status: 'completed', eta: 5, timeout_at: new Date(), arrived_at: new Date(),
+        completed_at: new Date(), created_at: new Date(), updated_at: new Date(),
+      }],
+    } as unknown as DbResult);
+    // 5. UPDATE 求助状态为 resolved
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    const result = await emergencyService.updateResponseStatus('u1', 'r1', 'completed');
+    expect(result.status).toBe('completed');
+
+    // 验证 earnCredits 被调用（紧急求助基础 100 积分）
+    expect(mockedEarnCredits).toHaveBeenCalledWith(
+      mockClient,
+      'u-responder',
+      100,
+      '完成求助奖励',
+      'e1',
+      'emergency',
+    );
+  });
+
+  it('completed 状态：5 星评价额外奖励 10 积分', async () => {
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{ id: 'r1', request_id: 'e1', responder_id: 'u-responder', status: 'accepted' }],
+    } as unknown as DbResult);
+
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 'e1', user_id: 'u1', type: 'normal', status: 'responding' }],
+    } as unknown as DbResult);
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 'r1', request_id: 'e1', responder_id: 'u-responder', status: 'accepted' }],
+    } as unknown as DbResult);
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'r1', request_id: 'e1', responder_id: 'u-responder', message: '到',
+        status: 'completed', eta: 5, timeout_at: new Date(), arrived_at: new Date(),
+        completed_at: new Date(), created_at: new Date(), updated_at: new Date(),
+      }],
+    } as unknown as DbResult);
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+    // INSERT INTO reviews（有 reviewData 时）
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    await emergencyService.updateResponseStatus('u1', 'r1', 'completed', {
+      rating: 5,
+      review: '非常感谢',
+    });
+
+    // 普通求助 50 + 5 星评价 10 = 60 积分
+    expect(mockedEarnCredits).toHaveBeenCalledWith(
+      mockClient,
+      'u-responder',
+      60,
+      '完成求助奖励',
+      'e1',
+      'emergency',
+    );
   });
 });
