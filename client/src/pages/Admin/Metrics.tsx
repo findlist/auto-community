@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Loader2 } from "lucide-react";
 import MetricsChart from "@/components/MetricsChart";
 import {
   getMetricsDashboard,
@@ -147,8 +148,9 @@ export default function Metrics() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-[var(--color-text-tertiary)]">加载中...</div>
+      <div className="flex flex-col items-center justify-center gap-3 h-64">
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--color-primary-500)]" />
+        <span className="text-sm text-[var(--color-text-tertiary)]">加载中...</span>
       </div>
     );
   }
@@ -206,10 +208,11 @@ export default function Metrics() {
       {expandedMetric && (
         <div className="animate-fadeIn">
           {trendLoading[expandedMetric] ? (
-            <div className="flex items-center justify-center h-48 bg-white rounded-2xl border border-[var(--color-border)]">
-              <div className="text-[var(--color-text-tertiary)]">
+            <div className="flex flex-col items-center justify-center gap-2 h-48 bg-white rounded-2xl border border-[var(--color-border)]">
+              <Loader2 className="w-5 h-5 animate-spin text-[var(--color-primary-500)]" />
+              <span className="text-sm text-[var(--color-text-tertiary)]">
                 加载趋势数据...
-              </div>
+              </span>
             </div>
           ) : (
             <MetricsChart

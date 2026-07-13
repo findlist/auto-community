@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Beaker, BarChart3, AlertTriangle, CheckCircle } from "lucide-react";
+import { Beaker, BarChart3, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
 import {
   getTestConfig,
   getTestResults,
@@ -137,8 +137,9 @@ export default function ABTestResults() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-[var(--color-text-tertiary)]">加载中...</div>
+      <div className="flex flex-col items-center justify-center gap-3 h-64">
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--color-primary-500)]" />
+        <span className="text-sm text-[var(--color-text-tertiary)]">加载中...</span>
       </div>
     );
   }
