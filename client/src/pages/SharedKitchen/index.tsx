@@ -120,7 +120,7 @@ export default function SharedKitchen() {
       <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
         <div>
           <div className="flex items-baseline gap-2.5 mb-1">
-            <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-orange-700 transition-colors">
+            <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-orange-700 group-hover:translate-x-1 transition-all duration-200">
               {post.title}
             </h3>
             <span className="text-orange-700 font-semibold whitespace-nowrap text-sm tabular-nums">
@@ -158,7 +158,7 @@ export default function SharedKitchen() {
         className="group border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6"
       >
         <div className="flex items-baseline justify-between gap-3 mb-2">
-          <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-orange-700 transition-colors">
+          <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-orange-700 group-hover:translate-x-1 transition-all duration-200">
             {order.title}
           </h3>
           <span className="text-sm font-semibold text-orange-700 tabular-nums whitespace-nowrap">
@@ -196,7 +196,7 @@ export default function SharedKitchen() {
         </div>
         <button
           onClick={() => navigate("/kitchen/create")}
-          className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 text-white rounded-full text-sm font-medium hover:bg-neutral-800 transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 text-white rounded-full text-sm font-medium hover:bg-neutral-800 active:scale-[0.97] transition-all duration-200"
         >
           <Plus className="w-4 h-4" />
           发布

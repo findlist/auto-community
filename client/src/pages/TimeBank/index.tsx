@@ -46,7 +46,7 @@ export default function TimeBank() {
         </div>
         <button
           onClick={() => navigate("/time-bank/create")}
-          className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 text-white rounded-full text-sm font-medium hover:bg-neutral-800 transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 text-white rounded-full text-sm font-medium hover:bg-neutral-800 active:scale-[0.97] transition-all duration-200"
         >
           <Plus className="w-4 h-4" />
           发布
@@ -80,7 +80,7 @@ export default function TimeBank() {
           <button
             key={path}
             onClick={() => navigate(path)}
-            className="bg-white rounded-xl p-3 lg:p-4 border border-neutral-100 shadow-sm hover:shadow-md hover:border-violet-200 transition-all duration-200 text-left group"
+            className="bg-white rounded-xl p-3 lg:p-4 border border-neutral-100 shadow-sm hover:shadow-md hover:border-violet-200 hover:-translate-y-0.5 transition-all duration-200 text-left group"
           >
             <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center mb-2 group-hover:bg-violet-100 transition-colors">
               <Icon className="w-4 h-4 text-violet-600" />

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, FileCheck, ShoppingCart, Flag, Menu, X, UserCheck, LineChart, Beaker, Image, ScrollText, Settings } from "lucide-react";
+import { LayoutDashboard, Users, FileCheck, ShoppingCart, Flag, Menu, X, UserCheck, LineChart, Beaker, Image, ScrollText, Settings, ArrowLeft } from "lucide-react";
 
 // 导航项分组：运营 / 数据 / 系统，提升信息架构与扫读效率
 type NavGroup = {
@@ -93,7 +93,7 @@ export default function AdminLayout() {
             {/* 移动端菜单按钮 */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden p-1.5 rounded-lg hover:bg-neutral-100"
+              className="md:hidden p-1.5 rounded-lg hover:bg-neutral-100 transition-colors"
               aria-label="切换菜单"
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -102,8 +102,9 @@ export default function AdminLayout() {
           </div>
           <Link
             to="/"
-            className="text-sm text-emerald-600 hover:text-emerald-700"
+            className="text-sm text-emerald-600 hover:text-emerald-700 transition-colors inline-flex items-center gap-1 group"
           >
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
             返回前台
           </Link>
         </div>

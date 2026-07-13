@@ -85,7 +85,7 @@ export default function SkillExchange() {
         <div className="flex-1 min-w-0">
           {/* 标题行：标题 + 价格 */}
           <div className="flex items-baseline gap-3 mb-1.5">
-            <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-blue-700 transition-colors">
+            <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-blue-700 group-hover:translate-x-1 transition-all duration-200">
               {post.title}
             </h3>
             <span className="text-blue-700 font-semibold whitespace-nowrap text-sm tabular-nums">
@@ -130,7 +130,7 @@ export default function SkillExchange() {
         </div>
         <button
           onClick={() => navigate("/skills/create")}
-          className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 text-white rounded-full text-sm font-medium hover:bg-neutral-800 transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 text-white rounded-full text-sm font-medium hover:bg-neutral-800 active:scale-[0.97] transition-all duration-200"
         >
           <Plus className="w-4 h-4" />
           发布
