@@ -33,7 +33,12 @@ export function isSqlParam(value: unknown): value is SqlParam {
   }
   if (t === 'object') {
     // 仅允许普通对象（{} 或 JSON 解析结果），排除 class 实例等非 SQL 友好对象
-    return Object.prototype.toString.call(value) === '[object Object]';
+    // 设计原因：Object.prototype.toString.call 对 class 实例与普通对象均返回 '[object Object]'，
+    // 无法区分，导致 class 实例（可能含循环引用或非 JSON 友好属性）被错误放行。
+    // 改用 prototype 链检查：普通对象的 proto 为 Object.prototype 或 null（Object.create(null)），
+    // class 实例的 proto 为自定义原型链，Map/Set/Buffer/Error 等内置实例同理，均可严格拒绝。
+    const proto = Object.getPrototypeOf(value);
+    return proto === Object.prototype || proto === null;
   }
   // 函数、Symbol、undefined 等均拒绝
   return false;

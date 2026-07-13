@@ -79,17 +79,23 @@ describe('config/database isSqlParam - 非法类型拒绝', () => {
     expect(isSqlParam([{ a: 1 }] as unknown as string[])).toBe(false);
   });
 
-  it('class 实例：Object.prototype.toString 无法区分普通对象与 class 实例（设计限制）', () => {
-    // 设计限制：Object.prototype.toString.call(class 实例) 返回 '[object Object]'，
-    // 与普通对象 {} 无法区分。isSqlParam 当前实现对 class 实例放行，
-    // 实际写入 SQL 时 pg 会按 JSONB 序列化（仅保留自有可枚举属性），方法不会序列化，
-    // 因此风险可控，但若 class 实例包含循环引用或非 JSON 友好属性可能出问题。
-    // 此测试记录该限制，未来若需严格区分需改用 prototype 链检查。
+  it('class 实例拒绝：prototype 链检查严格区分普通对象与 class 实例', () => {
+    // 改进说明：原实现用 Object.prototype.toString.call 无法区分 class 实例与普通对象
+    // （均返回 '[object Object]'），导致 class 实例被错误放行。
+    // 改用 prototype 链检查后，class 实例的 proto 为自定义原型链，
+    // 不等于 Object.prototype 也不等于 null，被严格拒绝。
     class MyClass {
       constructor(public value: number) {}
     }
-    // 当前行为：class 实例被放行（与普通对象一致）
-    expect(isSqlParam(new MyClass(1))).toBe(true);
+    // 改进后行为：class 实例被拒绝（proto 为 MyClass.prototype）
+    expect(isSqlParam(new MyClass(1))).toBe(false);
+  });
+
+  it('Object.create(null) 放行：proto 为 null 的无原型对象视为普通对象', () => {
+    // 补充覆盖：Object.create(null) 创建的对象没有原型链，proto 为 null，
+    // 视为普通对象放行（JSON 友好，无方法污染）
+    expect(isSqlParam(Object.create(null))).toBe(true);
+    expect(isSqlParam(Object.create(null, { a: { value: 1, enumerable: true } }))).toBe(true);
   });
 
   it('函数拒绝', () => {
