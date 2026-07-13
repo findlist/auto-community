@@ -292,27 +292,32 @@ describe('data-deletion.service - reviewDeletionRequest', () => {
     expect(mockQuery).toHaveBeenCalledTimes(1);
   });
 
-  it('approve 时触发匿名化并更新为 completed', async () => {
+  it('approve 时触发匿名化并在同一事务内更新为 completed', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ id: 'req-1', user_id: 'u1', status: 'pending' }] });
-    // UPDATE 为 approved
+    // UPDATE 为 approved（审核状态更新）
     mockQuery.mockResolvedValueOnce({ rows: [] });
     // executeAnonymization 内部走 transaction（mockTransaction），不调用 mockQuery
-    // UPDATE 为 completed
-    mockQuery.mockResolvedValueOnce({ rows: [] });
+    // 申请状态 completed 更新已合并到 transaction 内，不再走独立 query
+    mockClient.query.mockResolvedValue({ rows: [] });
 
     const result = await dataDeletionService.reviewDeletionRequest('req-1', 'admin-1', 'approve');
 
     expect(result).toEqual({ id: 'req-1', status: 'approved' });
     // 验证 transaction 被调用（匿名化走事务）
     expect(mockTransaction).toHaveBeenCalledTimes(1);
+    // mockQuery 仅 2 次：SELECT + UPDATE approved（completed 更新在事务内）
+    expect(mockQuery).toHaveBeenCalledTimes(2);
     // 验证第一条 UPDATE 设置 status = approved
     const updateApprovedCall = mockQuery.mock.calls[1];
     expect(updateApprovedCall[0]).toContain("SET status = $1, reviewed_by = $2");
     expect(updateApprovedCall[1]).toEqual(['approved', 'admin-1', 'req-1']);
-    // 验证第二条 UPDATE 设置 status = completed
-    const updateCompletedCall = mockQuery.mock.calls[2];
+    // 事务内 3 条 SQL：UPDATE users + DELETE verification_requests + UPDATE deletion_requests
+    expect(mockClient.query).toHaveBeenCalledTimes(3);
+    // 第三条事务内 SQL：更新申请状态为 completed（与匿名化原子执行）
+    const updateCompletedCall = mockClient.query.mock.calls[2];
     expect(updateCompletedCall[0]).toContain("status = 'completed'");
     expect(updateCompletedCall[0]).toContain('completed_at = NOW()');
+    expect(updateCompletedCall[1]).toEqual(['req-1']);
   });
 
   it('reject 时仅更新状态为 rejected，不触发匿名化', async () => {
@@ -333,14 +338,14 @@ describe('data-deletion.service - reviewDeletionRequest', () => {
 });
 
 describe('data-deletion.service - executeAnonymization', () => {
-  it('事务内更新用户表 + 删除认证申请 + 清除缓存', async () => {
+  it('无 requestId 时事务内仅更新用户表 + 删除认证申请 + 清除缓存', async () => {
     mockClient.query.mockResolvedValue({ rows: [] });
 
     await dataDeletionService.executeAnonymization('user-1');
 
     // transaction 被调用一次
     expect(mockTransaction).toHaveBeenCalledTimes(1);
-    // 事务内应有 2 条 SQL：UPDATE users + DELETE verification_requests
+    // 事务内应有 2 条 SQL：UPDATE users + DELETE verification_requests（无状态更新）
     expect(mockClient.query).toHaveBeenCalledTimes(2);
     // 第一条：UPDATE users 匿名化 PII 字段
     const updateSql = mockClient.query.mock.calls[0][0] as string;
@@ -359,9 +364,28 @@ describe('data-deletion.service - executeAnonymization', () => {
     expect(deleteSql).toContain('DELETE FROM verification_requests');
     // 缓存清除被调用
     expect(mockUserCacheInvalidate).toHaveBeenCalledWith('user-1');
-    // 完成日志
+    // 完成日志（requestId 为 undefined）
     expect(mockLoggerInfo).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'user-1' }),
+      expect.objectContaining({ userId: 'user-1', requestId: undefined }),
+      expect.stringContaining('匿名化完成'),
+    );
+  });
+
+  it('传入 requestId 时事务内额外更新申请状态为 completed（保证原子性）', async () => {
+    mockClient.query.mockResolvedValue({ rows: [] });
+
+    await dataDeletionService.executeAnonymization('user-1', 'req-99');
+
+    // 事务内 3 条 SQL：UPDATE users + DELETE verification_requests + UPDATE deletion_requests
+    expect(mockClient.query).toHaveBeenCalledTimes(3);
+    // 第三条：更新申请状态为 completed
+    const statusUpdateSql = mockClient.query.mock.calls[2][0] as string;
+    expect(statusUpdateSql).toContain("status = 'completed'");
+    expect(statusUpdateSql).toContain('completed_at = NOW()');
+    expect(mockClient.query.mock.calls[2][1]).toEqual(['req-99']);
+    // 日志记录 requestId
+    expect(mockLoggerInfo).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'user-1', requestId: 'req-99' }),
       expect.stringContaining('匿名化完成'),
     );
   });

@@ -268,14 +268,11 @@ async function reviewDeletionRequest(
 
   logger.info({ requestId, reviewerId, action }, '[数据删除] 管理员审核注销申请');
 
-  // 审核通过后立即执行匿名化
+  // 审核通过后立即执行匿名化，并将申请状态更新合并到同一事务内保证原子性
+  // 设计原因：此前匿名化（T1）与状态更新（Q2）为两个独立操作，T1 成功但 Q2 失败时
+  // 用户数据已不可逆匿名化而申请状态仍为 approved，管理员可能重复触发
   if (action === 'approve') {
-    await executeAnonymization(request.user_id);
-    // 更新申请状态为已完成
-    await query(
-      "UPDATE deletion_requests SET status = 'completed', completed_at = NOW() WHERE id = $1",
-      [requestId],
-    );
+    await executeAnonymization(request.user_id, requestId);
   }
 
   return { id: requestId, status: newStatus };
@@ -287,8 +284,9 @@ async function reviewDeletionRequest(
  * 执行用户数据匿名化
  * 将 PII 字段置为匿名值，并标记用户为已删除
  * @param userId 用户ID
+ * @param requestId 注销申请ID（传入时在同一事务内更新申请状态为 completed，保证原子性）
  */
-async function executeAnonymization(userId: string): Promise<void> {
+async function executeAnonymization(userId: string, requestId?: string): Promise<void> {
   const anonymousNickname = generateAnonymousNickname(userId);
   const anonymousPhoneHash = generateAnonymousPhoneHash(userId);
   const anonymousPhone = generateAnonymousPhone();
@@ -319,11 +317,21 @@ async function executeAnonymization(userId: string): Promise<void> {
       [userId],
     );
 
+    // 在同一事务内更新注销申请状态为 completed（保证原子性）
+    // 设计原因：匿名化不可逆，状态更新必须与匿名化在同一事务内，
+    // 避免匿名化成功但状态更新失败导致管理员重复触发
+    if (requestId) {
+      await client.query(
+        "UPDATE deletion_requests SET status = 'completed', completed_at = NOW() WHERE id = $1",
+        [requestId],
+      );
+    }
+
     // 清除用户缓存
     await userCache.invalidate(userId);
   });
 
-  logger.info({ userId }, '[数据删除] 用户数据匿名化完成');
+  logger.info({ userId, requestId }, '[数据删除] 用户数据匿名化完成');
 }
 
 // ===================== 软删除数据清理 =====================
