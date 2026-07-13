@@ -113,6 +113,8 @@ function ModuleRow({
 export default function Home() {
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [totalMutualAids, setTotalMutualAids] = useState<number | null>(null);
+  // 统计加载失败标志：区分"加载中"（null + 无 error）与"加载失败"（null + error）
+  const [statsError, setStatsError] = useState(false);
   // 首页 Hero 图：默认使用内置图，管理员配置后覆盖
   const [heroImage, setHeroImage] = useState<string>(
     "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Warm%20documentary%20photograph%20of%20a%20Chinese%20neighborhood%20courtyard%20at%20golden%20hour%2C%20candid%20moment%20of%20neighbors%20of%20different%20ages%20chatting%20and%20sharing%20food%2C%20soft%20warm%20sunlight%2C%20shallow%20depth%20of%20field%2C%20earthy%20tones%2C%20calm%20tonal%20area%20on%20the%20left%20for%20text%2C%20no%20text%20no%20signage&image_size=landscape_16_9",
@@ -127,7 +129,10 @@ export default function Home() {
         setTotalUsers(res.data.totalUsers);
         setTotalMutualAids(res.data.totalMutualAids);
       })
-      .catch((err) => console.error("加载首页统计失败:", err));
+      .catch((err) => {
+        console.error("加载首页统计失败:", err);
+        setStatsError(true);
+      });
     // 拉取管理员配置的首页展示图片，未配置时保持默认图
     client
       .get<never, ApiResponse<{ url: string | null }>>("/public/homepage-image")
@@ -137,8 +142,9 @@ export default function Home() {
       .catch((err) => console.error("加载首页图片失败:", err));
   }, []);
 
-  const usersText = totalUsers !== null ? formatCount(totalUsers) : "——";
-  const aidsText = totalMutualAids !== null ? formatCount(totalMutualAids) : "——";
+  // 加载失败时显示"—"，与加载中的"——"区分（加载失败用单个短横线 + title 提示）
+  const usersText = totalUsers !== null ? formatCount(totalUsers) : statsError ? "—" : "——";
+  const aidsText = totalMutualAids !== null ? formatCount(totalMutualAids) : statsError ? "—" : "——";
 
   return (
     <div className="bg-white">

@@ -29,7 +29,8 @@ export default function SkillExchange() {
   const [hasMore, setHasMore] = useState(true);
 
   const loadPosts = useCallback(async (reset = false) => {
-    if (loading) return;
+    // reset 时跳过 loading 守卫，确保切换 Tab/分类/搜索时即使上一次请求未完成也能重新加载
+    if (!reset && loading) return;
     setLoading(true);
     try {
       const newPage = reset ? 1 : page;

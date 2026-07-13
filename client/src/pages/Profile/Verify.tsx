@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ShieldCheck,
@@ -30,16 +30,8 @@ export default function Verify() {
   const [realName, setRealName] = useState("");
   const [idCard, setIdCard] = useState("");
 
-  // 加载认证状态
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-    loadStatus();
-  }, [isAuthenticated, navigate]);
-
-  const loadStatus = async () => {
+  // 加载认证状态：useCallback 稳定引用，满足 useEffect exhaustive-deps
+  const loadStatus = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -50,7 +42,16 @@ export default function Verify() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // 加载认证状态
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    loadStatus();
+  }, [isAuthenticated, navigate, loadStatus]);
 
   // 提交认证申请
   const handleSubmit = async (e: React.FormEvent) => {

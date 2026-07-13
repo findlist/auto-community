@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Trash2,
@@ -34,16 +34,8 @@ export default function DeleteAccount() {
   // 表单状态
   const [reason, setReason] = useState("");
 
-  // 加载注销申请状态
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-    loadStatus();
-  }, [isAuthenticated, navigate]);
-
-  const loadStatus = async () => {
+  // 加载注销申请状态：useCallback 稳定引用，满足 useEffect exhaustive-deps
+  const loadStatus = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -54,7 +46,16 @@ export default function DeleteAccount() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // 加载注销申请状态
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    loadStatus();
+  }, [isAuthenticated, navigate, loadStatus]);
 
   // 提交注销申请
   const handleSubmit = async () => {
