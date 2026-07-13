@@ -18,7 +18,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.DB_PASSWORD = 'test-db-password';
 
-const { mockQuery, mockTransaction, mockClient, mockGroupOrderCheckExpired, mockCreditSettleCredits, mockBackupPerformBackup, mockDataDeletionCleanup, mockLoggerInfo, mockLoggerWarn, mockLoggerError, mockCronSchedule, mockCronCallbacks } = vi.hoisted(() => ({
+const { mockQuery, mockTransaction, mockClient, mockGroupOrderCheckExpired, mockCreditSettleCredits, mockBackupPerformBackup, mockDataDeletionCleanup, mockRecordAllMetrics, mockLoggerInfo, mockLoggerWarn, mockLoggerError, mockCronSchedule, mockCronCallbacks } = vi.hoisted(() => ({
   mockQuery: vi.fn(),
   mockTransaction: vi.fn(),
   mockClient: { query: vi.fn() },
@@ -26,6 +26,7 @@ const { mockQuery, mockTransaction, mockClient, mockGroupOrderCheckExpired, mock
   mockCreditSettleCredits: vi.fn(),
   mockBackupPerformBackup: vi.fn(),
   mockDataDeletionCleanup: vi.fn(),
+  mockRecordAllMetrics: vi.fn(),
   mockLoggerInfo: vi.fn(),
   mockLoggerWarn: vi.fn(),
   mockLoggerError: vi.fn(),
@@ -55,6 +56,13 @@ vi.mock('../../services/backup.service', () => ({
 
 vi.mock('../../services/data-deletion.service', () => ({
   dataDeletionService: { cleanupSoftDeletedData: mockDataDeletionCleanup },
+}));
+
+// mock metrics-calculation.service：隔离 recordAllMetrics 便于断言调度层行为
+// 设计原因：scheduler 只需验证 handleMetricsCollection 是否正确调用 recordAllMetrics 并处理结果，
+// 无需关心具体的指标计算逻辑（已在 metrics-calculation.service.test.ts 中覆盖）
+vi.mock('../../services/metrics-calculation.service', () => ({
+  recordAllMetrics: mockRecordAllMetrics,
 }));
 
 vi.mock('../../utils/logger', () => ({
@@ -93,6 +101,7 @@ import {
   reconcileCreditBalance,
   handleSkillPostExpiry,
   handleDeferredTimeEarn,
+  handleMetricsCollection,
   initScheduler,
 } from '../scheduler';
 
@@ -106,6 +115,7 @@ beforeEach(() => {
   mockCreditSettleCredits.mockReset();
   mockBackupPerformBackup.mockReset();
   mockDataDeletionCleanup.mockReset();
+  mockRecordAllMetrics.mockReset();
   mockLoggerInfo.mockClear();
   mockLoggerWarn.mockClear();
   mockLoggerError.mockClear();
@@ -635,15 +645,15 @@ describe('scheduler - handleDeferredTimeEarn', () => {
 });
 
 // ===================== initScheduler 调度器初始化 =====================
-// 设计原因：initScheduler 内部注册 6 个 cron.schedule 回调，每个回调包含多个 try/catch 隔离的 handler 调用。
+// 设计原因：initScheduler 内部注册 7 个 cron.schedule 回调，每个回调包含多个 try/catch 隔离的 handler 调用。
 // 通过 mockCronCallbacks 数组捕获 schedule 调用的回调，手动触发以覆盖各 try/catch 分支与 stop 方法。
 describe('scheduler - initScheduler', () => {
-  it('注册 6 个定时任务并返回带 stop 方法的句柄', () => {
+  it('注册 7 个定时任务并返回带 stop 方法的句柄', () => {
     const handle = initScheduler();
 
-    // 6 个 cron.schedule 调用：5分钟超时处理 / 每小时帖子过期 / 每日0:01收益发放 / 每日3:00积分对账 / 每日2:00备份 / 每日4:00软删除清理
-    expect(mockCronSchedule).toHaveBeenCalledTimes(6);
-    expect(mockCronCallbacks).toHaveLength(6);
+    // 7 个 cron.schedule 调用：5分钟超时处理 / 每小时帖子过期 / 每日0:01收益发放 / 每日3:00积分对账 / 每日2:00备份 / 每日4:00软删除清理 / 每小时第5分钟指标采集
+    expect(mockCronSchedule).toHaveBeenCalledTimes(7);
+    expect(mockCronCallbacks).toHaveLength(7);
     // 验证 cron 表达式
     expect(mockCronCallbacks[0].expr).toBe('*/5 * * * *');
     expect(mockCronCallbacks[1].expr).toBe('0 * * * *');
@@ -651,6 +661,7 @@ describe('scheduler - initScheduler', () => {
     expect(mockCronCallbacks[3].expr).toBe('0 3 * * *');
     expect(mockCronCallbacks[4].expr).toBe('0 2 * * *');
     expect(mockCronCallbacks[5].expr).toBe('0 4 * * *');
+    expect(mockCronCallbacks[6].expr).toBe('5 * * * *');
     // 返回句柄包含 stop 方法
     expect(typeof handle.stop).toBe('function');
   });
@@ -865,13 +876,14 @@ describe('scheduler - initScheduler', () => {
 
     handle.stop();
 
-    // 验证所有 6 个 task.stop 被调用
+    // 验证所有 7 个 task.stop 被调用
     expect(mockCronCallbacks[0].stop).toHaveBeenCalled();
     expect(mockCronCallbacks[1].stop).toHaveBeenCalled();
     expect(mockCronCallbacks[2].stop).toHaveBeenCalled();
     expect(mockCronCallbacks[3].stop).toHaveBeenCalled();
     expect(mockCronCallbacks[4].stop).toHaveBeenCalled();
     expect(mockCronCallbacks[5].stop).toHaveBeenCalled();
+    expect(mockCronCallbacks[6].stop).toHaveBeenCalled();
     expect(mockLoggerInfo).toHaveBeenCalledWith(expect.stringContaining('调度器已停止'));
   });
 
@@ -892,7 +904,98 @@ describe('scheduler - initScheduler', () => {
     );
     // 验证其他 task.stop 仍被调用
     expect(mockCronCallbacks[1].stop).toHaveBeenCalled();
-    expect(mockCronCallbacks[5].stop).toHaveBeenCalled();
+    expect(mockCronCallbacks[6].stop).toHaveBeenCalled();
     expect(mockLoggerInfo).toHaveBeenCalledWith(expect.stringContaining('调度器已停止'));
+  });
+
+  it('每小时第 5 分钟回调 handleMetricsCollection 全部成功时记录完成日志', async () => {
+    // 设计原因：指标采集任务在 initScheduler 末尾注册（index 6），回调内部仅 try/catch 包裹 handleMetricsCollection
+    mockRecordAllMetrics.mockResolvedValueOnce({ recorded: 5, failed: 0, failedNames: [] });
+
+    initScheduler();
+    const metricsCallback = mockCronCallbacks[6];
+    await metricsCallback.callback();
+
+    expect(mockRecordAllMetrics).toHaveBeenCalledTimes(1);
+    expect(mockLoggerInfo).toHaveBeenCalledWith(
+      expect.objectContaining({ recorded: 5 }),
+      expect.stringContaining('指标采集完成'),
+    );
+  });
+
+  it('每小时第 5 分钟回调 handleMetricsCollection 部分失败时记录 warn 日志', async () => {
+    mockRecordAllMetrics.mockResolvedValueOnce({
+      recorded: 3,
+      failed: 2,
+      failedNames: ['emergency_response_time', 'match_success_rate'],
+    });
+
+    initScheduler();
+    const metricsCallback = mockCronCallbacks[6];
+    await metricsCallback.callback();
+
+    expect(mockLoggerWarn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recorded: 3,
+        failed: 2,
+        failedNames: ['emergency_response_time', 'match_success_rate'],
+      }),
+      expect.stringContaining('指标采集部分失败'),
+    );
+  });
+
+  it('每小时第 5 分钟回调 handleMetricsCollection 抛错时记录异常日志', async () => {
+    mockRecordAllMetrics.mockRejectedValueOnce(new Error('指标采集内部错误'));
+
+    initScheduler();
+    const metricsCallback = mockCronCallbacks[6];
+    await metricsCallback.callback();
+
+    expect(mockLoggerError).toHaveBeenCalledWith(
+      expect.objectContaining({ err: expect.any(Error) }),
+      expect.stringContaining('指标采集异常'),
+    );
+  });
+});
+
+// ===================== handleMetricsCollection 专项测试 =====================
+
+describe('scheduler - handleMetricsCollection', () => {
+  it('全部成功时记录 info 日志', async () => {
+    mockRecordAllMetrics.mockResolvedValueOnce({ recorded: 5, failed: 0, failedNames: [] });
+
+    await handleMetricsCollection();
+
+    expect(mockRecordAllMetrics).toHaveBeenCalledTimes(1);
+    expect(mockLoggerInfo).toHaveBeenCalledWith(
+      expect.objectContaining({ recorded: 5 }),
+      expect.stringContaining('指标采集完成'),
+    );
+    expect(mockLoggerWarn).not.toHaveBeenCalled();
+  });
+
+  it('部分失败时记录 warn 日志含失败指标名', async () => {
+    mockRecordAllMetrics.mockResolvedValueOnce({
+      recorded: 3,
+      failed: 2,
+      failedNames: ['order_completion_rate', 'ai_recommendation_accuracy'],
+    });
+
+    await handleMetricsCollection();
+
+    expect(mockLoggerWarn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recorded: 3,
+        failed: 2,
+        failedNames: ['order_completion_rate', 'ai_recommendation_accuracy'],
+      }),
+      expect.stringContaining('指标采集部分失败'),
+    );
+  });
+
+  it('recordAllMetrics 抛错时向上抛出（由 cron 回调的 try/catch 兜底）', async () => {
+    mockRecordAllMetrics.mockRejectedValueOnce(new Error('DB 连接失败'));
+
+    await expect(handleMetricsCollection()).rejects.toThrow('DB 连接失败');
   });
 });

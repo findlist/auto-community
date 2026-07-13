@@ -4,6 +4,7 @@ import { groupOrderService } from '../services/group-order.service';
 import { creditService } from '../services/credit.service';
 import { backupService } from '../services/backup.service';
 import { dataDeletionService } from '../services/data-deletion.service';
+import { recordAllMetrics } from '../services/metrics-calculation.service';
 import { logger } from '../utils/logger';
 
 // 时间收益每日上限（分钟），与 time-bank.service.ts 保持一致
@@ -398,6 +399,22 @@ export async function reconcileCreditBalance(): Promise<number> {
   return result.rows.length;
 }
 
+// 指标采集：调用 metrics-calculation.service 计算 5 个核心指标并写入 metrics 表
+// 设计原因：原 metrics-calculation.service 的计算函数从未被生产代码调用，导致 metrics 表为空、
+// /metrics/dashboard 端点返回空数组。此任务作为"计算 → 落库"的桥梁，每小时触发一次。
+// 导出便于单元测试直接调用，不改变 initScheduler 的调度行为
+export async function handleMetricsCollection(): Promise<void> {
+  const result = await recordAllMetrics();
+  if (result.failed > 0) {
+    logger.warn(
+      { recorded: result.recorded, failed: result.failed, failedNames: result.failedNames },
+      '[定时任务] 指标采集部分失败',
+    );
+  } else {
+    logger.info({ recorded: result.recorded }, '[定时任务] 指标采集完成');
+  }
+}
+
 // 技能帖子过期处理：将 status='active' AND expires_at < NOW() 的帖子置为 expired
 export async function handleSkillPostExpiry(): Promise<void> {
   const result = await query<{ id: string }>(
@@ -650,7 +667,17 @@ export function initScheduler(): SchedulerHandle {
     logger.info('[定时任务] 软删除数据清理结束');
   }));
 
-  logger.info('[定时任务] 调度器已启动：每 5 分钟超时订单处理 / 每小时帖子过期 / 每日 0:01 收益发放 / 每日 2:00 数据库备份 / 每日 3:00 积分对账 / 每日 4:00 软删除数据清理');
+  // 每小时第 5 分钟采集核心业务指标写入 metrics 表
+  // 设计原因：错峰避开整点的帖子过期处理与备份任务；1 小时粒度足以反映业务趋势，避免高频写入污染 metrics 表
+  tasks.push(cron.schedule('5 * * * *', async () => {
+    try {
+      await handleMetricsCollection();
+    } catch (error) {
+      logger.error({ err: error }, '[定时任务] 指标采集异常');
+    }
+  }));
+
+  logger.info('[定时任务] 调度器已启动：每 5 分钟超时订单处理 / 每小时帖子过期 / 每小时第 5 分钟指标采集 / 每日 0:01 收益发放 / 每日 2:00 数据库备份 / 每日 3:00 积分对账 / 每日 4:00 软删除数据清理');
 
   // 返回调度器句柄：stop 方法遍历停止所有定时任务，单个失败不影响其他任务
   return {
