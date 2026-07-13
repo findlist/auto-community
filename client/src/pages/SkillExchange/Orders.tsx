@@ -27,12 +27,23 @@ const statusColors: Record<string, string> = {
   disputed: "bg-red-100 text-red-700",
 };
 
+// 待确认操作的状态：保存 orderId + 目标 status + 提示文案
+// 设计原因：原生 confirm() 阻塞主线程且移动端样式不可控，改用状态驱动的自定义 Modal，
+// 用户点击"确定"后才真正调用 updateOrderStatus，与 SystemStatus.tsx 弹窗风格保持一致
+interface ConfirmAction {
+  orderId: string;
+  status: string;
+  message: string;
+}
+
 export default function SkillExchangeOrders() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [orders, setOrders] = useState<SkillOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("");
+  // 确认弹窗状态：null 表示弹窗关闭，非 null 即待执行的操作
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -60,14 +71,23 @@ export default function SkillExchangeOrders() {
     }
   };
 
-  const handleCancel = async (orderId: string) => {
-    if (!confirm("确定取消订单吗？")) return;
-    await handleUpdateStatus(orderId, "cancelled");
+  // 打开取消订单确认弹窗：仅设置待执行操作，实际调用由弹窗内"确定"按钮触发
+  const handleCancel = (orderId: string) => {
+    setConfirmAction({ orderId, status: "cancelled", message: "确定取消订单吗？" });
   };
 
-  const handleReject = async (orderId: string) => {
-    if (!confirm("确定拒绝订单吗？")) return;
-    await handleUpdateStatus(orderId, "rejected");
+  // 打开拒绝订单确认弹窗：同上，延迟到用户确认后才执行状态变更
+  const handleReject = (orderId: string) => {
+    setConfirmAction({ orderId, status: "rejected", message: "确定拒绝订单吗？" });
+  };
+
+  // 用户在弹窗中点击"确定"后执行实际状态更新
+  // 先清空 confirmAction 关闭弹窗，避免重复点击；handleUpdateStatus 内部已有 try/catch + toast 兜底
+  const confirmActionRun = async () => {
+    if (!confirmAction) return;
+    const { orderId, status } = confirmAction;
+    setConfirmAction(null);
+    await handleUpdateStatus(orderId, status);
   };
 
   const filteredOrders = statusFilter
@@ -258,6 +278,39 @@ export default function SkillExchangeOrders() {
           <div className="flex gap-2">{renderActionButton(order)}</div>
         </div>
       ))}
+
+      {/* 操作确认弹窗：替代原生 confirm()，与 SystemStatus.tsx 弹窗风格统一 */}
+      {/* role="dialog" 提升无障碍语义，便于测试用 within 精确定位弹窗内按钮 */}
+      {confirmAction && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          onClick={() => setConfirmAction(null)}
+        >
+          <div
+            role="dialog"
+            aria-label="操作确认"
+            className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-neutral-800 mb-2">操作确认</h3>
+            <p className="text-sm text-neutral-600 mb-6">{confirmAction.message}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmAction(null)}
+                className="px-4 py-2 text-sm text-neutral-600 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmActionRun}
+                className="px-4 py-2 text-sm text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

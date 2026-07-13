@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：act 包裹 fireEvent 避免 React state 更新未包裹警告
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+// within 用于在 role=dialog 弹窗内精确定位按钮，避免与列表同名按钮冲突
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import SkillExchangeOrders from '../Orders';
 import type { SkillOrder, User } from '@/types';
@@ -209,8 +210,7 @@ describe('SkillExchange 订单列表与状态操作', () => {
     vi.mocked(updateOrderStatus).mockResolvedValue({ code: 0, message: 'ok', data: mockOrders[0]! });
     // 默认卖方视角
     switchCurrentUser(mockSeller);
-    // window.confirm 默认返回 true，便于测试确认流程
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    // 原 window.confirm 已替换为自定义 Modal，不再需要 mock confirm
   });
 
   afterEach(() => {
@@ -360,7 +360,7 @@ describe('SkillExchange 订单列表与状态操作', () => {
     expect(vi.mocked(getOrders).mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('点击"取消"触发 confirm 对话框，确认后调用 updateOrderStatus', async () => {
+  it('点击"取消"打开确认弹窗，确认后调用 updateOrderStatus', async () => {
     // 切换为买方视角（pending + buyer 显示"取消"按钮）
     switchCurrentUser(mockBuyer);
     const pendingOrders = [mockOrders[0]!];
@@ -369,17 +369,21 @@ describe('SkillExchange 订单列表与状态操作', () => {
     renderOrdersPage();
     await waitForListLoaded();
 
+    // 点击列表"取消"按钮，应弹出确认弹窗（role=dialog）
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '取消' }));
     });
+    const dialog = await screen.findByRole('dialog', { name: '操作确认' });
+    // 在弹窗内点击"确定"按钮触发实际状态更新
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: '确定' }));
+    });
 
-    // 验证 confirm 对话框被调用
-    expect(window.confirm).toHaveBeenCalled();
     // 验证调用 updateOrderStatus 传入 cancelled 状态
     expect(vi.mocked(updateOrderStatus)).toHaveBeenCalledWith('order-pending', 'cancelled');
   });
 
-  it('点击"拒绝"触发 confirm 对话框，确认后调用 updateOrderStatus', async () => {
+  it('点击"拒绝"打开确认弹窗，确认后调用 updateOrderStatus', async () => {
     const pendingOrders = [mockOrders[0]!];
     vi.mocked(getOrders).mockResolvedValue(buildPageResponse(pendingOrders));
 
@@ -389,16 +393,17 @@ describe('SkillExchange 订单列表与状态操作', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '拒绝' }));
     });
+    const dialog = await screen.findByRole('dialog', { name: '操作确认' });
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: '确定' }));
+    });
 
-    // 验证 confirm 对话框被调用
-    expect(window.confirm).toHaveBeenCalled();
     // 验证调用 updateOrderStatus 传入 rejected 状态
     expect(vi.mocked(updateOrderStatus)).toHaveBeenCalledWith('order-pending', 'rejected');
   });
 
-  it('confirm 取消时不调用 updateOrderStatus', async () => {
-    // 用户在 confirm 对话框点击"取消"
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('弹窗点击"取消"按钮不调用 updateOrderStatus', async () => {
+    // 用户在自定义弹窗中点击"取消"按钮关闭弹窗
     const pendingOrders = [mockOrders[0]!];
     vi.mocked(getOrders).mockResolvedValue(buildPageResponse(pendingOrders));
 
@@ -407,6 +412,11 @@ describe('SkillExchange 订单列表与状态操作', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '拒绝' }));
+    });
+    const dialog = await screen.findByRole('dialog', { name: '操作确认' });
+    // 在弹窗内点击"取消"按钮关闭弹窗，不应触发状态更新
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: '取消' }));
     });
 
     // 验证未调用 updateOrderStatus
