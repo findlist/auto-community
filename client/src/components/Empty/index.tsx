@@ -13,6 +13,11 @@ interface EmptyProps {
   description?: string;
   icon?: ReactNode;
   action?: ReactNode;
+  /**
+   * 紧凑模式：用于 max-h 限高的滚动容器内（如告警日志面板），
+   * 缩小内边距与图标尺寸避免撑高容器导致多余滚动条
+   */
+  compact?: boolean;
 }
 
 const defaultConfig: Record<EmptyVariant, { icon: ReactNode; title: string; description: string; color: string }> = {
@@ -48,18 +53,25 @@ export default function Empty({
   description,
   icon,
   action,
+  compact = false,
 }: EmptyProps) {
   const config = defaultConfig[variant];
   return (
     <div
       role="status"
       aria-live="polite"
-      className="flex flex-col items-center justify-center py-16 px-4 animate-fade-in"
+      className={`flex flex-col items-center justify-center px-4 animate-fade-in ${
+        compact ? "py-8" : "py-16"
+      }`}
     >
-      <div className={`${config.color} mb-4 opacity-80`}>
+      <div className={`${config.color} ${compact ? "mb-2" : "mb-4"} opacity-80`}>
         {icon || config.icon}
       </div>
-      <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">
+      <h3
+        className={`${compact ? "text-base" : "text-lg"} font-medium text-[var(--color-text-primary)] ${
+          compact ? "mb-1" : "mb-2"
+        }`}
+      >
         {title || config.title}
       </h3>
       <p className="text-sm text-[var(--color-text-tertiary)] text-center max-w-xs mb-6">

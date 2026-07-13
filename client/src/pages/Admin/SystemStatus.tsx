@@ -19,6 +19,7 @@ import {
 } from "@/api/admin";
 import { ApiError } from "@/api/client";
 import { toast } from "@/components/Toast";
+import Empty from "@/components/Empty";
 
 // 格式化运行时间
 function formatUptime(seconds: number): string {
@@ -305,9 +306,11 @@ export default function SystemStatus() {
         </div>
         <div className="max-h-80 overflow-y-auto">
           {alerts.length === 0 ? (
-            <div className="px-4 py-8 text-center text-neutral-500">
-              暂无告警日志
-            </div>
+            <Empty
+              compact
+              title="暂无告警日志"
+              icon={<CheckCircle className="w-10 h-10 text-[var(--color-success)]" />}
+            />
           ) : (
             <ul className="divide-y divide-neutral-100">
               {alerts.map((alert, index) => (

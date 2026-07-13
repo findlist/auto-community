@@ -50,4 +50,12 @@ describe("Empty 空状态组件", () => {
     render(<Empty />);
     expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
   });
+
+  it("compact 模式应用紧凑内边距类名，用于限高滚动容器", () => {
+    const { container } = render(<Empty compact title="紧凑空状态" />);
+    // compact 模式根容器使用 py-8 而非默认 py-16，避免在 max-h 限高容器内撑高
+    expect(container.firstChild).toHaveClass("py-8");
+    expect(container.firstChild).not.toHaveClass("py-16");
+    expect(screen.getByText("紧凑空状态")).toBeInTheDocument();
+  });
 });
