@@ -395,7 +395,11 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
     const script = document.createElement('script');
     script.src = `https://webapi.amap.com/maps?v=2.0&key=${window._AMAP_KEY || ''}`;
     script.onload = () => setMapLoaded(true);
-    script.onerror = () => console.error('地图加载失败');
+    // 地图 SDK 加载失败时提示用户，降级模式下仍可查看资源列表
+    script.onerror = () => {
+      console.error('地图加载失败');
+      toast.error('地图加载失败，已切换为列表模式查看');
+    };
     document.head.appendChild(script);
 
     // cleanup：组件卸载或 showMap 关闭时移除未加载完成的 script，避免 DOM 堆积
@@ -932,6 +936,8 @@ function ListView() {
       setRequests(res.data.list);
     } catch (err) {
       console.error("加载求助列表失败:", err);
+      // 应急场景时效性高，加载失败需提示用户，避免误以为当前无求助
+      toast.error(getErrorMessage(err, "加载求助列表失败，请稍后重试"));
     } finally {
       setLoading(false);
     }

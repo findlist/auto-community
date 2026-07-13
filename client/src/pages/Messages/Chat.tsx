@@ -122,6 +122,8 @@ export default function Chat() {
             })
             .catch((error) => {
               console.error("拉取离线消息失败:", error);
+              // 重连后拉取离线消息失败需提示用户手动刷新，避免漏读消息无感知
+              toast.error(getErrorMessage(error, "拉取离线消息失败，请下拉刷新重试"));
             });
         }
         wasReconnecting = false;

@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { getCreditHistory } from "@/api/user";
 import type { CreditTransaction } from "@/types";
+import { toast } from "@/components/Toast";
+import { getErrorMessage } from "@/utils/error";
 
 // 交易类型中文映射
 const typeLabel: Record<string, string> = {
@@ -43,8 +45,9 @@ export default function PointsDetail() {
       const res = await getCreditHistory(p, PAGE_SIZE);
       setTransactions(res.data.list);
       setTotal(res.data.total);
-    } catch {
-      // 静默处理
+    } catch (err) {
+      // 加载失败需提示用户，避免误以为账户无记录（区分"无数据"与"加载失败"）
+      toast.error(getErrorMessage(err, "加载积分明细失败，请稍后重试"));
     } finally {
       setLoading(false);
     }
