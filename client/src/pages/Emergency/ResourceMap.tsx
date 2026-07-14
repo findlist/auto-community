@@ -317,7 +317,7 @@ export default function ResourceMap() {
   }, [resources, userLocation]);
 
   return (
-    <div className="px-4 lg:px-10 py-6 pb-24 lg:pb-12 max-w-6xl lg:mx-auto">
+    <div className="px-4 lg:px-10 py-6 pb-24 lg:pb-12 max-w-6xl mx-auto">
       {/* 顶部：返回 + 标题 + 定位状态 */}
       <button
         onClick={() => navigate("/emergency")}

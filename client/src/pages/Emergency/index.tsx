@@ -951,7 +951,7 @@ function ListView() {
   const tabLabel = activeTab === "emergency" ? "紧急求助" : activeTab === "daily" ? "日常互助" : "全部求助";
 
   return (
-    <div className="px-4 lg:px-10 py-6 pb-24 lg:pb-12 max-w-6xl lg:mx-auto">
+    <div className="px-4 lg:px-10 py-6 pb-24 lg:pb-12 max-w-6xl mx-auto">
       {/* 页面标题 + 操作
           flex-wrap：移动端窄屏按钮组自动换行，避免挤压标题
           gap-y-2：换行后行间距与列间距区分 */}
