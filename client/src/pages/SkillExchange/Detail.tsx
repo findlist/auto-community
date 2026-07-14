@@ -136,7 +136,7 @@ export default function Detail() {
     // max-w-2xl mx-auto：详情页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="pb-20 max-w-2xl mx-auto">
       <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
-        <button onClick={() => navigate(-1)} aria-label="返回" className="p-1.5 hover:bg-gray-100 rounded transition-colors">
+        <button onClick={() => navigate(-1)} aria-label="返回" className="p-2.5 hover:bg-gray-100 rounded transition-colors">
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>
         <h1 className="text-lg font-medium text-gray-900 flex-1 truncate">{post.title}</h1>

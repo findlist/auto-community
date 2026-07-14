@@ -119,7 +119,7 @@ export default function Dispute() {
     <div className="px-4 py-4 pb-20 max-w-2xl mx-auto">
       {/* 顶部导航 */}
       <div className="flex items-center gap-3 mb-4">
-        <button onClick={() => navigate("/skill-exchange/orders")} aria-label="返回" className="p-1.5 hover:bg-gray-100 rounded transition-colors">
+        <button onClick={() => navigate("/skill-exchange/orders")} aria-label="返回" className="p-2.5 hover:bg-gray-100 rounded transition-colors">
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>
         <h1 className="text-lg font-bold text-gray-900">订单争议</h1>

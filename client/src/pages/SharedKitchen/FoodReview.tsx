@@ -78,7 +78,7 @@ export default function FoodReviewPage() {
         <button
           onClick={() => navigate(`/kitchen/${postId}`)}
           aria-label="返回"
-          className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+          className="p-2.5 hover:bg-gray-100 rounded transition-colors"
         >
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>
