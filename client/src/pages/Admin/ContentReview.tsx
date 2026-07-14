@@ -514,7 +514,7 @@ export default function ContentReview() {
             {/* 弹窗头部 */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100">
               <h3 className="font-semibold text-neutral-800">编辑内容</h3>
-              <button onClick={handleCloseEdit} className="p-1 hover:bg-neutral-100 rounded">
+              <button onClick={handleCloseEdit} className="p-2.5 hover:bg-neutral-100 rounded transition-colors">
                 <X className="w-5 h-5 text-neutral-500" />
               </button>
             </div>
