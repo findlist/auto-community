@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { getResources } from "@/api/emergency";
 import { escapeHtml } from "@/utils/format";
+// Empty 组件统一空状态视觉规范，替代零散 emoji + 文案组合
+import Empty from "@/components/Empty";
 import type { EmergencyResource } from "@/types";
 
 // 资源类型元数据：用于列表图标与标记颜色区分，未命中时回退为通用样式
@@ -431,11 +433,11 @@ export default function ResourceMap() {
               ))}
             </div>
           ) : resourcesWithDistance.length === 0 ? (
-            <div className="py-12 text-center text-[var(--color-text-tertiary)]">
-              <Package className="w-12 h-12 mx-auto mb-3 text-[var(--color-neutral-300)]" />
-              <p className="text-sm">暂无应急资源</p>
-              <p className="text-xs mt-1">可尝试切换筛选条件</p>
-            </div>
+            <Empty
+              icon={<Package className="w-12 h-12" />}
+              title="暂无应急资源"
+              description="可尝试切换筛选条件"
+            />
           ) : (
             <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
               {resourcesWithDistance.map(({ resource: r, distance }) => {

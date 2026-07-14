@@ -15,6 +15,8 @@ import type {
 } from "@/types";
 import { SkeletonListCard, SkeletonDetail } from "@/components/Skeleton";
 import { LoadingButton } from "@/components/Button";
+// Empty 组件统一空状态视觉规范，替代零散 emoji + 文案组合
+import Empty from "@/components/Empty";
 import LocationPicker from "@/components/Map/LocationPicker";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { validateRequired, validateMinLength, validateMaxLength, validatePhone } from "@/utils/formValidation";
@@ -525,10 +527,11 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
             ))}
           </div>
         ) : resources.length === 0 ? (
-          <div className="py-12 text-center text-[var(--color-text-tertiary)]">
-            <Package className="w-12 h-12 mx-auto mb-3 text-[var(--color-neutral-300)]" />
-            <p>暂无相关资源</p>
-          </div>
+          <Empty
+            icon={<Package className="w-12 h-12" />}
+            title="暂无相关资源"
+            description="暂时没有可用的应急资源"
+          />
         ) : (
           <div className="space-y-3">
             {resources.map((r) => (
@@ -1009,11 +1012,11 @@ function ListView() {
       {loading ? (
         <SkeletonListCard count={3} />
       ) : requests.length === 0 ? (
-        <div className="py-20 text-center text-neutral-400">
-          <Heart className="w-10 h-10 mx-auto mb-3 text-neutral-300" />
-          <p className="text-sm">暂无求助信息</p>
-          <p className="text-xs mt-1">成为第一个伸出援手的人吧</p>
-        </div>
+        <Empty
+          icon={<Heart className="w-10 h-10" />}
+          title="暂无求助信息"
+          description="成为第一个伸出援手的人吧"
+        />
       ) : (
         // 列表项自带分隔线，外层仅纵向排列
         <div className="flex flex-col">
