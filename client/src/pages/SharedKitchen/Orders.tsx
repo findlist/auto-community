@@ -14,6 +14,12 @@ export default function Orders() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   // 评价弹窗状态
   const [reviewOrderId, setReviewOrderId] = useState<string | null>(null);
+  // 待确认操作的状态：保存 orderId + 操作类型 + 提示文案
+  // 设计原因：原生 confirm() 阻塞主线程且移动端样式不可控，改用状态驱动的自定义 Modal，
+  // 用户点击"确定"后才真正调用 confirmFoodOrder/cancelFoodOrder，与 SystemStatus/SkillExchange 弹窗风格统一
+  const [confirmAction, setConfirmAction] = useState<
+    { orderId: string; action: "confirm" | "cancel"; message: string } | null
+  >(null);
 
   // 加载订单
   const loadOrders = useCallback(async (reset = false) => {
@@ -51,15 +57,9 @@ export default function Orders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, statusFilter]);
 
-  // 确认订单
-  const handleConfirm = async (orderId: string) => {
-    if (!confirm("确认此订单？")) return;
-    try {
-      await confirmFoodOrder(orderId);
-      loadOrders(true);
-    } catch (error) {
-      toast.error(getErrorMessage(error, "操作失败"));
-    }
+  // 打开确认订单弹窗：仅记录待执行操作，实际调用由弹窗内"确定"按钮触发
+  const handleConfirm = (orderId: string) => {
+    setConfirmAction({ orderId, action: "confirm", message: "确认此订单？" });
   };
 
   // 完成订单：打开评价弹窗
@@ -72,11 +72,23 @@ export default function Orders() {
     loadOrders(true);
   };
 
-  // 取消订单
-  const handleCancel = async (orderId: string) => {
-    if (!confirm("确定取消订单吗？")) return;
+  // 打开取消订单弹窗：同上，延迟到用户确认后才执行状态变更
+  const handleCancel = (orderId: string) => {
+    setConfirmAction({ orderId, action: "cancel", message: "确定取消订单吗？" });
+  };
+
+  // 用户在弹窗中点击"确定"后执行实际状态变更
+  // 先清空 confirmAction 关闭弹窗，避免重复点击；内部 try/catch 已有 toast 兜底
+  const confirmActionRun = async () => {
+    if (!confirmAction) return;
+    const { orderId, action } = confirmAction;
+    setConfirmAction(null);
     try {
-      await cancelFoodOrder(orderId);
+      if (action === "confirm") {
+        await confirmFoodOrder(orderId);
+      } else {
+        await cancelFoodOrder(orderId);
+      }
       loadOrders(true);
     } catch (error) {
       // axios 拦截器已将 HTTP 错误统一转为 ApiError，用 getErrorMessage 提取可读文案
@@ -249,6 +261,43 @@ export default function Orders() {
         onClose={() => setReviewOrderId(null)}
         onSuccess={handleReviewSuccess}
       />
+
+      {/* 操作确认弹窗：替代原生 confirm()，与 SystemStatus/SkillExchange 弹窗风格统一 */}
+      {/* role="dialog" 提升无障碍语义，便于测试用 within 精确定位弹窗内按钮 */}
+      {confirmAction && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          onClick={() => setConfirmAction(null)}
+        >
+          <div
+            role="dialog"
+            aria-label="操作确认"
+            className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-neutral-800 mb-2">操作确认</h3>
+            <p className="text-sm text-neutral-600 mb-6">{confirmAction.message}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmAction(null)}
+                className="px-4 py-2 text-sm text-neutral-600 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmActionRun}
+                className={`px-4 py-2 text-sm text-white rounded-lg transition-colors ${
+                  confirmAction.action === "confirm"
+                    ? "bg-emerald-600 hover:bg-emerald-700"
+                    : "bg-red-600 hover:bg-red-700"
+                }`}
+              >
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

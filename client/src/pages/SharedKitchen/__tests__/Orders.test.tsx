@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：act 包裹 fireEvent 避免 React state 更新未包裹警告
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Orders from '../Orders';
 import type { KitchenOrder } from '@/types';
@@ -155,8 +155,6 @@ describe('SharedKitchen 订单列表与状态操作', () => {
     vi.mocked(getFoodOrders).mockResolvedValue(buildPageResponse());
     vi.mocked(confirmFoodOrder).mockResolvedValue({ code: 0, message: 'ok', data: mockOrders[0]! });
     vi.mocked(cancelFoodOrder).mockResolvedValue({ code: 0, message: 'ok', data: mockOrders[0]! });
-    // window.confirm 默认返回 true，便于测试确认流程
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -314,13 +312,17 @@ describe('SharedKitchen 订单列表与状态操作', () => {
       fireEvent.click(screen.getByRole('button', { name: '确认' }));
     });
 
-    // 验证 confirm 对话框被调用
-    expect(window.confirm).toHaveBeenCalled();
+    // 弹窗出现后，用 within 精确定位弹窗内的"确定"按钮并点击确认
+    const dialog = await screen.findByRole('dialog', { name: '操作确认' });
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: '确定' }));
+    });
+
     // 验证调用 confirmFoodOrder 传入 orderId
     expect(vi.mocked(confirmFoodOrder)).toHaveBeenCalledWith('order-pending');
   });
 
-  it('点击"取消"触发 confirm 对话框，确认后调用 cancelFoodOrder', async () => {
+  it('点击"取消"打开弹窗，确认后调用 cancelFoodOrder', async () => {
     // mock 返回 pending 订单（buyer 视角也显示"取消"按钮）
     vi.mocked(getFoodOrders).mockResolvedValue(buildPageResponse([mockOrders[0]!]));
 
@@ -331,15 +333,17 @@ describe('SharedKitchen 订单列表与状态操作', () => {
       fireEvent.click(screen.getByRole('button', { name: '取消' }));
     });
 
-    // 验证 confirm 对话框被调用
-    expect(window.confirm).toHaveBeenCalled();
+    // 弹窗出现后点击"确定"
+    const dialog = await screen.findByRole('dialog', { name: '操作确认' });
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: '确定' }));
+    });
+
     // 验证调用 cancelFoodOrder 传入 orderId
     expect(vi.mocked(cancelFoodOrder)).toHaveBeenCalledWith('order-pending');
   });
 
-  it('confirm 取消时不调用 confirmFoodOrder', async () => {
-    // 用户在 confirm 对话框点击"取消"
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('弹窗取消时不调用 confirmFoodOrder', async () => {
     vi.mocked(getFoodOrders).mockResolvedValue(buildPageResponse([mockOrders[0]!]));
 
     renderOrdersPage();
@@ -356,6 +360,12 @@ describe('SharedKitchen 订单列表与状态操作', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    });
+
+    // 弹窗出现后点击"取消"放弃操作
+    const dialog = await screen.findByRole('dialog', { name: '操作确认' });
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: '取消' }));
     });
 
     // 验证未调用 confirmFoodOrder
@@ -421,6 +431,12 @@ describe('SharedKitchen 订单列表与状态操作', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    });
+
+    // 弹窗出现后点击"确定"触发 confirmFoodOrder 失败
+    const dialog = await screen.findByRole('dialog', { name: '操作确认' });
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: '确定' }));
     });
 
     // 验证 toast.error 提示（getErrorMessage 从 ApiError 提取后端返回的 message）
