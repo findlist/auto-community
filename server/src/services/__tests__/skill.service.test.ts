@@ -24,9 +24,15 @@ const { mockQuery } = vi.hoisted(() => ({
   mockQuery: vi.fn(),
 }));
 
-vi.mock('../../config/database', () => ({
-  query: mockQuery,
-}));
+// mock database 模块：保留 isSqlParam 等真实实现，仅覆盖 query 便于按调用顺序模拟返回值
+// 设计原因：updatePost 用 isSqlParam type guard 校验字段类型，需真实实现保证守卫逻辑正确
+vi.mock('../../config/database', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../config/database')>();
+  return {
+    ...actual,
+    query: mockQuery,
+  };
+});
 
 // mock sanitize 模块：sanitizeObject 直接返回原对象（透传），validateImageUrls 直接放行
 // 设计原因：XSS 清洗与图片 URL 校验已有独立测试，此处 mock 避免重复测试，聚焦 service 逻辑
@@ -304,6 +310,19 @@ describe('skill.service updatePost', () => {
     // 验证 UPDATE SQL 含 images 字段
     const updateSql = mockQuery.mock.calls[1][0] as string;
     expect(updateSql).toContain('images = $1');
+  });
+
+  it('字段值为函数类型时抛 BadRequestError（isSqlParam 守卫）', async () => {
+    // 权限校验通过
+    mockQuery.mockResolvedValueOnce({ rows: [{ user_id: 'user-1' }] });
+
+    // 模拟运行时恶意输入：title 字段为函数，绕过 TS 类型检查
+    const maliciousInput = { title: (() => {}) as unknown as string };
+    await expect(
+      skillService.updatePost('post-1', 'user-1', maliciousInput),
+    ).rejects.toThrow(BadRequestError);
+    // 确保未执行 UPDATE
+    expect(mockQuery).toHaveBeenCalledTimes(1);
   });
 });
 

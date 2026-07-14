@@ -1,4 +1,4 @@
-import { query, SqlParam } from '../config/database';
+import { query, SqlParam, isSqlParam } from '../config/database';
 import { NotFoundError, BadRequestError, PermissionDeniedError } from '../utils/errors';
 import { sanitizeObject, validateImageUrls } from '../utils/sanitize';
 import { skillPostCache } from './cache.service';
@@ -212,12 +212,17 @@ async function updatePost(id: string, userId: string, data: UpdateSkillPostDTO) 
 
   // 设计原因：sanitized 是 UpdateSkillPostDTO，TS 不允许用 string 索引，
   // 转为 Record<string, unknown> 后可按字段名动态取值，运行时安全
+  // 与 admin.service.ts updateContent 对齐：用 isSqlParam type guard 显式校验
+  // 运行时类型，校验失败抛 BadRequestError，比 as SqlParam 静默断言更早暴露问题
   const sanitizedRecord = sanitized as unknown as Record<string, unknown>;
   for (const field of allowedFields) {
-    if (sanitizedRecord[field] !== undefined) {
-      fields.push(`${field} = $${paramIndex++}`);
-      values.push(sanitizedRecord[field] as SqlParam);
+    const value = sanitizedRecord[field];
+    if (value === undefined) continue;
+    if (!isSqlParam(value)) {
+      throw new BadRequestError(`字段 ${field} 类型不合法`);
     }
+    fields.push(`${field} = $${paramIndex++}`);
+    values.push(value);
   }
 
   if (fields.length === 0) return getPostById(id);
