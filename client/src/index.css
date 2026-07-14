@@ -145,12 +145,27 @@ html {
   background-color: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* 平滑锚点滚动，提升同页跳转体验；尊重减弱动画偏好时由下方 media 规则禁用 */
+  scroll-behavior: smooth;
+  /* 优化字形渲染与字距，标题与正文更清晰 */
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
   background-color: var(--color-bg);
+}
+
+/* 文本选区配色：使用邻里绿主色，强化品牌识别 */
+::selection {
+  background-color: var(--color-primary-200);
+  color: var(--color-primary-900);
+}
+::-moz-selection {
+  background-color: var(--color-primary-200);
+  color: var(--color-primary-900);
 }
 
 * {
@@ -281,5 +296,8 @@ button {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto !important;
   }
 }

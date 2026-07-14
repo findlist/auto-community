@@ -69,7 +69,7 @@ export default function ForgotPassword() {
           <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mb-5">
             <span className="text-emerald-300 text-3xl">✓</span>
           </div>
-          <h1 className="text-white text-2xl font-bold mb-2">验证码已发送</h1>
+          <h1 className="text-white text-2xl font-bold mb-2 text-balance">验证码已发送</h1>
           <p className="text-white/70 text-sm mb-6">
             验证码已发送至 {phone}
             <br />
@@ -103,7 +103,7 @@ export default function ForgotPassword() {
       <div className="relative w-full max-w-md">
         {/* 品牌字标 */}
         <div className="text-center mb-8 animate-fade-in-up">
-          <h1 className="text-white text-4xl lg:text-5xl font-bold tracking-tight mb-2">
+          <h1 className="text-white text-4xl lg:text-5xl font-bold tracking-tight mb-2 text-balance drop-shadow-sm">
             忘记密码
           </h1>
           <p className="text-white/70 text-sm tracking-wide">
@@ -134,7 +134,7 @@ export default function ForgotPassword() {
                 }}
                 placeholder="请输入注册手机号"
                 autoComplete="tel"
-                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-all ${
+                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/50 focus:shadow-[0_0_0_4px_rgba(255,255,255,0.06)] transition-all ${
                   fieldErrors.phone ? "border-red-400/70" : "border-white/20"
                 }`}
               />
@@ -153,7 +153,7 @@ export default function ForgotPassword() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-white text-neutral-900 rounded-xl font-semibold hover:bg-neutral-100 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+            className="w-full py-3 bg-white text-neutral-900 rounded-xl font-semibold hover:bg-neutral-100 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-black/10"
           >
             {loading ? (
               <span className="flex items-center gap-2">

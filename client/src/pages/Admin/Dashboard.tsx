@@ -189,7 +189,7 @@ export default function Dashboard() {
       {/* 顶部欢迎区 */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+          <h2 className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2 text-balance">
             <Activity className="w-5 h-5 text-[var(--color-primary-500)]" />
             数据统计看板
           </h2>
@@ -207,10 +207,10 @@ export default function Dashboard() {
           return (
             <div
               key={key}
-              className="bg-white rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 stagger-item"
+              className="group bg-white rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 stagger-item"
               style={{ animationDelay: `${idx * 40}ms` }}
             >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${bg}`}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 transition-transform duration-200 group-hover:scale-110 ${bg}`}>
                 <Icon className={`w-5 h-5 ${color}`} />
               </div>
               <div className="text-2xl font-bold text-[var(--color-text-primary)] tabular-nums">

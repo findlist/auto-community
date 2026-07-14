@@ -125,7 +125,7 @@ export default function SkillExchange() {
       <div className="flex items-end justify-between mb-6 lg:mb-8">
         <div>
           <p className="text-xs tracking-widest mb-2 font-mono" style={{ color: "var(--color-module-skill)" }}>—— 技能交换</p>
-          <h1 className="text-3xl lg:text-4xl font-semibold text-neutral-900 tracking-tight">
+          <h1 className="text-3xl lg:text-4xl font-semibold text-neutral-900 tracking-tight text-balance">
             {activeTab === "offer" ? "邻居能提供什么" : "邻居需要什么"}
           </h1>
         </div>

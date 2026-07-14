@@ -40,7 +40,7 @@ export default function TimeBank() {
       <div className="flex items-end justify-between mb-6 lg:mb-8">
         <div>
           <p className="text-xs tracking-widest mb-2 font-mono" style={{ color: "var(--color-module-timebank)" }}>—— 时间银行</p>
-          <h1 className="text-3xl lg:text-4xl font-semibold text-neutral-900 tracking-tight">
+          <h1 className="text-3xl lg:text-4xl font-semibold text-neutral-900 tracking-tight text-balance">
             {activeTab === "provide" ? "邻居愿意花时间帮你" : "邻居需要你的一小时"}
           </h1>
         </div>
@@ -82,7 +82,7 @@ export default function TimeBank() {
             onClick={() => navigate(path)}
             className="bg-white rounded-xl p-3 lg:p-4 border border-neutral-100 shadow-sm hover:shadow-md hover:border-violet-200 hover:-translate-y-0.5 transition-all duration-200 text-left group"
           >
-            <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center mb-2 group-hover:bg-violet-100 transition-colors">
+            <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center mb-2 group-hover:bg-violet-100 group-hover:scale-105 transition-all">
               <Icon className="w-4 h-4 text-violet-600" />
             </div>
             <div className="text-sm font-medium text-neutral-900 mb-0.5">{label}</div>

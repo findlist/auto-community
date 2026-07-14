@@ -93,7 +93,7 @@ export default function Register() {
       <div className="relative w-full max-w-md">
         {/* 品牌字标 */}
         <div className="text-center mb-8 animate-fade-in-up">
-          <h1 className="text-white text-4xl lg:text-5xl font-bold tracking-tight mb-2">
+          <h1 className="text-white text-4xl lg:text-5xl font-bold tracking-tight mb-2 text-balance drop-shadow-sm">
             加入邻里圈
           </h1>
           <p className="text-white/70 text-sm tracking-wide">
@@ -124,7 +124,7 @@ export default function Register() {
                 }}
                 placeholder="给自己取个名字"
                 autoComplete="nickname"
-                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-all ${
+                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/50 focus:shadow-[0_0_0_4px_rgba(255,255,255,0.06)] transition-all ${
                   fieldErrors.nickname ? "border-red-400/70" : "border-white/20"
                 }`}
               />
@@ -151,7 +151,7 @@ export default function Register() {
                 }}
                 placeholder="请输入手机号"
                 autoComplete="tel"
-                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-all ${
+                className={`w-full pl-10 pr-3.5 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/50 focus:shadow-[0_0_0_4px_rgba(255,255,255,0.06)] transition-all ${
                   fieldErrors.phone ? "border-red-400/70" : "border-white/20"
                 }`}
               />
@@ -178,14 +178,14 @@ export default function Register() {
                 }}
                 placeholder="至少6位"
                 autoComplete="new-password"
-                className={`w-full pl-10 pr-10 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-all ${
+                className={`w-full pl-10 pr-10 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/50 focus:shadow-[0_0_0_4px_rgba(255,255,255,0.06)] transition-all ${
                   fieldErrors.password ? "border-red-400/70" : "border-white/20"
                 }`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all"
                 aria-label={showPassword ? "隐藏密码" : "显示密码"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -213,14 +213,14 @@ export default function Register() {
                 }}
                 placeholder="再次输入密码"
                 autoComplete="new-password"
-                className={`w-full pl-10 pr-10 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/40 transition-all ${
+                className={`w-full pl-10 pr-10 py-3 bg-white/5 border rounded-xl text-white placeholder:text-white/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/50 focus:shadow-[0_0_0_4px_rgba(255,255,255,0.06)] transition-all ${
                   fieldErrors.confirmPassword ? "border-red-400/70" : "border-white/20"
                 }`}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all"
                 aria-label={showConfirmPassword ? "隐藏密码" : "显示密码"}
               >
                 {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -268,7 +268,7 @@ export default function Register() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-white text-neutral-900 rounded-xl font-semibold hover:bg-neutral-100 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+            className="w-full py-3 bg-white text-neutral-900 rounded-xl font-semibold hover:bg-neutral-100 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-black/10"
           >
             {loading ? (
               <span className="flex items-center gap-2">

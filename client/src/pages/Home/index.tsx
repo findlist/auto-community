@@ -87,7 +87,7 @@ function ModuleRow({
               backgroundColor: accent,
             }}
           />
-          <span className="font-mono text-xs lg:text-sm text-neutral-400 tracking-wider">
+          <span className="font-mono text-xs lg:text-sm text-neutral-400 tracking-wider group-hover:text-neutral-600 transition-colors">
             {no}
           </span>
         </div>
@@ -173,7 +173,7 @@ export default function Home() {
 
             {/* 品牌字标：全页最响 */}
             <h1
-              className="text-white font-bold tracking-tight leading-[0.95] animate-fade-in-up mb-4"
+              className="text-white font-bold tracking-tight leading-[0.95] animate-fade-in-up mb-4 text-balance drop-shadow-sm"
               style={{
                 fontSize: "clamp(3rem, 12vw, 7rem)",
                 animationDelay: "120ms",
@@ -270,7 +270,7 @@ export default function Home() {
             <p className="text-xs tracking-widest text-neutral-400 mb-3 font-mono">
               —— 核心服务
             </p>
-            <h2 className="text-3xl lg:text-5xl font-semibold text-neutral-900 tracking-tight leading-tight">
+            <h2 className="text-3xl lg:text-5xl font-semibold text-neutral-900 tracking-tight leading-tight text-balance">
               四种方式，
               <br />
               重新连接邻里。
@@ -297,7 +297,7 @@ export default function Home() {
             transform: ctaVisible ? "translateY(0)" : "translateY(24px)",
           }}
         >
-          <h2 className="text-4xl lg:text-6xl font-semibold tracking-tight mb-5 leading-tight">
+          <h2 className="text-4xl lg:text-6xl font-semibold tracking-tight mb-5 leading-tight text-balance">
             最好的邻居，
             <br />
             从来都是第一次见面。
