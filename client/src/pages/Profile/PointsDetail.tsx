@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { CreditCard, ArrowUpRight, ArrowDownRight, Snowflake, RotateCcw, Clock, TrendingUp, ArrowLeft, Loader2 } from "lucide-react";
+import Empty from "@/components/Empty";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { getCreditHistory } from "@/api/user";
@@ -134,10 +135,7 @@ export default function PointsDetail() {
             <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
           </div>
         ) : transactions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <CreditCard className="w-12 h-12 text-gray-300 mb-3" />
-            <p className="text-gray-400">暂无交易记录</p>
-          </div>
+          <Empty title="暂无交易记录" description="积分收支记录会在这里显示" icon={<CreditCard className="w-16 h-16" />} />
         ) : (
           transactions.map((tx) => {
             const style = typeStyle[tx.type] || typeStyle.spend;

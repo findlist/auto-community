@@ -9,6 +9,7 @@ import {
   XCircle,
   UserCheck,
 } from "lucide-react";
+import Empty from "@/components/Empty";
 import {
   getVerificationRequests,
   reviewVerification,
@@ -177,7 +178,7 @@ export default function VerificationReview() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : requests.length === 0 ? (
-        <div className="text-center py-20 text-neutral-500">暂无认证申请</div>
+        <Empty title="暂无认证申请" description="认证申请会在这里显示" icon={<UserCheck className="w-16 h-16" />} />
       ) : (
         <>
           {/* 桌面端表格 */}
