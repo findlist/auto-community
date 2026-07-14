@@ -450,9 +450,9 @@ export default function UserManagement() {
               <button
                 onClick={() => loadUsers(page - 1, search)}
                 disabled={page <= 1}
-                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
+                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
               <span>
                 {page} / {totalPages || 1}
@@ -460,9 +460,9 @@ export default function UserManagement() {
               <button
                 onClick={() => loadUsers(page + 1, search)}
                 disabled={page >= totalPages}
-                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
+                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
           </div>

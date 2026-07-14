@@ -236,17 +236,17 @@ export default function AuditLogPage() {
               <button
                 onClick={() => loadLogs(page - 1)}
                 disabled={page <= 1}
-                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 hover:bg-neutral-50"
+                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 hover:bg-neutral-50"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
               <span>{page} / {totalPages || 1}</span>
               <button
                 onClick={() => loadLogs(page + 1)}
                 disabled={page >= totalPages}
-                className="p-1.5 rounded-lg border border-neutral-300 disabled:opacity-40 hover:bg-neutral-50"
+                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 hover:bg-neutral-50"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
           </div>
