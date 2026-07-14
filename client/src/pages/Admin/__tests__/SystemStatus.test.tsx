@@ -126,8 +126,6 @@ function renderSystemStatus() {
 describe('SystemStatus 系统状态监控', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // mock window.confirm：handleClearAlerts 调用 confirm 弹窗确认
-    window.confirm = vi.fn(() => true);
     // 每个用例前重置默认 mock 返回值
     vi.mocked(getSystemMetrics).mockResolvedValue({ code: 0, message: 'ok', data: mockMetrics });
     vi.mocked(clearAlertLogs).mockResolvedValue({ code: 0, message: 'ok', data: null });
