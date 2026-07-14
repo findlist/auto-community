@@ -32,6 +32,10 @@ vi.mock('../logger', () => ({
 import { logger } from '../logger';
 import { safeNotify } from '../safeNotify';
 
+// 设计原因：vi.mock 运行时替换 logger.warn 为 vi.fn()，但 TypeScript 静态类型仍为 pino 的 LogFn，
+// 直接访问 .mock 属性会触发 TS2339。用 vi.mocked() 收窄类型为 Mock，统一通过 loggerWarn 访问 mock 元数据
+const loggerWarn = vi.mocked(logger.warn);
+
 describe('utils/safeNotify - 成功路径', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -68,7 +72,8 @@ describe('utils/safeNotify - 失败路径', () => {
     await Promise.resolve();
     expect(logger.warn).toHaveBeenCalledTimes(1);
     // 验证 warn 调用参数：第一参数为含 err + 上下文的对象，第二参数为日志消息
-    const [logPayload, logMessage] = logger.warn.mock.calls[0];
+    // 类型断言：mock.calls[0] 元素为 unknown，断言为 [payload, message] 元组便于字段访问
+    const [logPayload, logMessage] = loggerWarn.mock.calls[0] as [Record<string, unknown>, string];
     expect(logPayload.err).toBe(error);
     expect(logPayload.userId).toBe('u1');
     expect(logPayload.type).toBe('email');
@@ -82,7 +87,7 @@ describe('utils/safeNotify - 失败路径', () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(logger.warn).toHaveBeenCalledTimes(1);
-    const [logPayload] = logger.warn.mock.calls[0];
+    const [logPayload] = loggerWarn.mock.calls[0] as [Record<string, unknown>];
     expect(logPayload.err).toBe(error);
   });
 
@@ -93,7 +98,7 @@ describe('utils/safeNotify - 失败路径', () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(logger.warn).toHaveBeenCalledTimes(1);
-    const [logPayload] = logger.warn.mock.calls[0];
+    const [logPayload] = loggerWarn.mock.calls[0] as [Record<string, unknown>];
     expect(logPayload.err).toBe('字符串错误');
     expect(logPayload.channel).toBe('sms');
   });
@@ -152,9 +157,10 @@ describe('utils/safeNotify - 并发调用', () => {
     await Promise.resolve();
     expect(logger.warn).toHaveBeenCalledTimes(3);
     // 验证每次调用的 context 都正确传递
-    expect(logger.warn.mock.calls[0][0].idx).toBe(1);
-    expect(logger.warn.mock.calls[1][0].idx).toBe(2);
-    expect(logger.warn.mock.calls[2][0].idx).toBe(3);
+    // 类型断言：mock.calls[X][0] 为 unknown，断言为 Record<string, unknown> 便于访问 idx 字段
+    expect((loggerWarn.mock.calls[0][0] as Record<string, unknown>).idx).toBe(1);
+    expect((loggerWarn.mock.calls[1][0] as Record<string, unknown>).idx).toBe(2);
+    expect((loggerWarn.mock.calls[2][0] as Record<string, unknown>).idx).toBe(3);
   });
 
   it('成功与失败混合调用应仅对失败的记录日志', async () => {
@@ -164,6 +170,6 @@ describe('utils/safeNotify - 并发调用', () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(logger.warn).toHaveBeenCalledTimes(1);
-    expect(logger.warn.mock.calls[0][0].idx).toBe(2);
+    expect((loggerWarn.mock.calls[0][0] as Record<string, unknown>).idx).toBe(2);
   });
 });
