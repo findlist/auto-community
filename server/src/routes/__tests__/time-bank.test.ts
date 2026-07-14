@@ -62,7 +62,7 @@ const {
   // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
   mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
   mockMatchTimeService: vi.fn(),
-  // storeEmbedding/processPostPipeline 为 fire-and-forget 调用（.catch(() => {})），必须返回 Promise
+  // storeEmbedding/processPostPipeline 为 fire-and-forget 调用（safeNotify 包装），必须返回 Promise
   mockStoreEmbedding: vi.fn().mockResolvedValue(undefined),
   mockProcessPostPipeline: vi.fn().mockResolvedValue({ classification: 'normal', riskAssessment: { score: 0 } }),
   mockLoggerInfo: vi.fn(),

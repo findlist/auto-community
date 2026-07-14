@@ -331,7 +331,7 @@ const externalChannels: NotificationChannel[] = [emailChannel, smsChannel].filte
  * 1. 两个外部通道均未启用时直接返回，避免无谓的 DB 查询（性能保护）
  * 2. 单次查询 users 表获取 email/phone，供所有通道复用（避免重复查库）
  * 3. 并发分发 + allSettled，单个通道失败不影响其他通道与主业务流程
- * 4. 调用方应使用 .catch(() => {}) 吞掉异常，确保通知不阻塞主事务
+ * 4. 调用方应使用 safeNotify 包装本函数，确保通知失败不阻塞主事务的同时记录 warn 日志
  */
 export async function dispatchExternalChannels(notification: {
   userId: string;

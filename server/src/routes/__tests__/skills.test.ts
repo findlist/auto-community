@@ -153,7 +153,7 @@ describe('skills 路由集成测试', () => {
     mockOrderLimiter.mockImplementation((_req: Request, _res: Response, next: NextFunction) => next());
     mockAuditMiddleware.mockImplementation((_req: Request, _res: Response, next: NextFunction) => next());
     // storeEmbedding 与 processPostPipeline 均返回 resolved Promise
-    // 设计原因：handler 中 .catch(() => {}) 期望返回 Promise，mock 默认返回 undefined 会抛 TypeError
+    // 设计原因：handler 中 safeNotify 期望传入 Promise，mock 默认返回 undefined 会抛 TypeError
     mockStoreEmbedding.mockResolvedValue(undefined);
     mockProcessPostPipeline.mockResolvedValue({ classification: 'normal', riskAssessment: { score: 0 } });
     ({ server, baseUrl } = await startServer());

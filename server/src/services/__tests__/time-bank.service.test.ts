@@ -110,7 +110,7 @@ beforeEach(() => {
   mockNotifyOrder.mockReset();
   mockNotifyTimeBank.mockReset();
   mockNotifyFamily.mockReset();
-  // 通知方法默认 resolved（业务中均以 .catch(() => {}) 调用，不阻塞主流程）
+  // 通知方法默认 resolved（业务中均以 safeNotify 包装调用，吞错不阻塞主流程）
   mockNotifyOrder.mockResolvedValue(undefined);
   mockNotifyTimeBank.mockResolvedValue(undefined);
   mockNotifyFamily.mockResolvedValue(undefined);
