@@ -23,6 +23,10 @@ export default function Detail() {
   const [submitting, setSubmitting] = useState(false);
   // 加载错误信息：getPost 失败时记录，用于优先于"不存在"分支展示真实错误
   const [error, setError] = useState("");
+  // 删除确认弹窗状态：true 表示弹窗打开
+  // 设计原因：原生 confirm() 阻塞主线程且移动端样式不可控，改用状态驱动的自定义 Modal，
+  // 用户点击"删除"后才真正调用 deletePost，与 SystemStatus/SkillExchange/Orders 弹窗风格统一
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -54,8 +58,16 @@ export default function Detail() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!id || !confirm("确定要删除这条技能帖子吗？")) return;
+  // 打开删除确认弹窗：仅切换弹窗状态，实际调用由弹窗内"删除"按钮触发
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  // 用户在弹窗中点击"删除"后执行实际删除
+  // 先关闭弹窗避免重复点击；try/catch 内已有 toast 兜底
+  const confirmDelete = async () => {
+    if (!id) return;
+    setShowDeleteConfirm(false);
     try {
       await deletePost(id);
       toast.success("删除成功");
@@ -218,6 +230,39 @@ export default function Detail() {
           </button>
         )}
       </div>
+
+      {/* 删除确认弹窗：替代原生 confirm()，与 SystemStatus/SkillExchange/Orders 弹窗风格统一 */}
+      {/* role="dialog" 提升无障碍语义，便于测试用 within 精确定位弹窗内按钮 */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div
+            role="dialog"
+            aria-label="删除确认"
+            className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-neutral-800 mb-2">删除确认</h3>
+            <p className="text-sm text-neutral-600 mb-6">确定要删除这条技能帖子吗？</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-sm text-neutral-600 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：userEvent 内部用 async act 包裹交互，自动等待微任务 flush，
 // 消除"异步 state 更新未被 act 包裹"警告，模拟真实用户点击序列
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Detail from '../Detail';
@@ -309,19 +309,18 @@ describe('SkillExchange/Detail 帖子详情', () => {
     });
   });
 
-  it('点击"删除"确认后调用 deletePost 并跳转', async () => {
-    // mock window.confirm 返回 true
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-
+  it('点击"删除"打开弹窗，确认后调用 deletePost 并跳转', async () => {
     renderDetail();
 
     await screen.findByRole('button', { name: /删除/ });
 
-    // 点击"删除"按钮
+    // 点击"删除"按钮打开弹窗
     await user.click(screen.getByRole('button', { name: /删除/ }));
 
-    // 应调用 confirm
-    expect(window.confirm).toHaveBeenCalledWith('确定要删除这条技能帖子吗？');
+    // 弹窗出现后，用 within 精确定位弹窗内的"删除"按钮并点击确认
+    const dialog = await screen.findByRole('dialog', { name: '删除确认' });
+    await user.click(within(dialog).getByRole('button', { name: '删除' }));
+
     // 应调用 deletePost
     await waitFor(() => {
       expect(deletePost).toHaveBeenCalledWith('post-active-1');
@@ -336,18 +335,18 @@ describe('SkillExchange/Detail 帖子详情', () => {
     });
   });
 
-  it('点击"删除"取消确认不调用 deletePost', async () => {
-    // mock window.confirm 返回 false
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
+  it('点击"删除"打开弹窗，取消时不调用 deletePost', async () => {
     renderDetail();
 
     await screen.findByRole('button', { name: /删除/ });
 
+    // 点击"删除"按钮打开弹窗
     await user.click(screen.getByRole('button', { name: /删除/ }));
 
-    // 应调用 confirm
-    expect(window.confirm).toHaveBeenCalled();
+    // 弹窗出现后点击"取消"放弃操作
+    const dialog = await screen.findByRole('dialog', { name: '删除确认' });
+    await user.click(within(dialog).getByRole('button', { name: '取消' }));
+
     // 不应调用 deletePost
     expect(deletePost).not.toHaveBeenCalled();
   });
