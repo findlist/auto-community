@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { getFoodOrders, confirmFoodOrder, cancelFoodOrder } from "@/api/kitchen";
 import { ReviewSubmitModal } from "@/pages/SharedKitchen/FoodReview";
 import type { KitchenOrder } from "@/types";
@@ -6,6 +8,7 @@ import { toast } from "@/components/Toast";
 import { getErrorMessage } from "@/utils/error";
 
 export default function Orders() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"buyer" | "seller">("buyer");
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
   const [loading, setLoading] = useState(false);
@@ -188,6 +191,10 @@ export default function Orders() {
   return (
     // max-w-2xl mx-auto：订单列表页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="px-4 py-4 pb-20 max-w-2xl mx-auto">
+      {/* 返回按钮：与模块内其他二级页风格统一，触控区域 ≥40px */}
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors">
+        <ArrowLeft className="w-4 h-4" />返回
+      </button>
       {/* Tab 切换 */}
       <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
         <button

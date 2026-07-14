@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { createFoodShare } from "@/api/kitchen";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { validateRequired, validateMinLength, validateMaxLength, validatePrice } from "@/utils/formValidation";
@@ -88,6 +89,10 @@ export default function Create() {
   return (
     // max-w-2xl mx-auto：表单页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="p-4 pb-24 max-w-2xl mx-auto">
+      {/* 返回按钮：与 SkillExchange/Create 风格统一，触控区域 ≥40px */}
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors">
+        <ArrowLeft className="w-4 h-4" />返回
+      </button>
       {/* 类型切换 */}
       <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
         <button
