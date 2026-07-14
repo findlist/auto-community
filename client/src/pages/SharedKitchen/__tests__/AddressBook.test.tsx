@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：userEvent 内部用 async act 包裹交互，自动等待微任务 flush，消除 act 警告
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import AddressBookPage from '../AddressBook';
@@ -430,15 +430,18 @@ describe('AddressBook 配送地址簿', () => {
     await screen.findByText('设置失败');
   });
 
-  it('点击"删除"在 confirm=true 时调用 deleteAddress', async () => {
+  it('点击"删除"在弹窗确认后调用 deleteAddress', async () => {
     renderAddressBook();
 
     await screen.findByText('张三');
 
-    // 点击第一个地址的删除按钮
+    // 点击第一个地址的删除按钮（列表内按钮）
     await user.click(screen.getAllByRole('button', { name: /删除/ })[0]!);
 
-    // window.confirm 默认返回 true
+    // 弹窗出现后，用 within 精确定位弹窗内的"删除"按钮并点击确认
+    const dialog = await screen.findByRole('dialog', { name: '删除确认' });
+    await user.click(within(dialog).getByRole('button', { name: '删除' }));
+
     await waitFor(() => {
       expect(deleteAddress).toHaveBeenCalledWith('addr-1');
     });
@@ -448,15 +451,17 @@ describe('AddressBook 配送地址簿', () => {
     });
   });
 
-  it('点击"删除"在 confirm=false 时不调用 deleteAddress', async () => {
-    // 用户取消确认
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
+  it('点击"删除"在弹窗取消时不调用 deleteAddress', async () => {
     renderAddressBook();
 
     await screen.findByText('张三');
 
+    // 点击第一个地址的删除按钮
     await user.click(screen.getAllByRole('button', { name: /删除/ })[0]!);
+
+    // 弹窗出现后点击"取消"
+    const dialog = await screen.findByRole('dialog', { name: '删除确认' });
+    await user.click(within(dialog).getByRole('button', { name: '取消' }));
 
     // 不应调用 deleteAddress
     expect(deleteAddress).not.toHaveBeenCalled();
@@ -469,7 +474,12 @@ describe('AddressBook 配送地址簿', () => {
 
     await screen.findByText('张三');
 
+    // 点击第一个地址的删除按钮
     await user.click(screen.getAllByRole('button', { name: /删除/ })[0]!);
+
+    // 弹窗出现后点击"删除"确认
+    const dialog = await screen.findByRole('dialog', { name: '删除确认' });
+    await user.click(within(dialog).getByRole('button', { name: '删除' }));
 
     await screen.findByText('删除失败');
   });

@@ -31,6 +31,10 @@ export default function AddressBook() {
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // 删除确认弹窗状态：保存待删除地址 ID
+  // 设计原因：原生 confirm() 阻塞主线程且移动端样式不可控，改用状态驱动的自定义 Modal，
+  // 用户点击"确定"后才真正调用 deleteAddress，与 SystemStatus/SkillExchange 弹窗风格统一
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   // 加载地址列表
   const loadAddresses = useCallback(async () => {
@@ -101,9 +105,17 @@ export default function AddressBook() {
     }
   };
 
-  // 删除地址
-  const handleDelete = async (id: string) => {
-    if (!confirm("确定删除此地址？")) return;
+  // 打开删除确认弹窗：仅记录待删除 ID，实际调用由弹窗内"确定"按钮触发
+  const handleDelete = (id: string) => {
+    setPendingDeleteId(id);
+  };
+
+  // 用户在弹窗中点击"确定"后执行实际删除
+  // 先清空 pendingDeleteId 关闭弹窗，避免重复点击；try/catch 内已有 setError 兜底
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
+    setPendingDeleteId(null);
     try {
       await deleteAddress(id);
       loadAddresses();
@@ -292,6 +304,39 @@ export default function AddressBook() {
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 删除确认弹窗：替代原生 confirm()，与 SystemStatus/SkillExchange 弹窗风格统一 */}
+      {/* role="dialog" 提升无障碍语义，便于测试用 within 精确定位弹窗内按钮 */}
+      {pendingDeleteId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          onClick={() => setPendingDeleteId(null)}
+        >
+          <div
+            role="dialog"
+            aria-label="删除确认"
+            className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-neutral-800 mb-2">删除确认</h3>
+            <p className="text-sm text-neutral-600 mb-6">确定删除此地址？</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setPendingDeleteId(null)}
+                className="px-4 py-2 text-sm text-neutral-600 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                删除
               </button>
             </div>
           </div>
