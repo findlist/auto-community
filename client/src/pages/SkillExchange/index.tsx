@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, Star, MapPin, X, Loader2 } from "lucide-react";
+import Empty from "@/components/Empty";
 import { getPosts } from "@/api/skills";
 import type { SkillPost } from "@/types";
 import { SkeletonListCard } from "@/components/Skeleton";
@@ -207,10 +208,7 @@ export default function SkillExchange() {
         )}
 
         {!loading && posts.length === 0 && (
-          <div className="text-center py-20 text-neutral-400">
-            <div className="text-3xl mb-3">🔧</div>
-            <p className="text-sm">暂无相关技能</p>
-          </div>
+          <Empty title="暂无相关技能" description="发布后会在这里显示" />
         )}
       </div>
     </div>

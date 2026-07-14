@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Gift, Heart, TrendingUp, TrendingDown, Clock, AlertCircle, Loader2 } from "lucide-react";
+import Empty from "@/components/Empty";
 import { getAccount, getTransactions } from "@/api/timeBank";
 import { useAuth } from "@/hooks/useAuth";
 import { formatTime } from "@/utils/format";
@@ -189,10 +190,7 @@ export default function TimeAccountPage() {
       )}
 
       {!loading && transactions.length === 0 && (
-        <div className="text-center py-12 text-gray-400">
-          <div className="text-4xl mb-3">📋</div>
-          <p>暂无交易记录</p>
-        </div>
+        <Empty title="暂无交易记录" description="时间币收支记录会在这里显示" />
       )}
 
       <TransferModal

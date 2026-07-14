@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Star, Play, CheckCircle, XCircle, MessageSquare, AlertCircle, Loader2 } from "lucide-react";
+import Empty from "@/components/Empty";
 import { getOrders, updateOrderStatus, createReview } from "@/api/timeBank";
 import { ApiError } from "@/api/client";
 import { toast } from "@/components/Toast";
@@ -313,10 +314,7 @@ export default function MyOrders() {
       )}
 
       {!loading && filteredOrders.length === 0 && (
-        <div className="text-center py-12 text-gray-400">
-          <div className="text-4xl mb-3">📦</div>
-          <p>暂无订单</p>
-        </div>
+        <Empty title="暂无订单" description="订单记录会在这里显示" />
       )}
     </div>
   );

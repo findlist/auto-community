@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Clock, ClipboardList, Users } from "lucide-react";
+import Empty from "@/components/Empty";
 import { getServices } from "@/api/timeBank";
 import type { TimeService } from "@/types";
 import ServiceCard from "./ServiceCard";
@@ -99,10 +100,7 @@ export default function TimeBank() {
           <p className="text-sm">{error}</p>
         </div>
       ) : services.length === 0 ? (
-        <div className="text-center py-20 text-neutral-400">
-          <div className="text-3xl mb-3">🕐</div>
-          <p className="text-sm">暂无服务</p>
-        </div>
+        <Empty title="暂无服务" description="发布后会在这里显示" />
       ) : (
         // 列表项自带分隔线，外层仅做纵向排列
         <div className="flex flex-col">
