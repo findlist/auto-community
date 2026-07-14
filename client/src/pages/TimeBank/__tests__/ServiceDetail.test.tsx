@@ -592,11 +592,10 @@ describe('ServiceDetail 详情渲染与加载状态', () => {
     await waitFor(() => {
       expect(screen.getAllByText('他人服务').length).toBeGreaterThan(0);
     });
-    // 返回按钮是顶部第一个按钮，className 含 p-1
-    const backButton = document.querySelector('button.p-1');
-    expect(backButton).toBeTruthy();
+    // 返回按钮用 aria-label="返回" 定位，比 className 选择器更稳健且验证无障碍性
+    const backButton = screen.getByRole('button', { name: '返回' });
     await act(async () => {
-      fireEvent.click(backButton!);
+      fireEvent.click(backButton);
     });
     expect(navigateMock).toHaveBeenCalledWith(-1);
   });

@@ -76,7 +76,8 @@ export default function FoodReviewPage() {
       <div className="flex items-center gap-3 mb-4">
         <button
           onClick={() => navigate(`/kitchen/${postId}`)}
-          className="p-1 hover:bg-gray-100 rounded"
+          aria-label="返回"
+          className="p-1.5 hover:bg-gray-100 rounded transition-colors"
         >
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>

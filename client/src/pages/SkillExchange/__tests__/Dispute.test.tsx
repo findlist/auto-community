@@ -144,9 +144,8 @@ describe('SkillExchange/Dispute 订单争议', () => {
     // 等待订单信息卡片加载完成
     await screen.findByText('吉他教学服务');
 
-    // 顶部返回按钮是 ArrowLeft 图标按钮（无 accessible name，用 className 定位）
-    const backButton = document.querySelector('button.p-1.hover\\:bg-gray-100.rounded') as HTMLButtonElement;
-    expect(backButton).toBeTruthy();
+    // 顶部返回按钮用 aria-label="返回" 定位，比 className 选择器更稳健且验证无障碍性
+    const backButton = screen.getByRole('button', { name: '返回' });
     await user.click(backButton);
 
     expect(navigateMock).toHaveBeenCalledWith('/skill-exchange/orders');
