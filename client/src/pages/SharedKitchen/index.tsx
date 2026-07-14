@@ -187,7 +187,7 @@ export default function SharedKitchen() {
   const isEmpty = activeTab === "group" ? groupOrders.length === 0 : posts.length === 0;
 
   return (
-    <div className="px-4 lg:px-10 py-6 pb-24 lg:pb-12 max-w-6xl lg:mx-auto">
+    <div className="px-4 lg:px-10 py-6 pb-24 lg:pb-12 max-w-6xl mx-auto">
       {/* 页面标题 + 发布 */}
       <div className="flex items-end justify-between mb-6 lg:mb-8">
         <div>
