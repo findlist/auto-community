@@ -5,6 +5,9 @@ import type { MigrationBuilder } from 'node-pg-migrate';
 // 新增浮点配置需手动更新前端正则，违反开闭原则。
 // 改为后端元数据驱动后，管理员在后台选择配置类型即可，前端根据 value_type 判断滑块步长，
 // 新增配置类型无需改代码，符合开闭原则。
+//
+// 注意：原文件名 1704067200018_site_settings_value_type.ts 与 1704067200018_family_binding_unbind.ts
+// 版本号冲突，导致 node-pg-migrate 只能执行其中一个。改为 1704067200031 解决冲突。
 export const up = (pgm: MigrationBuilder) => {
   pgm.addColumn('site_settings', {
     value_type: {

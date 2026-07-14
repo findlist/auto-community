@@ -3,7 +3,7 @@
 -- 新增浮点配置需手动更新前端正则，违反开闭原则。
 -- 改为后端元数据驱动后，管理员在后台选择配置类型即可，前端根据 value_type 判断滑块步长。
 
-ALTER TABLE site_settings ADD COLUMN value_type VARCHAR(16) NOT NULL DEFAULT 'string';
+ALTER TABLE site_settings ADD COLUMN IF NOT EXISTS value_type VARCHAR(16) NOT NULL DEFAULT 'string';
 COMMENT ON COLUMN site_settings.value_type IS '配置值类型：string（字符串）| int（整数）| float（浮点），驱动前端滑块步长';
 
 -- 回填预设配置项类型：4 个均为整数类配置

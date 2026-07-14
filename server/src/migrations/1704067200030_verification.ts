@@ -1,6 +1,8 @@
 import type { MigrationBuilder } from 'node-pg-migrate';
 
 // 实名认证表迁移
+// 注意：原文件名 1704067200012_verification.ts 与 1704067200012_add_performance_indexes.ts
+// 版本号冲突，导致 node-pg-migrate 只能执行其中一个。改为 1704067200030 解决冲突。
 export const up = (pgm: MigrationBuilder) => {
   // 1. users 表新增实名认证相关字段
   pgm.addColumn('users', {
