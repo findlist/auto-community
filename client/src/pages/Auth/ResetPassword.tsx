@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Phone, Lock, KeyRound, ArrowRight, ArrowLeft } from "lucide-react";
+import { Phone, Lock, KeyRound, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { resetPassword } from "@/api/auth";
 import { ApiError } from "@/api/client";
 
@@ -227,7 +227,7 @@ export default function ResetPassword() {
           >
             {loading ? (
               <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-neutral-900/30 border-t-neutral-900 rounded-full animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 重置中...
               </span>
             ) : (

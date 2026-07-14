@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Phone, ArrowRight, ArrowLeft, Send } from "lucide-react";
+import { Phone, ArrowRight, ArrowLeft, Send, Loader2 } from "lucide-react";
 import { forgotPassword } from "@/api/auth";
 import { ApiError } from "@/api/client";
 
@@ -157,7 +157,7 @@ export default function ForgotPassword() {
           >
             {loading ? (
               <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-neutral-900/30 border-t-neutral-900 rounded-full animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 发送中...
               </span>
             ) : (

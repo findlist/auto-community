@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Phone, Lock, User, ArrowRight, ArrowLeft, Sparkles, Eye, EyeOff, Shield } from "lucide-react";
+import { Phone, Lock, User, ArrowRight, ArrowLeft, Sparkles, Eye, EyeOff, Shield, Loader2 } from "lucide-react";
 import { register } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -272,7 +272,7 @@ export default function Register() {
           >
             {loading ? (
               <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-neutral-900/30 border-t-neutral-900 rounded-full animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 注册中...
               </span>
             ) : (
