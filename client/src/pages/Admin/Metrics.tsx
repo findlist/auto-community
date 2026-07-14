@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Loader2 } from "lucide-react";
+// 使用 lucide 图标统一项目视觉语言：原 emoji 在不同平台渲染差异较大，且与全项目图标体系不一致
+import { Loader2, Siren, Target, Package, Star, Bot } from "lucide-react";
 import MetricsChart from "@/components/MetricsChart";
 import {
   getMetricsDashboard,
@@ -9,41 +10,41 @@ import {
 } from "@/api/admin";
 import { toast } from "@/components/Toast";
 
-// 核心指标配置
+// 核心指标配置：icon 直接引用 lucide 组件类型，避免每次渲染创建新元素
 const METRIC_CONFIG = {
   emergency_response_time: {
     label: "应急响应时间",
     unit: "秒",
     color: "#ef4444",
-    icon: "🚨",
+    icon: Siren,
     format: (v: number) => `${v.toFixed(1)}s`,
   },
   match_success_rate: {
     label: "匹配成功率",
     unit: "%",
     color: "#22c55e",
-    icon: "🎯",
+    icon: Target,
     format: (v: number) => `${v.toFixed(1)}%`,
   },
   order_completion_rate: {
     label: "订单完成率",
     unit: "%",
     color: "#3b82f6",
-    icon: "📦",
+    icon: Package,
     format: (v: number) => `${v.toFixed(1)}%`,
   },
   user_satisfaction_score: {
     label: "用户满意度",
     unit: "分",
     color: "#f59e0b",
-    icon: "⭐",
+    icon: Star,
     format: (v: number) => `${v.toFixed(1)}分`,
   },
   ai_recommendation_accuracy: {
     label: "AI推荐准确率",
     unit: "%",
     color: "#8b5cf6",
-    icon: "🤖",
+    icon: Bot,
     format: (v: number) => `${v.toFixed(1)}%`,
   },
 } as const;
@@ -176,6 +177,8 @@ export default function Metrics() {
           const config = METRIC_CONFIG[metricName];
           const value = getMetricValue(metricName);
           const isExpanded = expandedMetric === metricName;
+          // 将 icon 字段提到局部大写变量：lucide 组件需要作为 JSX 标签使用，小写会被识别为原生标签
+          const Icon = config.icon;
 
           return (
             <button
@@ -188,7 +191,7 @@ export default function Metrics() {
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">{config.icon}</span>
+                <Icon className="w-6 h-6" style={{ color: config.color }} />
                 <span className="text-xs text-[var(--color-text-tertiary)]">
                   {config.label}
                 </span>
