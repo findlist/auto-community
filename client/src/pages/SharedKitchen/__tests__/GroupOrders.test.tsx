@@ -127,10 +127,10 @@ describe("SharedKitchen/GroupOrders 拼单列表", () => {
     });
   });
 
-  it("空列表显示'暂无拼单，发起一个吧！'", async () => {
+  it("空列表显示'暂无拼单'空状态", async () => {
     vi.mocked(getGroupOrders).mockResolvedValue({ code: 0, message: "ok", data: mockEmptyList });
     renderGroupOrders();
-    await screen.findByText("暂无拼单，发起一个吧！");
+    await screen.findByText("暂无拼单");
   });
 
   it("open 状态'参与拼单'按钮可点击", async () => {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Star, Loader2, AlertCircle } from "lucide-react";
+import Empty from "@/components/Empty";
 import { getFoodReviews } from "@/api/kitchen";
 import { getFoodShareById } from "@/api/kitchen";
 import { ApiError } from "@/api/client";
@@ -116,10 +117,7 @@ export default function FoodReviewPage() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : reviews.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
-          <div className="text-4xl mb-3">💬</div>
-          <p>暂无评价</p>
-        </div>
+        <Empty title="暂无评价" description="评价提交后会在这里显示" />
       ) : (
         <>
           <div className="space-y-3">

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Loader2 } from "lucide-react";
+import Empty from "@/components/Empty";
 import { getFoodShares, getGroupOrders } from "@/api/kitchen";
 import type { KitchenPost, GroupOrder } from "@/types";
 import { SkeletonCard, SkeletonListCard } from "@/components/Skeleton";
@@ -274,10 +275,7 @@ export default function SharedKitchen() {
         )}
 
         {!loading && isEmpty && (
-          <div className="text-center py-20 text-neutral-400">
-            <div className="text-3xl mb-3">🍽️</div>
-            <p className="text-sm">暂无{activeTab === "group" ? "拼单" : "美食"}</p>
-          </div>
+          <Empty title={`暂无${activeTab === "group" ? "拼单" : "美食"}`} description="发布后会在这里显示" />
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Edit2, Trash2, Star, Loader2, X, Save, AlertCircle } from "lucide-react";
+import Empty from "@/components/Empty";
 import {
   getAddresses,
   createAddress,
@@ -165,13 +166,15 @@ export default function AddressBook() {
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
       ) : addresses.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
-          <div className="text-4xl mb-3">📍</div>
-          <p>暂无配送地址</p>
-          <button onClick={handleAdd} className="mt-3 text-emerald-500 text-sm">
-            添加第一个地址
-          </button>
-        </div>
+        <Empty
+          title="暂无配送地址"
+          description="添加地址后会在这里显示"
+          action={
+            <button onClick={handleAdd} className="mt-3 text-emerald-500 text-sm">
+              添加第一个地址
+            </button>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {addresses.map((addr) => (

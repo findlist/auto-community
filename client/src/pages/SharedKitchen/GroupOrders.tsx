@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import Empty from "@/components/Empty";
 import { getGroupOrders, createGroupOrder, joinGroupOrder } from "@/api/kitchen";
 import type { GroupOrder } from "@/types";
 import { toast } from "@/components/Toast";
@@ -179,10 +180,7 @@ export default function GroupOrders() {
 
       {/* 空状态 */}
       {!loading && orders.length === 0 && (
-        <div className="text-center py-12 text-gray-400">
-          <div className="text-4xl mb-3">🛒</div>
-          <p>暂无拼单，发起一个吧！</p>
-        </div>
+        <Empty title="暂无拼单" description="发起一个吧！" />
       )}
 
       {/* 创建弹窗 */}
