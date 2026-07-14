@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
-import { CreditCard, ArrowUpRight, ArrowDownRight, Snowflake, RotateCcw, Clock, TrendingUp, ArrowLeft } from "lucide-react";
+import { CreditCard, ArrowUpRight, ArrowDownRight, Snowflake, RotateCcw, Clock, TrendingUp, ArrowLeft, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { getCreditHistory } from "@/api/user";
@@ -131,7 +131,7 @@ export default function PointsDetail() {
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
           </div>
         ) : transactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">

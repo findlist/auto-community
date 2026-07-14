@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bell, Package, Siren, AlertTriangle, Info, ArrowLeft } from "lucide-react";
+import { Bell, Package, Siren, AlertTriangle, Info, ArrowLeft, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from "@/api/notifications";
 import type { Notification, NotificationType } from "@/types";
@@ -149,7 +149,7 @@ export default function Notifications() {
       <div className="max-w-2xl mx-auto">
         {loading && notifications.length === 0 ? (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
           </div>
         ) : notifications.length === 0 ? (
           <Empty title="暂无通知" description="新消息会在这里显示" icon={<Bell className="w-16 h-16" />} />

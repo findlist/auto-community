@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { getFoodOrders, confirmFoodOrder, cancelFoodOrder } from "@/api/kitchen";
 import { ReviewSubmitModal } from "@/pages/SharedKitchen/FoodReview";
 import type { KitchenOrder } from "@/types";
@@ -238,7 +238,7 @@ export default function Orders() {
       {/* 加载状态 */}
       {loading && (
         <div className="text-center py-8 text-gray-500">
-          <span className="animate-spin inline-block w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full mr-2" />
+          <Loader2 className="w-5 h-5 animate-spin text-emerald-500 inline-block mr-2 align-middle" />
           加载中...
         </div>
       )}

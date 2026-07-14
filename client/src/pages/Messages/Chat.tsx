@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { getMessages, markMessagesAsRead, type OrderType } from "@/api/messages";
 import { WebSocketClient, type ConnectionStatus } from "@/utils/websocket";
@@ -227,7 +227,7 @@ export default function Chat() {
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {loading && (
           <div className="text-center py-8 text-gray-500">
-            <span className="animate-spin inline-block w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full mr-2" />
+            <Loader2 className="w-5 h-5 animate-spin text-emerald-500 inline-block mr-2 align-middle" />
             加载中...
           </div>
         )}

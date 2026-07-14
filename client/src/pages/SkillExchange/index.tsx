@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Star, MapPin, X } from "lucide-react";
+import { Search, Plus, Star, MapPin, X, Loader2 } from "lucide-react";
 import { getPosts } from "@/api/skills";
 import type { SkillPost } from "@/types";
 import { SkeletonListCard } from "@/components/Skeleton";
@@ -195,7 +195,7 @@ export default function SkillExchange() {
 
         {loading && posts.length > 0 && (
           <div className="text-center py-6 text-neutral-500 text-sm">
-            <span className="animate-spin inline-block w-4 h-4 border-2 border-neutral-400 border-t-transparent rounded-full mr-2 align-middle" />
+            <Loader2 className="w-4 h-4 animate-spin text-neutral-400 inline-block mr-2 align-middle" />
             加载中...
           </div>
         )}

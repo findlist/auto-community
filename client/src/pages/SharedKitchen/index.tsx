@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { getFoodShares, getGroupOrders } from "@/api/kitchen";
 import type { KitchenPost, GroupOrder } from "@/types";
 import { SkeletonCard, SkeletonListCard } from "@/components/Skeleton";
@@ -260,7 +260,7 @@ export default function SharedKitchen() {
 
             {loading && !isEmpty && (
               <div className="text-center py-6 text-neutral-500 text-sm">
-                <span className="animate-spin inline-block w-4 h-4 border-2 border-neutral-400 border-t-transparent rounded-full mr-2 align-middle" />
+                <Loader2 className="w-4 h-4 animate-spin text-neutral-400 inline-block mr-2 align-middle" />
                 加载中...
               </div>
             )}
