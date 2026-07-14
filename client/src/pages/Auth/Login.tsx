@@ -60,7 +60,7 @@ export default function Login() {
     <div className="relative min-h-[calc(100svh-3.5rem)] lg:min-h-[calc(100svh-4rem)] flex items-center justify-center px-4 py-12 overflow-hidden">
       {/* 氛围背景图：温暖的邻里生活一隅 */}
       <img
-        src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Soft%20warm%20photograph%20of%20a%20windowsill%20with%20a%20cup%20of%20tea%20and%20a%20small%20potted%20plant%20at%20golden%20hour%2C%20gentle%20bokeh%20of%20a%20cozy%20neighborhood%20outside%2C%20calm%20earthy%20tones%2C%20shallow%20depth%20of%20field%2C%20documentary%20lifestyle%20photography%2C%20no%20text%20no%20people&image_size=landscape_16_9"
+        src="/llq.jpg"
         alt=""
         aria-hidden
         className="absolute inset-0 w-full h-full object-cover"
