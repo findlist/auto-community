@@ -180,27 +180,27 @@ ON CONFLICT DO NOTHING;
 INSERT INTO kitchen_posts (user_id, type, title, description, food_type, allergens, portions, remaining_portions, credit_price, pickup_type, pickup_address, status) VALUES
   (
     (SELECT id FROM users WHERE phone_hash = encode(digest('13800138000', 'sha256'), 'hex')),
-    'share', '手工韭菜鸡蛋饺子分享',
+    'offer', '手工韭菜鸡蛋饺子分享',
     '妈妈亲手包的韭菜鸡蛋饺子，新鲜出锅，皮薄馅大。4 份，先到先得！',
     '面食', ARRAY['鸡蛋'], 4, 4, 5, 'self_pickup', '3栋101室', 'active'
   ),
   (
     (SELECT id FROM users WHERE phone_hash = encode(digest('13800138001', 'sha256'), 'hex')),
-    'group_buy', '有机蔬菜社区团购',
+    'need', '有机蔬菜社区团购',
     '直采有机农场，新鲜配送。西红柿、黄瓜、生菜等时令蔬菜，10 份成团。',
-    '蔬菜', ARRAY[], 10, 8, 15, 'self_pickup', '小区南门自提点', 'active'
+    '蔬菜', ARRAY[]::TEXT[], 10, 8, 15, 'self_pickup', '小区南门自提点', 'active'
   ),
   (
     (SELECT id FROM users WHERE phone_hash = encode(digest('13800138002', 'sha256'), 'hex')),
-    'share', '自制蛋糕分享',
+    'offer', '自制蛋糕分享',
     '孩子生日做多了蛋糕，奶油草莓口味，无添加。分享给邻居 3 份。',
     '甜品', ARRAY['牛奶', '鸡蛋'], 3, 3, 8, 'self_pickup', '7栋305室', 'active'
   ),
   (
     (SELECT id FROM users WHERE phone_hash = encode(digest('13800138000', 'sha256'), 'hex')),
-    'share', '红烧排骨打包分享',
+    'offer', '红烧排骨打包分享',
     '周末炖了一大锅红烧排骨，吃不完分享给邻居。2 份，加热即食。',
-    '肉类', ARRAY[], 2, 2, 10, 'self_pickup', '3栋101室', 'active'
+    '肉类', ARRAY[]::TEXT[], 2, 2, 10, 'self_pickup', '3栋101室', 'active'
   )
 ON CONFLICT DO NOTHING;
 
@@ -239,18 +239,21 @@ INSERT INTO time_services (user_id, category, type, title, description, duration
 ON CONFLICT DO NOTHING;
 
 -- ==================== 7. 应急求助（2 条）====================
-INSERT INTO emergency_requests (user_id, category, title, description, urgency, address, contact_phone, is_anonymous, status) VALUES
+-- 注意：status 必须用 'open'（前端 STATUS_LABEL 仅识别 open/responding/resolved/closed/false_report，
+--   且后端 respondToRequest 仅允许 open/responding 状态被响应）；'pending' 会导致状态徽章空白且无法响应。
+-- category 使用英文 value（medical/repair/safety/other），与前端 CATEGORIES 定义对齐。
+INSERT INTO emergency_requests (user_id, type, category, title, description, urgency, address, contact_phone, is_anonymous, status) VALUES
   (
     (SELECT id FROM users WHERE phone_hash = encode(digest('13800138001', 'sha256'), 'hex')),
-    '维修', '水管爆裂急需维修',
+    'emergency', 'repair', '水管爆裂急需维修',
     '厨房水管突然爆裂，漏水严重，物业下班联系不上。急需有维修经验的邻居帮忙！',
-    'high', '阳光花园小区5栋202室', '13800138001', false, 'pending'
+    'high', '阳光花园小区5栋202室', '13800138001', false, 'open'
   ),
   (
     (SELECT id FROM users WHERE phone_hash = encode(digest('13800138002', 'sha256'), 'hex')),
-    '医疗', '老人跌倒需要帮助',
+    'emergency', 'medical', '老人跌倒需要帮助',
     '家中老人在小区花园跌倒，无法独自起身，需要邻居帮忙搀扶。已拨打 120，等待期间需要帮助。',
-    'critical', '阳光花园小区中心花园', '13800138002', false, 'pending'
+    'critical', '阳光花园小区中心花园', '13800138002', false, 'open'
   )
 ON CONFLICT DO NOTHING;
 

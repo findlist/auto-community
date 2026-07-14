@@ -206,7 +206,8 @@ function toRequestResponse(row: EmergencyRequestRow, isResponder: boolean = fals
     images: row.images,
     status: row.status,
     timeoutAt: row.timeout_at,
-    requester: row.requester_id
+    // 字段名用 user 而非 requester，与前端 EmergencyRequest.user 类型定义对齐
+    user: row.requester_id
       ? {
           id: row.requester_id,
           nickname: row.is_anonymous ? '匿名用户' : row.requester_nickname,
@@ -229,7 +230,8 @@ function toResponseResponse(row: EmergencyResponseRow) {
     timeoutAt: row.timeout_at,
     arrivedAt: row.arrived_at,
     completedAt: row.completed_at,
-    responder: row.responder_id
+    // 字段名用 user 而非 responder，与前端 EmergencyResponse.user 类型定义对齐
+    user: row.responder_id
       ? {
           id: row.responder_id,
           nickname: row.responder_nickname,
