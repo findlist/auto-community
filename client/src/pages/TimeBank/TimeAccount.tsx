@@ -91,12 +91,22 @@ export default function TimeAccountPage() {
 
   return (
     // max-w-2xl mx-auto：账户页统一容器约束，桌面端避免横向拉伸过度影响可读性
-    <div className="px-4 py-4 pb-20 max-w-2xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(-1)} className="text-gray-500">
-          <ArrowLeft className="w-5 h-5" />
+    <div className="px-4 lg:px-10 py-6 pb-24 lg:pb-12 max-w-2xl mx-auto">
+      {/* 顶部返回 + 模块小标签，与其他时间银行页保持编辑式风格 */}
+      <div className="mb-6 lg:mb-8">
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-700 transition-colors mb-3"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          返回
         </button>
-        <h1 className="text-lg font-semibold text-gray-900">时间账户</h1>
+        <p className="text-xs tracking-widest mb-2 font-mono" style={{ color: "var(--color-module-timebank)" }}>
+          —— 时间账户
+        </p>
+        <h1 className="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight text-balance">
+          你的时间，存在这里
+        </h1>
       </div>
 
       {error && (
@@ -119,60 +129,75 @@ export default function TimeAccountPage() {
         </div>
       )}
 
-      <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl p-5 text-white mb-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-1 text-emerald-100 text-sm">
-          <Clock className="w-4 h-4" />
-          当前余额
-        </div>
-        <div className="text-3xl font-bold mb-4">
-          {account ? formatTime(account.balance) : "--"}
-        </div>
-        <div className="flex gap-6 text-sm">
-          <div className="flex items-center gap-1.5">
-            <TrendingUp className="w-4 h-4 text-emerald-200" />
-            <span className="text-emerald-100">累计赚取</span>
-            <span className="font-medium">{account ? formatTime(account.totalEarned) : "--"}</span>
+      {/* 余额卡片：采用时间银行模块紫渐变，与列表页 Tab 下划线、竖条等模块色一致 */}
+      <div className="bg-gradient-to-br from-violet-500 to-violet-700 rounded-2xl p-6 lg:p-7 text-white mb-6 shadow-md relative overflow-hidden">
+        {/* 右上角微光晕装饰，避免大面积纯色单调 */}
+        <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-2 text-violet-100 text-xs tracking-widest font-mono uppercase">
+            <Clock className="w-3.5 h-3.5" />
+            当前余额
           </div>
-          <div className="flex items-center gap-1.5">
-            <TrendingDown className="w-4 h-4 text-emerald-200" />
-            <span className="text-emerald-100">累计消费</span>
-            <span className="font-medium">{account ? formatTime(account.totalSpent) : "--"}</span>
+          <div className="text-4xl lg:text-5xl font-bold mb-5 tracking-tight tabular-nums">
+            {account ? formatTime(account.balance) : "--"}
+          </div>
+          <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="w-4 h-4 text-violet-200" />
+              <span className="text-violet-100">累计赚取</span>
+              <span className="font-medium tabular-nums">{account ? formatTime(account.totalEarned) : "--"}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <TrendingDown className="w-4 h-4 text-violet-200" />
+              <span className="text-violet-100">累计消费</span>
+              <span className="font-medium tabular-nums">{account ? formatTime(account.totalSpent) : "--"}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      {/* 操作按钮：转赠/捐赠使用时间银行模块紫，与卡片色系一致 */}
+      <div className="grid grid-cols-2 gap-3 mb-8">
         <button
           onClick={() => setTransferOpen(true)}
-          className="py-3 bg-emerald-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors"
+          className="py-3 bg-violet-600 text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-violet-700 active:scale-[0.98] transition-all duration-200 shadow-sm"
         >
           <Gift className="w-4 h-4" />
           转赠时间
         </button>
         <button
           onClick={() => setDonateOpen(true)}
-          className="py-3 bg-purple-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-purple-700 transition-colors"
+          className="py-3 bg-white text-violet-700 border border-violet-200 rounded-full font-medium flex items-center justify-center gap-2 hover:border-violet-400 hover:bg-violet-50 active:scale-[0.98] transition-all duration-200"
         >
           <Heart className="w-4 h-4" />
           捐赠时间
         </button>
       </div>
 
-      <h2 className="text-base font-semibold text-gray-900 mb-3">交易记录</h2>
+      {/* 交易记录标题：编辑式小标签 */}
+      <div className="flex items-baseline justify-between mb-4">
+        <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">交易记录</h2>
+        <span className="text-xs text-neutral-400 font-mono tracking-widest">—— 流水</span>
+      </div>
 
-      <div className="space-y-3">
+      {/* 交易列表：编辑式分隔线风格，与 ServiceCard 视觉语言保持一致 */}
+      <div className="flex flex-col">
         {transactions.map(tx => {
-          const cfg = typeConfig[tx.type] || { label: tx.type, color: "bg-gray-100 text-gray-600" };
+          const cfg = typeConfig[tx.type] || { label: tx.type, color: "bg-neutral-100 text-neutral-600" };
+          const isSpend = tx.type === "spend";
           return (
-            <div key={tx.id} className="bg-white rounded-lg p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-1">
-                <span className={`text-xs px-2 py-0.5 rounded ${cfg.color}`}>{cfg.label}</span>
-                <span className={`font-semibold ${tx.type === "spend" ? "text-red-600" : "text-emerald-600"}`}>
-                  {tx.type === "spend" ? "-" : "+"}{formatTime(tx.amount)}
+            <div
+              key={tx.id}
+              className="group border-b border-neutral-200 py-4 lg:py-5 -mx-4 px-4 lg:-mx-6 lg:px-6 transition-colors duration-200 hover:bg-neutral-50/60"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${cfg.color}`}>{cfg.label}</span>
+                <span className={`font-semibold tabular-nums text-sm ${isSpend ? "text-red-600" : "text-emerald-600"}`}>
+                  {isSpend ? "-" : "+"}{formatTime(tx.amount)}
                 </span>
               </div>
-              {tx.remark && <p className="text-sm text-gray-500 mt-1">{tx.remark}</p>}
-              <p className="text-xs text-gray-400 mt-2">
+              {tx.remark && <p className="text-sm text-neutral-700 line-clamp-1 mb-1">{tx.remark}</p>}
+              <p className="text-xs text-neutral-400 font-mono">
                 {new Date(tx.createdAt).toLocaleString("zh-CN")}
               </p>
             </div>
@@ -183,7 +208,7 @@ export default function TimeAccountPage() {
       {hasMore && transactions.length > 0 && (
         <button
           onClick={() => loadTransactions()}
-          className="w-full py-3 mt-4 text-center text-emerald-600 hover:bg-emerald-50 rounded-lg"
+          className="w-full py-3 mt-5 text-center text-violet-700 hover:bg-violet-50 rounded-full text-sm font-medium transition-colors"
         >
           加载更多
         </button>
