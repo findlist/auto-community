@@ -158,7 +158,7 @@ export default function Dashboard() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-2" role="status">
         <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
-        <span className="text-sm text-[var(--color-text-tertiary)]">正在加载数据...</span>
+        <span className="text-sm text-neutral-400">正在加载数据...</span>
       </div>
     );
   }
@@ -173,7 +173,7 @@ export default function Dashboard() {
         action={
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-[var(--color-primary-500)] text-white rounded-md text-sm hover:bg-[var(--color-primary-600)]"
+            className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 transition-colors"
           >
             重新加载
           </button>
@@ -189,13 +189,13 @@ export default function Dashboard() {
       {/* 顶部欢迎区 */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2 text-balance">
-            <Activity className="w-5 h-5 text-[var(--color-primary-500)]" />
+          <h2 className="text-xl font-bold text-neutral-900 flex items-center gap-2 text-balance">
+            <Activity className="w-5 h-5 text-emerald-500" />
             数据统计看板
           </h2>
-          <p className="text-xs text-[var(--color-text-tertiary)] mt-1">实时反映平台运营状态</p>
+          <p className="text-xs text-neutral-400 mt-1">实时反映平台运营状态</p>
         </div>
-        <span className="text-xs text-[var(--color-text-tertiary)]">
+        <span className="text-xs text-neutral-400 tabular-nums">
           {new Date().toLocaleString("zh-CN")}
         </span>
       </div>
@@ -207,19 +207,19 @@ export default function Dashboard() {
           return (
             <div
               key={key}
-              className="group bg-white rounded-2xl p-4 border border-[var(--color-border)] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 stagger-item"
+              className="group bg-white rounded-2xl p-4 border border-neutral-200 shadow-sm card-hover-glow stagger-item"
               style={{ animationDelay: `${idx * 40}ms` }}
             >
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 transition-transform duration-200 group-hover:scale-110 ${bg}`}>
                 <Icon className={`w-5 h-5 ${color}`} />
               </div>
-              <div className="text-2xl font-bold text-[var(--color-text-primary)] tabular-nums">
+              <div className="text-2xl font-bold text-neutral-900 tabular-nums">
                 {val}
               </div>
-              <div className="text-xs text-[var(--color-text-tertiary)] mt-0.5 flex items-center gap-1">
+              <div className="text-xs text-neutral-400 mt-0.5 flex items-center gap-1">
                 {label}
                 {key === "todayNewUsers" && val > 0 && (
-                  <span className="inline-flex items-center text-[var(--color-success)] text-[10px] font-medium">
+                  <span className="inline-flex items-center text-emerald-600 text-[10px] font-medium">
                     <TrendingUp className="w-2.5 h-2.5" />
                   </span>
                 )}
@@ -231,7 +231,7 @@ export default function Dashboard() {
 
       {/* 图表区：加载失败时统一展示错误提示与重试入口，避免静默回退空数据让用户误以为无数据 */}
       {chartsError ? (
-        <div className="bg-white rounded-2xl border border-[var(--color-border)] shadow-sm mb-5">
+        <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm mb-5">
           <Empty
             variant="error"
             title="图表加载失败"
@@ -239,7 +239,7 @@ export default function Dashboard() {
             action={
               <button
                 onClick={handleRetryCharts}
-                className="px-4 py-2 bg-[var(--color-primary-500)] text-white rounded-md text-sm hover:bg-[var(--color-primary-600)]"
+                className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 transition-colors"
               >
                 重新加载图表
               </button>
@@ -253,7 +253,7 @@ export default function Dashboard() {
               {chartsLoading ? (
                 <div className="flex items-center justify-center py-10 gap-2">
                   <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
-                  <span className="text-xs text-[var(--color-text-tertiary)]">加载中...</span>
+                  <span className="text-xs text-neutral-400">加载中...</span>
                 </div>
               ) : (
                 <LineChart labels={trendChartData.labels} series={trendChartData.series} height={220} />
@@ -264,7 +264,7 @@ export default function Dashboard() {
               {chartsLoading ? (
                 <div className="flex items-center justify-center py-10 gap-2">
                   <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
-                  <span className="text-xs text-[var(--color-text-tertiary)]">加载中...</span>
+                  <span className="text-xs text-neutral-400">加载中...</span>
                 </div>
               ) : (
                 <PieChart data={moduleDistribution} size={160} />
@@ -277,7 +277,7 @@ export default function Dashboard() {
               {chartsLoading ? (
                 <div className="flex items-center justify-center py-10 gap-2">
                   <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
-                  <span className="text-xs text-[var(--color-text-tertiary)]">加载中...</span>
+                  <span className="text-xs text-neutral-400">加载中...</span>
                 </div>
               ) : (
                 <BarChart data={reputationChartData} />
@@ -288,31 +288,31 @@ export default function Dashboard() {
               {chartsLoading ? (
                 <div className="flex items-center justify-center py-10 gap-2">
                   <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
-                  <span className="text-xs text-[var(--color-text-tertiary)]">加载中...</span>
+                  <span className="text-xs text-neutral-400">加载中...</span>
                 </div>
               ) : (
                 <ul className="space-y-3 text-sm">
                   <li className="flex items-center justify-between py-2 px-3 bg-red-50 rounded-lg">
-                    <span className="text-[var(--color-text-primary)]">待处理举报</span>
-                    <span className="text-base font-bold text-[var(--color-error)] tabular-nums">
+                    <span className="text-neutral-900">待处理举报</span>
+                    <span className="text-base font-bold text-red-600 tabular-nums">
                       {systemData.pendingReports}
                     </span>
                   </li>
                   <li className="flex items-center justify-between py-2 px-3 bg-yellow-50 rounded-lg">
-                    <span className="text-[var(--color-text-primary)]">互助总数</span>
-                    <span className="text-base font-bold text-[var(--color-warning)] tabular-nums">
+                    <span className="text-neutral-900">互助总数</span>
+                    <span className="text-base font-bold text-amber-600 tabular-nums">
                       {systemData.totalMutualAids}
                     </span>
                   </li>
                   <li className="flex items-center justify-between py-2 px-3 bg-emerald-50 rounded-lg">
-                    <span className="text-[var(--color-text-primary)]">今日活跃用户</span>
-                    <span className="text-base font-bold text-[var(--color-success)] tabular-nums">
+                    <span className="text-neutral-900">今日活跃用户</span>
+                    <span className="text-base font-bold text-emerald-600 tabular-nums">
                       {systemData.todayActiveUsers}
                     </span>
                   </li>
                   <li className="flex items-center justify-between py-2 px-3 bg-blue-50 rounded-lg">
-                    <span className="text-[var(--color-text-primary)]">本月新增用户</span>
-                    <span className="text-base font-bold text-[var(--color-info)] tabular-nums">
+                    <span className="text-neutral-900">本月新增用户</span>
+                    <span className="text-base font-bold text-blue-600 tabular-nums">
                       {systemData.monthNewUsers}
                     </span>
                   </li>
