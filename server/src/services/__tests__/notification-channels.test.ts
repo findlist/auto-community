@@ -301,6 +301,40 @@ describe('dispatchExternalChannels - 外部通道分发', () => {
     // 只查询一次 users 表（避免重复查库）
     expect(mockQuery).toHaveBeenCalledTimes(1);
   });
+
+  it('安全不变式：手机号解密失败时 userPhone 置 undefined 且记录 warn（不阻塞通道分发）', async () => {
+    // 设计原因：users.phone 存储为 AES-256-GCM 密文，dispatchExternalChannels 需解密后才能发送短信
+    // 若密文损坏或密钥不匹配，解密会抛错；此时不能让异常冒泡中断所有通道，也不能把密文当手机号发出
+    const { decryptPhone } = await import('../../utils/crypto');
+    vi.mocked(decryptPhone).mockImplementationOnce(() => {
+      throw new Error('decrypt failed');
+    });
+    const mockChannel: NotificationChannel = {
+      name: 'sms',
+      enabled: true,
+      send: vi.fn().mockResolvedValue(undefined),
+    };
+    __setChannelsForTest([mockChannel]);
+
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ email: 'a@b.com', phone: 'encrypted-phone-ciphertext' }],
+    });
+
+    // 不应抛出异常（解密失败被 catch 兜底）
+    await expect(
+      dispatchExternalChannels({ userId: 'user-1', type: 'system', title: '通知' }),
+    ).resolves.toBeUndefined();
+
+    // 应记录 warn 日志，包含 userId 便于排查
+    expect(mockLogger.warn).toHaveBeenCalled();
+    const warnPayload = mockLogger.warn.mock.calls[0][0] as Record<string, unknown>;
+    expect(warnPayload.userId).toBe('user-1');
+
+    // 通道仍被调用，但 payload.userPhone 应为 undefined（不能把密文当手机号发出）
+    expect(mockChannel.send).toHaveBeenCalledWith(
+      expect.objectContaining({ userPhone: undefined }),
+    );
+  });
 });
 
 // ==================== emailChannel.send 测试 ====================
