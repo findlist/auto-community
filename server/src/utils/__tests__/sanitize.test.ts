@@ -182,6 +182,36 @@ describe('utils/sanitize validateImageUrl - /uploads/ 相对路径', () => {
     expect(() => validateImageUrl('/uploads/../etc/passwd')).toThrow(BadRequestError);
     expect(() => validateImageUrl('/uploads/../etc/passwd')).toThrow('图片 URL 包含非法路径');
   });
+
+  it('路径遍历变体：反斜杠（\\）抛 BadRequestError（防止 Windows 路径分隔符绕过）', () => {
+    // 设计原因：仅依赖 url.includes('..') 会被 ..\ 绕过，Windows 路径分隔符不同
+    expect(() => validateImageUrl('/uploads/..\\etc\\passwd')).toThrow(BadRequestError);
+    expect(() => validateImageUrl('/uploads/..\\etc\\passwd')).toThrow('图片 URL 包含非法路径');
+  });
+
+  it('路径遍历变体：URL 编码 %2e（.. 的编码）抛 BadRequestError', () => {
+    // 设计原因：%2e%2e 经 URL 解码后为 ..，可绕过字面 .. 检查
+    expect(() => validateImageUrl('/uploads/%2e%2e/etc/passwd')).toThrow(BadRequestError);
+    expect(() => validateImageUrl('/uploads/%2e%2e/etc/passwd')).toThrow('图片 URL 包含非法路径');
+  });
+
+  it('路径遍历变体：URL 编码 %5c（\\ 的编码）抛 BadRequestError', () => {
+    // 设计原因：%5c 经 URL 解码后为 \，可绕过字面 \\ 检查
+    expect(() => validateImageUrl('/uploads/%5cetc%5cpasswd')).toThrow(BadRequestError);
+    expect(() => validateImageUrl('/uploads/%5cetc%5cpasswd')).toThrow('图片 URL 包含非法路径');
+  });
+
+  it('路径遍历变体：大写 URL 编码 %2E 抛 BadRequestError（大小写不敏感）', () => {
+    // 设计原因：攻击者可能使用大写 %2E%2E 绕过 lowercase 后的小写 %2e 检查
+    // 实现已先 toLowerCase 再 includes('%2e')，故大写变体也被拦截
+    expect(() => validateImageUrl('/uploads/%2E%2E/etc/passwd')).toThrow(BadRequestError);
+  });
+
+  it('合法 /uploads/ 路径不含路径遍历变体时应通过', () => {
+    // 边界场景：路径中包含合法字符（如连字符、下划线），不应被误判为路径遍历
+    expect(() => validateImageUrl('/uploads/2026-07_photo.jpg')).not.toThrow();
+    expect(() => validateImageUrl('/uploads/user_avatar.png')).not.toThrow();
+  });
 });
 
 describe('utils/sanitize validateImageUrl - HTTPS 外链', () => {
