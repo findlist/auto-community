@@ -509,8 +509,8 @@ export default function ContentReview() {
 
       {/* ============ 编辑弹窗 ============ */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-backdrop">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-modal-enter">
             {/* 弹窗头部 */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100">
               <h3 className="font-semibold text-neutral-800">编辑内容</h3>
@@ -699,15 +699,15 @@ export default function ContentReview() {
 
       {/* ============ 批量操作确认弹窗 ============ */}
       {batchConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-backdrop">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm animate-modal-enter">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-bold text-neutral-800">
                 {batchConfirm.action === "batchActive" ? "批量上架" : "批量下架"}
               </h3>
               <button
                 onClick={() => setBatchConfirm(null)}
-                className="text-neutral-400 hover:text-neutral-600"
+                className="text-neutral-400 hover:text-neutral-600 p-1 rounded hover:bg-neutral-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -721,14 +721,14 @@ export default function ContentReview() {
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setBatchConfirm(null)}
-                className="px-4 py-2 text-sm text-neutral-600 border border-neutral-300 rounded-lg hover:bg-neutral-50"
+                className="px-4 py-2 text-sm text-neutral-600 border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
               >
                 取消
               </button>
               <button
                 onClick={handleBatchConfirm}
                 disabled={batchSubmitting}
-                className={`px-4 py-2 text-sm text-white rounded-lg disabled:opacity-50 ${
+                className={`px-4 py-2 text-sm text-white rounded-lg disabled:opacity-50 transition-colors ${
                   batchConfirm.action === "batchActive"
                     ? "bg-emerald-500 hover:bg-emerald-600"
                     : "bg-neutral-600 hover:bg-neutral-700"

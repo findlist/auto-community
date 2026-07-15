@@ -471,15 +471,15 @@ export default function UserManagement() {
 
       {/* 确认弹窗 */}
       {confirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-backdrop">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm animate-modal-enter">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-bold text-neutral-800">
                 {getConfirmText(confirm.action).title}
               </h3>
               <button
                 onClick={() => setConfirm(null)}
-                className="text-neutral-400 hover:text-neutral-600"
+                className="text-neutral-400 hover:text-neutral-600 p-1 rounded hover:bg-neutral-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -497,14 +497,14 @@ export default function UserManagement() {
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setConfirm(null)}
-                className="px-4 py-2 text-sm text-neutral-600 border border-neutral-300 rounded-lg hover:bg-neutral-50"
+                className="px-4 py-2 text-sm text-neutral-600 border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
               >
                 取消
               </button>
               <button
                 onClick={handleConfirmAction}
                 disabled={submitting}
-                className={`px-4 py-2 text-sm text-white rounded-lg disabled:opacity-50 ${
+                className={`px-4 py-2 text-sm text-white rounded-lg disabled:opacity-50 transition-colors ${
                   confirm.action === "batchBan"
                     ? "bg-red-500 hover:bg-red-600"
                     : "bg-emerald-500 hover:bg-emerald-600"
