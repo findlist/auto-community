@@ -520,6 +520,34 @@ describe('group-order.service - create 创建拼单', () => {
     const params = insertCall[1] as unknown[];
     expect(params[2]).toBeNull();
   });
+
+  it('事务一致性：transaction 内任一 SQL 失败应抛错且不返回部分结果', async () => {
+    // 设计原因：create 已包裹 transaction，包含 INSERT group_orders + INSERT participants + UPDATE current_participants 三步
+    // 若第二步失败，整个事务应回滚，不能让 group_orders 记录残留（数据一致性破坏）
+    const dbError = new Error('INSERT participants failed: FK violation');
+    // 第一步 INSERT group_orders 成功
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'order-tx', initiator_id: 'user-1', title: 't', description: null,
+        target_amount: 100, current_amount: 0, min_participants: 1, max_participants: 5,
+        current_participants: 0, address: 'a', deadline: new Date('2026-01-01'),
+        status: 'open', created_at: new Date('2026-01-01'), updated_at: new Date('2026-01-01'),
+      }],
+    } as unknown as DbResult);
+    // 第二步 INSERT participants 失败
+    mockClient.query.mockRejectedValueOnce(dbError);
+
+    // 整个 create 应抛错，不能返回第一步的部分结果
+    await expect(
+      groupOrderService.create('user-1', {
+        title: 't', targetAmount: 100,
+        minParticipants: 1, maxParticipants: 5, address: 'a', deadline: '2026-01-01',
+      }),
+    ).rejects.toThrow(dbError);
+
+    // 验证未执行第三步 UPDATE（事务在第二步失败后中止）
+    expect(mockClient.query).toHaveBeenCalledTimes(2);
+  });
 });
 
 // ==================== join 测试 ====================
