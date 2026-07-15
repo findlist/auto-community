@@ -88,8 +88,9 @@ export default function Profile() {
           className="relative w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center group flex-shrink-0"
           aria-label="修改头像"
         >
+          {/* 头像 alt 使用用户昵称，屏幕阅读器可识别用户身份，与 Layout 顶部头像保持一致 */}
           {user?.avatar ? (
-            <img src={user.avatar} alt="" className="w-14 h-14 rounded-full object-cover" />
+            <img src={user.avatar} alt={user?.nickname ? `${user.nickname}的头像` : "用户头像"} className="w-14 h-14 rounded-full object-cover" />
           ) : (
             <User className="w-7 h-7 text-emerald-600" />
           )}

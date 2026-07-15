@@ -541,7 +541,7 @@ describe('ServiceDetail 详情渲染与加载状态', () => {
     });
     // 配图 img 元素
     const images = screen.getAllByRole('img');
-    // 至少 1 张配图（可能还有发布者头像，但头像 alt="" role 为 presentation）
+    // 至少 1 张配图（发布者头像 alt 为描述性文本，role 为 img，计入 getAllByRole('img') 结果）
     expect(images.length).toBeGreaterThanOrEqual(1);
   });
 

@@ -192,8 +192,9 @@ export default function Detail() {
           <h3 className="text-xs font-mono tracking-widest uppercase text-neutral-400 mb-3">—— 发布者</h3>
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-neutral-100 overflow-hidden flex items-center justify-center">
+              {/* 头像 alt 使用用户昵称，屏幕阅读器可识别发帖人身份 */}
               {post.user?.avatar ? (
-                <img src={post.user.avatar} alt="" className="w-full h-full object-cover" />
+                <img src={post.user.avatar} alt={post.user.nickname ? `${post.user.nickname}的头像` : "用户头像"} className="w-full h-full object-cover" />
               ) : (
                 <span className="text-neutral-400 text-sm">{post.user?.nickname?.[0] ?? "?"}</span>
               )}

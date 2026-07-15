@@ -65,7 +65,8 @@ export function ResponsiveCard({
           {user && (
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden">
-                {user.avatar && <img src={user.avatar} alt="" className="w-full h-full object-cover" />}
+                {/* 头像 alt 使用用户昵称，屏幕阅读器可识别用户身份 */}
+                {user.avatar && <img src={user.avatar} alt={user.nickname ? `${user.nickname}的头像` : "用户头像"} className="w-full h-full object-cover" />}
               </div>
               <span className="text-sm text-gray-600">{user.nickname}</span>
               {user.reputationScore != null && (

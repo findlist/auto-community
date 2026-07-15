@@ -328,8 +328,9 @@ export default function FamilyBindingPage() {
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {/* 对方头像 */}
                   <div className="w-10 h-10 rounded-full bg-neutral-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                    {/* 头像 alt 使用用户昵称，屏幕阅读器可识别家属身份 */}
                     {binding.other?.avatar ? (
-                      <img src={binding.other.avatar} alt="" className="w-full h-full object-cover" />
+                      <img src={binding.other.avatar} alt={binding.other.nickname ? `${binding.other.nickname}的头像` : "用户头像"} className="w-full h-full object-cover" />
                     ) : (
                       <Users className="w-5 h-5 text-neutral-400" />
                     )}

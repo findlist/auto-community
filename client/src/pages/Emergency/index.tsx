@@ -813,8 +813,9 @@ function DetailView({ requestId }: { requestId: string }) {
 
         {request.images.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-1">
+            {/* 配图 alt 使用序号，屏幕阅读器可识别多张求助配图 */}
             {request.images.map((img, i) => (
-              <img key={i} src={img} alt="" className="w-24 h-24 rounded-lg object-cover flex-shrink-0" />
+              <img key={i} src={img} alt={`求助配图${i + 1}`} className="w-24 h-24 rounded-lg object-cover flex-shrink-0" />
             ))}
           </div>
         )}

@@ -344,8 +344,8 @@ describe('Emergency/Detail 应急邻里详情页（DetailView）', () => {
     await waitFor(() => {
       expect(screen.getByText('老人摔倒需要帮助')).toBeInTheDocument();
     });
-    // mockRequest.images 含 2 张图片；img alt="" 时 role 为 presentation 而非 img
-    const images = screen.getAllByRole('presentation');
+    // mockRequest.images 含 2 张图片；img alt 为描述性文本时 role 为 img
+    const images = screen.getAllByRole('img');
     expect(images.length).toBe(2);
   });
 
@@ -356,7 +356,7 @@ describe('Emergency/Detail 应急邻里详情页（DetailView）', () => {
     await waitFor(() => {
       expect(screen.getByText('水管漏水求助')).toBeInTheDocument();
     });
-    expect(screen.queryByRole('presentation')).not.toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 
   it('匿名用户显示"匿名用户"', async () => {

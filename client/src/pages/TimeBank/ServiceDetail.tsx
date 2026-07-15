@@ -203,8 +203,9 @@ export default function ServiceDetail() {
           <h3 className="text-sm font-medium text-gray-700 mb-3">发布者信息</h3>
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+              {/* 头像 alt 使用用户昵称，屏幕阅读器可识别服务发布者身份 */}
               {service.user?.avatar && (
-                <img src={service.user.avatar} alt="" className="w-full h-full object-cover" />
+                <img src={service.user.avatar} alt={service.user.nickname ? `${service.user.nickname}的头像` : "用户头像"} className="w-full h-full object-cover" />
               )}
             </div>
             <div className="flex-1">
