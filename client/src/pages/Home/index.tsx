@@ -218,8 +218,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 底部滚动提示 */}
-        <div className="absolute bottom-6 right-6 hidden lg:flex items-center gap-2 text-white/60 text-xs animate-fade-in" style={{ animationDelay: "600ms" }}>
+        {/* 底部滚动提示：文字微缓下移，强化「向下看」引导 */}
+        <div className="absolute bottom-6 right-6 hidden lg:flex items-center gap-2 text-white/60 text-xs animate-fade-in animate-scroll-hint" style={{ animationDelay: "600ms" }}>
           <span className="tracking-widest">SCROLL</span>
           <span className="w-8 h-px bg-white/40" />
         </div>

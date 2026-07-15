@@ -120,7 +120,7 @@ export default function AdminLayout() {
         {sidebarOpen && (
           <>
             <div
-              className="md:hidden fixed inset-0 z-30 bg-black/40 animate-fade-in"
+              className="md:hidden fixed inset-0 z-30 bg-black/40 animate-backdrop"
               onClick={() => setSidebarOpen(false)}
             />
             <aside className="md:hidden fixed left-0 top-14 bottom-0 z-40 w-60 bg-white border-r border-neutral-200 overflow-y-auto animate-slide-in-left">
