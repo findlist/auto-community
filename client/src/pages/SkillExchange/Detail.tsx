@@ -81,9 +81,9 @@ export default function Detail() {
     return (
       <div className="p-4">
         <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 rounded w-3/4" />
-          <div className="h-4 bg-gray-200 rounded w-1/2" />
-          <div className="h-32 bg-gray-200 rounded" />
+          <div className="h-6 bg-neutral-200 rounded w-3/4" />
+          <div className="h-4 bg-neutral-200 rounded w-1/2" />
+          <div className="h-32 bg-neutral-200 rounded" />
         </div>
       </div>
     );
@@ -102,7 +102,7 @@ export default function Detail() {
           action={
             <button
               onClick={() => navigate("/skills")}
-              className="px-4 py-2 bg-[var(--color-primary-500)] text-white rounded-md text-sm hover:bg-[var(--color-primary-600)] transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors"
             >
               返回列表
             </button>
@@ -122,7 +122,7 @@ export default function Detail() {
           action={
             <button
               onClick={() => navigate("/skills")}
-              className="px-4 py-2 bg-[var(--color-primary-500)] text-white rounded-md text-sm hover:bg-[var(--color-primary-600)] transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors"
             >
               返回列表
             </button>
@@ -134,58 +134,72 @@ export default function Detail() {
 
   return (
     // max-w-2xl mx-auto：详情页统一容器约束，桌面端避免横向拉伸过度影响可读性
-    <div className="pb-20 max-w-2xl mx-auto">
-      <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
-        <button onClick={() => navigate(-1)} aria-label="返回" className="p-2.5 hover:bg-gray-100 rounded transition-colors">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+    <div className="pb-24 lg:pb-20 max-w-2xl mx-auto">
+      {/* 顶部返回 + 模块小标签，与列表页编辑式风格一致 */}
+      <div className="px-4 lg:px-0 pt-4 lg:pt-6 mb-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-700 transition-colors mb-3"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          返回
         </button>
-        <h1 className="text-lg font-medium text-gray-900 flex-1 truncate">{post.title}</h1>
+        <p className="text-xs tracking-widest mb-2 font-mono" style={{ color: "var(--color-module-skill)" }}>
+          —— 技能详情
+        </p>
       </div>
 
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <span className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-600 text-xs rounded mb-2">
+      <div className="px-4 lg:px-0">
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex-1 min-w-0">
+            <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full font-medium mb-2">
               {post.category}
             </span>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">{post.title}</h2>
-            <p className="text-sm text-gray-500">
+            <h2 className="text-2xl lg:text-3xl font-semibold text-neutral-900 mb-1 tracking-tight text-balance">
+              {post.title}
+            </h2>
+            <p className="text-sm text-neutral-500">
               {post.type === "offer" ? "提供技能" : "需求技能"}
             </p>
           </div>
-          <div className="text-2xl font-bold text-emerald-600 whitespace-nowrap ml-4">
-            {post.creditPrice}积分
+          <div className="text-2xl lg:text-3xl font-bold text-blue-700 whitespace-nowrap ml-4 tabular-nums">
+            {post.creditPrice}
+            <span className="text-xs text-neutral-400 ml-0.5 font-normal">积分</span>
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">详细描述</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">{post.description}</p>
+        {/* 详细描述：编辑式区块，弱化卡片背景 */}
+        <div className="mb-6">
+          <h3 className="text-xs font-mono tracking-widest uppercase text-neutral-400 mb-2">—— 详细描述</h3>
+          <p className="text-neutral-700 text-sm lg:text-base leading-relaxed">{post.description}</p>
         </div>
 
-        <div className="space-y-3 mb-4">
+        <div className="space-y-2.5 mb-6">
           {post.location && (
-            <div className="flex items-center gap-2 text-gray-600 text-sm">
-              <MapPin className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2 text-neutral-600 text-sm">
+              <MapPin className="w-4 h-4 text-neutral-400" />
               <span>{post.location}</span>
             </div>
           )}
-          <div className="flex items-center gap-2 text-gray-600 text-sm">
-            <Clock className="w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-2 text-neutral-600 text-sm">
+            <Clock className="w-4 h-4 text-neutral-400" />
             <span>{new Date(post.createdAt).toLocaleString()}</span>
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">发布者信息</h3>
+        {/* 发布者信息：编辑式区块 */}
+        <div className="mb-6">
+          <h3 className="text-xs font-mono tracking-widest uppercase text-neutral-400 mb-3">—— 发布者</h3>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
-              {post.user?.avatar && (
+            <div className="w-12 h-12 rounded-full bg-neutral-100 overflow-hidden flex items-center justify-center">
+              {post.user?.avatar ? (
                 <img src={post.user.avatar} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-neutral-400 text-sm">{post.user?.nickname?.[0] ?? "?"}</span>
               )}
             </div>
             <div className="flex-1">
-              <div className="font-medium text-gray-900">{post.user?.nickname}</div>
+              <div className="font-medium text-neutral-900">{post.user?.nickname}</div>
               {post.user?.reputationScore != null && (
                 <div className="flex items-center gap-1 text-sm text-amber-500 mt-0.5">
                   <Star className="w-3.5 h-3.5 fill-current" />
@@ -197,24 +211,25 @@ export default function Detail() {
         </div>
 
         {/* AI 智能推荐 */}
-        <div className="mt-4">
+        <div className="mt-6">
           <AIRecommend postId={id!} type="skill" title="可能感兴趣的人" />
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-3">
+      {/* 底部操作栏：吸底，避免长内容滚动时按钮不可见；考虑移动端安全区 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-neutral-200 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         {isOwner ? (
-          <div className="flex gap-3">
+          <div className="flex gap-3 max-w-2xl mx-auto">
             <button
               onClick={handleDelete}
-              className="flex-1 py-3 border border-red-200 text-red-500 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-red-50 transition-colors"
+              className="flex-1 py-3 border border-red-200 text-red-600 rounded-full font-medium flex items-center justify-center gap-2 hover:bg-red-50 active:scale-[0.98] transition-all"
             >
               <Trash2 className="w-4 h-4" />
               删除
             </button>
             <button
               onClick={() => navigate(`/skills/create?edit=${post.id}`)}
-              className="flex-1 py-3 bg-emerald-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors"
+              className="flex-1 py-3 bg-blue-600 text-white rounded-full font-medium flex items-center justify-center gap-2 hover:bg-blue-700 active:scale-[0.98] transition-all"
             >
               <Edit2 className="w-4 h-4" />
               编辑
@@ -224,7 +239,7 @@ export default function Detail() {
           <button
             onClick={handleCreateOrder}
             disabled={submitting || post.status !== "active"}
-            className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            className="w-full max-w-2xl mx-auto py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed block"
           >
             {submitting ? "提交中..." : "发起交易"}
           </button>
@@ -232,16 +247,16 @@ export default function Detail() {
       </div>
 
       {/* 删除确认弹窗：替代原生 confirm()，与 SystemStatus/SkillExchange/Orders 弹窗风格统一 */}
-      {/* role="dialog" 提升无障碍语义，便于测试用 within 精确定位弹窗内按钮 */}
+      {/* role="dialog" 提升无障碍语义，便于测试用 within 精确定位弹窗内按钮；加入进入动画 */}
       {showDeleteConfirm && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 animate-backdrop"
           onClick={() => setShowDeleteConfirm(false)}
         >
           <div
             role="dialog"
             aria-label="删除确认"
-            className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-xl"
+            className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-xl animate-modal-enter"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-semibold text-neutral-800 mb-2">删除确认</h3>

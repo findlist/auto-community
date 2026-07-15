@@ -136,7 +136,9 @@ describe('SharedKitchen/Detail 美食详情', () => {
     // 用分类"家常菜"作为加载完成标志（页面唯一）
     await screen.findByText('家常菜');
     expect(screen.getByText('家常红烧肉')).toBeInTheDocument();
-    expect(screen.getByText('10积分')).toBeInTheDocument();
+    // 价格展示拆分为数字节点 + 单位节点（与 SkillExchange/Detail 风格一致），分别断言
+    expect(screen.getByText('10')).toBeInTheDocument();
+    expect(screen.getByText('积分')).toBeInTheDocument();
     expect(screen.getByText('剩余 3/5 份')).toBeInTheDocument();
     expect(screen.getByText('正宗家常红烧肉，肥而不腻，入口即化，每天现做。')).toBeInTheDocument();
     expect(screen.getByText('北京市朝阳区某小区')).toBeInTheDocument();
@@ -363,14 +365,14 @@ describe('SharedKitchen/Detail 美食详情', () => {
     await screen.findByText('可配送的饺子');
     await user.click(screen.getByRole('button', { name: '立即预约' }));
 
-    // 默认 self_pickup，"自取"按钮应有 emerald 边框样式
+    // 默认 self_pickup，"自取"按钮应有 orange 边框样式（与美食模块主色一致）
     const selfPickupBtn = screen.getByRole('button', { name: '自取' });
-    expect(selfPickupBtn.className).toContain('border-emerald-500');
+    expect(selfPickupBtn.className).toContain('border-orange-500');
 
     // 切换到 delivery
     await user.click(screen.getByRole('button', { name: '配送' }));
-    expect(selfPickupBtn.className).not.toContain('border-emerald-500');
-    expect(screen.getByRole('button', { name: '配送' }).className).toContain('border-emerald-500');
+    expect(selfPickupBtn.className).not.toContain('border-orange-500');
+    expect(screen.getByRole('button', { name: '配送' }).className).toContain('border-orange-500');
   });
 
   it('备注 textarea 输入文本', async () => {

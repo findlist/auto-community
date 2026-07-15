@@ -165,8 +165,9 @@ describe('SkillExchange/Detail 帖子详情', () => {
     await screen.findByText('音乐培训');
     // 标题应出现至少1次（h1 + h2）
     expect(screen.getAllByText('吉他教学服务').length).toBeGreaterThan(0);
-    // 积分价格
-    expect(screen.getByText('50积分')).toBeInTheDocument();
+    // 积分价格拆分为数字节点 + 单位节点（与列表页编辑式风格一致），分别断言
+    expect(screen.getByText('50')).toBeInTheDocument();
+    expect(screen.getByText('积分')).toBeInTheDocument();
     // 详细描述
     expect(screen.getByText('提供专业吉他入门教学，十年教学经验，适合零基础学员。')).toBeInTheDocument();
     // 位置信息
