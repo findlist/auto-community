@@ -241,7 +241,8 @@ async function forgotPassword(phone: string): Promise<void> {
   await redisClient.setEx(key, VERIFY_CODE_TTL, code);
 
   // 模拟发送验证码（实际项目中接入短信服务）
-  logger.info({ phone: maskPhone(phone), code }, '密码重置验证码已生成（模拟发送）');
+  // 安全考虑：日志中不记录明文验证码，避免日志泄露后验证码被冒用重置密码
+  logger.info({ phone: maskPhone(phone) }, '密码重置验证码已生成（模拟发送）');
 }
 
 /**

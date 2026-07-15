@@ -32,6 +32,7 @@ const {
   mockBcryptHash,
   mockBcryptCompare,
   mockJwtDecode,
+  mockLoggerInfo,
 } = vi.hoisted(() => ({
   mockQuery: vi.fn(),
   mockTransaction: vi.fn(),
@@ -49,6 +50,7 @@ const {
   mockBcryptHash: vi.fn(),
   mockBcryptCompare: vi.fn(),
   mockJwtDecode: vi.fn(),
+  mockLoggerInfo: vi.fn(),
 }));
 
 // mock database 模块：register 用 transaction，login/refresh/reset 等用 query
@@ -91,6 +93,15 @@ vi.mock('../../utils/crypto', () => ({
 // mock mask：避免依赖真实脱敏实现，断言调用入参即可
 vi.mock('../../utils/mask', () => ({
   maskPhone: mockMaskPhone,
+}));
+
+// mock logger：捕获 info 调用参数，守护「日志不得记录明文验证码」安全不变式
+vi.mock('../../utils/logger', () => ({
+  logger: {
+    info: mockLoggerInfo,
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 // mock bcryptjs：避免 hash/compare 真实执行（耗时且依赖随机 salt）
@@ -423,6 +434,39 @@ describe('auth.service - forgotPassword', () => {
   it('手机号格式错误时抛 BadRequestError', async () => {
     await expect(authService.forgotPassword('12345')).rejects.toBeInstanceOf(BadRequestError);
     expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  it('安全不变式：日志中不得记录明文验证码（防止日志泄露后被冒用重置密码）', async () => {
+    // 用户存在场景：会生成验证码并写 Redis，但日志不应包含明文 code
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'user-1' }] });
+    mockRedisSetEx.mockResolvedValue(undefined);
+
+    await authService.forgotPassword(PHONE);
+
+    // 断言 logger.info 被调用至少一次（用户存在分支）
+    expect(mockLoggerInfo).toHaveBeenCalled();
+    // 遍历所有 info 调用的入参，确保均不含 code 字段
+    for (const callArgs of mockLoggerInfo.mock.calls) {
+      const logPayload = callArgs[0] as Record<string, unknown> | undefined;
+      if (logPayload && typeof logPayload === 'object') {
+        expect(logPayload).not.toHaveProperty('code');
+      }
+    }
+  });
+
+  it('安全不变式：用户不存在分支日志也不得记录明文验证码', async () => {
+    // 用户不存在分支：函数提前 return，但仍会调用 logger.info
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    await authService.forgotPassword(PHONE);
+
+    expect(mockLoggerInfo).toHaveBeenCalled();
+    for (const callArgs of mockLoggerInfo.mock.calls) {
+      const logPayload = callArgs[0] as Record<string, unknown> | undefined;
+      if (logPayload && typeof logPayload === 'object') {
+        expect(logPayload).not.toHaveProperty('code');
+      }
+    }
   });
 });
 
