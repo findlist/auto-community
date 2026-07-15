@@ -317,7 +317,7 @@ export default function SystemStatus() {
             <Empty
               compact
               title="暂无告警日志"
-              icon={<CheckCircle className="w-10 h-10 text-[var(--color-success)]" />}
+              icon={<CheckCircle className="w-10 h-10 text-emerald-600" />}
             />
           ) : (
             <ul className="divide-y divide-neutral-100">
@@ -369,11 +369,11 @@ export default function SystemStatus() {
       {/* 清除告警确认弹窗：替代原生 confirm()，统一移动端交互风格 */}
       {showClearConfirm && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 animate-backdrop"
           onClick={() => setShowClearConfirm(false)}
         >
           <div
-            className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-xl"
+            className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-xl animate-modal-enter"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-semibold text-neutral-800 mb-2">

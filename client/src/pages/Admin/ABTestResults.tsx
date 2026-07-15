@@ -138,8 +138,8 @@ export default function ABTestResults() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-[var(--color-primary-500)]" />
-        <span className="text-sm text-[var(--color-text-tertiary)]">加载中...</span>
+        <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+        <span className="text-sm text-neutral-400">加载中...</span>
       </div>
     );
   }
@@ -148,11 +148,11 @@ export default function ABTestResults() {
   // 设计原因：原版任一失败即整体 return 错误页，导致成功数据被丢弃；改为错误条 + 条件渲染更合理
   const errorBanner = error ? (
     <div className="flex flex-col items-center justify-center gap-3 py-8 bg-red-50 rounded-2xl border border-red-200">
-      <AlertTriangle className="w-8 h-8 text-[var(--color-warning)]" />
-      <p className="text-[var(--color-text-secondary)]">{error}</p>
+      <AlertTriangle className="w-8 h-8 text-amber-600" />
+      <p className="text-neutral-500">{error}</p>
       <button
         onClick={loadData}
-        className="px-4 py-2 text-sm bg-[var(--color-primary-500)] text-white rounded-lg hover:bg-[var(--color-primary-600)] transition-colors"
+        className="px-4 py-2 text-sm bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
       >
         重试
       </button>
@@ -204,8 +204,8 @@ export default function ABTestResults() {
     <div className="space-y-6">
       {/* 页面标题 */}
       <div className="flex items-center gap-3">
-        <Beaker className="w-6 h-6 text-[var(--color-primary-600)]" />
-        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+        <Beaker className="w-6 h-6 text-emerald-600" />
+        <h1 className="text-xl font-bold text-neutral-900">
           A/B 测试结果
         </h1>
       </div>
@@ -215,9 +215,9 @@ export default function ABTestResults() {
 
       {/* 测试信息卡片 */}
       {config && (
-        <div className="bg-white rounded-2xl border border-[var(--color-border)] p-5 space-y-3">
+        <div className="bg-white rounded-2xl border border-neutral-200 p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
+            <h2 className="text-base font-semibold text-neutral-900">
               {config.testName}
             </h2>
             <span
@@ -226,10 +226,10 @@ export default function ABTestResults() {
               {statusLabel(config.status)}
             </span>
           </div>
-          <p className="text-sm text-[var(--color-text-secondary)]">
+          <p className="text-sm text-neutral-500">
             {config.description || "AI 推荐算法对比测试：类别匹配 vs 完整 AI 匹配"}
           </p>
-          <div className="flex items-center gap-6 text-xs text-[var(--color-text-tertiary)]">
+          <div className="flex items-center gap-6 text-xs text-neutral-400">
             <span>开始时间：{formatDate(config.startDate)}</span>
             <span>参与者：{results?.totalParticipants || 0} 人</span>
             <span>
@@ -245,42 +245,42 @@ export default function ABTestResults() {
       {/* 结果对比表格：仅 results 加载成功时渲染，失败时由 errorBanner 提示 */}
       {results && (
         <>
-          <div className="bg-white rounded-2xl border border-[var(--color-border)] overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-[var(--color-border)]">
-              <BarChart3 className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-              <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+          <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-neutral-200">
+              <BarChart3 className="w-4 h-4 text-neutral-400" />
+              <h3 className="text-sm font-semibold text-neutral-900">
                 变体对比
               </h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[var(--color-border)] bg-[var(--color-neutral-50)]">
-                    <th className="px-5 py-3 text-left font-medium text-[var(--color-text-secondary)]">
+                  <tr className="border-b border-neutral-200 bg-neutral-50">
+                    <th className="px-5 py-3 text-left font-medium text-neutral-500">
                       变体
                     </th>
-                    <th className="px-4 py-3 text-right font-medium text-[var(--color-text-secondary)]">
+                    <th className="px-4 py-3 text-right font-medium text-neutral-500">
                       曝光数
                     </th>
-                    <th className="px-4 py-3 text-right font-medium text-[var(--color-text-secondary)]">
+                    <th className="px-4 py-3 text-right font-medium text-neutral-500">
                       点击数
                     </th>
-                    <th className="px-4 py-3 text-right font-medium text-[var(--color-text-secondary)]">
+                    <th className="px-4 py-3 text-right font-medium text-neutral-500">
                       转化数
                     </th>
-                    <th className="px-4 py-3 text-right font-medium text-[var(--color-text-secondary)]">
+                    <th className="px-4 py-3 text-right font-medium text-neutral-500">
                       点击率
                     </th>
-                    <th className="px-4 py-3 text-right font-medium text-[var(--color-text-secondary)]">
+                    <th className="px-4 py-3 text-right font-medium text-neutral-500">
                       转化率
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-[var(--color-border)]">
+                  <tr className="border-b border-neutral-200">
                     <td className="px-5 py-3">
                       <span className="inline-block w-3 h-3 rounded-full bg-neutral-400 mr-2 align-middle" />
-                      <span className="font-medium text-[var(--color-text-primary)]">
+                      <span className="font-medium text-neutral-900">
                         Control（类别匹配）
                       </span>
                     </td>
@@ -292,8 +292,8 @@ export default function ABTestResults() {
                   </tr>
                   <tr>
                     <td className="px-5 py-3">
-                      <span className="inline-block w-3 h-3 rounded-full bg-[var(--color-primary-500)] mr-2 align-middle" />
-                      <span className="font-medium text-[var(--color-text-primary)]">
+                      <span className="inline-block w-3 h-3 rounded-full bg-emerald-500 mr-2 align-middle" />
+                      <span className="font-medium text-neutral-900">
                         Treatment（AI 匹配）
                       </span>
                     </td>
@@ -309,8 +309,8 @@ export default function ABTestResults() {
           </div>
 
           {/* 统计显著性 */}
-          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+          <div className="bg-white rounded-2xl border border-neutral-200 p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-neutral-900">
               统计显著性（卡方检验）
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -330,14 +330,14 @@ export default function ABTestResults() {
           </div>
 
           {/* 结论建议 */}
-          <div className="bg-white rounded-2xl border border-[var(--color-border)] p-5 space-y-3">
+          <div className="bg-white rounded-2xl border border-neutral-200 p-5 space-y-3">
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-[var(--color-success)]" />
-              <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
+              <h3 className="text-sm font-semibold text-neutral-900">
                 结论与建议
               </h3>
             </div>
-            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+            <p className="text-sm text-neutral-500 leading-relaxed">
               {conclusion}
             </p>
           </div>
@@ -360,12 +360,12 @@ function SignificanceCard({
   significant: boolean;
 }) {
   return (
-    <div className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-neutral-50)]">
-      <div className="text-xs text-[var(--color-text-tertiary)] mb-2">{label}</div>
+    <div className="p-4 rounded-xl border border-neutral-200 bg-neutral-50">
+      <div className="text-xs text-neutral-400 mb-2">{label}</div>
       <div className="flex items-center gap-3">
         <span
           className={`text-lg font-bold ${
-            significant ? "text-[var(--color-success)]" : "text-[var(--color-text-tertiary)]"
+            significant ? "text-emerald-600" : "text-neutral-400"
           }`}
         >
           {significant ? "显著" : "不显著"}
@@ -380,7 +380,7 @@ function SignificanceCard({
           p = {pValue < 0.001 ? "<0.001" : pValue.toFixed(4)}
         </span>
       </div>
-      <div className="mt-1 text-xs text-[var(--color-text-tertiary)]">
+      <div className="mt-1 text-xs text-neutral-400">
         χ² = {chiSquare.toFixed(2)}
       </div>
     </div>

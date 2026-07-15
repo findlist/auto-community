@@ -150,8 +150,8 @@ export default function Metrics() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-[var(--color-primary-500)]" />
-        <span className="text-sm text-[var(--color-text-tertiary)]">加载中...</span>
+        <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+        <span className="text-sm text-neutral-400">加载中...</span>
       </div>
     );
   }
@@ -160,12 +160,12 @@ export default function Metrics() {
     <div className="space-y-6">
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+        <h1 className="text-xl font-bold text-neutral-900">
           效果度量
         </h1>
         <button
           onClick={handleExportCSV}
-          className="px-4 py-2 text-sm font-medium text-white bg-[var(--color-primary-500)] rounded-lg hover:bg-[var(--color-primary-600)] transition-colors"
+          className="px-4 py-2 text-sm font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 transition-colors"
         >
           导出 CSV
         </button>
@@ -184,20 +184,20 @@ export default function Metrics() {
             <button
               key={metricName}
               onClick={() => handleToggleMetric(metricName)}
-              className={`p-4 rounded-2xl border transition-all text-left ${
+              className={`p-4 rounded-2xl border transition-all text-left card-hover-glow ${
                 isExpanded
-                  ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] shadow-md"
-                  : "border-[var(--color-border)] bg-white hover:shadow-md"
+                  ? "border-emerald-500 bg-emerald-50 shadow-md"
+                  : "border-neutral-200 bg-white hover:shadow-md"
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
                 <Icon className="w-6 h-6" style={{ color: config.color }} />
-                <span className="text-xs text-[var(--color-text-tertiary)]">
+                <span className="text-xs text-neutral-400">
                   {config.label}
                 </span>
               </div>
               <div
-                className="text-2xl font-bold"
+                className="text-2xl font-bold tabular-nums"
                 style={{ color: config.color }}
               >
                 {config.format(value)}
@@ -209,11 +209,11 @@ export default function Metrics() {
 
       {/* 图表区域 */}
       {expandedMetric && (
-        <div className="animate-fadeIn">
+        <div className="animate-fade-in">
           {trendLoading[expandedMetric] ? (
-            <div className="flex flex-col items-center justify-center gap-2 h-48 bg-white rounded-2xl border border-[var(--color-border)]">
-              <Loader2 className="w-5 h-5 animate-spin text-[var(--color-primary-500)]" />
-              <span className="text-sm text-[var(--color-text-tertiary)]">
+            <div className="flex flex-col items-center justify-center gap-2 h-48 bg-white rounded-2xl border border-neutral-200">
+              <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
+              <span className="text-sm text-neutral-400">
                 加载趋势数据...
               </span>
             </div>
@@ -233,8 +233,8 @@ export default function Metrics() {
 
       {/* 提示信息 */}
       {!expandedMetric && (
-        <div className="text-center py-12 bg-white rounded-2xl border border-[var(--color-border)]">
-          <p className="text-[var(--color-text-tertiary)]">
+        <div className="text-center py-12 bg-white rounded-2xl border border-neutral-200">
+          <p className="text-neutral-400">
             点击上方指标卡片查看趋势图
           </p>
         </div>
