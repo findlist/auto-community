@@ -348,6 +348,36 @@ describe('emergency.service - respondToRequest', () => {
     // 命中后不应再查数据库
     expect(mockedQuery).not.toHaveBeenCalled();
   });
+
+  it('事务一致性：transaction 内 UPDATE 失败应抛错且不返回 INSERT 的部分结果', async () => {
+    // 设计原因：respondToRequest 已包裹 transaction，包含 INSERT emergency_responses + UPDATE emergency_requests 两步
+    // 若 UPDATE 失败，整个事务应回滚，不能让 emergency_responses 记录残留（求助状态与响应记录不一致）
+    mockedQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'e1', user_id: 'u1', status: 'open' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult) // 无重复响应
+      .mockResolvedValueOnce({ rows: [{ nickname: '李四' }] } as unknown as DbResult); // 响应者昵称
+    // 第一步 INSERT emergency_responses 成功
+    mockClient.query
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'r1', request_id: 'e1', responder_id: 'u1',
+          message: '帮忙', eta: null, status: 'accepted',
+          timeout_at: new Date(), arrived_at: null, completed_at: null,
+          created_at: new Date(), updated_at: new Date(),
+        }],
+      } as unknown as DbResult);
+    // 第二步 UPDATE emergency_requests.status 失败
+    const dbError = new Error('UPDATE failed: deadlock detected');
+    mockClient.query.mockRejectedValueOnce(dbError);
+
+    // 整个 respondToRequest 应抛错，不能返回第一步的部分结果
+    await expect(
+      emergencyService.respondToRequest('u1', 'e1', { message: '帮忙' }),
+    ).rejects.toThrow(dbError);
+
+    // 验证未发送通知（事务失败后不应触发副作用）
+    expect(mockedNotify).not.toHaveBeenCalled();
+  });
 });
 
 describe('emergency.service - createReport', () => {
