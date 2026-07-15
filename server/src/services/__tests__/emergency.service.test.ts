@@ -319,7 +319,10 @@ describe('emergency.service - respondToRequest', () => {
     mockedQuery
       .mockResolvedValueOnce({ rows: [{ id: 'e1', user_id: 'u-requester', status: 'open' }] } as unknown as DbResult)
       .mockResolvedValueOnce({ rows: [] } as unknown as DbResult) // 无重复响应
-      .mockResolvedValueOnce({ rows: [{ nickname: '李四' }] } as unknown as DbResult) // 响应者昵称
+      .mockResolvedValueOnce({ rows: [{ nickname: '李四' }] } as unknown as DbResult); // 响应者昵称
+    // INSERT emergency_responses + UPDATE emergency_requests 已包裹进 transaction，
+    // 对应 mockClient.query 而非顶层 mockedQuery
+    mockClient.query
       .mockResolvedValueOnce({
         rows: [{
           id: 'r1', request_id: 'e1', responder_id: 'u1',

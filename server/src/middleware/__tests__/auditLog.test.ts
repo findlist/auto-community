@@ -128,7 +128,7 @@ describe('auditMiddleware - 敏感字段脱敏', () => {
     expect(params.requestBody).toEqual({ Phone: '***', name: '张三' });
   });
 
-  it('非对象请求体（null/数组/字符串）应原样透传不脱敏', async () => {
+  it('无可脱敏字段的请求体（null/基本类型数组）应原样透传', async () => {
     // null
     const req1 = createMockReq({ body: null });
     const res1 = createMockRes(200);
@@ -136,13 +136,91 @@ describe('auditMiddleware - 敏感字段脱敏', () => {
     (res1.send as unknown as (b?: unknown) => unknown)('ok');
     expect(mockedWriteAuditLog.mock.calls[0][0].requestBody).toBeNull();
 
-    // 数组
+    // 基本类型数组：元素全为数字，无可脱敏字段，递归后结构不变
     mockedWriteAuditLog.mockClear();
     const req2 = createMockReq({ body: [1, 2, 3] });
     const res2 = createMockRes(200);
     auditMiddleware('A')(req2, res2, vi.fn());
     (res2.send as unknown as (b?: unknown) => unknown)('ok');
     expect(mockedWriteAuditLog.mock.calls[0][0].requestBody).toEqual([1, 2, 3]);
+  });
+
+  it('嵌套对象内层敏感字段应递归脱敏（防止 PII 经嵌套结构泄露）', async () => {
+    // 构造 { user: { phone, password }, meta: { token } } 嵌套结构
+    // 设计原因：早期实现仅顶层脱敏，嵌套字段会原样写入审计日志
+    const req = createMockReq({
+      body: {
+        user: { phone: '13812345678', password: 'secret' },
+        meta: { token: 'tk-123', trace: 'abc' },
+      },
+    });
+    const res = createMockRes(200);
+
+    auditMiddleware('UPDATE')(req, res, vi.fn());
+    (res.send as unknown as (b?: unknown) => unknown)({ ok: true });
+
+    const params = mockedWriteAuditLog.mock.calls[0][0];
+    expect(params.requestBody).toEqual({
+      user: { phone: '***', password: '***' },
+      meta: { token: '***', trace: 'abc' },
+    });
+  });
+
+  it('数组内嵌套对象的敏感字段也应递归脱敏', async () => {
+    // 构造 { users: [{ phone, name }, { password, name }] } 结构
+    // 设计原因：sanitizeRequestBody 对数组直接返回原值，但数组元素若是对象则需递归处理
+    const req = createMockReq({
+      body: {
+        users: [
+          { phone: '13812345678', name: '张三' },
+          { password: 'pwd', name: '李四' },
+        ],
+      },
+    });
+    const res = createMockRes(200);
+
+    auditMiddleware('BATCH')(req, res, vi.fn());
+    (res.send as unknown as (b?: unknown) => unknown)({ ok: true });
+
+    const params = mockedWriteAuditLog.mock.calls[0][0];
+    expect(params.requestBody).toEqual({
+      users: [
+        { phone: '***', name: '张三' },
+        { password: '***', name: '李四' },
+      ],
+    });
+  });
+
+  it('超过最大递归深度（5）的对象应整体脱敏为 ***（防止恶意构造超深嵌套导致栈溢出）', async () => {
+    // 构造深度为 6 的嵌套对象，第 6 层应直接脱敏为 ***
+    // 深度 1: { a: { ... } }
+    // 深度 2: { a: { b: { ... } } }
+    // ...
+    // 深度 6: 应被替换为 ***
+    const deepBody = {
+      l1: {
+        l2: {
+          l3: {
+            l4: {
+              l5: {
+                l6: { password: 'should-be-masked' },
+              },
+            },
+          },
+        },
+      },
+    };
+    const req = createMockReq({ body: deepBody });
+    const res = createMockRes(200);
+
+    auditMiddleware('NESTED')(req, res, vi.fn());
+    (res.send as unknown as (b?: unknown) => unknown)({ ok: true });
+
+    const params = mockedWriteAuditLog.mock.calls[0][0];
+    // 深度 5 的 l5 对象会被处理，但其值 l6（深度 6）应被整体脱敏为 ***
+    expect(params.requestBody).toEqual({
+      l1: { l2: { l3: { l4: { l5: '***' } } } },
+    });
   });
 });
 

@@ -484,9 +484,10 @@ describe('group-order.service - create 创建拼单', () => {
       current_participants: 0, address: '地址', deadline: new Date('2026-01-01'),
       status: 'open', created_at: new Date('2026-01-01'), updated_at: new Date('2026-01-01'),
     };
-    mockedQuery.mockResolvedValueOnce({ rows: [mockRow] } as unknown as DbResult);
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+    // create 已包裹 transaction，3 条 SQL 均通过 client.query 调用
+    mockClient.query.mockResolvedValueOnce({ rows: [mockRow] } as unknown as DbResult);
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     const result = await groupOrderService.create('user-1', {
       title: '测试拼单', description: '描述', targetAmount: 300,
@@ -495,7 +496,7 @@ describe('group-order.service - create 创建拼单', () => {
 
     expect(result.id).toBe('order-1');
     expect(result.initiatorId).toBe('user-1');
-    expect(mockedQuery).toHaveBeenCalledTimes(3);
+    expect(mockClient.query).toHaveBeenCalledTimes(3);
   });
 
   it('无 description 时插入 null（data.description || null 透传）', async () => {
@@ -505,17 +506,17 @@ describe('group-order.service - create 创建拼单', () => {
       current_participants: 0, address: '地址', deadline: new Date('2026-01-01'),
       status: 'open', created_at: new Date('2026-01-01'), updated_at: new Date('2026-01-01'),
     };
-    mockedQuery.mockResolvedValueOnce({ rows: [mockRow] } as unknown as DbResult);
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
-    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+    mockClient.query.mockResolvedValueOnce({ rows: [mockRow] } as unknown as DbResult);
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await groupOrderService.create('user-1', {
       title: '测试拼单', targetAmount: 300,
       minParticipants: 2, maxParticipants: 5, address: '地址', deadline: '2026-01-01',
     });
 
-    // 验证第一次 query（INSERT RETURNING）的参数中 description 为 null
-    const insertCall = mockedQuery.mock.calls[0];
+    // 验证第一次 client.query（INSERT RETURNING）的参数中 description 为 null
+    const insertCall = mockClient.query.mock.calls[0];
     const params = insertCall[1] as unknown[];
     expect(params[2]).toBeNull();
   });

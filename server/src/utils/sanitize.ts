@@ -66,7 +66,15 @@ function getImagesWhitelistDomains(): string[] {
 export function validateImageUrl(url: string): void {
   // 本地上传相对路径：/uploads/ 前缀直接放行，仅做路径遍历防护
   if (url.startsWith('/uploads/')) {
-    if (url.includes('..')) {
+    // 防护字面 .. 、反斜杠变体（Windows 路径分隔符）以及 URL 编码变体（%2e%2e / %5c）
+    // 仅依赖 url.includes('..') 会被 ..\ 或 %2e%2e 等变体绕过，导致后续静态文件服务读取任意文件
+    const lowerUrl = url.toLowerCase();
+    if (
+      url.includes('..') ||
+      url.includes('\\') ||
+      lowerUrl.includes('%2e') ||
+      lowerUrl.includes('%5c')
+    ) {
       throw new BadRequestError(`图片 URL 包含非法路径: ${url}`);
     }
     return;

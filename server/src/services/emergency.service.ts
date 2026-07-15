@@ -442,17 +442,24 @@ async function respondToRequest(userId: string, requestId: string, data: { messa
   const responderResult = await query('SELECT nickname FROM users WHERE id = $1', [userId]);
   const responderNickname = responderResult.rows[0]?.nickname || '邻居';
 
-  const result = await query(
-    `INSERT INTO emergency_responses (request_id, responder_id, message, eta, status, timeout_at)
-     VALUES ($1, $2, $3, $4, 'accepted', NOW() + INTERVAL '15 minutes')
-     RETURNING ${EMERGENCY_RESPONSE_COLUMNS}`,
-    [requestId, userId, sanitizedMessage, data.eta || null]
-  );
+  // 事务包裹 INSERT emergency_responses + UPDATE emergency_requests.status：
+  // 避免 INSERT 成功但 UPDATE 失败时产生孤儿响应记录，导致求助状态机不一致
+  // （其他用户仍可继续响应、updateResponseStatus 基于错误前置状态流转）
+  const result = await transaction(async (client) => {
+    const insertResult = await client.query(
+      `INSERT INTO emergency_responses (request_id, responder_id, message, eta, status, timeout_at)
+       VALUES ($1, $2, $3, $4, 'accepted', NOW() + INTERVAL '15 minutes')
+       RETURNING ${EMERGENCY_RESPONSE_COLUMNS}`,
+      [requestId, userId, sanitizedMessage, data.eta || null]
+    );
 
-  await query(
-    "UPDATE emergency_requests SET status = 'responding', updated_at = NOW() WHERE id = $1",
-    [requestId]
-  );
+    await client.query(
+      "UPDATE emergency_requests SET status = 'responding', updated_at = NOW() WHERE id = $1",
+      [requestId]
+    );
+
+    return insertResult;
+  });
 
   const response = toResponseResponse(result.rows[0] as EmergencyResponseRow);
   // 创建成功后写入幂等缓存，防止短时间内重复提交

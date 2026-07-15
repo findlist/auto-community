@@ -108,35 +108,41 @@ async function create(userId: string, data: {
   address: string;
   deadline: string;
 }) {
-  const result = await query<GroupOrderRow>(
-    `INSERT INTO group_orders
-     (initiator_id, title, description, target_amount, min_participants, max_participants, address, deadline, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'open')
-     RETURNING ${GROUP_ORDER_COLUMNS}`,
-    [
-      userId,
-      data.title,
-      data.description || null,
-      data.targetAmount,
-      data.minParticipants,
-      data.maxParticipants,
-      data.address,
-      data.deadline
-    ]
-  );
+  // 事务包裹三条 SQL：避免 INSERT group_orders 成功但参与记录或计数更新失败时
+  // 留下 current_participants = 0 且无发起人参与记录的孤儿拼单，破坏后续 join/cancel 逻辑
+  const result = await transaction(async (client) => {
+    const insertResult = await client.query<GroupOrderRow>(
+      `INSERT INTO group_orders
+       (initiator_id, title, description, target_amount, min_participants, max_participants, address, deadline, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'open')
+       RETURNING ${GROUP_ORDER_COLUMNS}`,
+      [
+        userId,
+        data.title,
+        data.description || null,
+        data.targetAmount,
+        data.minParticipants,
+        data.maxParticipants,
+        data.address,
+        data.deadline
+      ]
+    );
 
-  // 发起人也算一个参与者
-  await query(
-    `INSERT INTO group_order_participants (group_order_id, user_id, amount, status)
-     VALUES ($1, $2, 0, 'paid')`,
-    [result.rows[0].id, userId]
-  );
+    // 发起人也算一个参与者
+    await client.query(
+      `INSERT INTO group_order_participants (group_order_id, user_id, amount, status)
+       VALUES ($1, $2, 0, 'paid')`,
+      [insertResult.rows[0].id, userId]
+    );
 
-  // 更新参与者数量
-  await query(
-    'UPDATE group_orders SET current_participants = 1 WHERE id = $1',
-    [result.rows[0].id]
-  );
+    // 更新参与者数量
+    await client.query(
+      'UPDATE group_orders SET current_participants = 1 WHERE id = $1',
+      [insertResult.rows[0].id]
+    );
+
+    return insertResult;
+  });
 
   return toGroupOrderResponse(result.rows[0], {
     id: userId,

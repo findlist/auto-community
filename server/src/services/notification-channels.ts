@@ -7,6 +7,7 @@ import { sms as tencentSms } from 'tencentcloud-sdk-nodejs-sms';
 import { query } from '../config/database';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
+import { decryptPhone } from '../utils/crypto';
 
 // 外部调用超时时间：SMTP/短信网关故障时避免 Promise 长时间挂起占用内存
 const EXTERNAL_CALL_TIMEOUT_MS = 10000;
@@ -343,6 +344,8 @@ export async function dispatchExternalChannels(notification: {
   if (externalChannels.length === 0) return;
 
   // 查询用户联系信息（单次查询，供 email/sms 通道复用）
+  // 注意：users.phone 字段存储的是 AES-256-GCM 密文（详见 auth.service.ts encryptPhone），
+  // 短信通道需明文手机号才能调用网关 API，故此处必须解密后再传入 payload
   const { rows } = await query(
     'SELECT email, phone FROM users WHERE id = $1',
     [notification.userId],
@@ -350,13 +353,27 @@ export async function dispatchExternalChannels(notification: {
   if (rows.length === 0) return;
 
   const user = rows[0];
+  // 解密手机号：失败时（历史数据未加密或密钥不匹配）置为 undefined，
+  // 让 smsChannel.send 内部 `if (!payload.userPhone) return;` 跳过短信发送，
+  // 避免将密文当作手机号发送到外部短信网关导致发送失败 + PII 泄露
+  let userPhone: string | undefined;
+  try {
+    if (user.phone) {
+      userPhone = decryptPhone(user.phone);
+    }
+  } catch {
+    logger.warn(
+      { userId: notification.userId },
+      '[外部通道] 手机号解密失败，跳过短信通道（可能是历史数据未加密或密钥不匹配）',
+    );
+  }
   const payload: ExternalNotificationPayload = {
     userId: notification.userId,
     type: notification.type,
     title: notification.title,
     content: notification.content,
     userEmail: user.email,
-    userPhone: user.phone,
+    userPhone,
   };
 
   // 并发分发，单个通道失败不影响其他通道

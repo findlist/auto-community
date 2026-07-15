@@ -100,6 +100,12 @@ vi.mock('../../config/database', () => ({
 // mock logger：验证通道的日志输出分支
 vi.mock('../../utils/logger', () => ({ logger: mockLogger }));
 
+// mock crypto：dispatchExternalChannels 会调用 decryptPhone 解密手机号密文，
+// 测试中透传返回原值即可验证分发逻辑，避免依赖真实 PII_ENCRYPT_KEY
+vi.mock('../../utils/crypto', () => ({
+  decryptPhone: vi.fn((phone: string) => phone),
+}));
+
 // mock nodemailer：避免真实 SMTP 连接，通过 mockTransporter 验证 sendMail 调用
 vi.mock('nodemailer', () => ({
   default: { createTransport: mockCreateTransport },

@@ -19,10 +19,25 @@ interface AuditMiddlewareOptions {
  * 对请求体进行脱敏处理
  * 将敏感字段的值替换为 ***，保留字段名以便排查问题
  * 入参与返回用 unknown：请求体结构不定（可能是对象/字符串/Buffer），用 unknown 强制消费方类型收窄
+ *
+ * 设计原因：递归处理嵌套对象与数组，避免 { user: { phone, password } } 形式的请求体
+ * 在内层命中敏感字段时被原样写入审计日志，造成 PII 泄露。
+ * 数组场景同样需递归：批量接口 { users: [{ password }] } 中数组元素的敏感字段也必须脱敏。
+ * 递归深度限制 MAX_SANITIZE_DEPTH 防止恶意构造超深嵌套导致栈溢出。
  */
-function sanitizeRequestBody(body: unknown): unknown {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+const MAX_SANITIZE_DEPTH = 5;
+function sanitizeRequestBody(body: unknown, depth = 0): unknown {
+  // 超过最大递归深度直接脱敏整个值，避免栈溢出
+  if (depth >= MAX_SANITIZE_DEPTH) {
+    return '***';
+  }
+  // null 或非对象直接返回（string/number/boolean/undefined 不需要脱敏）
+  if (!body || typeof body !== 'object') {
     return body;
+  }
+  // 数组：递归处理每个元素，确保元素为对象时内层敏感字段也被覆盖
+  if (Array.isArray(body)) {
+    return body.map((item) => sanitizeRequestBody(item, depth + 1));
   }
   // 类型收窄后 body 为 object，但为保留字段索引能力用 Record<string, unknown>
   const sanitized: Record<string, unknown> = {};
@@ -30,6 +45,9 @@ function sanitizeRequestBody(body: unknown): unknown {
     // 字段名小写后命中敏感字段清单则脱敏
     if (SENSITIVE_FIELDS.includes(key.toLowerCase())) {
       sanitized[key] = '***';
+    } else if (typeof value === 'object' && value !== null) {
+      // 嵌套对象或数组递归脱敏，确保内层敏感字段也被覆盖
+      sanitized[key] = sanitizeRequestBody(value, depth + 1);
     } else {
       sanitized[key] = value;
     }
