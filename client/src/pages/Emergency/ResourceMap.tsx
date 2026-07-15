@@ -150,6 +150,8 @@ export default function ResourceMap() {
   const mapRef = useRef<AMapMap | null>(null);
   const markersRef = useRef<Map<string, AMapMarker>>(new Map());
   const infoWindowRef = useRef<AMapInfoWindow | null>(null);
+  // 导航按钮事件绑定的延迟定时器引用：每次 showInfoWindow 调用前清理上一个，避免快速切换标记时定时器累积；组件卸载时也会清理，防止卸载后操作 DOM 导致内存泄漏
+  const navBtnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 拉取资源列表
   const fetchResources = useCallback(async () => {
@@ -182,6 +184,15 @@ export default function ResourceMap() {
       },
       { timeout: 8000, enableHighAccuracy: true }
     );
+  }, []);
+
+  // 组件卸载时清理导航按钮事件绑定的延迟定时器，防止卸载后仍操作 DOM 导致内存泄漏
+  useEffect(() => {
+    return () => {
+      if (navBtnTimerRef.current) {
+        clearTimeout(navBtnTimerRef.current);
+      }
+    };
   }, []);
 
   // 初始化地图实例与信息窗体
@@ -283,8 +294,13 @@ export default function ResourceMap() {
     infoWindowRef.current.setContent(content);
     infoWindowRef.current.open(mapRef.current, new window.AMap.LngLat(coord.lng, coord.lat));
 
-    // 绑定导航按钮点击事件：延迟绑定以等待 DOM 渲染完成
-    setTimeout(() => {
+    // 绑定导航按钮点击事件：延迟绑定以等待 InfoWindow DOM 渲染完成
+    // 设计原因：每次调用前清理上一个定时器，避免快速切换标记时多个定时器累积执行无效 DOM 查询；
+    // 组件卸载时也会清理（见卸载 cleanup effect），防止卸载后操作 DOM 导致内存泄漏
+    if (navBtnTimerRef.current) {
+      clearTimeout(navBtnTimerRef.current);
+    }
+    navBtnTimerRef.current = setTimeout(() => {
       const btn = document.getElementById("res-nav-btn");
       if (btn) {
         btn.onclick = () => openNavigation(coord.lng, coord.lat, resource.name);
