@@ -117,14 +117,22 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
 
 function useModalTransition() {
   const [isVisible, setIsVisible] = useState(false);
+  // 关闭动画定时器引用：组件卸载时清理，避免 onClose 作用于已卸载组件；快速点击关闭时清理上一个避免累积
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     requestAnimationFrame(() => setIsVisible(true));
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
   }, []);
+
   return {
     isVisible,
     handleClose: (onClose: () => void) => {
       setIsVisible(false);
-      setTimeout(onClose, 300);
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = setTimeout(onClose, 300);
     },
   };
 }
