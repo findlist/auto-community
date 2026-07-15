@@ -394,6 +394,8 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
   useEffect(() => { fetchResources(); }, [fetchResources]);
 
   // 加载高德地图 SDK
+  // 设计原因：与 ResourceMap.tsx useAMapScript / LocationPicker 保持一致的 scriptId 与 cancelled 模式，
+  // 避免同一应用内多套加载逻辑产生重复 script 标签与卸载后 setState 泄漏
   useEffect(() => {
     if (!showMap) return;
 
@@ -402,11 +404,19 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
       return;
     }
 
+    let cancelled = false;
+    // 统一 script id：与 ResourceMap/LocationPicker 一致，便于跨页面复用与精确移除
+    const scriptId = 'amap-sdk-script';
     const script = document.createElement('script');
+    script.id = scriptId;
     script.src = `https://webapi.amap.com/maps?v=2.0&key=${window._AMAP_KEY || ''}`;
-    script.onload = () => setMapLoaded(true);
+    script.onload = () => {
+      // 卸载后不再触发 setMapLoaded，避免对已卸载组件 setState 造成泄漏
+      if (!cancelled) setMapLoaded(true);
+    };
     // 地图 SDK 加载失败时提示用户，降级模式下仍可查看资源列表
     script.onerror = () => {
+      if (cancelled) return;
       console.error('地图加载失败');
       toast.error('地图加载失败，已切换为列表模式查看');
     };
@@ -414,6 +424,7 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
 
     // cleanup：组件卸载或 showMap 关闭时移除未加载完成的 script，避免 DOM 堆积
     return () => {
+      cancelled = true;
       if (script.parentNode) {
         script.parentNode.removeChild(script);
       }
@@ -447,8 +458,12 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
       if (r.location) {
         // 解析 location 字符串（格式可能是 "(lng,lat)" 或 "lng,lat"）
         const locationStr = r.location.replace(/[()]/g, '');
-        const [lng, lat] = locationStr.split(',').map(Number);
-        if (lng && lat) {
+        const parts = locationStr.split(',').map(Number);
+        const lng = parts[0];
+        const lat = parts[1];
+        // 经纬度为 0 是合法值（赤道/本初子午线交点位于几内亚湾），不能用 if (lng && lat) 判空
+        // 必须用 lng != null 收窄类型 + Number.isFinite 严格校验数值有效，避免 0/NaN/Infinity 误判
+        if (lng != null && lat != null && Number.isFinite(lng) && Number.isFinite(lat)) {
           const marker = new window.AMap.Marker({
             position: [lng, lat],
             title: r.name,
