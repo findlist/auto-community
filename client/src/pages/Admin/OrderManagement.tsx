@@ -325,8 +325,8 @@ export default function OrderManagement() {
 
       {/* 强制取消订单弹窗 */}
       {cancelTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-backdrop">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm animate-modal-enter">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-bold text-neutral-800">强制取消订单</h3>
               <button

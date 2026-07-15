@@ -215,8 +215,8 @@ export default function SystemConfig() {
 
       {/* 删除确认弹窗 */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-backdrop">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm animate-modal-enter">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-bold text-neutral-800">确认删除配置</h3>
               <button onClick={() => setDeleteTarget(null)} className="text-neutral-400 hover:text-neutral-600">
@@ -424,9 +424,9 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-backdrop">
       {/* w-full max-w-md：替代 w-[90%] 固定百分比，配合外层 p-4 实现稳定的 viewport 适配 */}
-      <div className="bg-white rounded-xl w-full max-w-md p-5 shadow-lg">
+      <div className="bg-white rounded-xl w-full max-w-md p-5 shadow-lg animate-modal-enter">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-bold text-neutral-800">{isEdit ? "编辑配置" : "新增配置"}</h3>
           <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">

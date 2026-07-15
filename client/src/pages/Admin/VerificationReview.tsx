@@ -347,8 +347,8 @@ export default function VerificationReview() {
 
       {/* 审核弹窗 */}
       {review && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-backdrop">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm animate-modal-enter">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-bold text-neutral-800 flex items-center gap-2">
                 <UserCheck className="w-5 h-5" />
