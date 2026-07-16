@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Loader2,
   AlertCircle,
@@ -99,13 +99,24 @@ export default function ContentReview() {
   // 当前 tab 对应的后端类型
   const apiType = typeTabs.find((t) => t.key === type)?.apiType || type;
 
+  // 竞态守卫：跟踪当前活跃的请求标识（类型+状态+页码），快速切换时旧请求返回不再覆盖新数据
+  // 设计原因：loadContent 依赖 type/status/page，切换时旧请求返回后会 setList 旧列表覆盖新列表，
+  // 且旧请求的 setSelectedIds 会清空用户基于新列表已选中的 id，导致批量上下架错位风险
+  const activeRequestKeyRef = useRef<string>("");
+
   // 加载内容列表
   const loadContent = useCallback(async (t: string, s: string, p: number) => {
+    // 闭包捕获当前请求标识，await 后比对是否仍为最新请求
+    const requestKey = `${t}|${s}|${p}`;
+    activeRequestKeyRef.current = requestKey;
     setLoading(true);
     setError(null);
     try {
       const currentApiType = typeTabs.find((tab) => tab.key === t)?.apiType || t;
       const res = await getContent(currentApiType, s, p, PAGE_SIZE);
+      // 竞态守卫：await 期间若类型/状态/页码已变化，跳过所有 setState（含 setSelectedIds），
+      // 避免旧请求清空用户基于新列表已选中的 id，或旧列表覆盖新列表导致批量上下架错位
+      if (activeRequestKeyRef.current !== requestKey) return;
       const data: PaginatedResponse<ContentItem> = res.data;
       setList(data.list);
       setTotalPages(data.totalPages);
@@ -114,9 +125,13 @@ export default function ContentReview() {
       // 列表数据变更后清空选中，避免对已不在视图中的内容执行批量操作
       setSelectedIds(new Set());
     } catch (err) {
+      if (activeRequestKeyRef.current !== requestKey) return;
       setError(err instanceof ApiError ? err.message : "加载失败");
     } finally {
-      setLoading(false);
+      // 仅当前活跃请求才清除 loading，避免旧请求 finally 误刷新请求的 loading 状态
+      if (activeRequestKeyRef.current === requestKey) {
+        setLoading(false);
+      }
     }
   }, []);
 
