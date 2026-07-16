@@ -199,8 +199,3 @@ export async function recordAllMetrics(): Promise<MetricsCollectionResult> {
 
   return { recorded, failed, failedNames };
 }
-
-// 导出服务对象，与项目其他 service 的导出风格保持一致
-export const metricsCalculationService = {
-  recordAllMetrics,
-};
