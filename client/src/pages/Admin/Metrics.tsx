@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 // 使用 lucide 图标统一项目视觉语言：原 emoji 在不同平台渲染差异较大，且与全项目图标体系不一致
 import { Loader2, Siren, Target, Package, Star, Bot } from "lucide-react";
 import MetricsChart from "@/components/MetricsChart";
@@ -72,8 +72,15 @@ export default function Metrics() {
     }
   }, []);
 
+  // 竞态守卫：跟踪当前活跃的趋势请求标识（指标+天数），快速切换时旧请求返回不再覆盖新数据
+  // 设计原因：同一指标快速切换时间范围（7d→30d）时，旧请求的 setTrendData 会覆盖新请求的趋势数据
+  const activeTrendKeyRef = useRef<string>("");
+
   // 加载趋势数据
   const loadTrend = useCallback(async (metricName: MetricName, days: number = 7) => {
+    // 当前闭包捕获的请求标识，用于 await 后比对是否仍为最新请求
+    const trendKey = `${metricName}|${days}`;
+    activeTrendKeyRef.current = trendKey;
     try {
       setTrendLoading((prev) => ({ ...prev, [metricName]: true }));
       const endDate = new Date().toISOString().split("T")[0];
@@ -81,12 +88,18 @@ export default function Metrics() {
         .toISOString()
         .split("T")[0];
       const response = await getMetricTrend(metricName, startDate, endDate);
+      // 竞态守卫：await 期间若指标或时间范围已变化，跳过 setTrendData 避免旧趋势覆盖新趋势
+      if (activeTrendKeyRef.current !== trendKey) return;
       setTrendData((prev) => ({ ...prev, [metricName]: response.data || [] }));
     } catch (error) {
+      if (activeTrendKeyRef.current !== trendKey) return;
       console.error(`加载 ${metricName} 趋势数据失败:`, error);
       toast.error("加载趋势数据失败，请稍后重试");
     } finally {
-      setTrendLoading((prev) => ({ ...prev, [metricName]: false }));
+      // 仅当当前请求标识仍为活跃时才更新 trendLoading，避免旧请求的 finally 覆盖新请求的 loading 状态
+      if (activeTrendKeyRef.current === trendKey) {
+        setTrendLoading((prev) => ({ ...prev, [metricName]: false }));
+      }
     }
   }, []);
 
