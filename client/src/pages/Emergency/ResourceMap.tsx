@@ -153,21 +153,37 @@ export default function ResourceMap() {
   // 导航按钮事件绑定的延迟定时器引用：每次 showInfoWindow 调用前清理上一个，避免快速切换标记时定时器累积；组件卸载时也会清理，防止卸载后操作 DOM 导致内存泄漏
   const navBtnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 竞态守卫：跟踪当前活跃的 typeFilter，避免快速切换筛选时旧请求覆盖新数据
+  // 设计原因：fetchResources 是 useCallback 依赖 typeFilter，用户快速切换类型筛选时
+  // 旧请求的 await 仍在进行，完成后 setResources 会用旧筛选结果覆盖新筛选结果
+  const activeTypeFilterRef = useRef(typeFilter);
+
   // 拉取资源列表
   const fetchResources = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
     try {
       const res = await getResources(typeFilter ? { type: typeFilter, pageSize: 200 } : { pageSize: 200 });
+      // 竞态守卫：await 期间若 typeFilter 已变化，跳过 setState 避免旧数据覆盖新数据
+      if (activeTypeFilterRef.current !== typeFilter) return;
       setResources(res.data.list);
     } catch (err) {
+      if (activeTypeFilterRef.current !== typeFilter) return;
       setFetchError(err instanceof Error ? err.message : "资源加载失败");
     } finally {
-      setLoading(false);
+      // 仅当当前 typeFilter 仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
+      if (activeTypeFilterRef.current === typeFilter) {
+        setLoading(false);
+      }
     }
   }, [typeFilter]);
 
-  useEffect(() => { fetchResources(); }, [fetchResources]);
+  // 同步活跃 typeFilter 并触发请求：依赖 typeFilter 变化时重新拉取
+  // 重试按钮（onClick={fetchResources}）触发时 typeFilter 未变，ref 检查通过，正常执行
+  useEffect(() => {
+    activeTypeFilterRef.current = typeFilter;
+    fetchResources();
+  }, [fetchResources, typeFilter]);
 
   // 尝试获取用户位置（用于距离计算与地图中心定位）
   useEffect(() => {

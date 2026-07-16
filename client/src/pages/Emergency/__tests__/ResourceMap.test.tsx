@@ -228,4 +228,74 @@ describe('ResourceMap 组件', () => {
       expect(getResources).toHaveBeenLastCalledWith({ pageSize: 200 });
     });
   });
+
+  it('快速切换类型筛选时旧请求的 setResources 被跳过，避免覆盖新数据', async () => {
+    // 构造慢请求 vs 快请求：初始全部→AED 慢→全部快
+    // 期望：AED 慢请求 resolve 后被竞态守卫跳过，列表仍展示"全部"结果（3 条）
+    const aedList = [{ ...mockResources[0] }];
+    const allList = mockResources;
+
+    let aedResolver: ((value: unknown) => void) | null = null;
+    const aedPending = () => new Promise((resolve) => {
+      aedResolver = resolve;
+    });
+
+    // 重置 mock 并按调用顺序精确配置：
+    // 第 1 次：初始"全部"加载，立即返回 3 条
+    // 第 2 次：AED 慢请求，延迟 resolve 返回 1 条
+    // 第 3 次：切回"全部"快请求，立即返回 3 条
+    vi.mocked(getResources).mockReset();
+    vi.mocked(getResources)
+      .mockImplementationOnce(async () => ({
+        code: 0, message: 'ok',
+        data: { list: allList, total: 3, page: 1, pageSize: 200, totalPages: 1, hasNext: false },
+      }) as never)
+      .mockImplementationOnce(async () => {
+        await aedPending();
+        return {
+          code: 0, message: 'ok',
+          data: { list: aedList, total: 1, page: 1, pageSize: 200, totalPages: 1, hasNext: false },
+        } as never;
+      })
+      .mockImplementationOnce(async () => ({
+        code: 0, message: 'ok',
+        data: { list: allList, total: 3, page: 1, pageSize: 200, totalPages: 1, hasNext: false },
+      }) as never);
+
+    renderResourceMap();
+
+    // 等待初始"全部"加载完成
+    await waitFor(() => {
+      expect(screen.getByText('灭火器 2 号')).toBeInTheDocument();
+    });
+
+    // 点击 AED 筛选按钮（发起慢请求，pending 中）
+    fireEvent.click(screen.getByRole('button', { name: 'AED' }));
+    await waitFor(() => {
+      expect(getResources).toHaveBeenLastCalledWith({ type: 'aed', pageSize: 200 });
+    });
+
+    // 立即切回"全部"（发起快请求）—— 此时 AED 请求仍在 pending
+    fireEvent.click(screen.getByRole('button', { name: '全部' }));
+    await waitFor(() => {
+      expect(getResources).toHaveBeenLastCalledWith({ pageSize: 200 });
+    });
+
+    // 等待"全部"快请求先返回，列表已更新为 3 条
+    await waitFor(() => {
+      expect(screen.getByText('灭火器 2 号')).toBeInTheDocument();
+    });
+
+    // 现在手动 resolve 滞后的 AED 请求 —— 竞态守卫应跳过其 setResources
+    expect(aedResolver).not.toBeNull();
+    aedResolver!(undefined);
+    // 让微任务队列刷新
+    await new Promise((r) => setTimeout(r, 50));
+
+    // 关键断言：列表仍应展示"全部"结果（3 条），而非被 AED 的 1 条覆盖
+    expect(screen.getByText('灭火器 2 号')).toBeInTheDocument();
+    expect(screen.getByText('急救箱 3 号')).toBeInTheDocument();
+    // 资源计数应为 (3)，证明未被 AED 列表的 1 条覆盖
+    expect(screen.getByText('(3)')).toBeInTheDocument();
+  });
 });
