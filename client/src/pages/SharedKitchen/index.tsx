@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Loader2 } from "lucide-react";
 import Empty from "@/components/Empty";
@@ -30,10 +30,17 @@ export default function SharedKitchen() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
+  // 竞态守卫：跟踪当前活跃的请求标识（Tab+分类），快速切换时旧请求返回不再覆盖新数据
+  // 设计原因：loadFoodShares/loadGroupOrders 依赖 activeTab/selectedCategory，切换时会重新创建并触发新请求，
+  // 但旧请求的 await 仍在进行中，完成后会覆盖新列表或错误地更新 loading 状态（美食分享与拼单共享同一 loading）
+  const activeRequestKeyRef = useRef(`${activeTab}|${selectedCategory}`);
+
   const loadFoodShares = useCallback(async (reset = false) => {
     // reset 时跳过 loading 守卫，确保切换 Tab/分类时即使上一次请求未完成也能重新加载
     if (!reset && loading) return;
     setLoading(true);
+    // 当前闭包捕获的请求标识，用于 await 后比对是否仍为最新请求
+    const requestKey = `${activeTab}|${selectedCategory}`;
     try {
       const newPage = reset ? 1 : page;
       const res = await getFoodShares({
@@ -42,6 +49,8 @@ export default function SharedKitchen() {
         page: newPage,
         pageSize: 10,
       });
+      // 竞态守卫：await 期间若 Tab/分类已变化，跳过 setState 避免旧数据覆盖新数据
+      if (activeRequestKeyRef.current !== requestKey) return;
       if (reset) {
         setPosts(res.data.list);
       } else {
@@ -50,19 +59,27 @@ export default function SharedKitchen() {
       setHasMore(res.data.hasNext);
       setPage(newPage + 1);
     } catch (error) {
+      if (activeRequestKeyRef.current !== requestKey) return;
       console.error("加载失败:", error);
       toast.error("加载美食分享失败，请稍后重试");
     } finally {
-      setLoading(false);
+      // 仅当当前请求标识仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
+      if (activeRequestKeyRef.current === requestKey) {
+        setLoading(false);
+      }
     }
   }, [activeTab, selectedCategory, page, loading]);
 
   const loadGroupOrders = useCallback(async (reset = false) => {
     if (!reset && loading) return;
     setLoading(true);
+    // 当前闭包捕获的请求标识，用于 await 后比对是否仍为最新请求
+    const requestKey = `${activeTab}|${selectedCategory}`;
     try {
       const newPage = reset ? 1 : page;
       const res = await getGroupOrders({ page: newPage, pageSize: 10 });
+      // 竞态守卫：await 期间若 Tab 已切换走（不再为 group），跳过 setState 避免拼单数据覆盖美食分享数据
+      if (activeRequestKeyRef.current !== requestKey) return;
       if (reset) {
         setGroupOrders(res.data.list);
       } else {
@@ -71,16 +88,21 @@ export default function SharedKitchen() {
       setHasMore(res.data.hasNext);
       setPage(newPage + 1);
     } catch (error) {
+      if (activeRequestKeyRef.current !== requestKey) return;
       console.error("加载失败:", error);
       toast.error("加载拼单列表失败，请稍后重试");
     } finally {
-      setLoading(false);
+      if (activeRequestKeyRef.current === requestKey) {
+        setLoading(false);
+      }
     }
-  }, [page, loading]);
+  }, [activeTab, selectedCategory, page, loading]);
 
   useEffect(() => {
     setPage(1);
     setHasMore(true);
+    // 同步活跃请求标识：Tab/分类变化时，旧请求的结果将被丢弃
+    activeRequestKeyRef.current = `${activeTab}|${selectedCategory}`;
     if (activeTab === "group") {
       setGroupOrders([]);
       loadGroupOrders(true);
