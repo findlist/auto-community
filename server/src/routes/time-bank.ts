@@ -200,6 +200,14 @@ router.put('/orders/:id/status', authenticate, asyncHandler(async (req: Request<
     if (actual_duration === undefined) {
       throw new BadRequestError('完成订单时必须提供实际服务时长');
     }
+    // 校验实际服务时长为正整数，避免负数或非整数破坏时间账本一致性
+    if (!Number.isInteger(actual_duration) || actual_duration <= 0) {
+      throw new BadRequestError('实际服务时长必须为正整数');
+    }
+    // 校验评分范围 1-5，避免非法评分污染信誉分计算
+    if (rating !== undefined && rating !== null && (!Number.isInteger(rating) || rating < 1 || rating > 5)) {
+      throw new BadRequestError('评分必须为1-5的整数');
+    }
     const result = await timeBankService.completeOrder(req.params.id, req.user!.id, actual_duration, rating, review);
     success(res, result);
   } else {

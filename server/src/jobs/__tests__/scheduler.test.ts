@@ -142,12 +142,14 @@ describe('scheduler - handleSkillOrderTimeout', () => {
         { id: 'o2', buyer_id: 'b2', credit_amount: 0 }, // amount=0 不解冻
       ],
     });
+    // UPDATE...RETURNING 返回实际被取消的订单 ID（模拟 status='pending' 过滤后命中）
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'o1' }, { id: 'o2' }] });
     mockClient.query.mockResolvedValue({ rows: [] });
 
     await handleSkillOrderTimeout();
 
     expect(mockTransaction).toHaveBeenCalledTimes(1);
-    // 1 条批量 UPDATE + 2 条解冻 SQL（o1 解冻 credit_balance + 更新 credit_transactions，o2 amount=0 跳过）
+    // 1 条批量 UPDATE...RETURNING + 2 条解冻 SQL（o1 解冻 credit_balance + 更新 credit_transactions，o2 amount=0 跳过）
     expect(mockClient.query).toHaveBeenCalledTimes(3);
     // 验证批量更新订单状态
     expect(mockClient.query.mock.calls[0][0]).toContain("status = 'cancelled'");
@@ -245,11 +247,13 @@ describe('scheduler - handleKitchenOrderTimeout', () => {
       rows: [{ id: 'o1', user_id: 'b1', post_id: 'p1', portions: 2, credit_amount: 30 }],
     });
     mockQuery.mockResolvedValueOnce({ rows: [] }); // confirmed 查询为空
+    // UPDATE...RETURNING 返回实际被取消的订单 ID（模拟 status='pending' 过滤后命中）
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'o1' }] });
     mockClient.query.mockResolvedValue({ rows: [] });
 
     await handleKitchenOrderTimeout();
 
-    // pending 路径触发事务：1 批量UPDATE状态 + 1 恢复库存 + 2 退款(credit_balance+credit_transactions) = 4
+    // pending 路径触发事务：1 批量UPDATE...RETURNING状态 + 1 恢复库存 + 2 退款(credit_balance+credit_transactions) = 4
     expect(mockTransaction).toHaveBeenCalledTimes(1);
     expect(mockClient.query).toHaveBeenCalledTimes(4);
     // 验证恢复库存

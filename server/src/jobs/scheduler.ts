@@ -33,16 +33,20 @@ export async function handleSkillOrderTimeout(): Promise<void> {
     await transaction(async (client) => {
       const orderIds = pendingResult.rows.map((o) => o.id);
 
-      // 批量更新订单状态为 cancelled
-      await client.query(
+      // 批量更新订单状态为 cancelled，带 status='pending' 过滤避免竞态
+      // SELECT 在事务外执行，期间订单可能已被接单，未过滤会误取消已接单订单
+      const cancelledResult = await client.query<{ id: string }>(
         `UPDATE skill_orders
          SET status = 'cancelled', cancelled_at = NOW(), updated_at = NOW()
-         WHERE id = ANY($1)`,
+         WHERE id = ANY($1) AND status = 'pending'
+         RETURNING id`,
         [orderIds],
       );
+      const cancelledIds = new Set(cancelledResult.rows.map((r) => r.id));
 
-      // 批量解冻积分退还买家
+      // 批量解冻积分退还买家（仅处理实际被取消的订单）
       for (const order of pendingResult.rows) {
+        if (!cancelledIds.has(order.id)) continue;
         if (order.credit_amount > 0) {
           // 解冻买家积分
           await client.query(
@@ -127,16 +131,20 @@ export async function handleKitchenOrderTimeout(): Promise<void> {
       await transaction(async (client) => {
         const orderIds = pendingResult.rows.map((o) => o.id);
 
-        // 批量更新订单状态为 cancelled
-        await client.query(
+        // 批量更新订单状态为 cancelled，带 status='pending' 过滤避免竞态
+        // SELECT 在事务外执行，期间订单可能已被确认，未过滤会误取消已确认订单
+        const cancelledResult = await client.query<{ id: string }>(
           `UPDATE kitchen_orders
            SET status = 'cancelled', updated_at = NOW()
-           WHERE id = ANY($1)`,
+           WHERE id = ANY($1) AND status = 'pending'
+           RETURNING id`,
           [orderIds],
         );
+        const cancelledIds = new Set(cancelledResult.rows.map((r) => r.id));
 
-        // 批量恢复库存
+        // 批量恢复库存（仅处理实际被取消的订单）
         for (const order of pendingResult.rows) {
+          if (!cancelledIds.has(order.id)) continue;
           await client.query(
             `UPDATE kitchen_posts
              SET remaining_portions = remaining_portions + $1
@@ -145,8 +153,9 @@ export async function handleKitchenOrderTimeout(): Promise<void> {
           );
         }
 
-        // 批量解冻积分退还买家
+        // 批量解冻积分退还买家（仅处理实际被取消的订单）
         for (const order of pendingResult.rows) {
+          if (!cancelledIds.has(order.id)) continue;
           if (order.credit_amount > 0) {
             await client.query(
               `UPDATE users SET credit_balance = credit_balance + $1 WHERE id = $2`,

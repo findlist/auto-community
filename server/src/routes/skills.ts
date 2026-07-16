@@ -235,6 +235,9 @@ router.put('/orders/:id/status', authenticate, auditMiddleware('UPDATE_ORDER_STA
   },
 }), validate([
   body('status').isIn(['accepted', 'rejected', 'in_progress', 'completed', 'cancelled', 'disputed']).withMessage('无效的状态值'),
+  // rating 仅 completed 状态使用，若提供则必须为 1-5，避免非法评分污染信誉分
+  body('rating').optional().isInt({ min: 1, max: 5 }).withMessage('评分必须为1-5'),
+  body('review').optional().isLength({ max: 500 }).withMessage('评价内容不超过500字符'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateSkillOrderStatusBody>, res: Response) => {
   const { status, rating, review } = req.body;
   const userId = req.user!.id;
