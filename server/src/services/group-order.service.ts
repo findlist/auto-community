@@ -491,6 +491,8 @@ async function cancel(groupOrderId: string, userId: string, reason?: string): Pr
       [groupOrderId],
     );
 
+    // 4.1 逐条调用 creditService.unfreezeCredits 退还积分账本
+    // 设计原因：unfreezeCredits 涉及积分流水 INSERT 与 users 余额 UPDATE，需逐条事务内执行保证账本一致性
     for (const p of participantsResult.rows) {
       // 仅对实际支付金额大于 0 的参与者执行退款
       if (p.amount > 0) {
@@ -504,10 +506,17 @@ async function cancel(groupOrderId: string, userId: string, reason?: string): Pr
           'group_order',
         );
       }
-      // 标记参与者状态为 refunded
+    }
+
+    // 4.2 批量更新参与者状态为 refunded：单条 UPDATE 替代循环内 N 次 UPDATE
+    // 性能改进：拼单人数较多时事务持锁时间从 O(N) 降至 O(1)，避免 N+1 查询模式
+    const participantUserIds = participantsResult.rows.map((p) => p.user_id);
+    if (participantUserIds.length > 0) {
       await client.query(
-        `UPDATE group_order_participants SET status = 'refunded' WHERE group_order_id = $1 AND user_id = $2`,
-        [groupOrderId, p.user_id],
+        `UPDATE group_order_participants
+         SET status = 'refunded'
+         WHERE group_order_id = $1 AND user_id = ANY($2)`,
+        [groupOrderId, participantUserIds],
       );
     }
 

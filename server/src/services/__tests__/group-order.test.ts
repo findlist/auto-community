@@ -107,18 +107,14 @@ function setupCancelMock(orderOverrides: Record<string, unknown> = {}) {
 
   // 第一次调用：SELECT ... FOR UPDATE (锁拼单)
   // 第二次调用：SELECT participants FOR UPDATE
-  // 第三次调用：UPDATE participants SET status = 'refunded' (participant-a)
-  // 第四次调用：UPDATE participants SET status = 'refunded' (participant-b)
-  // 第五次调用：UPDATE participants SET status = 'refunded' (initiator-1)
-  // 第六次调用：UPDATE group_orders SET status = 'cancelled'
+  // 第三次调用：UPDATE participants SET status = 'refunded' 批量（user_id = ANY 替代循环内 N 次 UPDATE）
+  // 第四次调用：UPDATE group_orders SET status = 'cancelled'
 
   mockClient.query
     .mockResolvedValueOnce({ rows: [order] })                  // 1. lock order
     .mockResolvedValueOnce({ rows: participants })             // 2. select paid participants
-    .mockResolvedValueOnce({ rows: [] })                        // 3. update participant-a status
-    .mockResolvedValueOnce({ rows: [] })                        // 4. update participant-b status
-    .mockResolvedValueOnce({ rows: [] })                        // 5. update initiator status
-    .mockResolvedValueOnce({ rows: [] });                       // 6. update group_order status
+    .mockResolvedValueOnce({ rows: [] })                        // 3. batch update participants status
+    .mockResolvedValueOnce({ rows: [] });                       // 4. update group_order status
 
   return { order, participants };
 }
@@ -385,6 +381,26 @@ describe('group-order.service - cancel 取消拼单退款', () => {
     await expect(
       groupOrderService.cancel('group-order-1', 'initiator-1'),
     ).rejects.toThrow('无法取消');
+  });
+
+  // 守护批量 UPDATE 不变量：cancel 应使用单条 UPDATE ... user_id = ANY 替代循环内 N 次 UPDATE
+  // 设计原因：避免未来重构时被误改回 N+1 模式，拼单人数较多时事务持锁时间从 O(N) 降至 O(1)
+  it('cancel 应使用批量 UPDATE（user_id = ANY）替代循环内 N 次 UPDATE', async () => {
+    setupCancelMock();
+
+    await groupOrderService.cancel('group-order-1', 'initiator-1', '测试取消');
+
+    // 提取所有 client.query 调用的 SQL 文本
+    const sqlCalls = mockClient.query.mock.calls.map(call => call[0] as string);
+    // 找到 UPDATE participants 的调用
+    const batchUpdateCall = sqlCalls.find(sql => sql.includes('UPDATE group_order_participants') && sql.includes('refunded'));
+    expect(batchUpdateCall).toBeDefined();
+    // 必须使用 user_id = ANY($2) 批量更新（正则中 \$ 匹配字面量 $），而非循环内 user_id = $2
+    expect(batchUpdateCall).toMatch(/user_id\s*=\s*ANY\(\$2\)/);
+    // 不应包含 WHERE user_id = $2 单条更新（循环内 N+1 模式）
+    expect(batchUpdateCall).not.toMatch(/WHERE\s+user_id\s*=\s*\$2\s*$/);
+    // client.query 应仅被调用 4 次（lock order + select participants + batch update + update order status）
+    expect(mockClient.query).toHaveBeenCalledTimes(4);
   });
 });
 
