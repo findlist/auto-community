@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Loader2,
   AlertCircle,
@@ -40,21 +40,34 @@ export default function ReportManagement() {
   const [handleStatus, setHandleStatus] = useState<"resolved" | "rejected">("resolved");
   const [submitting, setSubmitting] = useState(false);
 
+  // 竞态守卫：跟踪当前活跃的请求标识（状态+页码），快速切换筛选时旧请求返回不再覆盖新数据
+  // 设计原因：loadReports 依赖 status/page，切换状态筛选时旧请求的 await 完成后会 setList 旧列表覆盖新列表
+  const activeRequestKeyRef = useRef<string>("");
+
   // 加载举报列表
   const loadReports = useCallback(async (s: string, p: number) => {
+    // 闭包捕获当前请求标识，await 后比对是否仍为最新请求
+    const requestKey = `${s}|${p}`;
+    activeRequestKeyRef.current = requestKey;
     setLoading(true);
     setError(null);
     try {
       const res = await getReports(p, PAGE_SIZE, s || undefined);
+      // 竞态守卫：await 期间若状态/页码已变化，跳过 setState 避免旧数据覆盖新数据
+      if (activeRequestKeyRef.current !== requestKey) return;
       const data: PaginatedResponse<Report> = res.data;
       setList(data.list);
       setTotalPages(data.totalPages);
       setTotal(data.total);
       setPage(data.page);
     } catch (err) {
+      if (activeRequestKeyRef.current !== requestKey) return;
       setError(err instanceof ApiError ? err.message : "加载失败");
     } finally {
-      setLoading(false);
+      // 仅当前活跃请求才清除 loading，避免旧请求 finally 误刷新请求的 loading 状态
+      if (activeRequestKeyRef.current === requestKey) {
+        setLoading(false);
+      }
     }
   }, []);
 
