@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Loader2, AlertCircle, Save, Check } from "lucide-react";
 import { getHomepageImage, setHomepageImage } from "@/api/admin";
 import { uploadImage } from "@/api/upload";
@@ -21,7 +21,9 @@ export default function HomepageImage() {
   }, []);
 
   // 加载当前首页图片
-  const loadImage = async () => {
+  // 设计原因：用 useCallback 包装稳定引用，与项目其他页面（ABTestResults/SystemConfig 等）模式一致，
+  // 让 useEffect 依赖 [loadImage] 符合 exhaustive-deps 规则，避免显式禁用 lint 规则
+  const loadImage = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -32,11 +34,11 @@ export default function HomepageImage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadImage();
-  }, []);
+  }, [loadImage]);
 
   // 上传图片文件
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
