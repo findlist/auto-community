@@ -39,7 +39,12 @@ class MockWebSocket {
   }
 
   close() {
+    // 防止重复触发：多次 close 仅第一次生效
+    if (this.readyState === MockWebSocket.CLOSED) return;
     this.readyState = MockWebSocket.CLOSED;
+    // 模拟真实浏览器行为：close() 会异步触发 onclose 事件
+    // 设计原因：业务代码依赖 onclose 触发重连或资源清理，mock 需对齐此行为
+    this.onclose?.(new CloseEvent('close'));
   }
 
   // 测试辅助方法：模拟事件触发
@@ -399,6 +404,128 @@ describe('WebSocketClient', () => {
       // 重连后无订阅恢复（reset 已清空 subscriptions）
       expect(newWs.sentMessages.some((m) => m.includes('subscribe'))).toBe(false);
       expect(client.getReconnectAttempts()).toBe(0);
+    });
+  });
+
+  // ==================== 心跳机制测试 ====================
+  // 守护心跳不变量：onopen 启动 ping 定时器 + onmessage 重置 pong 等待 + close 清理定时器
+  // 设计原因：nginx proxy_read_timeout 86400 形同虚设，中间设备 30-60 秒静默回收 TCP 后
+  // 客户端 readyState 仍为 OPEN，无心跳会表现为「消息发出对方收不到」的静默故障
+  describe('心跳机制', () => {
+    it('连接成功后按 heartbeatInterval 周期性发送 ping', () => {
+      client = new WebSocketClient('ws://test', { heartbeatInterval: 1000 });
+      const ws = connectAndOpen(client);
+      // 推进一个心跳周期，应发送一次 ping
+      vi.advanceTimersByTime(1000);
+      expect(ws.sentMessages.some((m) => m.includes('"type":"ping"'))).toBe(true);
+      // 推进第二个周期，应发送第二次 ping
+      const pingCountBefore = ws.sentMessages.filter((m) => m.includes('"type":"ping"')).length;
+      vi.advanceTimersByTime(1000);
+      const pingCountAfter = ws.sentMessages.filter((m) => m.includes('"type":"ping"')).length;
+      expect(pingCountAfter).toBe(pingCountBefore + 1);
+    });
+
+    it('收到任意消息重置 pong 等待定时器，pongTimeout 内不主动断连', () => {
+      const onStatusChange = vi.fn();
+      client = new WebSocketClient('ws://test', {
+        heartbeatInterval: 1000,
+        pongTimeout: 2000,
+        onStatusChange,
+      });
+      const ws = connectAndOpen(client);
+      // 推进 1000ms 触发第一次心跳，启动 pong 等待定时器
+      vi.advanceTimersByTime(1000);
+      // 在 pongTimeout 之前收到任意消息，应重置定时器
+      vi.advanceTimersByTime(1500);
+      ws.simulateMessage({ type: 'pong' });
+      // 再推进 1500ms（总 elapsed 自上次消息 1500ms < 2000ms），不应触发 close
+      vi.advanceTimersByTime(1500);
+      expect(ws.readyState).toBe(MockWebSocket.OPEN);
+    });
+
+    it('pong 超时主动 close 触发重连（onStatusChange 触发 reconnecting）', () => {
+      const onStatusChange = vi.fn();
+      client = new WebSocketClient('ws://test', {
+        heartbeatInterval: 500,
+        pongTimeout: 1000,
+        onStatusChange,
+      });
+      const ws = connectAndOpen(client);
+      // 推进 500ms 触发心跳，启动 pong 等待
+      vi.advanceTimersByTime(500);
+      // 再推进 1000ms 未收到任何响应，应主动 close 触发重连
+      vi.advanceTimersByTime(1000);
+      // onclose 已将 readyState 置为 CLOSED，且触发 reconnecting 状态
+      expect(ws.readyState).toBe(MockWebSocket.CLOSED);
+      expect(onStatusChange).toHaveBeenCalledWith('reconnecting');
+    });
+
+    it('心跳发送失败立即 close 触发重连（无需等待 pong 超时）', () => {
+      const onStatusChange = vi.fn();
+      client = new WebSocketClient('ws://test', {
+        heartbeatInterval: 500,
+        pongTimeout: 10000,
+        onStatusChange,
+      });
+      const ws = connectAndOpen(client);
+      // 模拟连接非 OPEN 状态：send 返回 false 触发立即 close，无需等待 pong 超时
+      // 设计原因：用 CLOSING 而非 CLOSED，让 close() 仍能触发 onclose 进入重连流程
+      // 真实场景中 TCP 静默断开后 readyState 可能短暂保持 OPEN，浏览器在 send 后异步触发 onclose
+      ws.readyState = MockWebSocket.CLOSING;
+      vi.advanceTimersByTime(500);
+      expect(onStatusChange).toHaveBeenCalledWith('reconnecting');
+    });
+
+    it('手动 close 清理心跳定时器，关闭后不再发送 ping', () => {
+      client = new WebSocketClient('ws://test', { heartbeatInterval: 1000 });
+      const ws = connectAndOpen(client);
+      client.close();
+      const sentBefore = ws.sentMessages.length;
+      // 推进多个心跳周期，不应再发送 ping
+      vi.advanceTimersByTime(5000);
+      expect(ws.sentMessages.length).toBe(sentBefore);
+    });
+
+    it('重连成功后重新启动心跳', () => {
+      client = new WebSocketClient('ws://test', {
+        heartbeatInterval: 500,
+        reconnectIntervals: [100],
+      });
+      const ws = connectAndOpen(client);
+      // 触发重连
+      const newWs = reconnect(ws, 100);
+      // 推进心跳周期，新连接应发送 ping
+      vi.advanceTimersByTime(500);
+      expect(newWs.sentMessages.some((m) => m.includes('"type":"ping"'))).toBe(true);
+    });
+
+    it('自定义 heartbeatInterval 与 pongTimeout 生效（默认 25s/10s 可被覆盖）', () => {
+      client = new WebSocketClient('ws://test', {
+        heartbeatInterval: 200,
+        pongTimeout: 300,
+      });
+      const ws = connectAndOpen(client);
+      // 推进 200ms 触发心跳，再推进 300ms 未收到响应应触发 close
+      vi.advanceTimersByTime(200);
+      vi.advanceTimersByTime(300);
+      expect(ws.readyState).toBe(MockWebSocket.CLOSED);
+    });
+
+    it('连接关闭时清理心跳定时器（onclose 内清理，避免对已关闭 ws 调用 send）', () => {
+      client = new WebSocketClient('ws://test', {
+        heartbeatInterval: 1000,
+        reconnectIntervals: [100, 100, 100],
+        maxReconnectAttempts: 3,
+      });
+      const ws = connectAndOpen(client);
+      // 服务端主动 close，onclose 内应清理心跳定时器，避免重连过程中旧定时器继续触发
+      MockWebSocket.instances = [];
+      ws.simulateClose();
+      // 推进多个心跳周期，不应在重连过程中产生新实例的 send
+      vi.advanceTimersByTime(5000);
+      // 重连 3 次后停止，每次重连创建一个新实例，但不应在重连过程中被旧心跳定时器影响
+      // 主要不变量：旧 ws.readyState 已 CLOSED，不应再向其发送 ping
+      expect(ws.sentMessages.some((m) => m.includes('"type":"ping"'))).toBe(false);
     });
   });
 });

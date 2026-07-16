@@ -10,6 +10,12 @@ export interface WebSocketClientOptions {
   maxReconnectAttempts?: number;
   // 重连间隔序列（毫秒），默认 [1000, 2000, 5000]
   reconnectIntervals?: number[];
+  // 心跳间隔（毫秒）：每间隔发送一次 ping，默认 25 秒
+  // 设计原因：< 30 秒可穿透多数中间设备的空闲连接回收；与 nginx proxy_read_timeout 86400 形成层级保险
+  heartbeatInterval?: number;
+  // pong 等待超时（毫秒）：心跳后等待任意响应的超时时间，默认 10 秒
+  // 设计原因：给服务端处理与网络往返留 10 秒缓冲，超时则视为静默断连，主动 close 触发重连
+  pongTimeout?: number;
   // 连接成功回调
   onOpen?: () => void;
   // 连接关闭回调
@@ -37,6 +43,10 @@ export class WebSocketClient {
   private options: Required<WebSocketClientOptions>;
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  // 心跳定时器：周期性发送 ping 维持连接活跃，配合中间设备空闲回收策略
+  private heartbeatTimer: ReturnType<typeof setTimeout> | null = null;
+  // pong 等待定时器：心跳后启动，收到任意消息则重置；超时未收到则判定静默断连
+  private pongTimer: ReturnType<typeof setTimeout> | null = null;
   private subscriptions: Subscription[] = [];
   private isManualClose = false;
 
@@ -45,6 +55,8 @@ export class WebSocketClient {
     this.options = {
       maxReconnectAttempts: options.maxReconnectAttempts ?? 5,
       reconnectIntervals: options.reconnectIntervals ?? [1000, 2000, 5000],
+      heartbeatInterval: options.heartbeatInterval ?? 25000,
+      pongTimeout: options.pongTimeout ?? 10000,
       onOpen: options.onOpen ?? (() => {}),
       onClose: options.onClose ?? (() => {}),
       onError: options.onError ?? (() => {}),
@@ -102,9 +114,16 @@ export class WebSocketClient {
       if (wasReconnecting) {
         this.resubscribeAll();
       }
+
+      // 启动心跳：连接建立后开启周期性 ping，确保中间设备不会因空闲回收 TCP 连接
+      this.startHeartbeat();
     };
 
     this.ws.onmessage = (event) => {
+      // 收到任意消息即重置 pong 等待定时器：服务端任何响应都视作连接存活证据
+      // 设计原因：不强制要求服务端实现 pong 帧，pong/业务消息/suback 均可重置超时
+      this.resetPongTimer();
+
       try {
         const data = JSON.parse(event.data);
         this.options.onMessage(data);
@@ -124,6 +143,8 @@ export class WebSocketClient {
       if (import.meta.env.DEV) {
         console.log("WebSocket 连接已关闭");
       }
+      // 连接关闭时立即清理心跳定时器，避免对已关闭的 ws 调用 send 抛错或泄漏定时器
+      this.clearHeartbeatTimers();
       this.options.onClose();
 
       // 非手动关闭时尝试重连
@@ -131,6 +152,66 @@ export class WebSocketClient {
         this.handleReconnect();
       }
     };
+  }
+
+  /**
+   * 启动心跳机制
+   * 周期性发送 ping 帧，并在发送后启动 pong 等待定时器（仅当 pongTimer 不存在时）
+   * 设计原因：网络中间设备（NAT/代理/负载均衡）会因连接长时间无数据传输而静默回收 TCP
+   * 客户端 readyState 仍为 OPEN，但实际已断；心跳通过周期性流量维持连接可观测性
+   */
+  private startHeartbeat(): void {
+    // 清理旧定时器，避免重连后多个心跳定时器并存
+    this.clearHeartbeatTimers();
+
+    this.heartbeatTimer = setInterval(() => {
+      // 心跳发送失败说明连接已断，直接 close 触发重连，无需等待 pong 超时
+      if (!this.send({ type: "ping" })) {
+        this.clearHeartbeatTimers();
+        this.ws?.close();
+        return;
+      }
+      // 仅在 pongTimer 不存在时启动：避免下次心跳重置未超时的 pongTimer
+      // 设计原因：若服务端未响应上次心跳，pongTimer 仍在等待，不应被本次心跳重置
+      // 服务端响应后 onmessage 会 clear pongTimer，下次心跳时再启动新的等待周期
+      if (!this.pongTimer) {
+        this.resetPongTimer();
+      }
+    }, this.options.heartbeatInterval);
+  }
+
+  /**
+   * 重置 pong 等待定时器
+   * 收到任意消息（pong/业务消息/suback）调用此方法，将超时计时向后推移
+   * 设计原因：服务端可不必专门实现 pong 帧，任何下行消息都重置超时
+   */
+  private resetPongTimer(): void {
+    if (this.pongTimer) {
+      clearTimeout(this.pongTimer);
+    }
+    this.pongTimer = setTimeout(() => {
+      // pong 超时：连接被视为静默断开，主动 close 触发 onclose → handleReconnect
+      if (import.meta.env.DEV) {
+        console.warn("WebSocket pong 超时，主动断开触发重连");
+      }
+      this.clearHeartbeatTimers();
+      this.ws?.close();
+    }, this.options.pongTimeout);
+  }
+
+  /**
+   * 清理心跳相关定时器
+   * 在 close/onclose/重连前调用，避免定时器泄漏与对已关闭 ws 的访问
+   */
+  private clearHeartbeatTimers(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+    if (this.pongTimer) {
+      clearTimeout(this.pongTimer);
+      this.pongTimer = null;
+    }
   }
 
   /**
@@ -260,6 +341,9 @@ export class WebSocketClient {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
+
+    // 清理心跳定时器，避免对已关闭 ws 调用 send 抛错或定时器泄漏
+    this.clearHeartbeatTimers();
 
     // 关闭 WebSocket
     if (this.ws) {
