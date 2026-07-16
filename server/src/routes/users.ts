@@ -3,6 +3,7 @@ import { body } from 'express-validator';
 import { authenticate } from '../middleware/auth';
 import { validate, getPagination } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
+import { auditMiddleware } from '../middleware/auditLog';
 import { userService } from '../services/user.service';
 import { dataDeletionService } from '../services/data-deletion.service';
 import { success, paginated } from '../utils/response';
@@ -169,7 +170,7 @@ router.get('/:id', authenticate, asyncHandler(async (req: Request, res: Response
 router.post('/verify', authenticate, validate([
   body('realName').isLength({ min: 2, max: 100 }).withMessage('真实姓名长度需在2-100字符之间'),
   body('idCard').matches(/^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/).withMessage('身份证号格式不正确'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, VerifyBody>, res: Response) => {
+]), auditMiddleware('SUBMIT_VERIFICATION', { resourceType: 'verification' }), asyncHandler(async (req: Request<Record<string, string>, unknown, VerifyBody>, res: Response) => {
   const { realName, idCard } = req.body;
   const result = await userService.submitVerification(req.user!.id, realName, idCard);
   success(res, result, result.message);
@@ -249,7 +250,7 @@ router.get('/verify/status', authenticate, asyncHandler(async (req: Request, res
  */
 router.post('/deletion', authenticate, validate([
   body('reason').optional().isLength({ max: 500 }).withMessage('注销原因最多500字符'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, DeletionRequestBody>, res: Response) => {
+]), auditMiddleware('SUBMIT_DELETION', { resourceType: 'user_deletion' }), asyncHandler(async (req: Request<Record<string, string>, unknown, DeletionRequestBody>, res: Response) => {
   const { reason } = req.body;
   const result = await dataDeletionService.submitDeletionRequest(req.user!.id, reason);
   success(res, result, result.message);
@@ -311,7 +312,7 @@ router.get('/deletion/status', authenticate, asyncHandler(async (req: Request, r
  *       400:
  *         description: 无可取消的申请
  */
-router.delete('/deletion', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.delete('/deletion', authenticate, auditMiddleware('CANCEL_DELETION', { resourceType: 'user_deletion' }), asyncHandler(async (req: Request, res: Response) => {
   await dataDeletionService.cancelDeletionRequest(req.user!.id);
   success(res, null, '注销申请已取消');
 }));
