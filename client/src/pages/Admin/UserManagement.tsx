@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Search,
   Loader2,
@@ -48,12 +48,23 @@ export default function UserManagement() {
   // 批量选中集合：使用 Set 保证 O(1) 查找，切换分页/搜索时清空避免跨页误操作
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // 竞态守卫：跟踪当前活跃的请求标识（页码+搜索词），快速切换分页/搜索时旧请求返回不再覆盖新数据
+  // 设计原因：loadUsers 依赖 targetPage/targetSearch，切换时旧请求返回后会 setUsers 旧列表覆盖新列表，
+  // 且旧请求的 setSelectedIds 会清空用户基于新列表已选中的 id，导致批量操作错位风险
+  const activeRequestKeyRef = useRef<string>("");
+
   // 加载用户列表
   const loadUsers = useCallback(async (targetPage: number, targetSearch: string) => {
+    // 闭包捕获当前请求标识，await 后比对是否仍为最新请求
+    const requestKey = `${targetPage}|${targetSearch}`;
+    activeRequestKeyRef.current = requestKey;
     setLoading(true);
     setError(null);
     try {
       const res = await getUsers(targetPage, PAGE_SIZE, targetSearch || undefined);
+      // 竞态守卫：await 期间若页码/搜索词已变化，跳过所有 setState（含 setSelectedIds），
+      // 避免旧请求清空用户基于新列表已选中的 id，或旧列表覆盖新列表导致批量操作错位
+      if (activeRequestKeyRef.current !== requestKey) return;
       const data: PaginatedResponse<AdminUser> = res.data;
       setUsers(data.list);
       setTotalPages(data.totalPages);
@@ -62,9 +73,13 @@ export default function UserManagement() {
       // 列表数据变更后清空选中，避免对已不在视图中的用户执行批量操作
       setSelectedIds(new Set());
     } catch (err) {
+      if (activeRequestKeyRef.current !== requestKey) return;
       setError(err instanceof ApiError ? err.message : "加载失败");
     } finally {
-      setLoading(false);
+      // 仅当前活跃请求才清除 loading，避免旧请求 finally 误刷新请求的 loading 状态
+      if (activeRequestKeyRef.current === requestKey) {
+        setLoading(false);
+      }
     }
   }, []);
 
