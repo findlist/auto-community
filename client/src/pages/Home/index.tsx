@@ -287,9 +287,10 @@ export default function Home() {
       </section>
 
       {/* ============ 终极 CTA ============ */}
-      <section ref={ctaRef} className="py-20 lg:py-32 px-6 lg:px-10 bg-neutral-900 text-white relative overflow-hidden">
-        {/* 微妙的光晕，唯一装饰 */}
+      <section ref={ctaRef} className="py-20 lg:py-32 px-6 lg:px-10 bg-gradient-to-br from-neutral-900 via-neutral-900 to-emerald-950/40 text-white relative overflow-hidden">
+        {/* 双层光晕：右侧邻里绿主光晕 + 左下角互补微光，构建非对称氛围深度 */}
         <div className="absolute top-1/2 -right-32 w-96 h-96 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-emerald-400/5 blur-3xl pointer-events-none" />
         <div
           className="relative max-w-3xl mx-auto text-center transition-all duration-700"
           style={{

@@ -17,20 +17,22 @@ import Empty from "@/components/Empty";
 import { LineChart, PieChart, BarChart, ChartCard } from "@/components/Charts";
 
 // 统计卡片配置
+// bar: 顶部色条 hex，用于卡片顶端细色条，提升多卡扫读时的色彩锚点
 const cardConfig: Array<{
   key: keyof DashboardData;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
   bg: string;
+  bar: string;
 }> = [
-  { key: "totalUsers", label: "用户总数", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-  { key: "todayNewUsers", label: "今日新增", icon: UserPlus, color: "text-emerald-600", bg: "bg-emerald-50" },
-  { key: "skillOrders", label: "技能订单", icon: Wrench, color: "text-purple-600", bg: "bg-purple-50" },
-  { key: "kitchenOrders", label: "厨房订单", icon: ChefHat, color: "text-orange-600", bg: "bg-orange-50" },
-  { key: "timeBankOrders", label: "时间银行", icon: Clock, color: "text-cyan-600", bg: "bg-cyan-50" },
-  { key: "emergencyRequests", label: "应急请求", icon: Siren, color: "text-red-600", bg: "bg-red-50" },
-  { key: "pendingReports", label: "待处理举报", icon: Flag, color: "text-yellow-600", bg: "bg-yellow-50" },
+  { key: "totalUsers", label: "用户总数", icon: Users, color: "text-blue-600", bg: "bg-blue-50", bar: "#3b82f6" },
+  { key: "todayNewUsers", label: "今日新增", icon: UserPlus, color: "text-emerald-600", bg: "bg-emerald-50", bar: "#10b981" },
+  { key: "skillOrders", label: "技能订单", icon: Wrench, color: "text-purple-600", bg: "bg-purple-50", bar: "#8b5cf6" },
+  { key: "kitchenOrders", label: "厨房订单", icon: ChefHat, color: "text-orange-600", bg: "bg-orange-50", bar: "#f97316" },
+  { key: "timeBankOrders", label: "时间银行", icon: Clock, color: "text-cyan-600", bg: "bg-cyan-50", bar: "#06b6d4" },
+  { key: "emergencyRequests", label: "应急请求", icon: Siren, color: "text-red-600", bg: "bg-red-50", bar: "#ef4444" },
+  { key: "pendingReports", label: "待处理举报", icon: Flag, color: "text-yellow-600", bg: "bg-yellow-50", bar: "#eab308" },
 ];
 
 export default function Dashboard() {
@@ -202,14 +204,16 @@ export default function Dashboard() {
 
       {/* 统计卡片 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        {cardConfig.map(({ key, label, icon: Icon, color, bg }, idx) => {
+        {cardConfig.map(({ key, label, icon: Icon, color, bg, bar }, idx) => {
           const val = data[key];
           return (
             <div
               key={key}
-              className="group bg-white rounded-2xl p-4 border border-neutral-200 shadow-sm card-hover-glow stagger-item"
+              className="group bg-white rounded-2xl p-4 border border-neutral-200 shadow-sm card-hover-glow stagger-item relative overflow-hidden"
               style={{ animationDelay: `${idx * 40}ms` }}
             >
+              {/* 顶部色条：模块色锚点，提升多卡扫读效率 */}
+              <span className="absolute top-0 left-0 right-0 h-0.5" style={{ backgroundColor: bar }} />
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 transition-transform duration-200 group-hover:scale-110 ${bg}`}>
                 <Icon className={`w-5 h-5 ${color}`} />
               </div>
