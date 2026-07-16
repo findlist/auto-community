@@ -14,15 +14,15 @@ export default defineConfig({
     include: ['src/**/__tests__/**/*.test.ts'],
     // 排除编译产物、node_modules 以及预先存在的非 vitest 格式测试文件：
     // - *.concurrent.test.ts：依赖真实数据库的并发集成测试，需单独配置 DB 环境运行
-    // - tokenBlacklist.test.ts / time-bank.security.test.ts：使用 node:assert 的自执行脚本，非 describe/it 风格
+    // - tokenBlacklist.test.ts：使用 node:assert 的自执行脚本，依赖真实 Redis 实例
     // - broadcast.test.ts：WebSocket 集成测试，需运行中服务器
     // 注：crypto.test.ts 已重写为 vitest describe/it 风格，不再排除
+    // 注：time-bank.security.test.ts 已重写为 vitest describe/it 风格（通过 mock 调用真实 updateService），2026-07-17 纳入 CI 套件
     exclude: [
       'node_modules',
       'dist',
       'src/**/__tests__/*.concurrent.test.ts',
       'src/**/__tests__/tokenBlacklist.test.ts',
-      'src/**/__tests__/time-bank.security.test.ts',
       'src/**/__tests__/broadcast.test.ts',
     ],
     // 覆盖率配置：使用 v8 provider，统计 src 下 ts 文件
