@@ -657,22 +657,37 @@ function DetailView({ requestId }: { requestId: string }) {
   const [showReportInput, setShowReportInput] = useState(false);
   const [reportReason, setReportReason] = useState("");
 
+  // 竞态守卫：跟踪当前活跃的 requestId，快速切换路由时旧请求返回不再覆盖新数据
+  // 设计原因：fetchRequest 是 useCallback 依赖 requestId，切换路由会重新创建并触发新请求，
+  // 但旧请求的 await 仍在进行中，完成后会 setRequest 旧数据覆盖新数据，导致显示内容与路由 id 不一致
+  const activeRequestIdRef = useRef(requestId);
+
   const fetchRequest = useCallback(async () => {
     setLoading(true);
     // 清空历史错误，避免上一次失败的状态污染本次加载
     setError("");
     try {
       const res = await getRequest(requestId);
+      // 竞态守卫：await 期间若 requestId 已变化，跳过 setState 避免旧数据覆盖新数据
+      if (activeRequestIdRef.current !== requestId) return;
       setRequest(res.data);
     } catch (err: unknown) {
+      if (activeRequestIdRef.current !== requestId) return;
       // 记录错误信息优先展示，避免被"求助信息不存在"分支掩盖真实原因（404/500/403）
       setError(err instanceof ApiError ? err.message : "加载失败");
     } finally {
-      setLoading(false);
+      // 仅当当前 requestId 仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
+      if (activeRequestIdRef.current === requestId) {
+        setLoading(false);
+      }
     }
   }, [requestId]);
 
-  useEffect(() => { fetchRequest(); }, [fetchRequest]);
+  // 同步活跃 requestId 并触发请求：依赖 requestId 变化时重新拉取
+  useEffect(() => {
+    activeRequestIdRef.current = requestId;
+    fetchRequest();
+  }, [fetchRequest, requestId]);
 
   const handleRespond = async () => {
     if (!responseMsg.trim()) return;
