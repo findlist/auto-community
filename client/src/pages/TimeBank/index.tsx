@@ -27,12 +27,23 @@ export default function TimeBank() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // 竞态守卫：快速切换 Tab 时，旧请求返回不再覆盖新数据
+    // 设计原因：Promise 链在 await 期间若 activeTab 已变化，setServices 旧列表会覆盖新列表，
+    // 导致显示内容与 Tab 不一致；cancelled 标志在 cleanup 时置 true，跳过过期 setState
+    let cancelled = false;
     setLoading(true);
     setError("");
     getServices({ type: activeTab as "provide" | "request" })
-      .then(res => setServices(res.data.list))
-      .catch(() => setError("加载失败，请稍后重试"))
-      .finally(() => setLoading(false));
+      .then(res => {
+        if (!cancelled) setServices(res.data.list);
+      })
+      .catch(() => {
+        if (!cancelled) setError("加载失败，请稍后重试");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [activeTab]);
 
   return (
