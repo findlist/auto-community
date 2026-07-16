@@ -970,22 +970,37 @@ function ListView() {
   const [showCreate, setShowCreate] = useState(false);
   const [showResources, setShowResources] = useState(false);
 
+  // 竞态守卫：跟踪当前活跃的 activeTab，快速切换 Tab 时旧请求返回不再覆盖新数据
+  // 设计原因：fetchRequests 依赖 activeTab，切换 Tab 会重新创建并触发新请求，
+  // 但旧请求的 await 仍在进行中，完成后会 setRequests 旧列表覆盖新列表
+  const activeTabRef = useRef(activeTab);
+
   const fetchRequests = useCallback(async () => {
     setLoading(true);
     try {
       const params = activeTab ? { type: activeTab } : undefined;
       const res = await getRequests(params);
+      // 竞态守卫：await 期间若 activeTab 已变化，跳过 setState 避免旧列表覆盖新列表
+      if (activeTabRef.current !== activeTab) return;
       setRequests(res.data.list);
     } catch (err) {
+      if (activeTabRef.current !== activeTab) return;
       console.error("加载求助列表失败:", err);
       // 应急场景时效性高，加载失败需提示用户，避免误以为当前无求助
       toast.error(getErrorMessage(err, "加载求助列表失败，请稍后重试"));
     } finally {
-      setLoading(false);
+      // 仅当当前 activeTab 仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
+      if (activeTabRef.current === activeTab) {
+        setLoading(false);
+      }
     }
   }, [activeTab]);
 
-  useEffect(() => { fetchRequests(); }, [fetchRequests]);
+  // 同步活跃 activeTab 并触发请求：依赖 activeTab 变化时重新拉取
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+    fetchRequests();
+  }, [fetchRequests, activeTab]);
 
   const tabLabel = activeTab === "emergency" ? "紧急求助" : activeTab === "daily" ? "日常互助" : "全部求助";
 
