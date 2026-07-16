@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   formatDate,
-  formatDistanceToNow,
   formatPhone,
   formatCredits,
   formatTime,
@@ -46,15 +45,6 @@ describe("format - 格式化工具", () => {
 
     it("跨年应返回 YYYY-MM-DD", () => {
       expect(formatDate("2025-06-01T00:00:00Z")).toBe("2025-06-01");
-    });
-  });
-
-  describe("formatDistanceToNow（formatDate 别名）", () => {
-    it("应与 formatDate 行为一致", () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-07-08T12:00:00Z"));
-      expect(formatDistanceToNow("2026-07-08T11:59:30Z")).toBe("刚刚");
-      vi.useRealTimers();
     });
   });
 

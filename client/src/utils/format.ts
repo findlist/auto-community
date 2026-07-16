@@ -30,9 +30,6 @@ export function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
-// 别名，与 formatDate 功能相同
-export const formatDistanceToNow = formatDate;
-
 export function formatPhone(phone: string): string {
   if (phone.length !== 11) return phone;
   return `${phone.slice(0, 3)}****${phone.slice(7)}`;
