@@ -108,6 +108,9 @@ import {
 beforeEach(() => {
   mockQuery.mockReset();
   mockClient.query.mockReset();
+  // 默认实现：返回空 rows，避免偶发情况下 once 栈被提前消费后返回 undefined，导致 cancelledResult.rows.map 抛 TypeError 连锁失败
+  // 设计原因：vitest 4.x forks pool 并发执行时，mockResolvedValueOnce 在边界情况下可能被提前消费，兜底返回空数组可让测试以断言失败而非 TypeError 收尾
+  mockClient.query.mockResolvedValue({ rows: [] });
   mockTransaction.mockReset();
   // transaction 默认实现：执行回调并传入 mockClient
   mockTransaction.mockImplementation(async (cb: (c: typeof mockClient) => Promise<unknown>) => cb(mockClient));
