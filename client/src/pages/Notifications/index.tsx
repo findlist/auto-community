@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Bell, Package, Siren, AlertTriangle, Info, ArrowLeft, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead } from "@/api/notifications";
@@ -30,11 +30,22 @@ export default function Notifications() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
 
+  // 竞态守卫：跟踪当前活跃的请求标识（页码），快速切换/重新挂载时旧请求返回不再覆盖新数据
+  // 设计原因：loadNotifications 在 page 1 时替换列表，page > 1 时追加列表，
+  // 旧请求返回慢时会覆盖新请求的数据（page 1 请求覆盖已追加的 page 2+ 数据）
+  // 正常使用场景下 page 1 完成后才能触发 page 2（disabled={loading} 防护），不会互相取消
+  const activeRequestKeyRef = useRef<string>("");
+
   // 加载通知列表
   const loadNotifications = useCallback(async (pageNum: number) => {
+    // 闭包捕获当前请求标识，await 后比对是否仍为最新请求
+    const requestKey = `${pageNum}`;
+    activeRequestKeyRef.current = requestKey;
     setLoading(true);
     try {
       const res = await getNotifications(pageNum, 20);
+      // 竞态守卫：await 期间若有更新的请求触发，跳过 setState 避免旧数据覆盖新数据
+      if (activeRequestKeyRef.current !== requestKey) return;
       if (pageNum === 1) {
         setNotifications(res.data.list);
       } else {
@@ -42,10 +53,14 @@ export default function Notifications() {
       }
       setHasMore(res.data.hasNext);
     } catch (err) {
+      if (activeRequestKeyRef.current !== requestKey) return;
       console.error("加载通知失败:", err);
       toast.error("加载通知失败，请稍后重试");
     } finally {
-      setLoading(false);
+      // 仅当前活跃请求才清除 loading，避免旧请求 finally 误刷新请求的 loading 状态
+      if (activeRequestKeyRef.current === requestKey) {
+        setLoading(false);
+      }
     }
   }, []);
 
