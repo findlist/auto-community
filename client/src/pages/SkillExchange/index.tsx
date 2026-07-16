@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, Star, MapPin, X, Loader2 } from "lucide-react";
 import Empty from "@/components/Empty";
@@ -29,10 +29,17 @@ export default function SkillExchange() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
+  // 竞态守卫：跟踪当前活跃的请求标识（Tab+分类+搜索词），快速切换时旧请求返回不再覆盖新数据
+  // 设计原因：loadPosts 依赖 activeTab/selectedCategory/keyword，切换时会重新创建并触发新请求，
+  // 但旧请求的 await 仍在进行中，完成后会 setPosts 旧列表覆盖新列表（reset 场景）或追加错误 Tab 的数据（分页场景）
+  const activeRequestKeyRef = useRef(`${activeTab}|${selectedCategory}|${keyword}`);
+
   const loadPosts = useCallback(async (reset = false) => {
     // reset 时跳过 loading 守卫，确保切换 Tab/分类/搜索时即使上一次请求未完成也能重新加载
     if (!reset && loading) return;
     setLoading(true);
+    // 当前闭包捕获的请求标识，用于 await 后比对是否仍为最新请求
+    const requestKey = `${activeTab}|${selectedCategory}|${keyword}`;
     try {
       const newPage = reset ? 1 : page;
       const res = await getPosts({
@@ -42,6 +49,8 @@ export default function SkillExchange() {
         page: newPage,
         pageSize: 20,
       });
+      // 竞态守卫：await 期间若 Tab/分类/搜索词已变化，跳过 setState 避免旧数据覆盖新数据
+      if (activeRequestKeyRef.current !== requestKey) return;
       const { list, hasNext } = res.data;
       if (reset) {
         setPosts(list);
@@ -51,10 +60,14 @@ export default function SkillExchange() {
       setHasMore(hasNext);
       setPage(newPage + 1);
     } catch (error) {
+      if (activeRequestKeyRef.current !== requestKey) return;
       console.error("加载失败:", error);
       toast.error("加载技能列表失败，请稍后重试");
     } finally {
-      setLoading(false);
+      // 仅当当前请求标识仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
+      if (activeRequestKeyRef.current === requestKey) {
+        setLoading(false);
+      }
     }
   }, [activeTab, selectedCategory, keyword, page, loading]);
 
@@ -62,6 +75,8 @@ export default function SkillExchange() {
     setPage(1);
     setHasMore(true);
     setPosts([]);
+    // 同步活跃请求标识：Tab/分类/搜索词变化时，旧请求的结果将被丢弃
+    activeRequestKeyRef.current = `${activeTab}|${selectedCategory}|${keyword}`;
     loadPosts(true);
     // 仅在 activeTab/selectedCategory/keyword 变化时重新加载；loadPosts 依赖 page/loading，纳入会导致分页后无限重载
     // eslint-disable-next-line react-hooks/exhaustive-deps
