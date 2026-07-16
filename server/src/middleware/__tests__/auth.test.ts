@@ -244,6 +244,43 @@ describe('requireRole 中间件 - 角色校验', () => {
   });
 });
 
+// 守护 algorithms 显式锁定：构造 HS384 签名的 token，authenticate 必须拒绝
+// 设计原因：jsonwebtoken 默认虽阻 alg:none，但显式锁定 HS256 后，HS384/HS512/RS256 等其他算法必须被拒
+describe('authenticate - algorithms 显式锁定 HS256', () => {
+  it('HS384 签名的 token 应被拒绝（algorithms 锁定生效）', async () => {
+    // 构造 HS384 签名的 token：同密钥但不同算法
+    const hs384Token = jwt.sign(
+      { id: 'user-1', nickname: 'tester' },
+      env.JWT_SECRET,
+      { algorithm: 'HS384', expiresIn: '1h' }
+    );
+    const { req, res, next } = createReqRes(`Bearer ${hs384Token}`);
+
+    await authenticate(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    const err = getNextError(next);
+    expect(err).toBeInstanceOf(UnauthorizedError);
+    expect(err.message).toBe('无效的认证令牌');
+  });
+
+  it('alg:none 的 token 应被拒绝（algorithms 锁定生效）', async () => {
+    // 构造 alg:none 的 token：jsonwebtoken 不允许直接 sign none，用 decode + 重组方式构造
+    // 这里直接用一个无效 alg 的 header + 空签名，模拟 alg:none 攻击载荷
+    const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify({ id: 'user-1', nickname: 'tester' })).toString('base64url');
+    const noneToken = `${header}.${payload}.`;
+    const { req, res, next } = createReqRes(`Bearer ${noneToken}`);
+
+    await authenticate(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    const err = getNextError(next);
+    expect(err).toBeInstanceOf(UnauthorizedError);
+    expect(err.message).toBe('无效的认证令牌');
+  });
+});
+
 describe('tokenBlacklist - Redis 化黑名单（Task 10）', () => {
   it('addToBlacklist 应调用 redisClient.setEx 写入并设置 TTL', async () => {
     const token = 'token-abc';

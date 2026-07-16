@@ -44,7 +44,11 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       throw new UnauthorizedError('认证令牌为空');
     }
 
-    const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+    // 显式锁定算法为 HS256：依赖库默认值虽已阻 alg:none，但显式声明可在升级库或改用非对称密钥时
+    // 第一时间暴露 alg 混淆攻击面，是安全基线的纵深防御
+    const decoded = jwt.verify(token, env.JWT_SECRET, {
+      algorithms: ['HS256'],
+    }) as JwtPayload;
 
     // 校验 token 是否已在黑名单中（用户已登出）
     // Redis 实现为异步操作，需要 await
@@ -85,7 +89,10 @@ export function optionalAuth(req: Request, res: Response, next: NextFunction): v
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       if (token) {
-        const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+        // 显式锁定算法为 HS256，与 authenticate 保持一致的安全契约
+        const decoded = jwt.verify(token, env.JWT_SECRET, {
+          algorithms: ['HS256'],
+        }) as JwtPayload;
         req.user = decoded;
       }
     }
@@ -138,5 +145,8 @@ export function generateRefreshToken(payload: JwtPayload): string {
 
 // 验证刷新令牌
 export function verifyRefreshToken(token: string): JwtPayload {
-  return jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+  // 显式锁定算法为 HS256，与 authenticate 保持一致的安全契约
+  return jwt.verify(token, env.JWT_SECRET, {
+    algorithms: ['HS256'],
+  }) as JwtPayload;
 }
