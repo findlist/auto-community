@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Loader2,
   AlertCircle,
@@ -40,26 +40,40 @@ export default function VerificationReview() {
   const [rejectReason, setRejectReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // 竞态守卫：跟踪当前活跃的请求标识，避免快速切换状态筛选时旧请求覆盖新数据
+  // 设计原因：useEffect 依赖 statusFilter，用户快速切换筛选时旧请求的 await 仍在进行，
+  // 完成后 setRequests 会用旧筛选结果覆盖新数据；分页/审核后主动调用 loadRequests 时
+  // 标识未变，ref 检查通过，正常执行
+  const activeRequestKeyRef = useRef(`1|${statusFilter}`);
+
   // 加载认证申请列表
   const loadRequests = useCallback(
     async (targetPage: number, targetStatus: string) => {
       setLoading(true);
       setError(null);
+      const requestKey = `${targetPage}|${targetStatus}`;
+      activeRequestKeyRef.current = requestKey;
       try {
         const res = await getVerificationRequests(
           targetPage,
           PAGE_SIZE,
           targetStatus || undefined
         );
+        // 竞态守卫：await 期间若 statusFilter/page 已变化，跳过 setState 避免旧数据覆盖新数据
+        if (activeRequestKeyRef.current !== requestKey) return;
         const data: PaginatedResponse<VerificationRequest> = res.data;
         setRequests(data.list);
         setTotalPages(data.totalPages);
         setTotal(data.total);
         setPage(data.page);
       } catch (err) {
+        if (activeRequestKeyRef.current !== requestKey) return;
         setError(err instanceof ApiError ? err.message : "加载失败");
       } finally {
-        setLoading(false);
+        // 仅当当前请求标识仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
+        if (activeRequestKeyRef.current === requestKey) {
+          setLoading(false);
+        }
       }
     },
     []

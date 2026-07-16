@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, AlertCircle, Loader2, Check } from "lucide-react";
 import { getOrder, disputeOrder } from "@/api/skills";
@@ -34,23 +34,37 @@ export default function Dispute() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // 竞态守卫：跟踪当前活跃 orderId，避免快速切换订单时旧请求覆盖新数据
+  // 设计原因：loadOrder 是 useCallback 依赖 orderId，用户快速切换订单详情时
+  // 旧请求的 await 仍在进行，完成后 setOrder 会用旧订单覆盖新订单
+  const activeOrderIdRef = useRef(orderId);
+
   // 加载订单详情（含争议信息）
   const loadOrder = useCallback(async () => {
     if (!orderId) return;
     setLoading(true);
     try {
       const res = await getOrder(orderId);
+      // 竞态守卫：await 期间若 orderId 已变化，跳过 setState 避免旧数据覆盖新数据
+      if (activeOrderIdRef.current !== orderId) return;
       setOrder(res.data);
     } catch (err) {
+      if (activeOrderIdRef.current !== orderId) return;
       setError(err instanceof ApiError ? err.message : "加载订单失败");
     } finally {
-      setLoading(false);
+      // 仅当当前 orderId 仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
+      if (activeOrderIdRef.current === orderId) {
+        setLoading(false);
+      }
     }
   }, [orderId]);
 
+  // 同步活跃 orderId 并触发请求：依赖 orderId 变化时重新拉取
+  // handleSubmit 内主动调用 loadOrder 重试时 orderId 未变，ref 检查通过，正常执行
   useEffect(() => {
+    activeOrderIdRef.current = orderId;
     loadOrder();
-  }, [loadOrder]);
+  }, [loadOrder, orderId]);
 
   // 提交争议
   const handleSubmit = async () => {

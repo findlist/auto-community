@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Empty from "@/components/Empty";
@@ -25,10 +25,20 @@ export default function Orders() {
     { orderId: string; action: "confirm" | "cancel"; message: string } | null
   >(null);
 
+  // 竞态守卫：跟踪当前活跃的请求标识，避免快速切换 Tab/筛选时旧请求覆盖新数据
+  // 设计原因：useEffect 依赖 activeTab/statusFilter，用户快速切换时旧请求的 await 仍在进行，
+  // 完成后 setOrders 会用旧 Tab/筛选结果覆盖新数据；加载更多场景由 if(loading) return 防护
+  const activeRequestKeyRef = useRef(`${activeTab}|${statusFilter}`);
+
   // 加载订单
   const loadOrders = useCallback(async (reset = false) => {
     if (loading) return;
     setLoading(true);
+    // reset 场景记录请求标识，用于 await 后竞态守卫；加载更多场景沿用当前标识
+    const requestKey = `${activeTab}|${statusFilter}`;
+    if (reset) {
+      activeRequestKeyRef.current = requestKey;
+    }
     try {
       const newPage = reset ? 1 : page;
       const res = await getFoodOrders({
@@ -37,6 +47,9 @@ export default function Orders() {
         page: newPage,
         pageSize: 10,
       });
+      // 竞态守卫：仅 reset 场景校验，await 期间若 Tab/筛选已变化，跳过 setState 避免旧数据覆盖新数据
+      // 加载更多场景由 if(loading) return 防护，且新页数据追加不会覆盖已有列表
+      if (reset && activeRequestKeyRef.current !== requestKey) return;
       if (reset) {
         setOrders(res.data.list);
       } else {
@@ -45,10 +58,14 @@ export default function Orders() {
       setHasMore(res.data.hasNext);
       setPage(newPage + 1);
     } catch (error) {
+      if (reset && activeRequestKeyRef.current !== requestKey) return;
       console.error("加载失败:", error);
       toast.error("加载订单列表失败，请稍后重试");
     } finally {
-      setLoading(false);
+      // 仅当当前请求标识仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
+      if (activeRequestKeyRef.current === requestKey || !reset) {
+        setLoading(false);
+      }
     }
   }, [activeTab, statusFilter, page, loading]);
 

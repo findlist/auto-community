@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Star, Loader2, AlertCircle } from "lucide-react";
 import Empty from "@/components/Empty";
@@ -36,6 +36,11 @@ export default function FoodReviewPage() {
   // 评分统计
   const [avgRating, setAvgRating] = useState(0);
 
+  // 竞态守卫：跟踪当前活跃 postId，避免快速切换帖子时旧请求覆盖新数据
+  // 设计原因：useEffect 依赖 postId，用户快速切换评价页时旧请求的 await 仍在进行，
+  // 完成后 setPost/setReviews 会用旧帖子数据覆盖新帖子数据
+  const activePostIdRef = useRef(postId);
+
   // 加载评价列表：通过帖子获取提供者 userId，再查该用户的评价
   const loadReviews = useCallback(async (p: number) => {
     if (!postId) return;
@@ -45,10 +50,13 @@ export default function FoodReviewPage() {
       // 首次加载时获取帖子信息，确定被评价者
       if (!post) {
         const postRes = await getFoodShareById(postId);
+        // 竞态守卫：await 期间若 postId 已变化，跳过 setPost 避免旧数据覆盖新数据
+        if (activePostIdRef.current !== postId) return;
         setPost(postRes.data);
       }
       const userId = post?.userId;
       const res = await getFoodReviews({ userId, page: p, pageSize: PAGE_SIZE });
+      if (activePostIdRef.current !== postId) return;
       setReviews(res.data.list);
       setTotalPages(res.data.totalPages);
       setTotal(res.data.total);
@@ -60,13 +68,19 @@ export default function FoodReviewPage() {
         setAvgRating(sum / res.data.list.length);
       }
     } catch (err) {
+      if (activePostIdRef.current !== postId) return;
       setError(err instanceof ApiError ? err.message : "加载评价失败");
     } finally {
-      setLoading(false);
+      // 仅当当前 postId 仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
+      if (activePostIdRef.current === postId) {
+        setLoading(false);
+      }
     }
   }, [postId, post]);
 
   useEffect(() => {
+    // 同步活跃 postId 并触发请求
+    activePostIdRef.current = postId;
     loadReviews(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);

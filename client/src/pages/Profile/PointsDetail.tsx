@@ -2,7 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { CreditCard, ArrowUpRight, ArrowDownRight, Snowflake, RotateCcw, Clock, TrendingUp, ArrowLeft, Loader2 } from "lucide-react";
 import Empty from "@/components/Empty";
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getCreditHistory } from "@/api/user";
 import type { CreditTransaction } from "@/types";
 import { toast } from "@/components/Toast";
@@ -40,22 +40,35 @@ export default function PointsDetail() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // 竞态守卫：跟踪当前活跃页码，避免快速翻页时旧请求覆盖新页数据
+  // 设计原因：fetchTransactions 依赖外部 page 参数，用户快速点击下一页/上一页时
+  // 旧请求的 await 仍在进行，完成后 setTransactions 会用旧页数据覆盖新页数据
+  const activePageRef = useRef(page);
+
   const fetchTransactions = useCallback(async (p: number) => {
     setLoading(true);
     try {
       const res = await getCreditHistory(p, PAGE_SIZE);
+      // 竞态守卫：await 期间若 page 已变化，跳过 setState 避免旧页数据覆盖新页数据
+      if (activePageRef.current !== p) return;
       setTransactions(res.data.list);
       setTotal(res.data.total);
     } catch (err) {
+      if (activePageRef.current !== p) return;
       // 加载失败需提示用户，避免误以为账户无记录（区分"无数据"与"加载失败"）
       toast.error(getErrorMessage(err, "加载积分明细失败，请稍后重试"));
     } finally {
-      setLoading(false);
+      // 仅当当前页码仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
+      if (activePageRef.current === p) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
+      // 同步活跃页码并触发请求
+      activePageRef.current = page;
       fetchTransactions(page);
     }
   }, [page, isAuthenticated, fetchTransactions]);
