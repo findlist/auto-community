@@ -16,6 +16,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import type { MetricsResponse } from '@/api/admin';
+import type { ApiResponse } from '@/types';
 import SystemStatus from '../SystemStatus';
 
 // vi.hoisted 提升 mock 数据避免 TDZ
@@ -334,5 +335,62 @@ describe('SystemStatus 系统状态监控', () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('清除失败');
     });
+  });
+
+  it('setInterval 触发的新请求完成后，旧慢请求的 setState 被竞态守卫跳过', async () => {
+    // 设计原因：验证 activeReqIdRef 竞态守卫。setInterval 10s 触发第二次 loadMetrics 时，
+    // 若首次请求未完成，首次请求 resolve 后不应覆盖第二次的新数据
+    vi.useFakeTimers();
+    try {
+      // 首次请求：controlled 慢 Promise，由测试控制何时 resolve（模拟慢请求）
+      let resolveFirst!: (value: ApiResponse<MetricsResponse>) => void;
+      vi.mocked(getSystemMetrics).mockImplementationOnce(
+        () => new Promise<ApiResponse<MetricsResponse>>((resolve) => { resolveFirst = resolve; }),
+      );
+
+      // 第二次请求：立即 resolve 新数据（poolSize=99 与默认 10 区分，便于断言）
+      const newData: MetricsResponse = {
+        metrics: {
+          database: { status: 'healthy', poolSize: 99, idleConnections: 88, waitingCount: 0 },
+          redis: { status: 'healthy', connected: true, memoryUsage: '99MB' },
+          server: {
+            uptime: 100,
+            memoryUsage: { heapUsed: 1, heapTotal: 2, rss: 3 },
+            requestQueueLength: 0,
+          },
+        },
+        alerts: [],
+      };
+      vi.mocked(getSystemMetrics).mockResolvedValue({ code: 0, message: 'ok', data: newData });
+
+      renderSystemStatus();
+
+      // 推进微任务让首次 useEffect 触发的 loadMetrics 注册（pending）
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
+      // 推进 10 秒触发 setInterval 回调，发起第二次 loadMetrics（立即 resolve）
+      // advanceTimersByTimeAsync 会同步推进宏任务与微任务，让 Promise.then 链执行完毕
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10000);
+      });
+
+      // 第二次 Promise 已 resolve，状态已更新，poolSize=99 出现代表新数据已渲染
+      expect(screen.getByText('99')).toBeInTheDocument();
+
+      // 手动 resolve 首次慢请求，返回旧数据 mockMetrics（poolSize=10）
+      // 设计原因：模拟慢请求后返回，验证竞态守卫跳过 setState 不污染新数据
+      await act(async () => {
+        resolveFirst({ code: 0, message: 'ok', data: mockMetrics });
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
+      // 验证：仍显示新数据 99，未被旧数据覆盖（idleConnections=88 也是新数据特有值）
+      expect(screen.getByText('99')).toBeInTheDocument();
+      expect(screen.getByText('88')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

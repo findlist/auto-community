@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Database,
   Server,
@@ -81,18 +81,32 @@ export default function SystemStatus() {
   // 设计原因：原生 confirm() 在移动端样式不可控且阻塞主线程，改用自定义 Modal 统一交互风格
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
+  // 竞态守卫：跟踪当前活跃的请求 ID
+  // 设计原因：setInterval 每 10 秒触发一次 loadMetrics，若上一次请求未完成（慢请求），
+  // 慢请求后返回会覆盖快请求的新数据，导致显示与最新状态不一致。await 后比对 reqId，
+  // 不匹配则跳过所有 setState，避免过期请求污染当前状态
+  const activeReqIdRef = useRef(0);
+
   // 加载系统指标
   const loadMetrics = useCallback(async () => {
+    const reqId = ++activeReqIdRef.current;
     try {
       const res = await getSystemMetrics();
+      // 守卫：若期间有新请求发出，跳过本次 setState，避免旧数据覆盖新数据
+      if (activeReqIdRef.current !== reqId) return;
       setMetrics(res.data.metrics);
       setAlerts(res.data.alerts);
       setError(null);
     } catch (err) {
+      // 错误也需守卫：避免慢请求的错误覆盖快请求的成功结果
+      if (activeReqIdRef.current !== reqId) return;
       setError(err instanceof ApiError ? err.message : "加载失败");
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      // loading/refreshing 仅当本次请求仍为活跃时才更新
+      if (activeReqIdRef.current === reqId) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, []);
 
