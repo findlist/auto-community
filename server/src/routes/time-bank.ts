@@ -338,24 +338,34 @@ router.get('/transactions', authenticate, asyncHandler(async (req, res) => {
   cursorPaginated(res, result.list, result.nextCursor, result.hasMore);
 }));
 
-router.post('/family', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, CreateFamilyBindingBody>, res: Response) => {
+// 亲情绑定涉及 PII（通过手机号查询对方用户）与账号关联关系，必须审计
+router.post('/family', authenticate, auditMiddleware('FAMILY_BIND', { resourceType: 'family' }), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateFamilyBindingBody>, res: Response) => {
   const { parent_phone, relationship } = req.body;
   const result = await timeBankService.createFamilyBinding(req.user!.id, parent_phone, relationship);
   created(res, result);
 }));
 
-router.put('/family/:id/confirm', authenticate, asyncHandler(async (req, res) => {
+router.put('/family/:id/confirm', authenticate, auditMiddleware('FAMILY_CONFIRM', {
+  resourceType: 'family',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req, res) => {
   const result = await timeBankService.confirmFamilyBinding(req.params.id, req.user!.id);
   success(res, result);
 }));
 
-router.put('/family/:id/reject', authenticate, asyncHandler(async (req, res) => {
+router.put('/family/:id/reject', authenticate, auditMiddleware('FAMILY_REJECT', {
+  resourceType: 'family',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req, res) => {
   const result = await timeBankService.rejectFamilyBinding(req.params.id, req.user!.id);
   success(res, result);
 }));
 
 // 解绑亲情绑定：仅已确认的绑定可解绑，双方均可发起
-router.put('/family/:id/unbind', authenticate, asyncHandler(async (req, res) => {
+router.put('/family/:id/unbind', authenticate, auditMiddleware('FAMILY_UNBIND', {
+  resourceType: 'family',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req, res) => {
   const result = await timeBankService.unbindFamilyBinding(req.params.id, req.user!.id);
   success(res, result);
 }));
