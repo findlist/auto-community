@@ -221,18 +221,30 @@ async function submitVerification(userId: string, realName: string, idCard: stri
   const idCardEncrypted = encryptIdCard(idCard);
 
   // 创建认证申请记录并更新用户状态
-  await transaction(async (client) => {
-    await client.query(
-      `INSERT INTO verification_requests (user_id, real_name, id_card_encrypted, id_card_hash, status)
-       VALUES ($1, $2, $3, $4, 'pending')`,
-      [userId, realName, idCardEncrypted, idCardHash],
-    );
+  // 捕获 PostgreSQL unique_violation（错误码 23505）：
+  // 设计原因：SELECT 检查在事务外存在 TOCTOU 边界情况，两个并发请求可能同时通过 SELECT 检查
+  // 但只有一个 INSERT 能成功。部分唯一索引（仅约束 pending/approved）是兜底防线，
+  // 触发 23505 时转换为 ConflictError 返回 409，避免抛出 QueryFailedError 导致 500。
+  try {
+    await transaction(async (client) => {
+      await client.query(
+        `INSERT INTO verification_requests (user_id, real_name, id_card_encrypted, id_card_hash, status)
+         VALUES ($1, $2, $3, $4, 'pending')`,
+        [userId, realName, idCardEncrypted, idCardHash],
+      );
 
-    await client.query(
-      'UPDATE users SET verify_status = \'pending\', verify_submitted_at = NOW() WHERE id = $1',
-      [userId],
-    );
-  });
+      await client.query(
+        'UPDATE users SET verify_status = \'pending\', verify_submitted_at = NOW() WHERE id = $1',
+        [userId],
+      );
+    });
+  } catch (err) {
+    // node-postgres 错误对象带 code 字段（字符串 '23505' 表示 unique_violation）
+    if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
+      throw new ConflictError('该身份证号已被其他用户认证');
+    }
+    throw err;
+  }
 
   // 清除用户缓存
   await userCache.invalidate(userId);

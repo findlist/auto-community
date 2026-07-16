@@ -422,6 +422,43 @@ describe('user.service submitVerification', () => {
     // 提交后清除用户缓存
     expect(mockUserCacheInvalidate).toHaveBeenCalledWith('user-1');
   });
+
+  it('事务内 INSERT 触发 unique_violation（23505）时转换为 ConflictError 返回 409', async () => {
+    // 场景：两个并发请求同时通过 SELECT 检查（TOCTOU 边界），但只有一个 INSERT 成功
+    // 部分唯一索引兜底：第二个 INSERT 触发 23505，应转换为 ConflictError 而非 500
+    mockQuery.mockResolvedValueOnce({ rows: [{ verify_status: null }] });
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // 身份证号未被占用（SELECT 检查通过）
+    // transaction mock：INSERT 抛出 PostgreSQL unique_violation 错误
+    const pgUniqueViolationError = Object.assign(new Error('duplicate key value violates unique constraint'), {
+      code: '23505',
+    });
+    const mockClient = { query: vi.fn().mockRejectedValue(pgUniqueViolationError) };
+    mockTransaction.mockImplementation(async (cb: (client: typeof mockClient) => Promise<unknown>) => {
+      return cb(mockClient);
+    });
+
+    await expect(
+      userService.submitVerification('user-1', '张三', '110101199001011234'),
+    ).rejects.toThrow(ConflictError);
+    // INSERT 失败后不应清除用户缓存（保持原状态）
+    expect(mockUserCacheInvalidate).not.toHaveBeenCalled();
+  });
+
+  it('事务内抛出非 unique_violation 错误时原样向上抛出（不吞错）', async () => {
+    // 设计原因：捕获 23505 后必须 throw err 透传其他错误，避免掩盖真实故障
+    mockQuery.mockResolvedValueOnce({ rows: [{ verify_status: null }] });
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    const otherPgError = Object.assign(new Error('connection terminated'), { code: '08006' });
+    const mockClient = { query: vi.fn().mockRejectedValue(otherPgError) };
+    mockTransaction.mockImplementation(async (cb: (client: typeof mockClient) => Promise<unknown>) => {
+      return cb(mockClient);
+    });
+
+    // 非 23505 错误应原样抛出（不应转换为 ConflictError）
+    await expect(
+      userService.submitVerification('user-1', '张三', '110101199001011234'),
+    ).rejects.toThrow('connection terminated');
+  });
 });
 
 // ===================== getVerificationStatus =====================
