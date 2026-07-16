@@ -38,9 +38,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// JSON解析
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+// JSON 解析：限制 1mb 防止大 payload DoS
+// 设计原因：上传走 multipart 中间件单独控制，常规 API payload 不超过几十 KB
+// 若未来确有富文本大字段需求，可在具体路由用 express.json({ limit: '5mb' }) 局部覆盖
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // 静态文件服务：提供上传文件的访问
 const uploadsDir = path.resolve(__dirname, '../uploads');
