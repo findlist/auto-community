@@ -105,6 +105,34 @@ describe('message.service sendMessage', () => {
 
     expect(result.readAt).toBe('2026-07-08T11:00:00.000Z');
   });
+
+  it('XSS 防御纵深：消息含 <script> 标签时被 sanitizeXss 清洗后再写入数据库', async () => {
+    // 设计原因：message.service.sendMessage 在 SQL 参数化前调用 sanitizeXss 清洗 content，
+    // 防御纵深守护未来非 React 渲染场景（如导出聊天记录、邮件预览）触发存储型 XSS。
+    // 现有纯文本测试无法触发 sanitizeXss 实际清洗行为，需显式构造含 <script> 的输入验证不变式
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        id: 'msg-xss',
+        sender_id: 'u1',
+        receiver_id: 'u2',
+        order_id: null,
+        order_type: 'skill',
+        content: '&lt;script&gt;alert(1)&lt;/script&gt;',
+        type: 'text',
+        read_at: null,
+        created_at: new Date('2026-07-08T10:00:00Z'),
+      }],
+    });
+
+    await messageService.sendMessage('u1', 'u2', null, '<script>alert(1)</script>');
+
+    // 断言 SQL 参数中 content 已被清洗：<script> 转义为 &lt;script&gt;，alert(1) 文本保留
+    const sqlParams = mockQuery.mock.calls[0][1] as unknown[];
+    const contentParam = sqlParams[4] as string;
+    expect(contentParam).not.toContain('<script>');
+    expect(contentParam).toContain('&lt;script&gt;');
+    expect(contentParam).toContain('alert(1)');
+  });
 });
 
 describe('message.service getMessages 权限校验', () => {

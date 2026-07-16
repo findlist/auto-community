@@ -12,7 +12,14 @@ import { BadRequestError } from './errors';
 /**
  * 单字段 XSS 过滤
  * 非字符串原样返回，避免误伤数字、布尔等类型
+ *
+ * 重载说明：
+ * - string 入参返回 string：让 service 调用方无需 as string 类型断言
+ * - unknown 入参返回 unknown：保留对非字符串（number/boolean/null/undefined 等）的兜底处理
+ * 运行时行为与单一签名一致，仅类型层面收窄
  */
+export function sanitizeXss(value: string): string;
+export function sanitizeXss(value: unknown): unknown;
 export function sanitizeXss(value: unknown): unknown {
   if (typeof value !== 'string') return value;
   return xss(value);

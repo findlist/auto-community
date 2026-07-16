@@ -15,7 +15,7 @@ import { REVIEW_COLUMNS } from './review.service';
 import { logger } from '../utils/logger';
 import { timeServiceCache } from './cache.service';
 import { notificationService } from './notification.service';
-import { sanitizeObject, validateImageUrls } from '../utils/sanitize';
+import { sanitizeObject, sanitizeXss, validateImageUrls } from '../utils/sanitize';
 import { safeNotify } from '../utils/safeNotify';
 import { prefixColumns } from '../utils/sql';
 
@@ -699,10 +699,12 @@ async function completeOrder(
     );
 
     if (rating !== undefined && rating !== null) {
+      // 防御纵深：清洗评价内容，避免未来非 React 渲染场景触发存储型 XSS
+      const sanitizedReview = review !== undefined ? sanitizeXss(review) : undefined;
       await client.query(
         `INSERT INTO reviews (reviewer_id, reviewed_id, order_id, order_type, rating, content)
          VALUES ($1, $2, $3, 'time', $4, $5)`,
-        [userId, order.provider_id, orderId, rating, review || null],
+        [userId, order.provider_id, orderId, rating, sanitizedReview || null],
       );
 
       // 取最近50条评价计算平均信誉分
@@ -1101,10 +1103,12 @@ async function createReview(orderId: string, reviewerId: string, rating: number,
     );
     if (existResult.rows.length > 0) throw new BadRequestError('已评价过此订单');
 
+    // 防御纵深：清洗评价内容，避免未来非 React 渲染场景触发存储型 XSS
+    const sanitizedContent = content !== undefined ? sanitizeXss(content) : undefined;
     const result = await client.query(
       `INSERT INTO reviews (reviewer_id, reviewed_id, order_id, order_type, rating, content)
        VALUES ($1, $2, $3, 'time', $4, $5) RETURNING ${REVIEW_COLUMNS}`,
-      [reviewerId, revieweeId, orderId, rating, content || null],
+      [reviewerId, revieweeId, orderId, rating, sanitizedContent || null],
     );
 
     // 事务内调用：复用传入的 client，保证信誉分更新与评价写入在同一事务内提交/回滚

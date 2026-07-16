@@ -12,6 +12,7 @@ import { safeNotify } from '../utils/safeNotify';
 import { creditService } from './credit.service';
 import { notificationService } from './notification.service';
 import { prefixColumns } from '../utils/sql';
+import { sanitizeXss } from '../utils/sanitize';
 
 /**
  * skill_orders 表显式查询列：替代 SELECT *，避免返回 timeout_at（scheduler 专用字段，
@@ -261,10 +262,12 @@ async function completeOrder(orderId: string, userId: string, rating?: number, r
     // 提交评价并更新信誉分
     if (rating) {
       const reviewedId = userId === order.buyer_id ? order.seller_id : order.buyer_id;
+      // 防御纵深：清洗评价内容，避免未来非 React 渲染场景触发存储型 XSS
+      const sanitizedReview = review !== undefined ? sanitizeXss(review) : undefined;
       await client.query(
         `INSERT INTO reviews (reviewer_id, reviewed_id, order_id, order_type, rating, content)
          VALUES ($1, $2, $3, 'skill', $4, $5)`,
-        [userId, reviewedId, orderId, rating, review || null],
+        [userId, reviewedId, orderId, rating, sanitizedReview || null],
       );
 
       // 取最近50条评价计算平均信誉分

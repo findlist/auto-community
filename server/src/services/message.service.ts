@@ -1,6 +1,7 @@
 import { query, SqlParam } from '../config/database';
 import { ForbiddenError } from '../utils/errors';
 import { createCursorPaginatedResponse, CursorPaginatedResponse } from '../utils/pagination';
+import { sanitizeXss } from '../utils/sanitize';
 
 // 支持的业务模块类型
 export type OrderType = 'skill' | 'kitchen' | 'time' | 'emergency';
@@ -102,11 +103,14 @@ async function sendMessage(
   type: string = 'text',
   orderType: OrderType = 'skill',
 ) {
+  // 防御纵深：清洗消息内容，消息是用户实时输入且直接展示给对方的字段
+  // 设计原因：当前前端 React 文本插值安全，但消息可能被未来场景（如导出聊天记录、邮件通知预览）渲染
+  const sanitizedContent = sanitizeXss(content);
   const { rows } = await query<MessageRow>(
     `INSERT INTO messages (sender_id, receiver_id, order_id, order_type, content, type)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING ${MESSAGE_COLUMNS}`,
-    [senderId, receiverId, orderId, orderType, content, type],
+    [senderId, receiverId, orderId, orderType, sanitizedContent, type],
   );
 
   return toMessage(rows[0]);

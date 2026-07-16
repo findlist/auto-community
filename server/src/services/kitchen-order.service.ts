@@ -12,6 +12,7 @@ import { safeNotify } from '../utils/safeNotify';
 import { creditService } from './credit.service';
 import { notificationService } from './notification.service';
 import { prefixColumns } from '../utils/sql';
+import { sanitizeXss } from '../utils/sanitize';
 
 /**
  * kitchen_orders 表显式查询列：替代 SELECT *，与数据库实际列结构对齐。
@@ -273,10 +274,12 @@ async function complete(orderId: string, userId: string, reviewData: {
 
     // 4. 创建评价
     if (reviewData.rating) {
+      // 防御纵深：清洗评价内容，避免未来非 React 渲染场景触发存储型 XSS
+      const sanitizedContent = reviewData.content !== undefined ? sanitizeXss(reviewData.content) : undefined;
       await client.query(
         `INSERT INTO reviews (reviewer_id, reviewed_id, order_id, order_type, rating, content)
          VALUES ($1, $2, $3, 'kitchen', $4, $5)`,
-        [userId, order.seller_id, orderId, reviewData.rating, reviewData.content || null]
+        [userId, order.seller_id, orderId, reviewData.rating, sanitizedContent || null]
       );
 
       // 5. 更新分享者信誉分（统一使用最近50条评价，与其他模块保持一致）

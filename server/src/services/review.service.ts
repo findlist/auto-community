@@ -2,6 +2,7 @@ import { query, transaction } from '../config/database';
 import type { SqlParam } from '../config/database';
 import { BadRequestError } from '../utils/errors';
 import { prefixColumns } from '../utils/sql';
+import { sanitizeXss } from '../utils/sanitize';
 
 /**
  * reviews 表行类型
@@ -74,10 +75,14 @@ async function createReview(
     throw new BadRequestError('已评价过此订单');
   }
 
+  // 防御纵深：清洗评价内容中的 XSS 节点，剥离 <script>、事件处理器等危险标签
+  // 设计原因：当前前端使用 React 安全文本插值无真实 XSS 风险，但 service 是数据库写入
+  // 的最后防线，避免未来非 React 渲染场景（如 SSR、邮件预览、导出报告）触发存储型 XSS
+  const sanitizedContent = content !== undefined ? sanitizeXss(content) : undefined;
   const result = await query<ReviewListRow>(
     `INSERT INTO reviews (reviewer_id, reviewed_id, order_id, order_type, rating, content)
      VALUES ($1, $2, $3, $4, $5, $6) RETURNING ${REVIEW_COLUMNS}`,
-    [reviewerId, reviewedId, orderId, orderType, rating, content || null],
+    [reviewerId, reviewedId, orderId, orderType, rating, sanitizedContent || null],
   );
 
   return toReview(result.rows[0]);
