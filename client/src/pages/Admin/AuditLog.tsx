@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Loader2, AlertCircle, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { getAuditLogs, type AuditLog, type AuditLogQuery } from "@/api/admin";
 import { ApiError } from "@/api/client";
@@ -41,7 +41,14 @@ export default function AuditLogPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  // 竞态守卫：跟踪当前活跃的请求标识（筛选条件+页码），快速切换筛选时旧请求返回不再覆盖新数据
+  // 设计原因：loadLogs 依赖 action/status/startDate/endDate/page，切换筛选条件时旧请求的 await 完成后会 setLogs 旧列表覆盖新列表
+  const activeRequestKeyRef = useRef<string>("");
+
   const loadLogs = useCallback(async (p: number) => {
+    // 闭包捕获当前请求标识，await 后比对是否仍为最新请求
+    const requestKey = `${action}|${status}|${startDate}|${endDate}|${p}`;
+    activeRequestKeyRef.current = requestKey;
     setLoading(true);
     setError(null);
     try {
@@ -51,14 +58,20 @@ export default function AuditLogPage() {
       if (startDate) query.startDate = startDate;
       if (endDate) query.endDate = endDate;
       const res = await getAuditLogs(query);
+      // 竞态守卫：await 期间若筛选条件/页码已变化，跳过 setState 避免旧数据覆盖新数据
+      if (activeRequestKeyRef.current !== requestKey) return;
       setLogs(res.data.list);
       setTotalPages(res.data.totalPages);
       setTotal(res.data.total);
       setPage(res.data.page);
     } catch (err) {
+      if (activeRequestKeyRef.current !== requestKey) return;
       setError(err instanceof ApiError ? err.message : "加载失败");
     } finally {
-      setLoading(false);
+      // 仅当前活跃请求才清除 loading，避免旧请求 finally 误刷新请求的 loading 状态
+      if (activeRequestKeyRef.current === requestKey) {
+        setLoading(false);
+      }
     }
   }, [action, status, startDate, endDate]);
 
