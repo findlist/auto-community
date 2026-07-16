@@ -198,7 +198,7 @@ export default function SharedKitchen() {
         </div>
         <button
           onClick={() => navigate("/kitchen/create")}
-          className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 text-white rounded-full text-sm font-medium hover:bg-neutral-800 active:scale-[0.97] transition-all duration-200"
+          className="flex items-center gap-1.5 px-4 py-2 bg-neutral-900 text-white rounded-full text-sm font-medium hover:bg-neutral-800 hover:shadow-[0_8px_24px_-8px_rgba(249,115,22,0.5)] active:scale-[0.97] transition-all duration-200"
         >
           <Plus className="w-4 h-4" />
           发布
