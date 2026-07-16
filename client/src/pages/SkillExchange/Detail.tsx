@@ -30,16 +30,18 @@ export default function Detail() {
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
     setLoading(true);
     // 清空历史错误，避免上一次失败的状态污染本次加载
     setError("");
     getPost(id)
-      .then(res => setPost(res.data))
+      .then(res => { if (!cancelled) setPost(res.data); })
       .catch((err: unknown) => {
         // 记录错误信息优先展示，避免被"帖子不存在"分支掩盖真实原因（404/500/403）
-        setError(err instanceof ApiError ? err.message : "加载失败");
+        if (!cancelled) setError(err instanceof ApiError ? err.message : "加载失败");
       })
-      .finally(() => setLoading(false));
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [id]);
 
   const isOwner = user?.id === post?.userId;

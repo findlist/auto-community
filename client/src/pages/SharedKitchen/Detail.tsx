@@ -23,16 +23,18 @@ export default function Detail() {
   // 加载详情
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
     setLoading(true);
     // 清空历史错误，避免上一次失败的状态污染本次加载
     setError("");
     getFoodShareById(id)
-      .then(res => setPost(res.data))
+      .then(res => { if (!cancelled) setPost(res.data); })
       .catch((err: unknown) => {
         // 记录错误信息优先展示，避免被"美食不存在"分支掩盖真实原因（404/500/403）
-        setError(err instanceof ApiError ? err.message : "加载失败");
+        if (!cancelled) setError(err instanceof ApiError ? err.message : "加载失败");
       })
-      .finally(() => setLoading(false));
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [id]);
 
   // 预约领取

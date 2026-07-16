@@ -38,15 +38,17 @@ export default function ServiceDetail() {
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
     setLoading(true);
     setError("");
     getService(id)
-      .then(res => setService(res.data))
+      .then(res => { if (!cancelled) setService(res.data); })
       .catch((err) => {
         console.error("加载时间银行服务详情失败:", err);
-        setError("加载失败");
+        if (!cancelled) setError("加载失败");
       })
-      .finally(() => setLoading(false));
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [id]);
 
   const handleCreateOrder = async () => {
