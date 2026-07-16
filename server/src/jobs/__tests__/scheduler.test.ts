@@ -649,6 +649,20 @@ describe('scheduler - handleDeferredTimeEarn', () => {
     // 验证 time_balance 增加 30（部分发放金额）
     expect(mockClient.query.mock.calls[4][1]).toEqual([30, 'p1']);
   });
+
+  it('查询 pending 流水加 LIMIT 防御积压场景下单事务过长', async () => {
+    // 设计原因：handleDeferredTimeEarn 查询 pending 流水时加 LIMIT 500，
+    // 避免 scheduler 长时间未运行或大量服务同时完成导致 pending 流水积压时，
+    // 单事务处理过多流水造成长事务占用数据库连接。测试守护 LIMIT 不变式，
+    // 防止未来重构时被误删
+    mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+    await handleDeferredTimeEarn();
+
+    // 验证第一个查询（pending 流水查询）SQL 包含 LIMIT 子句
+    const pendingQuerySql = mockClient.query.mock.calls[0][0] as string;
+    expect(pendingQuerySql).toMatch(/LIMIT\s+\d+/);
+  });
 });
 
 // ===================== initScheduler 调度器初始化 =====================

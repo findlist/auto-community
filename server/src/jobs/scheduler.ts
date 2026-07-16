@@ -10,6 +10,13 @@ import { logger } from '../utils/logger';
 // 时间收益每日上限（分钟），与 time-bank.service.ts 保持一致
 const DAILY_EARN_LIMIT = 480;
 
+// 延迟收益单轮处理批量上限
+// 设计原因：避免 scheduler 长时间未运行或大量服务同时完成导致 pending 流水积压时，
+// 单事务内一次性处理所有流水造成长事务占用数据库连接、内存占用过高。
+// 每轮最多处理 500 条，剩余由下一轮 scheduler 触发处理，不影响业务正确性
+// （流水保持 pending 状态，按 created_at ASC 先创建先发放，确保顺序一致）
+const DEFERRED_EARN_BATCH_LIMIT = 500;
+
 // 调度器句柄：暴露 stop 方法，便于优雅关闭时停止所有定时任务
 export interface SchedulerHandle {
   stop(): void;
@@ -441,11 +448,14 @@ export async function handleSkillPostExpiry(): Promise<void> {
 // 发放时仍需检查当日收益上限，超限部分保持 pending
 export async function handleDeferredTimeEarn(): Promise<number> {
   return transaction(async (client) => {
-    // 查询所有 pending 状态的收益流水，按创建时间升序处理（先创建先发放）
+    // 查询 pending 状态的收益流水，按创建时间升序处理（先创建先发放）
+    // 加 LIMIT 防御积压场景下单事务过长：每轮最多处理 DEFERRED_EARN_BATCH_LIMIT 条，
+    // 剩余由下一轮 scheduler 触发处理（流水保持 pending，顺序与正确性不受影响）
     const pendingResult = await client.query(
       `SELECT id, to_user_id, amount, type, service_id, from_user_id, remark FROM time_transactions
        WHERE status = 'pending' AND type IN ('earn', 'bonus')
-       ORDER BY created_at ASC`,
+       ORDER BY created_at ASC
+       LIMIT ${DEFERRED_EARN_BATCH_LIMIT}`,
     );
 
     let processedCount = 0;
