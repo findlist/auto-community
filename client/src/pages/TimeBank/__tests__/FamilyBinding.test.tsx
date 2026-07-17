@@ -97,6 +97,8 @@ vi.mock('react-router-dom', async () => {
 // 引入被 mock 的 API 以便在用例中配置返回值
 import {
   getFamilyBindings,
+  confirmFamilyBinding,
+  rejectFamilyBinding,
   unbindFamilyBinding,
 } from '@/api/timeBank';
 
@@ -351,5 +353,41 @@ describe('FamilyBinding 状态展示与操作', () => {
     // pending 与 unbound 绑定应被过滤掉
     expect(screen.queryByText('母亲大人')).toBeNull();
     expect(screen.queryByText('前任配偶')).toBeNull();
+  });
+
+  it('确认中按钮禁用且文案变为"确认中..."，避免重复提交', async () => {
+    // confirmFamilyBinding 永不 resolve，锁定 confirmingId 状态验证守卫
+    vi.mocked(confirmFamilyBinding).mockReturnValue(new Promise(() => {}));
+
+    renderFamilyBinding();
+    await screen.findByText('母亲大人');
+
+    // 点击"确认"按钮触发请求
+    await user.click(screen.getByRole('button', { name: '确认' }));
+    // 等待 confirmingId 状态生效：按钮文案变为"确认中..."且禁用
+    const confirmingButton = await screen.findByRole('button', { name: '确认中...' });
+    expect(confirmingButton).toBeDisabled();
+
+    // 重复点击不应再次触发 confirmFamilyBinding（disabled button 不响应 click）
+    await user.click(confirmingButton);
+    expect(vi.mocked(confirmFamilyBinding)).toHaveBeenCalledTimes(1);
+  });
+
+  it('拒绝中按钮禁用且文案变为"拒绝中..."，避免重复提交', async () => {
+    // rejectFamilyBinding 永不 resolve，锁定 rejectingId 状态验证守卫
+    vi.mocked(rejectFamilyBinding).mockReturnValue(new Promise(() => {}));
+
+    renderFamilyBinding();
+    await screen.findByText('母亲大人');
+
+    // 点击"拒绝"按钮触发请求
+    await user.click(screen.getByRole('button', { name: '拒绝' }));
+    // 等待 rejectingId 状态生效：按钮文案变为"拒绝中..."且禁用
+    const rejectingButton = await screen.findByRole('button', { name: '拒绝中...' });
+    expect(rejectingButton).toBeDisabled();
+
+    // 重复点击不应再次触发 rejectFamilyBinding
+    await user.click(rejectingButton);
+    expect(vi.mocked(rejectFamilyBinding)).toHaveBeenCalledTimes(1);
   });
 });

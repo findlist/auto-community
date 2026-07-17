@@ -69,6 +69,10 @@ export default function FamilyBindingPage() {
   // 解绑确认弹窗状态：unbindingId 非 null 时展示弹窗，unbinding 标记请求中态
   const [unbindingId, setUnbindingId] = useState<string | null>(null);
   const [unbinding, setUnbinding] = useState(false);
+  // 确认/拒绝提交守卫：记录当前操作的 bindingId，弱网下重复点击会发起多次请求 + 多次 toast，影响体验
+  // 后端虽为状态转换幂等会拒绝重复转换，但前端仍需守卫避免无意义请求与噪音提示
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   // 表单状态
   const [parentPhone, setParentPhone] = useState("");
@@ -149,7 +153,10 @@ export default function FamilyBindingPage() {
     }
   };
 
+  // 确认绑定：入口 checking 守卫避免重复提交，finally 必重置确保异常路径也释放
   const handleConfirm = async (id: string) => {
+    if (confirmingId) return;
+    setConfirmingId(id);
     try {
       await confirmFamilyBinding(id);
       toast.success("已确认绑定");
@@ -157,10 +164,15 @@ export default function FamilyBindingPage() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "操作失败，请重试";
       toast.error(message);
+    } finally {
+      setConfirmingId(null);
     }
   };
 
+  // 拒绝绑定：同 handleConfirm 守卫模式
   const handleReject = async (id: string) => {
+    if (rejectingId) return;
+    setRejectingId(id);
     try {
       await rejectFamilyBinding(id);
       toast.success("已拒绝绑定");
@@ -168,6 +180,8 @@ export default function FamilyBindingPage() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "操作失败，请重试";
       toast.error(message);
+    } finally {
+      setRejectingId(null);
     }
   };
 
@@ -360,17 +374,37 @@ export default function FamilyBindingPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleConfirm(binding.id)}
-                    className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1 hover:bg-emerald-700 transition-colors"
+                    disabled={confirmingId === binding.id}
+                    className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1 hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Check className="w-3.5 h-3.5" />
-                    确认
+                    {confirmingId === binding.id ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        确认中...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        确认
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={() => handleReject(binding.id)}
-                    className="flex-1 py-2 bg-neutral-100 text-neutral-600 rounded-lg text-sm font-medium flex items-center justify-center gap-1 hover:bg-neutral-200 transition-colors"
+                    disabled={rejectingId === binding.id}
+                    className="flex-1 py-2 bg-neutral-100 text-neutral-600 rounded-lg text-sm font-medium flex items-center justify-center gap-1 hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <X className="w-3.5 h-3.5" />
-                    拒绝
+                    {rejectingId === binding.id ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        拒绝中...
+                      </>
+                    ) : (
+                      <>
+                        <X className="w-3.5 h-3.5" />
+                        拒绝
+                      </>
+                    )}
                   </button>
                 </div>
               )}
