@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { uploadSingle, uploadMultiple, buildStorageKey } from '../middleware/upload';
 import { authenticate } from '../middleware/auth';
+import { auditMiddleware } from '../middleware/auditLog';
 import { success } from '../utils/response';
 import { BadRequestError } from '../utils/errors';
 import { getStorageAdapter, batchPutWithRollback } from '../services/storage-adapter';
@@ -57,7 +58,7 @@ router.use(authenticate);
  *                       type: string
  *                       description: 文件 MIME 类型
  */
-router.post('/image', (req: Request, res: Response, next: NextFunction) => {
+router.post('/image', auditMiddleware('CREATE_UPLOAD_IMAGE', { resourceType: 'upload' }), (req: Request, res: Response, next: NextFunction) => {
   // multer 错误带 code 字段（如 LIMIT_FILE_SIZE），用 unknown + 类型断言访问 code
   uploadSingle(req, res, async (err: unknown) => {
     if (err) {
@@ -139,7 +140,7 @@ router.post('/image', (req: Request, res: Response, next: NextFunction) => {
  *                           mimetype:
  *                             type: string
  */
-router.post('/images', (req: Request, res: Response, next: NextFunction) => {
+router.post('/images', auditMiddleware('CREATE_UPLOAD_IMAGES', { resourceType: 'upload' }), (req: Request, res: Response, next: NextFunction) => {
   uploadMultiple(req, res, async (err: unknown) => {
     if (err) {
       const code = (err as { code?: string }).code;

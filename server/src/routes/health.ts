@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { pool } from '../config/database';
 import { getSystemMetrics, getAlertLogs, clearAlertLogs } from '../services/metrics.service';
 import { authenticate, requireRole } from '../middleware/auth';
+import { auditMiddleware } from '../middleware/auditLog';
 import { asyncHandler } from '../middleware/errorHandler';
 
 const router = Router();
@@ -61,7 +62,8 @@ router.get('/health/metrics', authenticate, requireRole('admin'), asyncHandler(a
 }));
 
 // 清除告警日志接口：需要管理员权限，避免任意用户清除运维告警记录
-router.delete('/health/metrics/alerts', authenticate, requireRole('admin'), (req: Request, res: Response) => {
+// 接入审计：清除告警属高危运维操作，丢失告警历史会影响线上故障回溯，需留痕追溯操作者
+router.delete('/health/metrics/alerts', authenticate, requireRole('admin'), auditMiddleware('CLEAR_ALERT_LOGS', { resourceType: 'alert_log' }), (req: Request, res: Response) => {
   clearAlertLogs();
   res.json({
     code: 0,

@@ -25,6 +25,7 @@ process.env.DB_PASSWORD = 'test-db-password';
 
 const {
   mockAuthenticate,
+  mockAuditMiddleware,
   mockUploadSingle,
   mockUploadMultiple,
   mockBuildStorageKey,
@@ -34,6 +35,9 @@ const {
   mockGetUrl,
 } = vi.hoisted(() => ({
   mockAuthenticate: vi.fn(),
+  // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
+  // 设计原因：mockAuditMiddleware 直接作为 auditMiddleware 工厂，便于不变式测试断言 toHaveBeenCalledWith(action, options)
+  mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
   mockUploadSingle: vi.fn(),
   mockUploadMultiple: vi.fn(),
   mockBuildStorageKey: vi.fn(),
@@ -44,6 +48,7 @@ const {
 }));
 
 vi.mock('../../middleware/auth', () => ({ authenticate: mockAuthenticate }));
+vi.mock('../../middleware/auditLog', () => ({ auditMiddleware: mockAuditMiddleware }));
 vi.mock('../../middleware/upload', () => ({
   uploadSingle: mockUploadSingle,
   uploadMultiple: mockUploadMultiple,
@@ -233,6 +238,30 @@ describe('upload 路由集成测试', () => {
         headers: { Authorization: 'Bearer token' },
       });
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('审计接入不变式（全量）', () => {
+    it('2 处上传路由以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：beforeEach 的 vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      // 覆盖范围：2 处本轮新增（CREATE_UPLOAD_IMAGE/CREATE_UPLOAD_IMAGES）
+      vi.resetModules();
+      await import('../upload');
+
+      // 期望的 action 与 resourceType 映射表（数据驱动断言，新增接入只需在此追加一行）
+      const expected: Array<{ action: string; resourceType: string }> = [
+        { action: 'CREATE_UPLOAD_IMAGE', resourceType: 'upload' },
+        { action: 'CREATE_UPLOAD_IMAGES', resourceType: 'upload' },
+      ];
+
+      // 验证 auditMiddleware 被调用 2 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(expected.length);
+
+      // 逐项验证 action 与 resourceType 参数完整
+      for (const item of expected) {
+        expect(mockAuditMiddleware).toHaveBeenCalledWith(item.action, expect.objectContaining({ resourceType: item.resourceType }));
+      }
     });
   });
 });

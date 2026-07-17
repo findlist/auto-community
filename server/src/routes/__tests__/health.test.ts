@@ -32,6 +32,7 @@ const {
   mockClearAlertLogs,
   mockAuthenticate,
   mockRequireRoleMiddleware,
+  mockAuditMiddleware,
 } = vi.hoisted(() => ({
   mockPool: { connect: vi.fn() },
   mockGetSystemMetrics: vi.fn(),
@@ -39,6 +40,9 @@ const {
   mockClearAlertLogs: vi.fn(),
   mockAuthenticate: vi.fn(),
   mockRequireRoleMiddleware: vi.fn(),
+  // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
+  // 设计原因：mockAuditMiddleware 直接作为 auditMiddleware 工厂，便于不变式测试断言 toHaveBeenCalledWith(action, options)
+  mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
 }));
 
 // mock 路径相对于测试文件解析：routes/__tests__/ → 上一层到 routes/ → 再上一层到 src/
@@ -54,6 +58,7 @@ vi.mock('../../middleware/auth', () => ({
   authenticate: mockAuthenticate,
   requireRole: vi.fn(() => mockRequireRoleMiddleware),
 }));
+vi.mock('../../middleware/auditLog', () => ({ auditMiddleware: mockAuditMiddleware }));
 
 // 必须在 vi.mock 之后 import 被测模块，确保 mock 生效
 import healthRouter from '../health';
@@ -206,6 +211,29 @@ describe('health 路由集成测试', () => {
       expect(data.code).toBe(0);
       expect(data.message).toBe('告警日志已清除');
       expect(mockClearAlertLogs).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('审计接入不变式（全量）', () => {
+    it('1 处清除告警路由以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：beforeEach 的 vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      // 覆盖范围：1 处本轮新增（CLEAR_ALERT_LOGS）
+      vi.resetModules();
+      await import('../health');
+
+      // 期望的 action 与 resourceType 映射表（数据驱动断言，新增接入只需在此追加一行）
+      const expected: Array<{ action: string; resourceType: string }> = [
+        { action: 'CLEAR_ALERT_LOGS', resourceType: 'alert_log' },
+      ];
+
+      // 验证 auditMiddleware 被调用 1 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(expected.length);
+
+      // 逐项验证 action 与 resourceType 参数完整
+      for (const item of expected) {
+        expect(mockAuditMiddleware).toHaveBeenCalledWith(item.action, expect.objectContaining({ resourceType: item.resourceType }));
+      }
     });
   });
 });
