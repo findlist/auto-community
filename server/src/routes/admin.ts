@@ -64,13 +64,20 @@ router.get('/users', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // 封禁用户
-router.put('/users/:id/ban', asyncHandler(async (req: Request, res: Response) => {
+// 审计接入：单点封禁属高危管理操作，需记录操作者与目标用户便于申诉复核
+router.put('/users/:id/ban', auditMiddleware('BAN_USER', {
+  resourceType: 'user',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request, res: Response) => {
   const result = await adminService.banUser(req.params.id);
   success(res, result, '用户已封禁');
 }));
 
 // 解封用户
-router.put('/users/:id/unban', asyncHandler(async (req: Request, res: Response) => {
+router.put('/users/:id/unban', auditMiddleware('UNBAN_USER', {
+  resourceType: 'user',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request, res: Response) => {
   const result = await adminService.unbanUser(req.params.id);
   success(res, result, '用户已解封');
 }));
@@ -78,7 +85,10 @@ router.put('/users/:id/unban', asyncHandler(async (req: Request, res: Response) 
 // 修改用户角色
 router.put('/users/:id/role', validate([
   body('role').isIn(['admin', 'user']).withMessage('角色只能为 admin 或 user'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateRoleBody>, res: Response) => {
+]), auditMiddleware('UPDATE_USER_ROLE', {
+  resourceType: 'user',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateRoleBody>, res: Response) => {
   const { role } = req.body;
   const result = await adminService.updateUserRole(req.params.id, role);
   success(res, result, '用户角色已更新');
@@ -180,9 +190,13 @@ router.get('/content', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // 更新内容状态
+// 审计接入：内容上下架影响用户可见性与交易，需记录操作者与目标内容便于追溯
 router.put('/content/:type/:id/status', validate([
   body('status').isString().withMessage('状态必须为字符串'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateContentStatusBody>, res: Response) => {
+]), auditMiddleware('UPDATE_CONTENT_STATUS', {
+  resourceType: 'content',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateContentStatusBody>, res: Response) => {
   const { type, id } = req.params;
   const { status } = req.body;
   const result = await adminService.updateContentStatus(type as 'skill' | 'kitchen' | 'time_bank' | 'emergency', id, status);
@@ -297,9 +311,13 @@ router.get('/orders/:type', asyncHandler(async (req: Request, res: Response) => 
 }));
 
 // 强制取消订单
+// 审计接入：强制取消订单影响用户交易权益，需记录操作者、目标订单与取消原因便于申诉复核
 router.put('/orders/:type/:id/cancel', validate([
   body('reason').isLength({ min: 2, max: 200 }).withMessage('取消原因需在2-200字符之间'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, ForceCancelOrderBody>, res: Response) => {
+]), auditMiddleware('FORCE_CANCEL_ORDER', {
+  resourceType: 'order',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, ForceCancelOrderBody>, res: Response) => {
   const { type, id } = req.params;
   const { reason } = req.body;
   const result = await adminService.forceCancelOrder(type as 'skill' | 'kitchen' | 'time_bank', id, reason, req.user!.id);
@@ -354,10 +372,14 @@ router.get('/reports', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // 处理举报
+// 审计接入：举报处理结果影响被举报用户权益，需记录操作者、处理结论与说明便于复核
 router.put('/reports/:id', validate([
   body('status').isIn(['resolved', 'rejected']).withMessage('状态只能为 resolved 或 rejected'),
   body('handleNote').isLength({ min: 2, max: 500 }).withMessage('处理说明需在2-500字符之间'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, HandleReportBody>, res: Response) => {
+]), auditMiddleware('HANDLE_REPORT', {
+  resourceType: 'report',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, HandleReportBody>, res: Response) => {
   const { status, handleNote } = req.body;
   const result = await adminService.handleReport(req.params.id, req.user!.id, status, handleNote);
   success(res, result, '举报已处理');
@@ -374,10 +396,14 @@ router.get('/verifications', asyncHandler(async (req: Request, res: Response) =>
 }));
 
 // 审核实名认证申请
+// 审计接入：实名认证审核结果影响用户身份权限，需记录操作者与审核结论便于申诉复核
 router.put('/verifications/:id', validate([
   body('action').isIn(['approve', 'reject']).withMessage('操作只能为 approve 或 reject'),
   body('rejectReason').if(body('action').equals('reject')).isLength({ min: 2, max: 200 }).withMessage('拒绝原因需在2-200字符之间'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, ReviewVerificationBody>, res: Response) => {
+]), auditMiddleware('REVIEW_VERIFICATION', {
+  resourceType: 'verification',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, ReviewVerificationBody>, res: Response) => {
   const { action, rejectReason } = req.body;
   const result = await adminService.reviewVerificationRequest(req.params.id, req.user!.id, action, rejectReason);
   success(res, result, action === 'approve' ? '认证已通过' : '认证已拒绝');
@@ -394,10 +420,14 @@ router.get('/deletion-requests', asyncHandler(async (req: Request, res: Response
 }));
 
 // 审核注销申请
+// 审计接入：注销审核通过会触发用户数据匿名化（不可逆），必须留痕便于事后审计与合规追溯
 router.put('/deletion-requests/:id', validate([
   body('action').isIn(['approve', 'reject']).withMessage('操作只能为 approve 或 reject'),
   body('rejectReason').if(body('action').equals('reject')).isLength({ min: 2, max: 200 }).withMessage('拒绝原因需在2-200字符之间'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, ReviewVerificationBody>, res: Response) => {
+]), auditMiddleware('REVIEW_DELETION_REQUEST', {
+  resourceType: 'deletion_request',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, ReviewVerificationBody>, res: Response) => {
   const { action, rejectReason } = req.body;
   const result = await dataDeletionService.reviewDeletionRequest(req.params.id, req.user!.id, action, rejectReason);
   success(res, result, action === 'approve' ? '注销申请已通过，用户数据已匿名化' : '注销申请已拒绝');
