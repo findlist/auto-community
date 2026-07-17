@@ -421,7 +421,7 @@ export default function UserManagement() {
                       onClick={() =>
                         setConfirm({ userId: u.id, nickname: u.nickname, action: "ban" })
                       }
-                      className="text-red-600 text-xs"
+                      className="text-red-600 hover:underline text-xs"
                     >
                       封禁
                     </button>
@@ -435,7 +435,7 @@ export default function UserManagement() {
                           action: "removeAdmin",
                         })
                       }
-                      className="text-neutral-600 text-xs"
+                      className="text-neutral-600 hover:underline text-xs"
                     >
                       取消管理员
                     </button>
@@ -448,7 +448,7 @@ export default function UserManagement() {
                           action: "setAdmin",
                         })
                       }
-                      className="text-blue-600 text-xs"
+                      className="text-blue-600 hover:underline text-xs"
                     >
                       设为管理员
                     </button>

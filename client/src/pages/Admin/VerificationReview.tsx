@@ -308,7 +308,7 @@ export default function VerificationReview() {
                           action: "approve",
                         })
                       }
-                      className="text-emerald-600 text-xs flex items-center gap-1"
+                      className="text-emerald-600 hover:underline text-xs flex items-center gap-1"
                     >
                       <CheckCircle className="w-3 h-3" />
                       通过
@@ -322,7 +322,7 @@ export default function VerificationReview() {
                           action: "reject",
                         })
                       }
-                      className="text-red-600 text-xs flex items-center gap-1"
+                      className="text-red-600 hover:underline text-xs flex items-center gap-1"
                     >
                       <XCircle className="w-3 h-3" />
                       拒绝
@@ -373,7 +373,7 @@ export default function VerificationReview() {
                   setReview(null);
                   setRejectReason("");
                 }}
-                className="text-neutral-400 hover:text-neutral-600"
+                className="text-neutral-400 hover:text-neutral-600 p-1 rounded hover:bg-neutral-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

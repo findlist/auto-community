@@ -301,7 +301,7 @@ export default function OrderManagement() {
                 {item.status !== "cancelled" && item.status !== "completed" && (
                   <button
                     onClick={() => setCancelTarget({ id: item.id })}
-                    className="text-red-600 text-xs"
+                    className="text-red-600 hover:underline text-xs"
                   >
                     强制取消
                   </button>
@@ -347,7 +347,7 @@ export default function OrderManagement() {
                   setCancelTarget(null);
                   setCancelReason("");
                 }}
-                className="text-neutral-400 hover:text-neutral-600"
+                className="text-neutral-400 hover:text-neutral-600 p-1 rounded hover:bg-neutral-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

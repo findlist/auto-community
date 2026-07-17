@@ -219,7 +219,7 @@ export default function SystemConfig() {
           <div className="bg-white rounded-xl p-6 w-full max-w-sm animate-modal-enter">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-bold text-neutral-800">确认删除配置</h3>
-              <button onClick={() => setDeleteTarget(null)} className="text-neutral-400 hover:text-neutral-600">
+              <button onClick={() => setDeleteTarget(null)} className="text-neutral-400 hover:text-neutral-600 p-1 rounded hover:bg-neutral-100 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -429,7 +429,7 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
       <div className="bg-white rounded-xl w-full max-w-md p-5 shadow-lg animate-modal-enter">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-bold text-neutral-800">{isEdit ? "编辑配置" : "新增配置"}</h3>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600 p-1 rounded hover:bg-neutral-100 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
