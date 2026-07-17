@@ -22,6 +22,7 @@ const { mockEnv, mockLogger, mockFs, mockOssClient, mockOssConstructor } = vi.ho
     warn: vi.fn(),
     info: vi.fn(),
     error: vi.fn(),
+    debug: vi.fn(),
   },
   mockFs: {
     promises: {
@@ -82,6 +83,8 @@ beforeEach(() => {
   mockEnv.OSS_CUSTOM_DOMAIN = '';
   mockLogger.warn.mockClear();
   mockLogger.info.mockClear();
+  mockLogger.error.mockClear();
+  mockLogger.debug.mockClear();
   mockFs.promises.unlink.mockReset();
   mockFs.promises.mkdir.mockReset();
   mockFs.promises.writeFile.mockReset();
@@ -140,6 +143,11 @@ describe('LocalStorage.delete', () => {
     mockFs.promises.unlink.mockRejectedValue(notFoundError);
     const adapter = getStorageAdapter();
     await expect(adapter.delete('missing.png')).resolves.toBeUndefined();
+    // ENOENT 分支应记 debug 日志，便于排查重复删除场景
+    expect(mockLogger.debug).toHaveBeenCalledWith(
+      { key: 'missing.png' },
+      expect.stringContaining('文件不存在'),
+    );
   });
 
   it('其他错误（如权限不足）正常抛出，不吞错', async () => {
@@ -192,6 +200,11 @@ describe('OssStorage', () => {
     };
     const storage = new OssStorage(mockClient as unknown as OssClient, 'bucket', 'endpoint', '');
     await expect(storage.delete('missing.jpg')).resolves.toBeUndefined();
+    // NoSuchKey 分支应记 debug 日志，与 LocalStorage ENOENT 行为对齐
+    expect(mockLogger.debug).toHaveBeenCalledWith(
+      { key: 'missing.jpg' },
+      expect.stringContaining('对象不存在'),
+    );
   });
 
   it('delete 其他错误正常抛出，不吞错', async () => {
@@ -387,5 +400,10 @@ describe('batchPutWithRollback - 批量上传与失败回滚', () => {
     await expect(batchPutWithRollback(adapter, items)).rejects.toThrow('put 失败');
     // 回滚 delete 被调用（虽然失败）
     expect(deleteMock).toHaveBeenCalledWith('2026-07-06/a.jpg');
+    // 回滚失败应记 warn 日志，便于运维侧发现孤儿文件并清理
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      { key: '2026-07-06/a.jpg', err: expect.any(Error) },
+      expect.stringContaining('回滚失败'),
+    );
   });
 });

@@ -71,8 +71,17 @@ export async function batchPutWithRollback(
     return results;
   } catch (e) {
     // 上传失败时回滚已成功落地的文件，避免存储残留
-    // 回滚本身的错误被 allSettled 吞掉，原始错误向上抛出由调用方处理
-    await Promise.allSettled(uploadedKeys.map((key) => adapter.delete(key)));
+    // 设计原因：allSettled 默认会吞掉单个 delete 的失败，需手动检查 rejected 项并记 warn 日志，
+    // 否则会产生孤儿文件且无任何可观测信号，运维侧难以发现和清理
+    const rollbackResults = await Promise.allSettled(uploadedKeys.map((key) => adapter.delete(key)));
+    rollbackResults.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        logger.warn(
+          { key: uploadedKeys[index], err: result.reason },
+          '[storage] 批量上传回滚失败，可能产生孤儿文件，需人工清理',
+        );
+      }
+    });
     throw e;
   }
 }
@@ -117,7 +126,12 @@ class LocalStorage implements StorageAdapter {
     } catch (err: unknown) {
       // 文件不存在视为已删除，避免重复清理时抛错
       // Node.js fs 错误为 ErrnoException，含 code 字段，用类型断言访问
-      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+      // 设计原因：补 debug 日志便于排查重复删除场景（如批量回滚与异步清理任务并发）
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+        logger.debug({ key }, '[storage.local] 文件不存在，跳过删除');
+        return;
+      }
+      throw err;
     }
   }
 }
@@ -157,7 +171,11 @@ class OssStorage implements StorageAdapter {
     } catch (err: unknown) {
       // OSS 删除不存在的对象理论上幂等，但仍兜底处理 NoSuchKey 避免重复清理报错
       // ali-oss 错误对象含 code 字段，用类型断言访问
-      if ((err as { code?: string }).code === 'NoSuchKey') return;
+      // 设计原因：补 debug 日志便于排查 OSS 侧重复删除场景，与 LocalStorage 行为对齐
+      if ((err as { code?: string }).code === 'NoSuchKey') {
+        logger.debug({ key }, '[storage.oss] 对象不存在，跳过删除');
+        return;
+      }
       throw err;
     }
   }
