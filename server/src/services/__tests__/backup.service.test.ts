@@ -229,6 +229,37 @@ describe('backup.service', () => {
       expect(mockFs.unlinkSync).not.toHaveBeenCalled();
     });
 
+    it('getBackupDirInfo 中 statSync 抛错：本轮新增 warn 留痕不阻塞主流程', async () => {
+      // 设计原因：getBackupDirInfo 原内层 catch 静默吞错，备份目录权限异常或磁盘 IO 故障无任何日志线索
+      // 本轮修复补 warn 留痕，本用例验证 warn 被调用且不阻塞 performBackup 主流程
+      mockChild.on.mockImplementation((event: string, cb: (arg: unknown) => void) => {
+        if (event === 'close') {
+          setTimeout(() => cb(0), 0);
+        }
+      });
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readdirSync.mockReturnValue(['backup_20260101_000000.sql.gz']);
+      mockFs.statSync.mockImplementation((filePath: unknown) => {
+        const p = String(filePath);
+        // 新备份文件正常返回（executeBackup 验证文件存在 + getBackupDirInfo 统计新文件）
+        if (!p.includes('20260101')) {
+          return { size: 2048, mtime: new Date(), mtimeMs: Date.now() };
+        }
+        // 旧备份文件 statSync 抛错（模拟文件被外部删除，触发 getBackupDirInfo 内层 catch）
+        throw new Error('ENOENT');
+      });
+
+      const result = await performBackup();
+
+      // 备份仍成功（getBackupDirInfo 失败不影响主流程）
+      expect(result.success).toBe(true);
+      // 验证本轮新增的 warn 日志被调用：消息包含 '[备份] 无法访问备份文件，已跳过'
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ file: 'backup_20260101_000000.sql.gz' }),
+        '[备份] 无法访问备份文件，已跳过',
+      );
+    });
+
     it('备份超时：5 分钟内 spawn 未触发 close 事件，强制 kill 子进程并返回超时错误', async () => {
       // 设计原因：pg_dump 挂起（如远程 DB 不可达）时 spawn 既不触发 close 也不触发 error，
       // 必须依赖超时机制强制 kill 子进程避免 Promise 永不 resolve 占用 scheduler 单线程

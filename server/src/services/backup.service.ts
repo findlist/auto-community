@@ -289,8 +289,10 @@ function getBackupDirInfo(backupDir: string): { totalFiles: number; totalSize: n
           newestTime = stats.mtimeMs;
           newestFile = file;
         }
-      } catch {
-        // 忽略无法访问的文件
+      } catch (error) {
+        // 单文件 stat 失败不应阻断整体统计，但需 warn 留痕便于运维定位权限/磁盘问题
+        // 设计原因：原 catch 静默吞错，备份目录权限异常或磁盘 IO 故障会无任何日志线索
+        logger.warn({ file, error: error instanceof Error ? error.message : String(error) }, '[备份] 无法访问备份文件，已跳过');
       }
     }
 
@@ -300,7 +302,9 @@ function getBackupDirInfo(backupDir: string): { totalFiles: number; totalSize: n
       oldestFile,
       newestFile,
     };
-  } catch {
+  } catch (error) {
+    // 外层兜底：readdirSync/existsSync 失败（如备份目录被删除）时降级返回零值，但需 warn 留痕
+    logger.warn({ backupDir, error: error instanceof Error ? error.message : String(error) }, '[备份] 读取备份目录失败，返回空统计');
     return { totalFiles: 0, totalSize: 0 };
   }
 }
