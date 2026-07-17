@@ -33,6 +33,7 @@ const {
   mockAuthenticate,
   mockRequireRoleMiddleware,
   mockAuditMiddleware,
+  mockLogger,
 } = vi.hoisted(() => ({
   mockPool: { connect: vi.fn() },
   mockGetSystemMetrics: vi.fn(),
@@ -43,6 +44,8 @@ const {
   // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
   // 设计原因：mockAuditMiddleware 直接作为 auditMiddleware 工厂，便于不变式测试断言 toHaveBeenCalledWith(action, options)
   mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
+  // mock logger 避免 catch 块的日志输出污染测试控制台，同时便于断言日志调用
+  mockLogger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
 // mock 路径相对于测试文件解析：routes/__tests__/ → 上一层到 routes/ → 再上一层到 src/
@@ -59,6 +62,7 @@ vi.mock('../../middleware/auth', () => ({
   requireRole: vi.fn(() => mockRequireRoleMiddleware),
 }));
 vi.mock('../../middleware/auditLog', () => ({ auditMiddleware: mockAuditMiddleware }));
+vi.mock('../../utils/logger', () => ({ logger: mockLogger }));
 
 // 必须在 vi.mock 之后 import 被测模块，确保 mock 生效
 import healthRouter from '../health';
@@ -136,6 +140,11 @@ describe('health 路由集成测试', () => {
       expect(data.status).toBe('error');
       expect(data.database).toBe('disconnected');
       expect(data.error).toBe('Connection refused');
+      // 验证 logger.error 被调用，运维侧服务端日志应留痕便于定位连接失败真实原因
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ error: expect.any(Error) }),
+        '[健康检查] 数据库连接失败，返回 503 降级响应',
+      );
     });
 
     it('数据库抛出非 Error 对象时错误信息降级为 Unknown error', async () => {
@@ -148,6 +157,8 @@ describe('health 路由集成测试', () => {
       // 用 Record<string, unknown> 收窄到字典类型即可，unknown 仅出现在测试断言层不泛滥到业务代码
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.error).toBe('Unknown error');
+      // 非 Error 对象也应触发 logger.error 留痕，不依赖 instanceof 判断
+      expect(mockLogger.error).toHaveBeenCalled();
     });
   });
 
@@ -186,6 +197,11 @@ describe('health 路由集成测试', () => {
       expect(data.code).toBe(500);
       expect(data.message).toBe('获取系统指标失败');
       expect(data.error).toBe('Redis 不可用');
+      // 验证 logger.error 被调用，运维侧服务端日志应留痕便于定位指标采集失败真实原因
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ error: expect.any(Error) }),
+        '[健康检查] 获取系统指标失败，返回 500 错误响应',
+      );
     });
 
     it('getSystemMetrics 抛非 Error 时错误信息降级为 Unknown error', async () => {

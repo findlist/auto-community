@@ -4,6 +4,7 @@ import { getSystemMetrics, getAlertLogs, clearAlertLogs } from '../services/metr
 import { authenticate, requireRole } from '../middleware/auth';
 import { auditMiddleware } from '../middleware/auditLog';
 import { asyncHandler } from '../middleware/errorHandler';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -26,6 +27,8 @@ router.get('/health', asyncHandler(async (req: Request, res: Response) => {
     });
   } catch (error) {
     // 数据库不可用时返回 503，便于运维/网关识别降级状态
+    // 补 logger.error 留痕：客户端响应仅含简要 message，运维需服务端日志定位连接失败真实原因（DNS/认证/超时等）
+    logger.error({ error }, '[健康检查] 数据库连接失败，返回 503 降级响应');
     res.status(503).json({
       status: 'error',
       timestamp: new Date().toISOString(),
@@ -53,6 +56,8 @@ router.get('/health/metrics', authenticate, requireRole('admin'), asyncHandler(a
       },
     });
   } catch (error) {
+    // 补 logger.error 留痕：客户端响应仅含简要 message，运维需服务端日志定位指标采集失败真实原因（Redis/数据库/计算逻辑等）
+    logger.error({ error }, '[健康检查] 获取系统指标失败，返回 500 错误响应');
     res.status(500).json({
       code: 500,
       message: '获取系统指标失败',
