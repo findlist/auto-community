@@ -279,4 +279,99 @@ describe('api client', () => {
       expect(result).toEqual({ durationMinutes: 30, createdAt: '2026-01-01' });
     });
   });
+
+  describe('响应拦截器 - GET 请求重试', () => {
+    // 重试逻辑测试：验证 5xx/网络错误下 GET 请求自动重试，非 GET 不重试
+    // 设计原因：重试通过 client.request(config) 递归调用，mock 其返回值避免真实网络请求
+    const retryConfig = {
+      url: '/test',
+      method: 'get',
+      headers: new AxiosHeaders(),
+    } as InternalAxiosRequestConfig;
+
+    afterEach(() => {
+      // 恢复 client.request 的 mock，避免影响后续测试
+      vi.restoreAllMocks();
+    });
+
+    it('GET 请求遇 5xx 应触发重试（调用 client.request）', async () => {
+      const error = {
+        config: retryConfig,
+        response: { status: 503, data: { message: '服务不可用' } },
+      };
+
+      // mock client.request 返回成功响应，模拟重试后成功
+      const requestSpy = vi.spyOn(client, 'request').mockResolvedValue({ ok: true });
+
+      await client.interceptors.response.handlers![0]!.rejected!(error);
+
+      expect(requestSpy).toHaveBeenCalledTimes(1);
+      // 重试时 _retryCount 应递增为 1
+      expect(retryConfig._retryCount).toBe(1);
+    });
+
+    it('GET 请求遇网络错误（无 response）应触发重试', async () => {
+      const config = { ...retryConfig, _retryCount: undefined } as InternalAxiosRequestConfig;
+      const error = { config, message: 'Network Error' };
+
+      const requestSpy = vi.spyOn(client, 'request').mockResolvedValue({ ok: true });
+
+      await client.interceptors.response.handlers![0]!.rejected!(error);
+
+      expect(requestSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('POST 请求遇 5xx 不应触发重试', async () => {
+      const postConfig = {
+        url: '/test',
+        method: 'post',
+        headers: new AxiosHeaders(),
+      } as InternalAxiosRequestConfig;
+      const error = {
+        config: postConfig,
+        response: { status: 500, data: { message: '服务器错误' } },
+      };
+
+      const requestSpy = vi.spyOn(client, 'request').mockResolvedValue({ ok: true });
+
+      // POST 不重试，应直接 reject 为 ApiError
+      await expect(
+        client.interceptors.response.handlers![0]!.rejected!(error)
+      ).rejects.toMatchObject({ name: 'ApiError', code: 500 });
+
+      expect(requestSpy).not.toHaveBeenCalled();
+    });
+
+    it('GET 请求遇 4xx 不应触发重试', async () => {
+      const error = {
+        config: retryConfig,
+        response: { status: 404, data: { message: '资源不存在' } },
+      };
+
+      const requestSpy = vi.spyOn(client, 'request').mockResolvedValue({ ok: true });
+
+      await expect(
+        client.interceptors.response.handlers![0]!.rejected!(error)
+      ).rejects.toMatchObject({ name: 'ApiError', code: 404 });
+
+      expect(requestSpy).not.toHaveBeenCalled();
+    });
+
+    it('重试次数达上限后不再重试，直接抛出 ApiError', async () => {
+      // _retryCount 已达 MAX_RETRY(2)，不再重试
+      const config = { ...retryConfig, _retryCount: 2 } as InternalAxiosRequestConfig;
+      const error = {
+        config,
+        response: { status: 500, data: { message: '服务器错误' } },
+      };
+
+      const requestSpy = vi.spyOn(client, 'request').mockResolvedValue({ ok: true });
+
+      await expect(
+        client.interceptors.response.handlers![0]!.rejected!(error)
+      ).rejects.toMatchObject({ name: 'ApiError', code: 500 });
+
+      expect(requestSpy).not.toHaveBeenCalled();
+    });
+  });
 });

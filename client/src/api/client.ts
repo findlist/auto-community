@@ -1,4 +1,4 @@
-import axios, { type AxiosError } from "axios";
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { convertKeys, toCamelCase, toSnakeCase } from "./caseConverter";
 
 // 扩展 Error 类以支持字段级错误
@@ -11,6 +11,29 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
+}
+
+// GET 请求重试配置：仅幂等的 GET 方法重试，5xx 与网络错误属于可恢复故障
+// 设计原因：弱网/服务端瞬时抖动（5xx、连接重置）下，GET 请求自动重试 1-2 次可显著提升用户体验；
+// POST/PUT/DELETE 不重试，避免非幂等操作重复执行造成数据不一致
+const MAX_RETRY = 2;
+const RETRY_BASE_DELAY_MS = 500;
+
+// 通过模块扩展为 InternalAxiosRequestConfig 增加 _retryCount 字段
+// 设计原因：axios 不原生支持重试计数，需在 config 上挂载自定义字段跟踪重试次数；
+// 使用 declare module 比直接 (config as any)._retryCount 更安全，编译期可类型检查
+declare module "axios" {
+  interface InternalAxiosRequestConfig {
+    _retryCount?: number;
+  }
+}
+
+function isRetryableError(error: AxiosError): boolean {
+  // 网络错误（无 response，如断网、DNS 失败、连接重置）或 5xx 服务端错误可重试
+  // 4xx 客户端错误不可重试（401 鉴权、403 权限、404 资源不存在、422 参数校验等）
+  if (!error.response) return true;
+  const status = error.response.status;
+  return status >= 500 && status < 600;
 }
 
 const client = axios.create({
@@ -43,7 +66,22 @@ client.interceptors.response.use(
     response.data = convertKeys(response.data, toCamelCase);
     return response.data;
   },
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    const config = error.config as InternalAxiosRequestConfig | undefined;
+    // GET 请求重试：5xx 与网络错误为可恢复故障，幂等的 GET 方法重试可提升弱网体验
+    // 设计原因：重试必须放在 401 处理之前，避免 5xx 错误误触 401 分支；
+    // 401 本身为 4xx 不会被 isRetryableError 命中，重试分支不会影响鉴权失败逻辑
+    if (config?.method === "get" && isRetryableError(error)) {
+      const retryCount = config._retryCount ?? 0;
+      if (retryCount < MAX_RETRY) {
+        config._retryCount = retryCount + 1;
+        // 指数退避：第 1 次重试等待 500ms，第 2 次等待 1000ms，避免服务端尚未恢复时连重试
+        const delay = RETRY_BASE_DELAY_MS * config._retryCount;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return client.request(config);
+      }
+    }
+
     const status = error.response?.status;
     const data = error.response?.data as
       | { message?: string; errors?: Array<{ field?: string; message?: string }> }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, FileCheck, ShoppingCart, Flag, Menu, X, UserCheck, LineChart, Beaker, Image, ScrollText, Settings, ArrowLeft } from "lucide-react";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // 导航项分组：运营 / 数据 / 系统，提升信息架构与扫读效率
 type NavGroup = {
@@ -86,8 +87,8 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* 顶部标题栏 */}
-      <header className="sticky top-0 z-40 bg-white border-b border-neutral-200">
+      {/* 顶部标题栏：毛玻璃背景，与前台 Layout 头部保持视觉一致 */}
+      <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-lg border-b border-neutral-200/70">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
             {/* 移动端菜单按钮 */}
@@ -131,7 +132,11 @@ export default function AdminLayout() {
 
         {/* 主内容区域 */}
         <main className="flex-1 p-4 md:p-6 overflow-x-auto">
-          <Outlet />
+          {/* 路由级错误边界：key 绑定 pathname 确保切换路由时重置错误状态
+              设计原因：管理后台页面异常不应崩溃整个后台，侧边栏与顶部保持可用便于切换到其他管理页 */}
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

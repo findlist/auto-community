@@ -6,6 +6,7 @@ import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { useState, useEffect } from "react";
 import { getUnreadCount } from "@/api/notifications";
 import ToastContainer from "@/components/Toast";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import type { User } from "@/types";
 
 // 导航项配置：移动端底部 Tab 与桌面端顶部导航共用
@@ -276,7 +277,12 @@ export default function Layout() {
       <main className={`flex-1 ${isDesktop ? "pb-0" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
         <div className={isDesktop ? "" : ""}>
           <PageTransition locationKey={location.pathname}>
-            <Outlet />
+            {/* 路由级错误边界：key 绑定 pathname 确保切换路由时重置错误状态
+                设计原因：全局 ErrorBoundary 仅在 main.tsx 包裹整个 App，页面内异常会白屏整个应用；
+                此处再加一层路由级兜底，单页异常仅影响内容区，导航/头部保持可用，用户可切到其他路由自恢复 */}
+            <ErrorBoundary key={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
           </PageTransition>
         </div>
       </main>
