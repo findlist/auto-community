@@ -667,4 +667,47 @@ describe('kitchen 路由集成测试', () => {
       expect(dataData.list).toEqual([]);
     });
   });
+
+  describe('审计接入不变式（全量）', () => {
+    it('12 处敏感操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：beforeEach 的 vi.resetAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      // 覆盖范围：1 处原有（CREATE_ORDER）+ 11 处本轮新增（posts CRUD + 订单 confirm/complete/cancel + 拼单 create/join/cancel/complete/exit）
+      vi.resetModules();
+      await import('../kitchen');
+
+      // 期望的 action 与 resourceType 映射表（数据驱动断言，新增接入只需在此追加一行）
+      const expected: Array<{ action: string; resourceType: string; hasResourceId?: boolean }> = [
+        { action: 'CREATE_KITCHEN_POST', resourceType: 'kitchen_post' },
+        { action: 'UPDATE_KITCHEN_POST', resourceType: 'kitchen_post', hasResourceId: true },
+        { action: 'DELETE_KITCHEN_POST', resourceType: 'kitchen_post', hasResourceId: true },
+        { action: 'CREATE_ORDER', resourceType: 'order' },
+        { action: 'CONFIRM_KITCHEN_ORDER', resourceType: 'kitchen_order', hasResourceId: true },
+        { action: 'COMPLETE_KITCHEN_ORDER', resourceType: 'kitchen_order', hasResourceId: true },
+        { action: 'CANCEL_KITCHEN_ORDER', resourceType: 'kitchen_order', hasResourceId: true },
+        { action: 'CREATE_GROUP_ORDER', resourceType: 'group_order' },
+        { action: 'JOIN_GROUP_ORDER', resourceType: 'group_order', hasResourceId: true },
+        { action: 'CANCEL_GROUP_ORDER', resourceType: 'group_order', hasResourceId: true },
+        { action: 'COMPLETE_GROUP_ORDER', resourceType: 'group_order', hasResourceId: true },
+        { action: 'EXIT_GROUP_ORDER', resourceType: 'group_order', hasResourceId: true },
+      ];
+
+      // 验证 auditMiddleware 被调用 12 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(expected.length);
+
+      // 逐项验证 action 与 resourceType 参数完整
+      for (const item of expected) {
+        expect(mockAuditMiddleware).toHaveBeenCalledWith(item.action, expect.objectContaining({ resourceType: item.resourceType }));
+      }
+
+      // 验证带 getResourceId 的路由能正确提取 req.params.id
+      const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { params: { id: string } }) => string }]>;
+      const getById = (action: string) => calls.find(([a]) => a === action)?.[1]?.getResourceId;
+      for (const item of expected) {
+        if (item.hasResourceId) {
+          expect(getById(item.action)?.({ params: { id: `${item.action}-id` } })).toBe(`${item.action}-id`);
+        }
+      }
+    });
+  });
 });

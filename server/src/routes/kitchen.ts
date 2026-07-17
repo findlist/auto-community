@@ -78,9 +78,11 @@ interface CancelGroupOrderBody {
 // ==================== 美食分享 API ====================
 
 // POST /api/kitchen/posts - 发布美食
+// 审计接入：发布美食涉及健康证承诺与过敏原披露，发生食品安全问题时需追溯发布者
 router.post('/posts',
   authenticate,
   createPostLimiter,
+  auditMiddleware('CREATE_KITCHEN_POST', { resourceType: 'kitchen_post' }),
   validate([
     body('type').isIn(['offer', 'need']).withMessage('类型必须是 offer 或 need'),
     body('title').isLength({ min: 1, max: 100 }).withMessage('标题长度为1-100字符'),
@@ -212,6 +214,7 @@ router.put('/posts/:id',
     body('images').optional().isArray().withMessage('图片格式不正确'),
     body('allergens').optional().isArray().withMessage('过敏原必须为数组'),
   ]),
+  auditMiddleware('UPDATE_KITCHEN_POST', { resourceType: 'kitchen_post', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateKitchenPostBody>, res: Response) => {
     const result = await kitchenService.update(req.params.id, req.user!.id, req.body);
     success(res, result, '更新成功');
@@ -221,6 +224,7 @@ router.put('/posts/:id',
 // DELETE /api/kitchen/posts/:id - 删除美食
 router.delete('/posts/:id',
   authenticate,
+  auditMiddleware('DELETE_KITCHEN_POST', { resourceType: 'kitchen_post', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request, res: Response) => {
     await kitchenService.remove(req.params.id, req.user!.id);
     deleted(res, '删除成功');
@@ -317,8 +321,10 @@ router.get('/orders',
 );
 
 // PUT /api/kitchen/orders/:id/confirm - 确认订单
+// 审计接入：确认订单触发交易状态流转，影响买家积分冻结与卖家履约责任
 router.put('/orders/:id/confirm',
   authenticate,
+  auditMiddleware('CONFIRM_KITCHEN_ORDER', { resourceType: 'kitchen_order', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request, res: Response) => {
     const result = await kitchenOrderService.confirm(req.params.id, req.user!.id);
     success(res, result, '确认成功');
@@ -332,6 +338,7 @@ router.put('/orders/:id/complete',
     body('rating').isInt({ min: 1, max: 5 }).withMessage('评分必须为1-5'),
     body('content').optional().isLength({ max: 500 }).withMessage('评价内容不超过500字符'),
   ]),
+  auditMiddleware('COMPLETE_KITCHEN_ORDER', { resourceType: 'kitchen_order', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request<Record<string, string>, unknown, CompleteKitchenOrderBody>, res: Response) => {
     const result = await kitchenOrderService.complete(req.params.id, req.user!.id, req.body);
     success(res, result, '完成成功');
@@ -339,8 +346,10 @@ router.put('/orders/:id/complete',
 );
 
 // PUT /api/kitchen/orders/:id/cancel - 取消订单
+// 审计接入：取消订单触发积分退还，可能影响双方信誉分，需留痕便于纠纷处理
 router.put('/orders/:id/cancel',
   authenticate,
+  auditMiddleware('CANCEL_KITCHEN_ORDER', { resourceType: 'kitchen_order', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request, res: Response) => {
     const result = await kitchenOrderService.cancel(req.params.id, req.user!.id);
     success(res, result, '取消成功');
@@ -350,9 +359,11 @@ router.put('/orders/:id/cancel',
 // ==================== 拼单 API ====================
 
 // POST /api/kitchen/group-orders - 创建拼单
+// 审计接入：拼单涉及资金汇集与退款，需记录发起人便于纠纷追溯
 router.post('/group-orders',
   authenticate,
   createPostLimiter,
+  auditMiddleware('CREATE_GROUP_ORDER', { resourceType: 'group_order' }),
   validate([
     body('title').isLength({ min: 1, max: 100 }).withMessage('标题长度为1-100字符'),
     body('targetAmount').isInt({ min: 1 }).withMessage('目标金额必须大于0'),
@@ -393,9 +404,11 @@ router.get('/group-orders/:id',
 );
 
 // POST /api/kitchen/group-orders/:id/join - 参与拼单
+// 审计接入：参与拼单触发积分冻结，需记录参与者便于退款与责任追溯
 router.post('/group-orders/:id/join',
   authenticate,
   orderLimiter,
+  auditMiddleware('JOIN_GROUP_ORDER', { resourceType: 'group_order', getResourceId: (req) => req.params.id }),
   validate([
     body('amount').isInt({ min: 0 }).withMessage('分摊金额必须为非负整数'),
   ]),
@@ -406,8 +419,10 @@ router.post('/group-orders/:id/join',
 );
 
 // POST /api/kitchen/group-orders/:id/cancel - 取消拼单（仅发起人）
+// 审计接入：取消拼单触发全员退款，影响所有参与者权益，必须留痕
 router.post('/group-orders/:id/cancel',
   authenticate,
+  auditMiddleware('CANCEL_GROUP_ORDER', { resourceType: 'group_order', getResourceId: (req) => req.params.id }),
   validate([
     body('reason').optional().isLength({ max: 255 }).withMessage('取消原因不超过255字符'),
   ]),
@@ -418,8 +433,10 @@ router.post('/group-orders/:id/cancel',
 );
 
 // POST /api/kitchen/group-orders/:id/complete - 完成拼单结算（仅发起人）
+// 审计接入：完成拼单触发资金结算与积分转移，不可逆操作必须留痕
 router.post('/group-orders/:id/complete',
   authenticate,
+  auditMiddleware('COMPLETE_GROUP_ORDER', { resourceType: 'group_order', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request, res: Response) => {
     await groupOrderService.complete(req.params.id, req.user!.id);
     success(res, null, '拼单已完成');
@@ -427,8 +444,10 @@ router.post('/group-orders/:id/complete',
 );
 
 // POST /api/kitchen/group-orders/:id/exit - 退出拼单（参与者主动退出并退款）
+// 审计接入：退出拼单触发退款，影响发起人资金到位状态，需留痕便于对账
 router.post('/group-orders/:id/exit',
   authenticate,
+  auditMiddleware('EXIT_GROUP_ORDER', { resourceType: 'group_order', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request, res: Response) => {
     await groupOrderService.exit(req.params.id, req.user!.id);
     success(res, null, '已退出拼单并退款');
