@@ -128,7 +128,7 @@ router.get('/posts/:id', asyncHandler(async (req: Request, res: Response) => {
   success(res, post);
 }));
 
-router.post('/posts', authenticate, createPostLimiter, validate([
+router.post('/posts', authenticate, createPostLimiter, auditMiddleware('CREATE_SKILL_POST', { resourceType: 'skill_post' }), validate([
   body('type').isIn(['offer', 'request']).withMessage('type 必须为 offer 或 request'),
   body('category').notEmpty().withMessage('category 必填'),
   body('title').notEmpty().isLength({ max: 100 }).withMessage('title 必填且不超过100字符'),
@@ -161,12 +161,12 @@ router.put('/posts/:id', authenticate, validate([
   body('images').optional().isArray().withMessage('图片必须为数组'),
   body('tags').optional().isArray().withMessage('标签必须为数组'),
   body('address').optional().isLength({ max: 200 }).withMessage('地址不能超过200字符'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateSkillPostBody>, res: Response) => {
+]), auditMiddleware('UPDATE_SKILL_POST', { resourceType: 'skill_post', getResourceId: (req) => req.params.id }), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateSkillPostBody>, res: Response) => {
   const post = await skillService.updatePost(req.params.id, req.user!.id, req.body);
   success(res, post);
 }));
 
-router.delete('/posts/:id', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.delete('/posts/:id', authenticate, auditMiddleware('DELETE_SKILL_POST', { resourceType: 'skill_post', getResourceId: (req) => req.params.id }), asyncHandler(async (req: Request, res: Response) => {
   await skillService.deletePost(req.params.id, req.user!.id);
   deleted(res);
 }));

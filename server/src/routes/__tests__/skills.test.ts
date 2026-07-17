@@ -52,8 +52,9 @@ const {
   mockRequireRoleMiddleware: vi.fn(),
   mockCreatePostLimiter: vi.fn(),
   mockOrderLimiter: vi.fn(),
-  // auditMiddleware 为高阶函数，调用后返回中间件
-  mockAuditMiddleware: vi.fn(),
+  // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
+  // 设计原因：mockAuditMiddleware 直接作为 auditMiddleware 工厂，便于不变式测试断言 toHaveBeenCalledWith(action, options)
+  mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
   mockGetPostList: vi.fn(),
   mockGetPostById: vi.fn(),
   mockCreatePost: vi.fn(),
@@ -81,9 +82,9 @@ vi.mock('../../middleware/rateLimiter', () => ({
   createPostLimiter: mockCreatePostLimiter,
   orderLimiter: mockOrderLimiter,
 }));
-// auditMiddleware 高阶函数 mock：调用后返回 mockAuditMiddleware 中间件
+// auditMiddleware 高阶函数 mock：mockAuditMiddleware 直接作为 auditMiddleware 工厂
 vi.mock('../../middleware/auditLog', () => ({
-  auditMiddleware: vi.fn(() => mockAuditMiddleware),
+  auditMiddleware: mockAuditMiddleware,
 }));
 vi.mock('../../services/skill.service', () => ({
   skillService: {
@@ -151,7 +152,8 @@ describe('skills 路由集成测试', () => {
     mockRequireRoleMiddleware.mockImplementation((_req: Request, _res: Response, next: NextFunction) => next());
     mockCreatePostLimiter.mockImplementation((_req: Request, _res: Response, next: NextFunction) => next());
     mockOrderLimiter.mockImplementation((_req: Request, _res: Response, next: NextFunction) => next());
-    mockAuditMiddleware.mockImplementation((_req: Request, _res: Response, next: NextFunction) => next());
+    // mockAuditMiddleware 为 auditMiddleware 工厂，mockImplementation 设置工厂返回 pass-through 中间件
+    mockAuditMiddleware.mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => next());
     // storeEmbedding 与 processPostPipeline 均返回 resolved Promise
     // 设计原因：handler 中 safeNotify 期望传入 Promise，mock 默认返回 undefined 会抛 TypeError
     mockStoreEmbedding.mockResolvedValue(undefined);
@@ -371,6 +373,44 @@ describe('skills 路由集成测试', () => {
         body: JSON.stringify({ resolution: '退款', action: 'refund' }),
       });
       expect(res.status).toBe(403);
+    });
+  });
+
+  describe('审计接入不变式（全量）', () => {
+    it('7 处敏感操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：beforeEach 的 vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      // 覆盖范围：3 处帖子 CRUD（CREATE/UPDATE/DELETE_SKILL_POST）+ 4 处订单操作（CREATE_ORDER/UPDATE_ORDER_STATUS/DISPUTE_ORDER/RESOLVE_DISPUTE）
+      vi.resetModules();
+      await import('../skills');
+
+      // 期望的 action 与 resourceType 映射表（数据驱动断言，新增接入只需在此追加一行）
+      const expected: Array<{ action: string; resourceType: string; hasResourceId?: boolean }> = [
+        { action: 'CREATE_SKILL_POST', resourceType: 'skill_post' },
+        { action: 'UPDATE_SKILL_POST', resourceType: 'skill_post', hasResourceId: true },
+        { action: 'DELETE_SKILL_POST', resourceType: 'skill_post', hasResourceId: true },
+        { action: 'CREATE_ORDER', resourceType: 'order' },
+        { action: 'UPDATE_ORDER_STATUS', resourceType: 'order', hasResourceId: true },
+        { action: 'DISPUTE_ORDER', resourceType: 'order', hasResourceId: true },
+        { action: 'RESOLVE_DISPUTE', resourceType: 'order', hasResourceId: true },
+      ];
+
+      // 验证 auditMiddleware 被调用 7 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(expected.length);
+
+      // 逐项验证 action 与 resourceType 参数完整
+      for (const item of expected) {
+        expect(mockAuditMiddleware).toHaveBeenCalledWith(item.action, expect.objectContaining({ resourceType: item.resourceType }));
+      }
+
+      // 验证带 getResourceId 的路由能正确提取 req.params.id
+      const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { params: { id: string } }) => string }]>;
+      const getById = (action: string) => calls.find(([a]) => a === action)?.[1]?.getResourceId;
+      for (const item of expected) {
+        if (item.hasResourceId) {
+          expect(getById(item.action)?.({ params: { id: `${item.action}-id` } })).toBe(`${item.action}-id`);
+        }
+      }
     });
   });
 });
