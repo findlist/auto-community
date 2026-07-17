@@ -187,20 +187,28 @@ export default function ResourceMap() {
   }, [fetchResources, typeFilter]);
 
   // 尝试获取用户位置（用于距离计算与地图中心定位）
+  // 设计原因：getCurrentPosition 回调在组件卸载后仍可能触发，用 cancelled 标志守护
+  // 避免对已卸载组件 setState 造成内存泄漏与 React 警告
   useEffect(() => {
     if (!navigator.geolocation) return;
+    let cancelled = false;
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        if (cancelled) return;
         setUserLocation({ lng: pos.coords.longitude, lat: pos.coords.latitude });
         setLocating(false);
       },
       () => {
         // 用户拒绝或定位失败时静默回退到默认中心
+        if (cancelled) return;
         setLocating(false);
       },
       { timeout: 8000, enableHighAccuracy: true }
     );
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // 初始化地图实例与信息窗体
