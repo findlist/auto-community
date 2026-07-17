@@ -16,6 +16,10 @@ export default function GroupOrders() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState<GroupOrder | null>(null);
   const [joinAmount, setJoinAmount] = useState(0);
+  // 创建/参与提交守卫状态：弱网下用户重复点击会触发多次 createGroupOrder/joinGroupOrder
+  // 涉及金额计算与拼单容量，重复提交会造成脏数据（重复拼单/超出 maxParticipants），需三重防御
+  const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
 
   // 创建表单状态
   const [title, setTitle] = useState("");
@@ -56,12 +60,14 @@ export default function GroupOrders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 创建拼单
+  // 创建拼单：入口 checking 守卫避免重复提交，finally 必重置确保异常路径也释放
   const handleCreate = async () => {
+    if (creating) return;
     if (!title || !targetAmount || !address || !deadline) {
       toast.error("请填写必填信息");
       return;
     }
+    setCreating(true);
     try {
       await createGroupOrder({
         title,
@@ -85,12 +91,16 @@ export default function GroupOrders() {
       setMaxParticipants(10);
     } catch (error) {
       toast.error(getErrorMessage(error, "创建失败"));
+    } finally {
+      setCreating(false);
     }
   };
 
-  // 参与拼单
+  // 参与拼单：同 handleCreate 守卫模式
   const handleJoin = async () => {
+    if (joining) return;
     if (!showJoinModal) return;
+    setJoining(true);
     try {
       await joinGroupOrder(showJoinModal.id, joinAmount);
       toast.success("参与成功");
@@ -98,6 +108,8 @@ export default function GroupOrders() {
       loadOrders(true);
     } catch (error) {
       toast.error(getErrorMessage(error, "参与失败"));
+    } finally {
+      setJoining(false);
     }
   };
 
@@ -273,9 +285,10 @@ export default function GroupOrders() {
               </button>
               <button
                 onClick={handleCreate}
-                className="flex-1 py-3 bg-emerald-600 text-white rounded-lg"
+                disabled={creating}
+                className="flex-1 py-3 bg-emerald-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                创建
+                {creating ? "创建中..." : "创建"}
               </button>
             </div>
           </div>
@@ -311,9 +324,10 @@ export default function GroupOrders() {
               </button>
               <button
                 onClick={handleJoin}
-                className="flex-1 py-3 bg-emerald-600 text-white rounded-lg"
+                disabled={joining}
+                className="flex-1 py-3 bg-emerald-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                确认参与
+                {joining ? "参与中..." : "确认参与"}
               </button>
             </div>
           </div>

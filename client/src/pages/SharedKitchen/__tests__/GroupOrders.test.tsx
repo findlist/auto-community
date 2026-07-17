@@ -304,4 +304,39 @@ describe("SharedKitchen/GroupOrders 拼单列表", () => {
     await screen.findByText("拼单买海鲜");
     expect(screen.queryByRole("button", { name: "加载更多" })).toBeNull();
   });
+
+  it("创建中按钮禁用且文案变为'创建中...'，避免重复提交", async () => {
+    // createGroupOrder 永不 resolve，锁定 creating 状态验证守卫
+    vi.mocked(createGroupOrder).mockReturnValue(new Promise(() => {}));
+    renderGroupOrders();
+    await screen.findByText("拼单买海鲜");
+    fireEvent.click(screen.getByRole("button", { name: /发起拼单/ }));
+    fireEvent.change(screen.getByPlaceholderText("如：拼单买海鲜"), { target: { value: "拼单买海鲜" } });
+    fireEvent.change(screen.getByPlaceholderText("如：小区南门"), { target: { value: "小区北门" } });
+    fireEvent.change(getDeadlineInput(), { target: { value: "2026-12-31T18:00" } });
+    fireEvent.click(screen.getByRole("button", { name: "创建" }));
+    // 等待 creating 状态生效
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "创建中..." })).toBeDisabled();
+    });
+    // 重复点击不应再次触发 createGroupOrder
+    fireEvent.click(screen.getByRole("button", { name: "创建中..." }));
+    expect(vi.mocked(createGroupOrder)).toHaveBeenCalledTimes(1);
+  });
+
+  it("参与中按钮禁用且文案变为'参与中...'，避免重复提交", async () => {
+    // joinGroupOrder 永不 resolve，锁定 joining 状态验证守卫
+    vi.mocked(joinGroupOrder).mockReturnValue(new Promise(() => {}));
+    renderGroupOrders();
+    await screen.findByText("拼单买海鲜");
+    fireEvent.click(screen.getAllByRole("button", { name: "参与拼单" })[0]!);
+    fireEvent.click(screen.getByRole("button", { name: "确认参与" }));
+    // 等待 joining 状态生效
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "参与中..." })).toBeDisabled();
+    });
+    // 重复点击不应再次触发 joinGroupOrder
+    fireEvent.click(screen.getByRole("button", { name: "参与中..." }));
+    expect(vi.mocked(joinGroupOrder)).toHaveBeenCalledTimes(1);
+  });
 });
