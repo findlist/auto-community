@@ -97,10 +97,13 @@ export default function Chat() {
   }, [orderId, orderType]);
 
   // WebSocket 连接（使用封装的 WebSocketClient）
+  // 设计原因：onOpen 中异步 Promise 链无法被 wsClient.close() 取消，用 cancelled 标志守护
+  // 避免组件卸载后 setMessages/setReconnectCount 造成内存泄漏与 React 警告
   useEffect(() => {
     if (!orderId || !token) return;
 
     let wasReconnecting = false;
+    let cancelled = false;
 
     // 创建 WebSocketClient 实例
     // 使用 protocol-relative host（不含端口），避免经过反向代理时泄漏内部端口
@@ -115,17 +118,20 @@ export default function Chat() {
         if (wasReconnecting) {
           getMessages(orderId, undefined, 50, orderType)
             .then((res) => {
+              if (cancelled) return;
               if (res.data?.list) {
                 setMessages(res.data.list);
               }
               return markMessagesAsRead(orderId, orderType);
             })
             .catch((error) => {
+              if (cancelled) return;
               console.error("拉取离线消息失败:", error);
               // 重连后拉取离线消息失败需提示用户手动刷新，避免漏读消息无感知
               toast.error(getErrorMessage(error, "拉取离线消息失败，请下拉刷新重试"));
             });
         }
+        if (cancelled) return;
         wasReconnecting = false;
         setReconnectCount(0);
       },
@@ -161,6 +167,7 @@ export default function Chat() {
     wsClient.connect();
 
     return () => {
+      cancelled = true;
       wsClient.close();
       wsClientRef.current = null;
     };
