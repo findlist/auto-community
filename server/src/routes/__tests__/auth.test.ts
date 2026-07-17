@@ -378,4 +378,22 @@ describe('auth 路由集成测试', () => {
       expect(data.code).toBe('BAD_REQUEST');
     });
   });
+
+  describe('审计接入不变式', () => {
+    it('REGISTER/LOGIN/LOGOUT/RESET_PASSWORD 4 处敏感操作均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：beforeEach 的 vi.resetAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      vi.resetModules();
+      await import('../auth');
+
+      // 验证 auditMiddleware 被调用 4 次，分别对应 REGISTER/LOGIN/LOGOUT/RESET_PASSWORD
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(4);
+
+      // 验证 4 处接入的 action 与 resourceType 参数完整
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('REGISTER', expect.objectContaining({ resourceType: 'user' }));
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('LOGIN', expect.objectContaining({ resourceType: 'user' }));
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('LOGOUT', expect.objectContaining({ resourceType: 'user' }));
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('RESET_PASSWORD', expect.objectContaining({ resourceType: 'user' }));
+    });
+  });
 });

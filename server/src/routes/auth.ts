@@ -300,7 +300,9 @@ router.post('/forgot-password', authLimiter, validate([
  *         description: 参数校验失败
  */
 // POST /reset-password - 重置密码
-router.post('/reset-password', authLimiter, validate([
+// 审计接入：密码重置为高风险操作（凭验证码即可改密），需记录操作者手机号与脱敏后的请求体便于事后追溯
+// sanitizeRequestBody 会自动将 phone/password 字段脱敏为 ***，code 字段不在敏感关键词清单中保留原值用于排查
+router.post('/reset-password', authLimiter, auditMiddleware('RESET_PASSWORD', { resourceType: 'user' }), validate([
   body('phone').matches(/^1[3-9]\d{9}$/).withMessage('手机号格式不正确'),
   body('code').isLength({ min: 6, max: 6 }).withMessage('验证码为6位数字'),
   body('password').isLength({ min: 6 }).withMessage('密码至少6位')
