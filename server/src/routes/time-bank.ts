@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
+import { body } from 'express-validator';
 import { asyncHandler } from '../middleware/errorHandler';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
 import { success, paginated, created, updated, cursorPaginated } from '../utils/response';
-import { getPagination } from '../middleware/validator';
+import { getPagination, validate } from '../middleware/validator';
 import { timeBankService } from '../services/time-bank.service';
 import { aiService, processPostPipeline } from '../services/ai.service';
 import { logger } from '../utils/logger';
@@ -157,7 +158,16 @@ router.get('/services/:id', optionalAuth, asyncHandler(async (req, res) => {
   success(res, result);
 }));
 
-router.post('/services', authenticate, createPostLimiter, asyncHandler(async (req: Request<Record<string, string>, unknown, CreateTimeServiceBody>, res: Response) => {
+router.post('/services', authenticate, createPostLimiter, validate([
+  // type/category/title 必填，构成服务核心信息
+  body('type').notEmpty().withMessage('请选择服务类型'),
+  body('category').notEmpty().withMessage('请选择服务分类'),
+  body('title').notEmpty().isLength({ max: 50 }).withMessage('标题不能为空且不能超过50字符'),
+  // duration_minutes 必须为正整数，防止 0/负数导致服务时长异常
+  body('duration_minutes').isInt({ min: 1 }).withMessage('服务时长必须为正整数'),
+  body('description').optional().isLength({ max: 2000 }).withMessage('描述不能超过2000字符'),
+  body('address').optional().isLength({ max: 200 }).withMessage('地址不能超过200字符'),
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateTimeServiceBody>, res: Response) => {
   const { type, category, title, description, duration_minutes, location, address, certification, images } = req.body;
   const result = await timeBankService.createService(req.user!.id, { type, category, title, description, duration_minutes, location, address, certification, images });
   // 向量入库 + Pipeline 处理均为 fire-and-forget，失败不阻塞主流程但需记录日志便于排查
@@ -182,7 +192,10 @@ router.put('/services/:id', authenticate, asyncHandler(async (req: Request<Recor
 }));
 
 // 创建订单接入审计：订单创建涉及时间账本预扣，需留痕便于事后追溯
-router.post('/orders', authenticate, orderLimiter, auditMiddleware('CREATE_TIME_ORDER', { resourceType: 'time_order' }), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateTimeOrderBody>, res: Response) => {
+router.post('/orders', authenticate, orderLimiter, auditMiddleware('CREATE_TIME_ORDER', { resourceType: 'time_order' }), validate([
+  // service_id 必填，防止空值透传 service 层导致 500
+  body('service_id').notEmpty().withMessage('请提供服务ID'),
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateTimeOrderBody>, res: Response) => {
   const { service_id } = req.body;
   const result = await timeBankService.createOrder(req.user!.id, service_id);
   created(res, result);
@@ -291,7 +304,14 @@ router.get('/account', authenticate, asyncHandler(async (req, res) => {
  *       429:
  *         description: 操作过于频繁
  */
-router.post('/transfer', authenticate, orderLimiter, auditMiddleware('TRANSFER', { resourceType: 'transaction' }), asyncHandler(async (req: Request<Record<string, string>, unknown, TransferTimeBody>, res: Response) => {
+router.post('/transfer', authenticate, orderLimiter, auditMiddleware('TRANSFER', { resourceType: 'transaction' }), validate([
+  // to_user_id 必填，防止转赠目标为空导致 service 层 500
+  body('to_user_id').notEmpty().withMessage('请输入对方用户ID'),
+  // amount 必须为正整数，与前端 TransferModal isAmountValid 口径一致，避免 0/负数/浮点数透传 service 层
+  body('amount').isInt({ min: 1 }).withMessage('转赠金额必须为正整数'),
+  // remark 选填但限制长度，防止超长文本占用存储与带宽
+  body('remark').optional().isLength({ max: 100 }).withMessage('备注不能超过100字符'),
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, TransferTimeBody>, res: Response) => {
   const { to_user_id, amount, remark } = req.body;
   const result = await timeBankService.transferTime(req.user!.id, to_user_id, amount, remark);
   success(res, result);
@@ -339,7 +359,14 @@ router.post('/transfer', authenticate, orderLimiter, auditMiddleware('TRANSFER',
  *       429:
  *         description: 操作过于频繁
  */
-router.post('/donate', authenticate, orderLimiter, auditMiddleware('DONATE', { resourceType: 'transaction' }), asyncHandler(async (req: Request<Record<string, string>, unknown, DonateTimeBody>, res: Response) => {
+router.post('/donate', authenticate, orderLimiter, auditMiddleware('DONATE', { resourceType: 'transaction' }), validate([
+  // to_user_id 必填，防止捐赠目标为空导致 service 层 500
+  body('to_user_id').notEmpty().withMessage('请输入受赠用户ID'),
+  // amount 必须为正整数，与前端 DonateModal isAmountValid 口径一致
+  body('amount').isInt({ min: 1 }).withMessage('捐赠金额必须为正整数'),
+  // remark 选填但限制长度
+  body('remark').optional().isLength({ max: 100 }).withMessage('备注不能超过100字符'),
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, DonateTimeBody>, res: Response) => {
   const { to_user_id, amount, remark } = req.body;
   const result = await timeBankService.donateTime(req.user!.id, to_user_id, amount, remark);
   success(res, result);
@@ -355,7 +382,13 @@ router.get('/transactions', authenticate, asyncHandler(async (req, res) => {
 }));
 
 // 亲情绑定涉及 PII（通过手机号查询对方用户）与账号关联关系，必须审计
-router.post('/family', authenticate, auditMiddleware('FAMILY_BIND', { resourceType: 'family' }), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateFamilyBindingBody>, res: Response) => {
+router.post('/family', authenticate, auditMiddleware('FAMILY_BIND', { resourceType: 'family' }), validate([
+  // parent_phone 必须为合法手机号格式，与 auth.service register 校验口径一致
+  // 设计原因：service 层用 hashPhone 查询 phone_hash，非法格式哈希后无法命中
+  body('parent_phone').matches(/^1[3-9]\d{9}$/).withMessage('请输入正确的手机号'),
+  // relationship 必填且限制长度，防止超长文本
+  body('relationship').notEmpty().isLength({ max: 20 }).withMessage('关系不能为空且不能超过20字符'),
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateFamilyBindingBody>, res: Response) => {
   const { parent_phone, relationship } = req.body;
   const result = await timeBankService.createFamilyBinding(req.user!.id, parent_phone, relationship);
   created(res, result);
@@ -391,13 +424,24 @@ router.get('/family', authenticate, asyncHandler(async (req, res) => {
   success(res, result);
 }));
 
-router.post('/reviews', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, CreateReviewBody>, res: Response) => {
+router.post('/reviews', authenticate, validate([
+  // order_id 必填，防止空值透传 service 层
+  body('order_id').notEmpty().withMessage('请提供订单ID'),
+  // rating 必须为 1-5 整数，与业务评价口径一致
+  body('rating').isInt({ min: 1, max: 5 }).withMessage('评分必须为1-5的整数'),
+  // content 选填但限制长度
+  body('content').optional().isLength({ max: 500 }).withMessage('评价内容不能超过500字符'),
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateReviewBody>, res: Response) => {
   const { order_id, rating, content } = req.body;
   const result = await timeBankService.createReview(order_id, req.user!.id, rating, content);
   created(res, result);
 }));
 
-router.post('/disputes', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, CreateDisputeBody>, res: Response) => {
+router.post('/disputes', authenticate, validate([
+  body('order_id').notEmpty().withMessage('请提供订单ID'),
+  body('reason').notEmpty().isLength({ max: 100 }).withMessage('纠纷原因不能为空且不能超过100字符'),
+  body('description').optional().isLength({ max: 1000 }).withMessage('纠纷描述不能超过1000字符'),
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateDisputeBody>, res: Response) => {
   const { order_id, reason, description, evidence } = req.body;
   const result = await timeBankService.createDispute(order_id, req.user!.id, reason, description, evidence);
   created(res, result);
