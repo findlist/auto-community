@@ -121,7 +121,10 @@ async function create(userId: string, data: {
     }
     const post = postResult.rows[0];
 
-    // 2. 校验份数
+    // 2. 校验份数：必须为正整数且不超过单次上限，防止 0/负数导致库存异常
+    if (!Number.isInteger(data.quantity) || data.quantity <= 0 || data.quantity > 100) {
+      throw new BadRequestError('份数必须为 1-100 的整数');
+    }
     if (post.remaining_portions < data.quantity) {
       throw new BadRequestError('剩余份数不足');
     }

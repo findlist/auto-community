@@ -157,7 +157,7 @@ export function initWebSocket(server: Server) {
 
         let payload: JwtPayload;
         try {
-          payload = jwt.verify(data.token, env.JWT_SECRET) as JwtPayload;
+          payload = jwt.verify(data.token, env.JWT_SECRET, { algorithms: ['HS256'] }) as JwtPayload;
         } catch {
           clearTimeout(authTimeout);
           ws.close(4001, 'token 无效');

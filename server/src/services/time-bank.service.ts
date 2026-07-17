@@ -18,6 +18,7 @@ import { notificationService } from './notification.service';
 import { sanitizeObject, sanitizeXss, validateImageUrls } from '../utils/sanitize';
 import { safeNotify } from '../utils/safeNotify';
 import { prefixColumns } from '../utils/sql';
+import { hashPhone } from '../utils/crypto';
 
 const DAILY_EARN_LIMIT = 480;
 const FIRST_SERVICE_BONUS = 30;
@@ -937,7 +938,8 @@ async function getTransactions(
 async function createFamilyBinding(userId: string, parentPhone: string, relationship: string) {
   // 事务包裹"查家长→查重复→插入"全流程，保证原子性；通知逻辑置于事务外 fire-and-forget
   const { parentId, binding } = await transaction(async (client) => {
-    const parentResult = await client.query('SELECT id FROM users WHERE phone = $1', [parentPhone]);
+    // phone 字段为 AES 加密密文，无法等值查询，改用 phone_hash（与 auth.service 保持一致）
+    const parentResult = await client.query('SELECT id FROM users WHERE phone_hash = $1', [hashPhone(parentPhone)]);
     if (parentResult.rows.length === 0) throw new NotFoundError('用户');
     const parent = parentResult.rows[0];
 
