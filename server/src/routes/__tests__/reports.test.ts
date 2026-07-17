@@ -24,12 +24,16 @@ process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.DB_PASSWORD = 'test-db-password';
 
 // vi.hoisted 提前创建 mock 引用，避免 vi.mock 工厂内 TDZ 问题
-const { mockAuthenticate, mockCreateReport } = vi.hoisted(() => ({
+const { mockAuthenticate, mockAuditMiddleware, mockCreateReport } = vi.hoisted(() => ({
   mockAuthenticate: vi.fn(),
+  // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
+  // 设计原因：mockAuditMiddleware 直接作为 auditMiddleware 工厂，便于不变式测试断言 toHaveBeenCalledWith(action, options)
+  mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
   mockCreateReport: vi.fn(),
 }));
 
 vi.mock('../../middleware/auth', () => ({ authenticate: mockAuthenticate }));
+vi.mock('../../middleware/auditLog', () => ({ auditMiddleware: mockAuditMiddleware }));
 vi.mock('../../services/admin.service', () => ({
   adminService: { createReport: mockCreateReport },
 }));
@@ -233,6 +237,29 @@ describe('reports 路由集成测试', () => {
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
       expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'reason')).toBe(true);
+    });
+  });
+
+  describe('审计接入不变式（全量）', () => {
+    it('1 处敏感操作路由以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：beforeEach 的 vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      // 覆盖范围：1 处本轮新增（CREATE_REPORT）
+      vi.resetModules();
+      await import('../reports');
+
+      // 期望的 action 与 resourceType 映射表（数据驱动断言，新增接入只需在此追加一行）
+      const expected: Array<{ action: string; resourceType: string; hasResourceId?: boolean }> = [
+        { action: 'CREATE_REPORT', resourceType: 'report' },
+      ];
+
+      // 验证 auditMiddleware 被调用 1 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(expected.length);
+
+      // 逐项验证 action 与 resourceType 参数完整
+      for (const item of expected) {
+        expect(mockAuditMiddleware).toHaveBeenCalledWith(item.action, expect.objectContaining({ resourceType: item.resourceType }));
+      }
     });
   });
 });

@@ -3,6 +3,7 @@ import { body } from 'express-validator';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
+import { auditMiddleware } from '../middleware/auditLog';
 import { adminService } from '../services/admin.service';
 import type { ReportTargetType } from '../services/admin.service';
 import { success } from '../utils/response';
@@ -18,8 +19,8 @@ interface CreateReportBody {
   reason: string;
 }
 
-// 创建举报（普通用户即可）
-router.post('/', authenticate, validate([
+// 创建举报接入审计：举报影响被举报用户内容审核流程，需留痕便于事后追溯
+router.post('/', authenticate, auditMiddleware('CREATE_REPORT', { resourceType: 'report' }), validate([
   body('targetType').isIn(['skill', 'kitchen', 'time_bank', 'emergency', 'user']).withMessage('无效的举报类型'),
   body('targetId').isUUID().withMessage('无效的目标ID'),
   body('reason').isLength({ min: 5, max: 500 }).withMessage('举报原因需在5-500字符之间'),
