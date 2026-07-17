@@ -71,6 +71,8 @@ function ModuleRow({
       to={path}
       className="group block border-t border-neutral-200 last:border-b py-6 lg:py-8 transition-all duration-500"
       style={{
+        // 通过 CSS 变量将模块色传入子节点，配合 group-hover:[color:var(--accent)] 实现标题/编号的模块色染色
+        ["--accent" as string]: accent,
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(16px)",
         transitionDelay: `${delay}ms`,
@@ -87,13 +89,13 @@ function ModuleRow({
               backgroundColor: accent,
             }}
           />
-          <span className="font-mono text-xs lg:text-sm text-neutral-400 tracking-wider group-hover:text-neutral-600 transition-colors">
+          <span className="font-mono text-xs lg:text-sm text-neutral-400 tracking-wider group-hover:text-[var(--accent)] transition-colors duration-500">
             {no}
           </span>
         </div>
         {/* 标题 + 描述 */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-2xl lg:text-4xl font-semibold text-neutral-900 mb-1.5 lg:mb-2 tracking-tight transition-transform duration-500 group-hover:translate-x-2">
+          <h3 className="text-2xl lg:text-4xl font-semibold text-neutral-900 mb-1.5 lg:mb-2 tracking-tight transition-all duration-500 group-hover:translate-x-2 group-hover:text-[var(--accent)]">
             {title}
           </h3>
           <p className="text-sm lg:text-base text-neutral-500 leading-relaxed">

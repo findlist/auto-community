@@ -184,7 +184,7 @@ export default function SkillExchange() {
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             placeholder="搜索技能..."
-            className="w-full pl-10 pr-10 py-2.5 bg-neutral-100 border border-transparent rounded-lg text-sm focus:outline-none focus:bg-white focus:border-neutral-300 transition-colors"
+            className="w-full pl-10 pr-10 py-2.5 bg-neutral-100 border border-transparent rounded-lg text-sm focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 transition-all"
           />
           {searchInput && (
             <X
@@ -196,7 +196,7 @@ export default function SkillExchange() {
         <select
           value={selectedCategory}
           onChange={e => setSelectedCategory(e.target.value)}
-          className="px-4 py-2.5 bg-neutral-100 border border-transparent rounded-lg text-sm text-neutral-700 focus:outline-none focus:bg-white focus:border-neutral-300 transition-colors cursor-pointer"
+          className="px-4 py-2.5 bg-neutral-100 border border-transparent rounded-lg text-sm text-neutral-700 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 transition-all cursor-pointer"
         >
           {categories.map(cat => (
             <option key={cat} value={cat}>{cat}</option>

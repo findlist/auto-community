@@ -258,7 +258,7 @@ export default function SharedKitchen() {
               className={`px-3.5 py-1.5 text-sm rounded-full whitespace-nowrap transition-colors ${
                 selectedCategory === cat
                   ? "bg-neutral-900 text-white"
-                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                  : "bg-neutral-100 text-neutral-600 hover:bg-orange-50 hover:text-orange-700"
               }`}
             >
               {cat}
