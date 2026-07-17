@@ -27,7 +27,7 @@ vi.mock('../../config/database', () => ({
 
 // mock redis 模块：使用 vi.hoisted 确保 mock 对象在 vi.mock 工厂执行前已初始化
 // vi.mock 调用会被提升到文件顶部，普通变量无法在工厂函数中引用
-const { mockRedisClient } = vi.hoisted(() => ({
+const { mockRedisClient, mockLogger } = vi.hoisted(() => ({
   mockRedisClient: {
     get: vi.fn(),
     setEx: vi.fn(),
@@ -36,14 +36,22 @@ const { mockRedisClient } = vi.hoisted(() => ({
     connect: vi.fn(),
     on: vi.fn(),
   },
+  // logger mock：optionalAuth catch 块的 debug 日志需要断言调用次数与参数
+  mockLogger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 vi.mock('../../config/redis', () => ({
   redisClient: mockRedisClient,
   connectRedis: vi.fn(),
   disconnectRedis: vi.fn(),
 }));
+vi.mock('../../utils/logger', () => ({ logger: mockLogger }));
 
-import { authenticate, requireRole, generateAccessToken } from '../auth';
+import { authenticate, requireRole, generateAccessToken, optionalAuth } from '../auth';
 import { query } from '../../config/database';
 import { tokenBlacklist } from '../../utils/tokenBlacklist';
 import { UnauthorizedError, ForbiddenError } from '../../utils/errors';
@@ -330,5 +338,64 @@ describe('generateAccessToken - JWT 生成', () => {
     expect(decoded.nickname).toBe('tester');
     // 应包含 exp 字段
     expect(decoded.exp).toBeDefined();
+  });
+});
+
+// optionalAuth 为公开接口的可选认证，失败应静默继续并记 debug 日志便于排查
+describe('optionalAuth 中间件 - 可选认证静默降级', () => {
+  it('无 Authorization 头时直接 next()，不解析 token 不记日志', () => {
+    const { req, res, next } = createReqRes();
+    optionalAuth(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    // 无 token 不应触发任何日志
+    expect(mockLogger.debug).not.toHaveBeenCalled();
+    // req.user 不应被设置
+    expect(req.user).toBeUndefined();
+  });
+
+  it('有效 token 时解析并设置 req.user，不记日志', () => {
+    const token = makeValidToken({ id: 'user-1', nickname: 'tester' });
+    const { req, res, next } = createReqRes(`Bearer ${token}`);
+    optionalAuth(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(req.user).toBeDefined();
+    expect(req.user!.id).toBe('user-1');
+    // 成功路径不应记日志
+    expect(mockLogger.debug).not.toHaveBeenCalled();
+  });
+
+  it('无效 token 时静默继续并记 debug 日志（不阻塞公开接口）', () => {
+    const { req, res, next } = createReqRes('Bearer invalid-token');
+    optionalAuth(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    // next 应无错误参数（公开接口静默降级）
+    expect(next).toHaveBeenCalledWith();
+    // req.user 不应被设置（解析失败）
+    expect(req.user).toBeUndefined();
+    // 应记 debug 日志便于排查"前端误用过期 token 访问公开接口"场景
+    expect(mockLogger.debug).toHaveBeenCalledTimes(1);
+    expect(mockLogger.debug).toHaveBeenCalledWith(
+      { err: expect.any(Error) },
+      expect.stringContaining('可选认证失败'),
+    );
+  });
+
+  it('过期 token 时静默继续并记 debug 日志', () => {
+    // 构造一个已过期的 token：expiresIn 设为 -1s 立即过期
+    const expiredToken = jwt.sign(
+      { id: 'user-1', nickname: 'tester' },
+      env.JWT_SECRET,
+      { expiresIn: '-1s' },
+    );
+    const { req, res, next } = createReqRes(`Bearer ${expiredToken}`);
+    optionalAuth(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(next).toHaveBeenCalledWith();
+    expect(req.user).toBeUndefined();
+    expect(mockLogger.debug).toHaveBeenCalledTimes(1);
   });
 });

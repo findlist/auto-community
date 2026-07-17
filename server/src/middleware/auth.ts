@@ -4,6 +4,7 @@ import { env } from '../config/env';
 import { query } from '../config/database';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { tokenBlacklist } from '../utils/tokenBlacklist';
+import { logger } from '../utils/logger';
 
 // JWT Payload接口
 // 安全考虑：JWT 中不再携带 phone，避免 token 泄露后暴露 PII
@@ -99,7 +100,10 @@ export function optionalAuth(req: Request, res: Response, next: NextFunction): v
     
     next();
   } catch (error) {
-    // 可选认证，忽略错误继续执行
+    // 可选认证失败时静默继续，避免阻塞公开接口的访问
+    // 设计原因：补 debug 日志便于排查"已携带 token 但被静默丢弃"的场景（如前端误用过期 token 访问公开接口）
+    // 不使用 warn/error 级别，因为可选认证失败属于预期内行为，避免污染告警面板
+    logger.debug({ err: error }, '[optionalAuth] 可选认证失败，忽略错误继续执行');
     next();
   }
 }
