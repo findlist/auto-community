@@ -3,6 +3,8 @@ import { BadRequestError, NotFoundError, ConflictError } from '../utils/errors';
 import { userCache } from './cache.service';
 import { logger } from '../utils/logger';
 import crypto from 'crypto';
+// PoolClient 用于 executeAnonymization 的 externalClient 参数，复用外层事务避免嵌套 BEGIN
+import type { PoolClient } from 'pg';
 
 // ===================== 类型定义 =====================
 
@@ -258,24 +260,37 @@ async function reviewDeletionRequest(
 
   const newStatus = action === 'approve' ? 'approved' : 'rejected';
 
-  // 更新申请状态
-  await query(
-    `UPDATE deletion_requests
-     SET status = $1, reviewed_by = $2, reviewed_at = NOW()
-     WHERE id = $3`,
-    [newStatus, reviewerId, requestId],
-  );
+  // reject 路径：单条 UPDATE 即可，无需事务（无后续不可逆操作）
+  // approve 路径：UPDATE status='approved' 与 executeAnonymization 必须在同一事务内，
+  // 否则匿名化失败时 status 停留 'approved'，管理员看到"已通过"但实际未匿名化，可能重复触发
+  if (action === 'reject') {
+    await query(
+      `UPDATE deletion_requests
+       SET status = $1, reviewed_by = $2, reviewed_at = NOW()
+       WHERE id = $3`,
+      [newStatus, reviewerId, requestId],
+    );
+    logger.info({ requestId, reviewerId, action }, '[数据删除] 管理员审核注销申请');
+    return { id: requestId, status: newStatus };
+  }
+
+  // approve 路径：事务内完成 'pending' → 'approved' + 匿名化 + 'completed'
+  // 设计原因：executeAnonymization 接收 client 参数复用外层事务，
+  // 任一步失败 ROLLBACK 回 'pending'，避免状态与数据不一致
+  await transaction(async (client) => {
+    await client.query(
+      `UPDATE deletion_requests
+       SET status = $1, reviewed_by = $2, reviewed_at = NOW()
+       WHERE id = $3`,
+      [newStatus, reviewerId, requestId],
+    );
+    await executeAnonymization(request.user_id, requestId, client);
+  });
 
   logger.info({ requestId, reviewerId, action }, '[数据删除] 管理员审核注销申请');
 
-  // 审核通过后立即执行匿名化，并将申请状态更新合并到同一事务内保证原子性
-  // 设计原因：此前匿名化（T1）与状态更新（Q2）为两个独立操作，T1 成功但 Q2 失败时
-  // 用户数据已不可逆匿名化而申请状态仍为 approved，管理员可能重复触发
-  if (action === 'approve') {
-    await executeAnonymization(request.user_id, requestId);
-  }
-
-  return { id: requestId, status: newStatus };
+  // approve 路径事务提交后 status 已被 executeAnonymization 更新为 'completed'
+  return { id: requestId, status: 'completed' };
 }
 
 // ===================== 数据匿名化执行 =====================
@@ -285,13 +300,25 @@ async function reviewDeletionRequest(
  * 将 PII 字段置为匿名值，并标记用户为已删除
  * @param userId 用户ID
  * @param requestId 注销申请ID（传入时在同一事务内更新申请状态为 completed，保证原子性）
+ * @param externalClient 外部传入的事务 client（传入时复用外层事务，不传入时自建事务）
+ *
+ * 设计原因：reviewDeletionRequest 的 approve 路径需要把 'pending' → 'approved' 与匿名化、
+ * 'approved' → 'completed' 放在同一事务内，任一步失败回滚到 'pending'。
+ * 通过 externalClient 参数让 executeAnonymization 既能独立运行（自建事务），也能复用外层事务。
  */
-async function executeAnonymization(userId: string, requestId?: string): Promise<void> {
+async function executeAnonymization(
+  userId: string,
+  requestId?: string,
+  externalClient?: PoolClient,
+): Promise<void> {
   const anonymousNickname = generateAnonymousNickname(userId);
   const anonymousPhoneHash = generateAnonymousPhoneHash(userId);
   const anonymousPhone = generateAnonymousPhone();
 
-  await transaction(async (client) => {
+  // 复用外层事务时直接执行，否则自建事务
+  // 设计原因：transaction 不支持嵌套（BEGIN in transaction 会报错），
+  // 必须根据是否传入 client 决定是否开启新事务
+  const runInTransaction = async (client: PoolClient) => {
     // 更新用户表：匿名化 PII 字段，设置 deleted_at
     // 注意：users 表无 id_card_hash 字段（该字段在 verification_requests 表），
     // 实名认证敏感数据通过下方 DELETE FROM verification_requests 统一清理，
@@ -329,7 +356,13 @@ async function executeAnonymization(userId: string, requestId?: string): Promise
 
     // 清除用户缓存
     await userCache.invalidate(userId);
-  });
+  };
+
+  if (externalClient) {
+    await runInTransaction(externalClient);
+  } else {
+    await transaction(runInTransaction);
+  }
 
   logger.info({ userId, requestId }, '[数据删除] 用户数据匿名化完成');
 }

@@ -294,27 +294,27 @@ describe('data-deletion.service - reviewDeletionRequest', () => {
 
   it('approve 时触发匿名化并在同一事务内更新为 completed', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ id: 'req-1', user_id: 'u1', status: 'pending' }] });
-    // UPDATE 为 approved（审核状态更新）
-    mockQuery.mockResolvedValueOnce({ rows: [] });
-    // executeAnonymization 内部走 transaction（mockTransaction），不调用 mockQuery
-    // 申请状态 completed 更新已合并到 transaction 内，不再走独立 query
+    // approve 路径：SELECT 走 mockQuery，UPDATE 'approved' + 匿名化均在 transaction 内走 mockClient.query
+    // 设计原因：approve 路径把 'pending' → 'approved' + 匿名化 + 'completed' 合并到同一事务，
+    // 任一步失败 ROLLBACK 回 'pending'，避免状态与数据不一致
     mockClient.query.mockResolvedValue({ rows: [] });
 
     const result = await dataDeletionService.reviewDeletionRequest('req-1', 'admin-1', 'approve');
 
-    expect(result).toEqual({ id: 'req-1', status: 'approved' });
-    // 验证 transaction 被调用（匿名化走事务）
+    // 事务提交后 status 已被 executeAnonymization 更新为 'completed'，返回 'completed'
+    expect(result).toEqual({ id: 'req-1', status: 'completed' });
+    // 验证 transaction 被调用（approve 路径整体走事务）
     expect(mockTransaction).toHaveBeenCalledTimes(1);
-    // mockQuery 仅 2 次：SELECT + UPDATE approved（completed 更新在事务内）
-    expect(mockQuery).toHaveBeenCalledTimes(2);
-    // 验证第一条 UPDATE 设置 status = approved
-    const updateApprovedCall = mockQuery.mock.calls[1];
+    // mockQuery 仅 1 次：SELECT（UPDATE 'approved' 在事务内走 mockClient.query）
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    // 事务内 4 条 SQL：UPDATE 'approved' + UPDATE users + DELETE verification_requests + UPDATE 'completed'
+    expect(mockClient.query).toHaveBeenCalledTimes(4);
+    // 第一条事务内 SQL：UPDATE 'approved'（审核状态更新）
+    const updateApprovedCall = mockClient.query.mock.calls[0];
     expect(updateApprovedCall[0]).toContain("SET status = $1, reviewed_by = $2");
     expect(updateApprovedCall[1]).toEqual(['approved', 'admin-1', 'req-1']);
-    // 事务内 3 条 SQL：UPDATE users + DELETE verification_requests + UPDATE deletion_requests
-    expect(mockClient.query).toHaveBeenCalledTimes(3);
-    // 第三条事务内 SQL：更新申请状态为 completed（与匿名化原子执行）
-    const updateCompletedCall = mockClient.query.mock.calls[2];
+    // 第四条事务内 SQL：UPDATE 'completed'（与匿名化原子执行）
+    const updateCompletedCall = mockClient.query.mock.calls[3];
     expect(updateCompletedCall[0]).toContain("status = 'completed'");
     expect(updateCompletedCall[0]).toContain('completed_at = NOW()');
     expect(updateCompletedCall[1]).toEqual(['req-1']);
