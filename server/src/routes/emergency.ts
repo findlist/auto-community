@@ -4,7 +4,7 @@ import { authenticate, optionalAuth, requireRole } from '../middleware/auth';
 import { createPostLimiter } from '../middleware/rateLimiter';
 import { validate, getPagination } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
-// 审计中间件：用于响应求助、处理虚假举报两类敏感操作的审计追踪
+// 审计中间件：覆盖应急场景全部敏感操作（响应求助/状态变更/举报与审核/资源 CRUD）的审计追踪
 import { auditMiddleware } from '../middleware/auditLog';
 import { emergencyService } from '../services/emergency.service';
 import type { CreateRequestData } from '../services/emergency.service';
@@ -194,7 +194,11 @@ router.post('/requests/:id/respond', authenticate, auditMiddleware('RESPOND_EMER
   success(res, result, '响应成功');
 }));
 
-router.put('/responses/:id/status', authenticate, validate([
+// 响应状态变更（含服务完成评价）接入审计：状态变更影响应急事件责任链，评价影响响应者信用，需留痕
+router.put('/responses/:id/status', authenticate, auditMiddleware('UPDATE_EMERGENCY_RESPONSE_STATUS', {
+  resourceType: 'emergency_response',
+  getResourceId: (req) => req.params.id,
+}), validate([
   body('status').isIn(['arrived', 'completed']).withMessage('无效的状态值'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateResponseStatusBody>, res: Response) => {
   const { status, rating, review } = req.body;
@@ -205,7 +209,12 @@ router.put('/responses/:id/status', authenticate, validate([
 }));
 
 // 举报虚假求助：限流防止恶意批量举报
-router.post('/false-reports', authenticate, createPostLimiter, validate([
+// 审计接入：举报可能影响被举报用户信用，需记录举报者与被举报的 requestId 便于恶意举报追溯
+// resourceId 取 req.body.requestId（被举报的求助 ID），举报记录自身 ID 在创建后由审计日志的 response 体承载
+router.post('/false-reports', authenticate, createPostLimiter, auditMiddleware('CREATE_FALSE_REPORT', {
+  resourceType: 'false_report',
+  getResourceId: (req) => req.body?.requestId,
+}), validate([
   body('requestId').notEmpty().withMessage('请提供求助ID'),
   body('reason').notEmpty().withMessage('请输入举报原因'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateFalseReportBody>, res: Response) => {
@@ -248,7 +257,10 @@ router.get('/resources/:id', optionalAuth, asyncHandler(async (req: Request, res
 }));
 
 // 管理员创建应急资源
-router.post('/resources', authenticate, requireRole('admin'), validate([
+// 审计接入：资源 CRUD 属管理员高危操作，影响应急资源可用性，必须留痕便于运维追溯
+router.post('/resources', authenticate, requireRole('admin'), auditMiddleware('CREATE_EMERGENCY_RESOURCE', {
+  resourceType: 'emergency_resource',
+}), validate([
   body('type').notEmpty().withMessage('请选择资源类型'),
   body('name').notEmpty().withMessage('请输入资源名称').isLength({ max: 100 }).withMessage('名称不超过100字'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResourceMutationBody>, res: Response) => {
@@ -257,7 +269,10 @@ router.post('/resources', authenticate, requireRole('admin'), validate([
 }));
 
 // 管理员更新应急资源
-router.put('/resources/:id', authenticate, requireRole('admin'), validate([
+router.put('/resources/:id', authenticate, requireRole('admin'), auditMiddleware('UPDATE_EMERGENCY_RESOURCE', {
+  resourceType: 'emergency_resource',
+  getResourceId: (req) => req.params.id,
+}), validate([
   body('type').optional().notEmpty().withMessage('资源类型不能为空'),
   body('name').optional().notEmpty().withMessage('资源名称不能为空').isLength({ max: 100 }).withMessage('名称不超过100字'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResourceMutationBody>, res: Response) => {
@@ -266,7 +281,10 @@ router.put('/resources/:id', authenticate, requireRole('admin'), validate([
 }));
 
 // 管理员删除应急资源（软删除）
-router.delete('/resources/:id', authenticate, requireRole('admin'), asyncHandler(async (req: Request, res: Response) => {
+router.delete('/resources/:id', authenticate, requireRole('admin'), auditMiddleware('DELETE_EMERGENCY_RESOURCE', {
+  resourceType: 'emergency_resource',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request, res: Response) => {
   await emergencyResourceService.remove(req.params.id);
   success(res, null, '删除成功');
 }));
