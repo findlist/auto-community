@@ -5,6 +5,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
+import { auditMiddleware } from '../middleware/auditLog';
 import { success, error } from '../utils/response';
 import { aiService } from '../services/ai.service';
 import { logger } from '../utils/logger';
@@ -71,7 +72,9 @@ router.get('/match/time-bank/:serviceId', authenticate, asyncHandler(async (req,
  *     summary: 内容智能分类与紧急程度判断
  *     tags: [AI]
  */
-router.post('/classify', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, ClassifyBody>, res: Response) => {
+// 接入审计中间件：AI 分类接口接收任意用户文本，可能含 PII（手机号/地址等），且影响 emergency 派单优先级
+// 设计原因：与 emergency 路由的派单审计形成完整链路，便于事后追溯 AI 滥用（prompt 注入/刷量）或分类异常导致的误派单
+router.post('/classify', authenticate, auditMiddleware('AI_CLASSIFY', { resourceType: 'ai' }), asyncHandler(async (req: Request<Record<string, string>, unknown, ClassifyBody>, res: Response) => {
   try {
     const { text } = req.body || {};
     if (!text || typeof text !== 'string') {

@@ -26,12 +26,15 @@ process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.DB_PASSWORD = 'test-db-password';
 
 // vi.hoisted 提前创建 mock 引用，避免 vi.mock 工厂内 TDZ 问题
-const { mockAuthenticate, mockMatchSkill, mockMatchTimeService, mockClassifyContent, mockLogger } = vi.hoisted(() => ({
+const { mockAuthenticate, mockMatchSkill, mockMatchTimeService, mockClassifyContent, mockLogger, mockAuditMiddleware } = vi.hoisted(() => ({
   mockAuthenticate: vi.fn(),
   mockMatchSkill: vi.fn(),
   mockMatchTimeService: vi.fn(),
   mockClassifyContent: vi.fn(),
   mockLogger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+  // 审计中间件工厂 mock：必须在 hoisted 阶段设置默认实现，因为路由模块在 import 时即调用 auditMiddleware()
+  // 若默认返回 undefined，router.post 收到非函数参数会抛 "Route.post() requires a callback function"
+  mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
 }));
 
 vi.mock('../../middleware/auth', () => ({ authenticate: mockAuthenticate }));
@@ -43,6 +46,7 @@ vi.mock('../../services/ai.service', () => ({
   },
 }));
 vi.mock('../../utils/logger', () => ({ logger: mockLogger }));
+vi.mock('../../middleware/auditLog', () => ({ auditMiddleware: mockAuditMiddleware }));
 
 // 必须在 vi.mock 之后 import 被测模块，确保 mock 生效
 import aiRouter from '../ai';
@@ -78,6 +82,8 @@ describe('ai 路由集成测试', () => {
       req.user = { id: 'user-uuid-001', nickname: 'tester' };
       next();
     });
+    // 审计中间件工厂默认实现：返回直通中间件，不阻塞请求流转
+    mockAuditMiddleware.mockImplementation(() => (_req: Request, _res: Response, next: NextFunction) => next());
     ({ server, baseUrl } = await startServer());
   });
 
@@ -221,6 +227,35 @@ describe('ai 路由集成测试', () => {
       expect(res.status).toBe(400);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
+    });
+  });
+
+  /**
+   * 审计接入不变式测试
+   * 设计原因：路由模块加载时 auditMiddleware 工厂即被调用，通过 vi.resetModules + await import 重新加载
+   * 触发调用，断言 AI_CLASSIFY 接入完整。新增接入只需在 expected 数组追加一行，维护成本低。
+   */
+  describe('审计接入不变式', () => {
+    it('POST /classify 接入 auditMiddleware，action 为 AI_CLASSIFY，resourceType 为 ai', async () => {
+      vi.resetModules();
+      // 重新加载路由模块触发 auditMiddleware 工厂调用
+      await import('../ai');
+
+      // 期望的 action 与 resourceType 映射表（数据驱动断言，新增接入只需在此追加一行）
+      const expected: Array<{ action: string; resourceType: string }> = [
+        { action: 'AI_CLASSIFY', resourceType: 'ai' },
+      ];
+
+      // 验证 auditMiddleware 被调用 1 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(expected.length);
+
+      // 逐项验证 action 与 resourceType 参数完整
+      for (const item of expected) {
+        expect(mockAuditMiddleware).toHaveBeenCalledWith(
+          item.action,
+          expect.objectContaining({ resourceType: item.resourceType }),
+        );
+      }
     });
   });
 });
