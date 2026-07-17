@@ -656,6 +656,9 @@ function DetailView({ requestId }: { requestId: string }) {
   const [reviewContent, setReviewContent] = useState("");
   const [showReportInput, setShowReportInput] = useState(false);
   const [reportReason, setReportReason] = useState("");
+  // 举报提交中状态守卫：避免弱网下用户重复点击触发多次 submitFalseReport 请求
+  // 设计原因：举报接口无幂等性保证，重复提交会产生多条举报记录污染审核队列
+  const [reporting, setReporting] = useState(false);
 
   // 竞态守卫：跟踪当前活跃的 requestId，快速切换路由时旧请求返回不再覆盖新数据
   // 设计原因：fetchRequest 是 useCallback 依赖 requestId，切换路由会重新创建并触发新请求，
@@ -725,12 +728,17 @@ function DetailView({ requestId }: { requestId: string }) {
 
   const handleReport = async () => {
     if (!reportReason.trim()) return;
+    // 提交中守卫：避免重复点击触发多次请求
+    if (reporting) return;
+    setReporting(true);
     try {
       await submitFalseReport(requestId, reportReason.trim());
       setShowReportInput(false);
       setReportReason("");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "举报提交失败");
+    } finally {
+      setReporting(false);
     }
   };
 
@@ -950,10 +958,10 @@ function DetailView({ requestId }: { requestId: string }) {
             </button>
             <button
               onClick={handleReport}
-              disabled={!reportReason.trim()}
+              disabled={!reportReason.trim() || reporting}
               className="flex-1 py-2.5 bg-red-500 text-white rounded-lg text-sm disabled:opacity-50"
             >
-              提交举报
+              {reporting ? "提交中..." : "提交举报"}
             </button>
           </div>
         </div>

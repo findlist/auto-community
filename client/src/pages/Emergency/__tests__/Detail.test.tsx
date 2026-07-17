@@ -541,6 +541,31 @@ describe('Emergency/Detail 应急邻里详情页（DetailView）', () => {
     });
   });
 
+  it('举报提交中按钮禁用且文案变为"提交中..."，避免重复提交', async () => {
+    // 设计原因：举报接口无幂等性保证，弱网下用户重复点击会产生多条举报记录污染审核队列。
+    // 通过 reporting 状态守卫 + 按钮 disabled 双重防御确保只提交一次
+    // submitFalseReport 永不 resolve，锁定 reporting=true 状态
+    submitFalseReportMock.mockReturnValue(new Promise(() => {}));
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('老人摔倒需要帮助')).toBeInTheDocument();
+    });
+    act(() => {
+      fireEvent.click(screen.getByText('举报虚假信息'));
+    });
+    fireEvent.change(screen.getByPlaceholderText('请说明举报原因...'), { target: { value: '信息不实' } });
+    // 点击前获取按钮引用，避免点击后文案变化导致无法定位
+    const submitBtn = screen.getByText('提交举报').closest('button') as HTMLButtonElement;
+    await act(async () => {
+      fireEvent.click(submitBtn);
+    });
+    // 第一次点击后 reporting=true，按钮文案变为"提交中..."且 disabled
+    expect(screen.getByText('提交中...')).toBeInTheDocument();
+    expect(submitBtn.disabled).toBe(true);
+    // submitFalseReport 仅被调用一次
+    expect(submitFalseReportMock).toHaveBeenCalledTimes(1);
+  });
+
   it('点击"返回列表"按钮调用 navigate("/emergency")', async () => {
     renderPage();
     await waitFor(() => {
