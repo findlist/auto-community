@@ -112,4 +112,32 @@ describe("Toast 全局通知组件", () => {
 
     expect(screen.getByText("不自动消失")).toBeInTheDocument();
   });
+
+  it("多个 toast 共存时各自按自身 duration 准时消失（闭包稳定不互相影响）", () => {
+    // 设计原因：原实现 onClose={() => remove(t.id)} 每次 ToastContainer 重渲染创建新闭包，
+    // 一个 toast 加入/移除会让另一个 toast 的 useEffect 重建 setTimeout，显示时长被延长；
+    // 改用 store + useCallback 稳定引用后，各 toast 互不影响
+    showToast("toast1", "info", 2000);
+    render(<ToastContainer />);
+    expect(screen.getByText("toast1")).toBeInTheDocument();
+
+    // 推进 1s（toast1 还剩 1s），加入 toast2（duration 5s）
+    act(() => {
+      vi.advanceTimersByTime(1000);
+      showToast("toast2", "info", 5000);
+    });
+
+    // 推进 1s（共 2s），toast1 应在此时准时消失
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.queryByText("toast1")).not.toBeInTheDocument();
+    expect(screen.getByText("toast2")).toBeInTheDocument();
+
+    // 推进 5s，toast2 应消失
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(screen.queryByText("toast2")).not.toBeInTheDocument();
+  });
 });

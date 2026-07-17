@@ -8,7 +8,7 @@
  */
 import { create } from "zustand";
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from "lucide-react";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 export type ToastType = "success" | "error" | "warning" | "info";
 
@@ -70,13 +70,21 @@ const colorMap: Record<ToastType, string> = {
   info: "bg-[var(--color-info)] text-white",
 };
 
-function ToastItemView({ toast, onClose }: { toast: ToastItem; onClose: () => void }) {
+function ToastItemView({ toast }: { toast: ToastItem }) {
+  // 直接从 store 取 remove，避免父组件 ToastContainer 渲染时创建新闭包作为 prop 传入
+  // 设计原因：原实现 onClose={() => remove(t.id)} 每次 ToastContainer 重渲染都创建新箭头函数，
+  // 导致 ToastItemView 的 useEffect deps [onClose] 变化，setTimeout 被反复清除重建，
+  // toast 实际显示时长可能远超 duration；改用 store + useCallback 稳定引用
+  const remove = useToastStore((state) => state.remove);
+  // toast.id 与 remove 均为稳定引用，handleClose 在组件生命周期内保持稳定
+  const handleClose = useCallback(() => remove(toast.id), [remove, toast.id]);
+
   useEffect(() => {
     if (toast.duration > 0) {
-      const timer = setTimeout(onClose, toast.duration);
+      const timer = setTimeout(handleClose, toast.duration);
       return () => clearTimeout(timer);
     }
-  }, [toast.duration, onClose]);
+  }, [toast.duration, handleClose]);
 
   return (
     <div
@@ -86,7 +94,7 @@ function ToastItemView({ toast, onClose }: { toast: ToastItem; onClose: () => vo
       <span className="flex-shrink-0">{iconMap[toast.type]}</span>
       <span className="flex-1 text-sm font-medium">{toast.message}</span>
       <button
-        onClick={onClose}
+        onClick={handleClose}
         aria-label="关闭提示"
         className="flex-shrink-0 opacity-80 hover:opacity-100 transition-opacity"
       >
@@ -101,7 +109,6 @@ function ToastItemView({ toast, onClose }: { toast: ToastItem; onClose: () => vo
  */
 export default function ToastContainer() {
   const toasts = useToastStore((state) => state.toasts);
-  const remove = useToastStore((state) => state.remove);
 
   return (
     <div
@@ -111,7 +118,7 @@ export default function ToastContainer() {
     >
       {toasts.map((t) => (
         <div key={t.id} className="pointer-events-auto">
-          <ToastItemView toast={t} onClose={() => remove(t.id)} />
+          <ToastItemView toast={t} />
         </div>
       ))}
     </div>
