@@ -32,6 +32,7 @@ const {
   mockSubmitDeletionRequest,
   mockGetDeletionRequestStatus,
   mockCancelDeletionRequest,
+  mockAuditMiddleware,
 } = vi.hoisted(() => ({
   mockAuthenticate: vi.fn(),
   mockGetProfile: vi.fn(),
@@ -44,9 +45,14 @@ const {
   mockSubmitDeletionRequest: vi.fn(),
   mockGetDeletionRequestStatus: vi.fn(),
   mockCancelDeletionRequest: vi.fn(),
+  // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
+  // 设计原因：users 路由本身不依赖审计中间件的具体行为，审计逻辑由 auditLog 单测覆盖
+  mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
 }));
 
 vi.mock('../../middleware/auth', () => ({ authenticate: mockAuthenticate }));
+// auditMiddleware mock 为 pass-through 工厂，审计逻辑由 auditLog 单测覆盖
+vi.mock('../../middleware/auditLog', () => ({ auditMiddleware: mockAuditMiddleware }));
 vi.mock('../../services/user.service', () => ({
   userService: {
     getProfile: mockGetProfile,
@@ -349,6 +355,36 @@ describe('users 路由集成测试', () => {
       expect(res.status).toBe(400);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
+    });
+  });
+
+  // ===================== 审计接入不变式（全量） =====================
+  describe('审计接入不变式（全量）', () => {
+    it('4 处敏感操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：vi.resetAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      // 覆盖范围：1 处本轮新增（UPDATE_PROFILE）+ 3 处原有（SUBMIT_VERIFICATION/SUBMIT_DELETION/CANCEL_DELETION）
+      vi.resetModules();
+      await import('../users');
+
+      // 验证 auditMiddleware 被调用 4 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(4);
+
+      // 验证 4 处接入的 action 与 resourceType 参数完整
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('UPDATE_PROFILE', expect.objectContaining({ resourceType: 'user' }));
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('SUBMIT_VERIFICATION', expect.objectContaining({ resourceType: 'verification' }));
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('SUBMIT_DELETION', expect.objectContaining({ resourceType: 'user_deletion' }));
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('CANCEL_DELETION', expect.objectContaining({ resourceType: 'user_deletion' }));
+
+      // 验证 UPDATE_PROFILE 的 getResourceId 从 req.user.id 提取（操作目标为当前登录用户）
+      const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { user?: { id: string } }) => string }]>;
+      const profileCall = calls.find(([action]) => action === 'UPDATE_PROFILE');
+      expect(profileCall?.[1]?.getResourceId?.({ user: { id: 'user-abc' } })).toBe('user-abc');
+      // SUBMIT_VERIFICATION/SUBMIT_DELETION 为创建操作，无 getResourceId（资源 id 在创建后才有）
+      const submitVerifyCall = calls.find(([action]) => action === 'SUBMIT_VERIFICATION');
+      expect(submitVerifyCall?.[1]?.getResourceId).toBeUndefined();
+      const submitDeletionCall = calls.find(([action]) => action === 'SUBMIT_DELETION');
+      expect(submitDeletionCall?.[1]?.getResourceId).toBeUndefined();
     });
   });
 });

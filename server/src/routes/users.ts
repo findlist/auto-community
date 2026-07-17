@@ -100,12 +100,17 @@ router.get('/profile', authenticate, asyncHandler(async (req: Request, res: Resp
  *       422:
  *         description: 参数校验失败
  */
+// PUT /profile 接入审计：昵称/头像属 PII 字段，变更应留痕便于申诉复核与敏感词检测回溯
+// getResourceId 从 req.user.id 提取（操作目标为当前登录用户），不依赖 params.id
 router.put('/profile', authenticate, validate([
   body('nickname').optional().isLength({ min: 2 }).withMessage('昵称至少2个字符'),
   // avatar 仅校验为字符串，URL 合法性由 service 层 validateImageUrl 统一校验
   // 支持 /uploads/ 相对路径（本地上传）与 HTTPS 白名单域名（OSS/外链）
   body('avatar').optional().isString().withMessage('头像格式不正确'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateProfileBody>, res: Response) => {
+]), auditMiddleware('UPDATE_PROFILE', {
+  resourceType: 'user',
+  getResourceId: (req) => req.user!.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateProfileBody>, res: Response) => {
   const { nickname, avatar } = req.body;
   const user = await userService.updateProfile(req.user!.id, { nickname, avatar });
   success(res, user, '更新成功');
