@@ -168,4 +168,45 @@ describe("ImageUpload 图片上传组件", () => {
     // 删除按钮不显示
     expect(document.querySelector('button[class*="bg-black"]')).toBeNull();
   });
+
+  it("组件卸载时应释放所有本地预览 ObjectURL", async () => {
+    // 设计原因：上传中切换路由或关闭页面会导致本地 ObjectURL 泄漏，卸载 cleanup 需释放
+    // uploadImages 永不 resolve，锁定 uploading 状态保持本地预览
+    uploadImagesMock.mockReturnValue(new Promise(() => {}));
+    const { unmount } = render(<ImageUpload />);
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = makeImageFile("test.jpg");
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [file] } });
+    });
+
+    // 卸载前清空调用记录，便于断言卸载时是否调用
+    vi.mocked(URL.revokeObjectURL).mockClear();
+    unmount();
+    // 卸载后应释放本地预览 ObjectURL（createObjectURL mock 返回 "blob:mock-url"）
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
+  });
+
+  it("组件卸载时不应重复释放已上传成功的预览（无 file）", async () => {
+    // 设计原因：上传成功后预览项 file 被置为 undefined，卸载 cleanup 跳过此项避免重复释放
+    const { unmount } = render(<ImageUpload />);
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = makeImageFile("test.jpg");
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [file] } });
+    });
+
+    // 等待上传完成，预览 URL 已替换为服务器 URL
+    await waitFor(() => {
+      expect(uploadImagesMock).toHaveBeenCalled();
+    });
+
+    // 上传成功后 revokeObjectURL 已被调用一次（替换本地 URL 为服务器 URL）
+    vi.mocked(URL.revokeObjectURL).mockClear();
+    unmount();
+    // 卸载时不应再次调用 revokeObjectURL（file 已为 undefined）
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+  });
 });

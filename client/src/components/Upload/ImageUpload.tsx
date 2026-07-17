@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Upload, Loader2 } from 'lucide-react';
 import { uploadImages } from '@/api/upload';
 import { ApiError } from '@/api/client';
@@ -46,6 +46,24 @@ export default function ImageUpload({
   );
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // 用 ref 跟踪最新 previews，供卸载 cleanup 读取
+  // 设计原因：useEffect cleanup 闭包捕获的是初始 previews（空数组），无法释放后续创建的 ObjectURL；
+  // 通过 ref 同步最新值，卸载时读取 ref.current 即可拿到当前所有本地预览
+  const previewsRef = useRef<PreviewImage[]>(previews);
+  previewsRef.current = previews;
+
+  // 组件卸载时释放所有未释放的本地预览 ObjectURL
+  // 设计原因：上传中切换路由或关闭页面会导致 previews 中的本地 ObjectURL 泄漏，
+  // 长期累积会占用浏览器内存。仅释放携带 file 的预览项（已上传成功的 URL 已被替换为服务器 URL，无 file）
+  useEffect(() => {
+    return () => {
+      previewsRef.current.forEach(p => {
+        if (p.file) {
+          URL.revokeObjectURL(p.url);
+        }
+      });
+    };
+  }, []);
 
   // 校验文件
   const validateFile = (file: File): string | null => {
