@@ -254,7 +254,11 @@ router.get('/content/:type/:id', asyncHandler(async (req: Request, res: Response
 }));
 
 // 管理员编辑内容（标题/描述/图片/价格等）
-router.put('/content/:type/:id', asyncHandler(async (req: Request<Record<string, string>, unknown, Record<string, unknown>>, res: Response) => {
+// 审计接入：管理员编辑内容属高危篡改操作，需记录操作者与目标内容便于事后追溯
+router.put('/content/:type/:id', auditMiddleware('ADMIN_UPDATE_CONTENT', {
+  resourceType: 'content',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, Record<string, unknown>>, res: Response) => {
   const { type, id } = req.params;
   const result = await adminService.updateContent(type as 'skill' | 'kitchen' | 'time_bank' | 'emergency', id, req.body, req.user!.id);
   success(res, result, '内容已更新');
