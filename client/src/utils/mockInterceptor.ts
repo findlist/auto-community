@@ -11,6 +11,7 @@ import type {
   TimeService,
   EmergencyRequest,
 } from "@/types";
+import useAuthStore from "@/stores/authStore";
 import {
   mockSkillPosts,
   mockKitchenPosts,
@@ -162,14 +163,15 @@ function matchMockRoute(url: string, params: QueryParams): unknown | null {
 
 /**
  * 在开发环境下为 axios 实例设置 mock 拦截器。
- * 仅当处于开发环境且 localStorage 中不存在 token 时启用，
+ * 仅当处于开发环境且 zustand store 中不存在 token 时启用，
  * 避免影响已登录用户的真实请求。
  */
 export function setupMockInterceptor(client: AxiosInstance): void {
   // 仅开发环境启用
   if (!import.meta.env.DEV) return;
   // 已登录用户不启用 mock，使用真实接口
-  if (localStorage.getItem("token")) return;
+  // 设计原因：与 client.ts 请求拦截器保持单一可信源，统一从 zustand store 读取 token
+  if (useAuthStore.getState().token) return;
 
   // 保存默认适配器，用于未匹配路由的透传
   const fallbackAdapter = axios.getAdapter(

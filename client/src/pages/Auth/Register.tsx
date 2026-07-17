@@ -56,8 +56,9 @@ export default function Register() {
         nickname,
         privacyConsentVersion: PRIVACY_POLICY_VERSION,
       });
+      // setAuth 内部通过 zustand persist 自动同步到 localStorage["auth-storage"]
+      // 设计原因：与 Login 一致，避免双存储不同步
       setAuth(res.data.user, res.data.token);
-      localStorage.setItem("token", res.data.token);
       toast.success("注册成功，欢迎加入邻里圈！");
       navigate("/");
     } catch (err) {

@@ -35,8 +35,10 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await login({ phone, password });
+      // setAuth 内部通过 zustand persist 自动同步到 localStorage["auth-storage"]
+      // 设计原因：原实现同时手动 localStorage.setItem("token", ...) 形成双存储，
+      // 两处独立写入非原子，存在不一致风险；统一由 store 作为唯一写入入口
       setAuth(res.data.user, res.data.token);
-      localStorage.setItem("token", res.data.token);
       toast.success("欢迎回来！");
       navigate("/");
     } catch (err) {

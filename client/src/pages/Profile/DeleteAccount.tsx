@@ -100,8 +100,9 @@ export default function DeleteAccount() {
   // 注销已完成：通过 useEffect 执行副作用，避免渲染期间触发状态更新与导航
   useEffect(() => {
     if (status?.status === "completed") {
+      // clearAuth 内部通过 zustand persist 自动同步清除 localStorage["auth-storage"]
+      // 设计原因：与 Profile 退出登录逻辑一致，避免双存储不同步
       clearAuth();
-      localStorage.removeItem("token");
       navigate("/login");
     }
   }, [status?.status, clearAuth, navigate]);

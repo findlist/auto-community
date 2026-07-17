@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import axios from "axios";
 import { setupMockInterceptor } from "@/utils/mockInterceptor";
 import { mockSkillPosts, mockTimeServices } from "@/utils/mockData";
+import useAuthStore from "@/stores/authStore";
 import type { AxiosResponse, InternalAxiosRequestConfig } from "axios";
 
 // 构造可控的 axios 请求配置，供 mockAdapter 直接调用
@@ -27,13 +28,16 @@ const buildFallbackAdapter = () =>
   }));
 
 beforeEach(() => {
-  // 每个测试前清空 localStorage，确保无 token
+  // 每个测试前清空 localStorage 与 zustand store，确保无 token
+  // 设计原因：token 已统一存储在 zustand store，需同时重置内存状态与 persist 持久化
   localStorage.clear();
+  useAuthStore.setState({ user: null, token: null, isAuthenticated: false });
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
   localStorage.clear();
+  useAuthStore.setState({ user: null, token: null, isAuthenticated: false });
 });
 
 describe("mockInterceptor - setupMockInterceptor 环境判断", () => {
@@ -46,8 +50,9 @@ describe("mockInterceptor - setupMockInterceptor 环境判断", () => {
     expect(typeof client.defaults.adapter).toBe("function");
   });
 
-  it("DEV 环境但 localStorage 存在 token 时不设置 mockAdapter（已登录用户走真实接口）", () => {
-    localStorage.setItem("token", "fake-token");
+  it("DEV 环境但 zustand store 存在 token 时不设置 mockAdapter（已登录用户走真实接口）", () => {
+    // 通过 store 写入 token，与生产路径一致
+    useAuthStore.setState({ token: "fake-token" });
     const client = axios.create();
     const originalAdapter = client.defaults.adapter;
     setupMockInterceptor(client);

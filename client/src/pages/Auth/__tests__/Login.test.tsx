@@ -151,10 +151,8 @@ describe('Auth/Login 登录页', () => {
     await waitFor(() => {
       expect(login).toHaveBeenCalledWith({ phone: '13800000000', password: 'password123' });
     });
-    // setAuth 写入用户与 token
+    // setAuth 写入用户与 token（zustand store 作为唯一可信源，由 persist 自动同步到 localStorage）
     expect(mockSetAuth).toHaveBeenCalledWith(mockUser, 'jwt-token');
-    // localStorage 持久化 token
-    expect(localStorage.getItem('token')).toBe('jwt-token');
     // 成功提示与跳转
     expect(mockToastSuccess).toHaveBeenCalledWith('欢迎回来！');
     expect(mockNavigate).toHaveBeenCalledWith('/');

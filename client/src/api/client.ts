@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { convertKeys, toCamelCase, toSnakeCase } from "./caseConverter";
+import useAuthStore from "@/stores/authStore";
 
 // 扩展 Error 类以支持字段级错误
 export class ApiError extends Error {
@@ -45,7 +46,10 @@ const client = axios.create({
 });
 
 client.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  // 统一从 zustand store 读取 token，避免与 localStorage["token"] 双存储不同步
+  // 设计原因：原实现读 localStorage["token"]，但登录/登出由 zustand persist 同步到 localStorage["auth-storage"]，
+  // 两条独立读写路径在并发或异常路径下可能不一致；统一从 store 读取代价更低且单一可信源
+  const token = useAuthStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -87,10 +91,11 @@ client.interceptors.response.use(
       | { message?: string; errors?: Array<{ field?: string; message?: string }> }
       | undefined;
 
-    // 401 → 清除 token，跳转登录
+    // 401 → 通过 store action 清除登录态并跳转登录页
+    // 设计原因：原实现直接 localStorage.removeItem 绕过 zustand store，依赖整页 reload 重新 hydrate；
+    // 改用 logout() 显式同步内存状态与 persist 持久化，单一调用入口便于后续扩展（如清理缓存、上报埋点）
     if (status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("auth-storage");
+      useAuthStore.getState().logout();
       window.location.href = "/login";
       return Promise.reject(new ApiError(data?.message || "登录已过期，请重新登录", 401));
     }

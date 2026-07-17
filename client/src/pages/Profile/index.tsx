@@ -32,8 +32,9 @@ export default function Profile() {
     } catch {
       // 即使接口失败也清除本地状态
     }
+    // clearAuth 内部通过 zustand persist 自动同步清除 localStorage["auth-storage"]
+    // 设计原因：原实现同时手动 localStorage.removeItem("token")，与 store 状态清理重复且非原子
     clearAuth();
-    localStorage.removeItem("token");
     navigate("/login");
   };
 

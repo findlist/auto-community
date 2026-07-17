@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AxiosHeaders, type InternalAxiosRequestConfig } from 'axios';
 import client, { ApiError } from '../client';
+import useAuthStore from '@/stores/authStore';
 
 // mock window.location，以便断言 401 时的跳转行为
 const mockAssign = vi.fn();
@@ -15,8 +16,11 @@ Object.defineProperty(window, 'location', {
 
 describe('api client', () => {
   beforeEach(() => {
-    // 每个用例前清空 localStorage 和 mock 调用记录
+    // 每个用例前清空 localStorage 与 zustand store，确保无 token 残留
+    // 设计原因：token 现已统一存储在 zustand store（通过 persist 同步到 localStorage["auth-storage"]），
+    // 仅清 localStorage 不足以重置 store 内存状态，需显式 setState 重置
     localStorage.clear();
+    useAuthStore.setState({ user: null, token: null, isAuthenticated: false });
     mockAssign.mockClear();
   });
 
@@ -31,9 +35,10 @@ describe('api client', () => {
   });
 
   describe('请求拦截器', () => {
-    it('当 localStorage 存在 token 时，应正确注入 Authorization header', async () => {
+    it('当 zustand store 存在 token 时，应正确注入 Authorization header', async () => {
       const token = 'my-secret-token';
-      localStorage.setItem('token', token);
+      // 通过 store 写入 token，与生产路径一致
+      useAuthStore.setState({ token });
 
       // 使用适配器直接拿到拦截器处理后的 config，避免发起真实请求
       const config = await client.interceptors.request.handlers![0]!.fulfilled!({
@@ -45,7 +50,7 @@ describe('api client', () => {
       expect(config.headers.Authorization).toBe(`Bearer ${token}`);
     });
 
-    it('当 localStorage 无 token 时，不应设置 Authorization header', async () => {
+    it('当 store 无 token 时，不应设置 Authorization header', async () => {
       const config = await client.interceptors.request.handlers![0]!.fulfilled!({
         url: '/test',
         method: 'get',
@@ -57,9 +62,9 @@ describe('api client', () => {
   });
 
   describe('响应拦截器 - 401 处理', () => {
-    it('收到 401 响应时，应清除 token 并跳转到 /login', async () => {
-      localStorage.setItem('token', 'expired-token');
-      localStorage.setItem('auth-storage', 'some-data');
+    it('收到 401 响应时，应通过 store logout 清除登录态并跳转到 /login', async () => {
+      // 通过 store 写入过期 token，模拟登录态
+      useAuthStore.setState({ token: 'expired-token', isAuthenticated: true });
 
       const error = {
         response: {
@@ -73,9 +78,9 @@ describe('api client', () => {
         client.interceptors.response.handlers![0]!.rejected!(error)
       ).rejects.toThrow('登录已过期');
 
-      // 验证 token 和 auth-storage 都被清除
-      expect(localStorage.getItem('token')).toBeNull();
-      expect(localStorage.getItem('auth-storage')).toBeNull();
+      // 验证 store 已被 logout 清空（单一可信源）
+      expect(useAuthStore.getState().token).toBeNull();
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
       // 验证跳转到登录页
       expect(window.location.href).toBe('/login');
     });

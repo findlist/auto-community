@@ -202,10 +202,8 @@ describe('Auth/Register 注册页', () => {
         privacyConsentVersion: 'v1.0',
       });
     });
-    // setAuth 写入用户与 token
+    // setAuth 写入用户与 token（zustand store 作为唯一可信源，由 persist 自动同步到 localStorage）
     expect(mockSetAuth).toHaveBeenCalledWith(mockUser, 'jwt-token');
-    // localStorage 持久化 token
-    expect(localStorage.getItem('token')).toBe('jwt-token');
     // 成功提示与跳转
     expect(mockToastSuccess).toHaveBeenCalledWith('注册成功，欢迎加入邻里圈！');
     expect(mockNavigate).toHaveBeenCalledWith('/');
