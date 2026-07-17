@@ -4,6 +4,8 @@ import { authenticate, optionalAuth, requireRole } from '../middleware/auth';
 import { createPostLimiter } from '../middleware/rateLimiter';
 import { validate, getPagination } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
+// 审计中间件：用于响应求助、处理虚假举报两类敏感操作的审计追踪
+import { auditMiddleware } from '../middleware/auditLog';
 import { emergencyService } from '../services/emergency.service';
 import type { CreateRequestData } from '../services/emergency.service';
 import { emergencyResourceService } from '../services/emergency-resource.service';
@@ -180,7 +182,11 @@ router.post('/requests', authenticate, createPostLimiter, validate([
   success(res, result, '发布成功');
 }));
 
-router.post('/requests/:id/respond', authenticate, validate([
+// 响应求助属敏感操作（响应者承诺参与应急事件），接入审计追踪便于事后回溯责任链
+router.post('/requests/:id/respond', authenticate, auditMiddleware('RESPOND_EMERGENCY_REQUEST', {
+  resourceType: 'emergency_request',
+  getResourceId: (req) => req.params.id,
+}), validate([
   body('message').notEmpty().withMessage('请输入响应留言'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, RespondRequestBody>, res: Response) => {
   const { message, eta } = req.body;
@@ -209,7 +215,11 @@ router.post('/false-reports', authenticate, createPostLimiter, validate([
 }));
 
 // 管理员审核虚假举报：根据处罚类型对求助者执行相应处罚
-router.put('/false-reports/:id/resolve', authenticate, requireRole('admin'), validate([
+// 接入审计追踪：处罚涉及用户封禁（7d/30d/permanent），是高风险管理操作，必须留痕便于申诉复核
+router.put('/false-reports/:id/resolve', authenticate, requireRole('admin'), auditMiddleware('RESOLVE_FALSE_REPORT', {
+  resourceType: 'false_report',
+  getResourceId: (req) => req.params.id,
+}), validate([
   body('penalty').isIn(['warning', 'ban_7d', 'ban_30d', 'permanent']).withMessage('无效的处罚类型'),
   body('resolution').isLength({ min: 2, max: 500 }).withMessage('处理意见需在2-500字符之间'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResolveFalseReportBody>, res: Response) => {

@@ -311,6 +311,19 @@ describe('time-bank 路由集成测试', () => {
       expect(res.status).toBe(201);
       expect(mockCreateOrder).toHaveBeenCalledWith('user-uuid-001', 'svc-1');
     });
+
+    it('接入审计中间件 CREATE_TIME_ORDER', async () => {
+      // 守护审计接入不变式：订单创建涉及时间账本预扣，需留痕便于事后追溯
+      // 设计原因：vi.resetAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      vi.resetModules();
+      await import('../time-bank');
+      expect(mockAuditMiddleware).toHaveBeenCalledWith(
+        'CREATE_TIME_ORDER',
+        expect.objectContaining({
+          resourceType: 'time_order',
+        }),
+      );
+    });
   });
 
   // ===================== GET /orders =====================
@@ -360,6 +373,36 @@ describe('time-bank 路由集成测试', () => {
       expect(res.status).toBe(200);
       expect(mockUpdateOrderStatus).toHaveBeenCalledWith('order-1', 'user-uuid-001', 'accept');
       expect(mockCompleteOrder).not.toHaveBeenCalled();
+    });
+
+    it('接入审计中间件并以 orderId 作为 resourceId，按 action 动态生成 action 名称', async () => {
+      // 守护审计接入不变式：状态变更涉及时间账本结算（complete）/ 退款（cancel），需留痕并按 action 区分
+      // 设计原因：vi.resetAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      vi.resetModules();
+      await import('../time-bank');
+      expect(mockAuditMiddleware).toHaveBeenCalledWith(
+        'UPDATE_TIME_ORDER_STATUS',
+        expect.objectContaining({
+          resourceType: 'time_order',
+          getResourceId: expect.any(Function),
+          getAction: expect.any(Function),
+        }),
+      );
+      // 验证 getResourceId 从 req.params.id 提取，确保审计日志能定位到具体订单
+      const calls = mockAuditMiddleware.mock.calls as unknown as Array<{
+        0: string;
+        1: {
+          getResourceId?: (req: { params: { id: string } }) => string;
+          getAction?: (req: { body: { action?: string } }) => string;
+        };
+      }>;
+      const statusCall = calls.find((call) => call[0] === 'UPDATE_TIME_ORDER_STATUS');
+      const options = statusCall?.[1];
+      expect(options?.getResourceId?.({ params: { id: 'order-789' } })).toBe('order-789');
+      // getAction 根据请求体 action 动态生成具体 action 名称，便于审计查询按操作类型筛选
+      expect(options?.getAction?.({ body: { action: 'complete' } })).toBe('COMPLETE_TIME_ORDER');
+      expect(options?.getAction?.({ body: { action: 'cancel' } })).toBe('CANCEL_TIME_ORDER');
+      expect(options?.getAction?.({ body: { action: 'unknown' } })).toBe('UPDATE_TIME_ORDER_STATUS');
     });
   });
 

@@ -181,7 +181,8 @@ router.put('/services/:id', authenticate, asyncHandler(async (req: Request<Recor
   updated(res, result);
 }));
 
-router.post('/orders', authenticate, orderLimiter, asyncHandler(async (req: Request<Record<string, string>, unknown, CreateTimeOrderBody>, res: Response) => {
+// 创建订单接入审计：订单创建涉及时间账本预扣，需留痕便于事后追溯
+router.post('/orders', authenticate, orderLimiter, auditMiddleware('CREATE_TIME_ORDER', { resourceType: 'time_order' }), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateTimeOrderBody>, res: Response) => {
   const { service_id } = req.body;
   const result = await timeBankService.createOrder(req.user!.id, service_id);
   created(res, result);
@@ -193,7 +194,22 @@ router.get('/orders', authenticate, asyncHandler(async (req, res) => {
   paginated(res, result.list, result.total, result.page, result.pageSize);
 }));
 
-router.put('/orders/:id/status', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateTimeOrderStatusBody>, res: Response) => {
+// 更新订单状态接入审计：状态变更涉及时间账本结算（complete）/ 退款（cancel），需留痕并按 action 区分具体操作
+router.put('/orders/:id/status', authenticate, auditMiddleware('UPDATE_TIME_ORDER_STATUS', {
+  resourceType: 'time_order',
+  getResourceId: (req) => req.params.id,
+  // 根据请求体中的 action 动态生成 action 名称，区分 accept/start/cancel/complete 四类操作
+  getAction: (req) => {
+    const actionMap: Record<string, string> = {
+      accept: 'ACCEPT_TIME_ORDER',
+      start: 'START_TIME_ORDER',
+      cancel: 'CANCEL_TIME_ORDER',
+      complete: 'COMPLETE_TIME_ORDER',
+    };
+    const action = req.body?.action as string | undefined;
+    return actionMap[action ?? ''] ?? 'UPDATE_TIME_ORDER_STATUS';
+  },
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateTimeOrderStatusBody>, res: Response) => {
   const { action, actual_duration, rating, review } = req.body;
   if (action === 'complete') {
     // complete action 必须提供实际服务时长，运行时校验避免 undefined 传入 service 层

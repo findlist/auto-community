@@ -30,6 +30,7 @@ const {
   mockOptionalAuth,
   mockRequireRoleMiddleware,
   mockCreatePostLimiter,
+  mockAuditMiddleware,
   mockGetRequests,
   mockGetRequestById,
   mockCreateRequest,
@@ -50,6 +51,9 @@ const {
   // requireRole 为高阶函数，调用后返回中间件；mock 为返回 mockRequireRoleMiddleware 的函数
   mockRequireRoleMiddleware: vi.fn(),
   mockCreatePostLimiter: vi.fn(),
+  // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
+  // 设计原因：emergency 路由本身不依赖审计中间件的具体行为，审计逻辑由 auditLog 单测覆盖
+  mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
   mockGetRequests: vi.fn(),
   mockGetRequestById: vi.fn(),
   mockCreateRequest: vi.fn(),
@@ -76,6 +80,8 @@ vi.mock('../../middleware/rateLimiter', () => ({
   createPostLimiter: mockCreatePostLimiter,
   orderLimiter: vi.fn((req: Request, _res: Response, next: NextFunction) => next()),
 }));
+// auditMiddleware mock 为 pass-through 工厂，审计逻辑由 auditLog 单测覆盖
+vi.mock('../../middleware/auditLog', () => ({ auditMiddleware: mockAuditMiddleware }));
 vi.mock('../../services/emergency.service', () => ({
   emergencyService: {
     getRequests: mockGetRequests,
@@ -255,6 +261,24 @@ describe('emergency 路由集成测试', () => {
       });
       expect(res.status).toBe(422);
     });
+
+    it('接入审计中间件并以 requestId 作为 resourceId', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      vi.resetModules();
+      await import('../emergency');
+      expect(mockAuditMiddleware).toHaveBeenCalledWith(
+        'RESPOND_EMERGENCY_REQUEST',
+        expect.objectContaining({
+          resourceType: 'emergency_request',
+          getResourceId: expect.any(Function),
+        }),
+      );
+      // 验证 getResourceId 从 req.params.id 提取，确保审计日志能定位到具体资源
+      const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { params: { id: string } }) => string }]>;
+      const respondCall = calls.find(([action]) => action === 'RESPOND_EMERGENCY_REQUEST');
+      expect(respondCall?.[1]?.getResourceId?.({ params: { id: 'req-123' } })).toBe('req-123');
+    });
   });
 
   describe('PUT /responses/:id/status', () => {
@@ -331,6 +355,24 @@ describe('emergency 路由集成测试', () => {
         body: JSON.stringify({ penalty: 'warning', resolution: '警告处理' }),
       });
       expect(res.status).toBe(403);
+    });
+
+    it('接入审计中间件并以 reportId 作为 resourceId', async () => {
+      // 守护审计接入不变式：处罚涉及用户封禁（7d/30d/permanent），是高风险管理操作，必须留痕便于申诉复核
+      // 设计原因：vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      vi.resetModules();
+      await import('../emergency');
+      expect(mockAuditMiddleware).toHaveBeenCalledWith(
+        'RESOLVE_FALSE_REPORT',
+        expect.objectContaining({
+          resourceType: 'false_report',
+          getResourceId: expect.any(Function),
+        }),
+      );
+      // 验证 getResourceId 从 req.params.id 提取，确保审计日志能定位到具体举报记录
+      const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { params: { id: string } }) => string }]>;
+      const resolveCall = calls.find(([action]) => action === 'RESOLVE_FALSE_REPORT');
+      expect(resolveCall?.[1]?.getResourceId?.({ params: { id: 'report-456' } })).toBe('report-456');
     });
   });
 
