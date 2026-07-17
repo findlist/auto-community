@@ -222,6 +222,78 @@ describe('auditMiddleware - 敏感字段脱敏', () => {
       l1: { l2: { l3: { l4: { l5: '***' } } } },
     });
   });
+
+  it('字段名变体应被子串匹配命中（phoneNumber/user_phone/idCardNumber/accessToken/sessionId 等）', async () => {
+    // 设计原因：原 SENSITIVE_FIELDS 精确匹配，无法覆盖字段名变体；
+    // 改用子串匹配后，以下变体均应被脱敏，防止 PII 经字段名变体泄露
+    const req = createMockReq({
+      body: {
+        phoneNumber: '13812345678',     // 包含 phone
+        user_phone: '13900000000',      // 包含 phone
+        mobileNumber: '13700000000',    // 包含 mobile
+        idCardNumber: '110101199001011234', // toLowerCase 后包含 idcard
+        id_card_number: '110101199001011235', // 包含 id_card
+        accessToken: 'at-xxx',          // 包含 token
+        refreshToken: 'rt-yyy',         // 包含 token
+        csrf_token: 'csrf-zzz',         // 包含 token
+        clientSecret: 'cs-aaa',         // 包含 secret
+        apiKey: 'ak-bbb',               // toLowerCase 后包含 apikey
+        api_key: 'ak-ccc',              // 包含 api_key
+        sessionId: 'sid-ddd',           // 包含 session
+        // 非敏感字段应原样保留
+        username: 'test',
+        orderId: 'order-1',
+      },
+    });
+    const res = createMockRes(200);
+
+    auditMiddleware('SENSITIVE')(req, res, vi.fn());
+    (res.send as unknown as (b?: unknown) => unknown)({ ok: true });
+
+    const params = mockedWriteAuditLog.mock.calls[0][0];
+    expect(params.requestBody).toEqual({
+      phoneNumber: '***',
+      user_phone: '***',
+      mobileNumber: '***',
+      idCardNumber: '***',
+      id_card_number: '***',
+      accessToken: '***',
+      refreshToken: '***',
+      csrf_token: '***',
+      clientSecret: '***',
+      apiKey: '***',
+      api_key: '***',
+      sessionId: '***',
+      username: 'test',
+      orderId: 'order-1',
+    });
+  });
+
+  it('非敏感字段不应被子串匹配误伤（如 orderId/nickname/userAgent 等）', async () => {
+    // 设计原因：子串匹配存在误伤风险，需验证常见非敏感字段不会被错误脱敏
+    const req = createMockReq({
+      body: {
+        orderId: 'order-1',
+        nickname: '张三',
+        userAgent: 'Mozilla/5.0',
+        description: '订单描述',
+        category: 'food',
+      },
+    });
+    const res = createMockRes(200);
+
+    auditMiddleware('SAFE')(req, res, vi.fn());
+    (res.send as unknown as (b?: unknown) => unknown)({ ok: true });
+
+    const params = mockedWriteAuditLog.mock.calls[0][0];
+    expect(params.requestBody).toEqual({
+      orderId: 'order-1',
+      nickname: '张三',
+      userAgent: 'Mozilla/5.0',
+      description: '订单描述',
+      category: 'food',
+    });
+  });
 });
 
 describe('auditMiddleware - 错误信息提取', () => {

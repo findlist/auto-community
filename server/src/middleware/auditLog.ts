@@ -2,8 +2,27 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { writeAuditLog, AuditLogParams } from '../services/audit.service';
 import { logger } from '../utils/logger';
 
-// 需要脱敏的敏感字段（不区分大小写匹配）
-const SENSITIVE_FIELDS = ['password', 'phone', 'idcard', 'id_card', 'passwordhash', 'token', 'refreshtoken'];
+// 敏感字段关键词清单：用子串匹配覆盖字段名变体
+// 设计原因：原 SENSITIVE_FIELDS 用精确匹配，无法覆盖 phoneNumber、user_phone、idCardNumber、
+// accessToken、refreshToken、clientSecret、sessionId 等变体，导致 PII 经字段名变体泄露。
+// 子串匹配在请求体场景下误伤风险极低（不太可能有 smartphone/headphone 等字段名），可接受。
+const SENSITIVE_KEYWORDS = [
+  'password', // 命中 password、passwordHash、passwordConfirm
+  'phone',    // 命中 phone、phoneNumber、user_phone、phone_number
+  'mobile',   // 命中 mobile、mobileNumber
+  'idcard',   // 命中 idcard、idCardNumber（toLowerCase 后包含 idcard）
+  'id_card',  // 命中 id_card、id_card_number
+  'token',    // 命中 token、accessToken、refreshToken、csrf_token
+  'secret',   // 命中 secret、clientSecret、apiSecret
+  'apikey',   // 命中 apikey、apiKey（toLowerCase 后 apikey）
+  'api_key',  // 命中 api_key
+  'session',  // 命中 sessionId、session_token
+];
+
+function isSensitiveField(key: string): boolean {
+  const lower = key.toLowerCase();
+  return SENSITIVE_KEYWORDS.some((keyword) => lower.includes(keyword));
+}
 
 // 审计中间件配置
 interface AuditMiddlewareOptions {
@@ -42,8 +61,8 @@ function sanitizeRequestBody(body: unknown, depth = 0): unknown {
   // 类型收窄后 body 为 object，但为保留字段索引能力用 Record<string, unknown>
   const sanitized: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(body as Record<string, unknown>)) {
-    // 字段名小写后命中敏感字段清单则脱敏
-    if (SENSITIVE_FIELDS.includes(key.toLowerCase())) {
+    // 字段名小写后命中任一敏感关键词则脱敏（子串匹配覆盖字段名变体）
+    if (isSensitiveField(key)) {
       sanitized[key] = '***';
     } else if (typeof value === 'object' && value !== null) {
       // 嵌套对象或数组递归脱敏，确保内层敏感字段也被覆盖
