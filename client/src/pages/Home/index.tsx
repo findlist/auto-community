@@ -122,14 +122,19 @@ export default function Home() {
   const { ref: proofRef, visible: proofVisible } = useScrollReveal<HTMLDivElement>();
   const { ref: ctaRef, visible: ctaVisible } = useScrollReveal<HTMLDivElement>();
 
+  // 设计原因：两个独立 Promise 链在组件卸载后仍可能 resolve，用 cancelled 标志守护
+  // 避免对已卸载组件 setState 造成内存泄漏与 React 警告
   useEffect(() => {
+    let cancelled = false;
     client
       .get<never, ApiResponse<PublicStats>>("/public/stats")
       .then((res) => {
+        if (cancelled) return;
         setTotalUsers(res.data.totalUsers);
         setTotalMutualAids(res.data.totalMutualAids);
       })
       .catch((err) => {
+        if (cancelled) return;
         console.error("加载首页统计失败:", err);
         setStatsError(true);
       });
@@ -137,9 +142,15 @@ export default function Home() {
     client
       .get<never, ApiResponse<{ url: string | null }>>("/public/homepage-image")
       .then((res) => {
+        if (cancelled) return;
         if (res.data.url) setHeroImage(res.data.url);
       })
-      .catch((err) => console.error("加载首页图片失败:", err));
+      .catch((err) => {
+        if (!cancelled) console.error("加载首页图片失败:", err);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // 加载失败时显示"—"，与加载中的"——"区分（加载失败用单个短横线 + title 提示）
