@@ -27,8 +27,11 @@ process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.DB_PASSWORD = 'test-db-password';
 
 // vi.hoisted 提前创建 mock 引用，避免 vi.mock 工厂内 TDZ 问题
-const { mockAuthenticate, mockListByUser, mockCreate, mockUpdate, mockRemove, mockSetDefault } = vi.hoisted(() => ({
+const { mockAuthenticate, mockAuditMiddleware, mockListByUser, mockCreate, mockUpdate, mockRemove, mockSetDefault } = vi.hoisted(() => ({
   mockAuthenticate: vi.fn(),
+  // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
+  // 设计原因：address 路由本身不依赖审计中间件的具体行为，审计逻辑由 auditLog 单测覆盖
+  mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
   mockListByUser: vi.fn(),
   mockCreate: vi.fn(),
   mockUpdate: vi.fn(),
@@ -37,6 +40,8 @@ const { mockAuthenticate, mockListByUser, mockCreate, mockUpdate, mockRemove, mo
 }));
 
 vi.mock('../../middleware/auth', () => ({ authenticate: mockAuthenticate }));
+// auditMiddleware mock 为 pass-through 工厂，审计逻辑由 auditLog 单测覆盖
+vi.mock('../../middleware/auditLog', () => ({ auditMiddleware: mockAuditMiddleware }));
 vi.mock('../../services/address.service', () => ({
   addressService: {
     listByUser: mockListByUser,
@@ -354,6 +359,36 @@ describe('address 路由集成测试', () => {
       expect(res.status).toBe(404);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
+    });
+  });
+
+  describe('审计接入不变式', () => {
+    it('3 处 PII 操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      vi.resetModules();
+      await import('../address');
+
+      // 验证 auditMiddleware 被调用 3 次，分别对应 CREATE_ADDRESS/UPDATE_ADDRESS/DELETE_ADDRESS
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(3);
+
+      // 验证 3 处接入的 action 与 resourceType 参数完整
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('CREATE_ADDRESS', expect.objectContaining({ resourceType: 'address' }));
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('UPDATE_ADDRESS', expect.objectContaining({
+        resourceType: 'address',
+        getResourceId: expect.any(Function),
+      }));
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('DELETE_ADDRESS', expect.objectContaining({
+        resourceType: 'address',
+        getResourceId: expect.any(Function),
+      }));
+
+      // 验证 getResourceId 从 req.params.id 提取，确保审计日志能定位到具体资源
+      const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { params: { id: string } }) => string }]>;
+      const updateCall = calls.find(([action]) => action === 'UPDATE_ADDRESS');
+      const deleteCall = calls.find(([action]) => action === 'DELETE_ADDRESS');
+      expect(updateCall?.[1]?.getResourceId?.({ params: { id: 'addr-123' } })).toBe('addr-123');
+      expect(deleteCall?.[1]?.getResourceId?.({ params: { id: 'addr-456' } })).toBe('addr-456');
     });
   });
 });

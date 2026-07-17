@@ -3,6 +3,7 @@ import { body } from 'express-validator';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
+import { auditMiddleware } from '../middleware/auditLog';
 import { success } from '../utils/response';
 import { addressService } from '../services/address.service';
 
@@ -34,12 +35,13 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // 创建地址
+// 审计接入：地址含手机号+收件人+详细地址三类 PII，需记录操作者与脱敏后的请求体便于事后追溯
 router.post('/', validate([
   body('recipient').isString().isLength({ min: 1, max: 32 }).withMessage('收件人姓名必填'),
   body('phone').matches(/^1[3-9]\d{9}$/).withMessage('手机号格式不正确'),
   body('address').isString().isLength({ min: 1 }).withMessage('详细地址必填'),
   body('isDefault').optional().isBoolean(),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateAddressBody>, res: Response) => {
+]), auditMiddleware('CREATE_ADDRESS', { resourceType: 'address' }), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateAddressBody>, res: Response) => {
   const result = await addressService.create(req.user!.id, req.body);
   success(res, result, '地址已添加');
 }));
@@ -50,13 +52,19 @@ router.put('/:id', validate([
   body('phone').optional().matches(/^1[3-9]\d{9}$/),
   body('address').optional().isString().isLength({ min: 1 }),
   body('isDefault').optional().isBoolean(),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateAddressBody>, res: Response) => {
+]), auditMiddleware('UPDATE_ADDRESS', {
+  resourceType: 'address',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateAddressBody>, res: Response) => {
   const result = await addressService.update(req.params.id, req.user!.id, req.body);
   success(res, result, '地址已更新');
 }));
 
 // 删除地址
-router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
+router.delete('/:id', auditMiddleware('DELETE_ADDRESS', {
+  resourceType: 'address',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request, res: Response) => {
   await addressService.remove(req.params.id, req.user!.id);
   success(res, null, '地址已删除');
 }));
