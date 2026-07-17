@@ -140,6 +140,25 @@ describe('api client', () => {
       });
     });
 
+    it('无 response 且无 error.code 应保持 500 默认码（向后兼容）', async () => {
+      // 设计原因：error.code 为 undefined（如 new Error('Network Error')）不在
+      // ECONNABORTED/ERR_NETWORK 覆盖范围，应保持原有 500 默认码避免破坏现有行为
+      const config = {
+        url: '/test',
+        method: 'post',
+        headers: new AxiosHeaders(),
+      } as InternalAxiosRequestConfig;
+      const error = { config, message: 'Network Error' };
+
+      await expect(
+        client.interceptors.response.handlers![0]!.rejected!(error)
+      ).rejects.toMatchObject({
+        name: 'ApiError',
+        code: 500,
+        message: '请求失败，请稍后重试',
+      });
+    });
+
     it('422 验证错误应正确提取字段级错误', async () => {
       const error = {
         response: {
@@ -277,6 +296,90 @@ describe('api client', () => {
         config: { url: '/test', headers: new AxiosHeaders() } as InternalAxiosRequestConfig,
       });
       expect(result).toEqual({ durationMinutes: 30, createdAt: '2026-01-01' });
+    });
+  });
+
+  describe('响应拦截器 - 网络错误码区分', () => {
+    // 设计原因：axios 网络错误/超时无 response.status，原 `status ?? 500` 会统一报 500
+    // 掩盖真实原因。新增分支根据 error.code 区分超时（408）与网络错误（503），
+    // 让前端能得到更准确的错误反馈，便于监控告警与用户提示
+    // 注意：用 POST 方法避免触发 GET 重试逻辑（isRetryableError 对无 response 返回 true）
+    const postConfig = {
+      url: '/test',
+      method: 'post',
+      headers: new AxiosHeaders(),
+    } as InternalAxiosRequestConfig;
+
+    it('error.code=ECONNABORTED 应返回 408 超时错误', async () => {
+      // axios timeout 错误 code 为 ECONNABORTED，对应 HTTP 408 语义
+      const error = {
+        config: postConfig,
+        code: 'ECONNABORTED',
+        message: 'timeout of 10000ms exceeded',
+      };
+
+      await expect(
+        client.interceptors.response.handlers![0]!.rejected!(error)
+      ).rejects.toMatchObject({
+        name: 'ApiError',
+        code: 408,
+        message: '请求超时，请检查网络后重试',
+      });
+    });
+
+    it('error.code=ERR_NETWORK 应返回 503 网络错误', async () => {
+      // axios 网络错误（DNS 失败、连接被拒、断网）code 为 ERR_NETWORK，对应 HTTP 503 语义
+      const error = {
+        config: postConfig,
+        code: 'ERR_NETWORK',
+        message: 'Network Error',
+      };
+
+      await expect(
+        client.interceptors.response.handlers![0]!.rejected!(error)
+      ).rejects.toMatchObject({
+        name: 'ApiError',
+        code: 503,
+        message: '网络连接失败，请检查网络',
+      });
+    });
+
+    it('error.code=ECONNREFUSED 应保持 500 默认码（未覆盖的错误类型）', async () => {
+      // 设计原因：仅 ECONNABORTED/ERR_NETWORK 被显式映射，其他错误码（如 ECONNREFUSED、EAI_AGAIN）
+      // 保持 500 默认码，避免过度细化错误分类增加维护成本
+      const error = {
+        config: postConfig,
+        code: 'ECONNREFUSED',
+        message: 'connect ECONNREFUSED 127.0.0.1:3000',
+      };
+
+      await expect(
+        client.interceptors.response.handlers![0]!.rejected!(error)
+      ).rejects.toMatchObject({
+        name: 'ApiError',
+        code: 500,
+        message: '请求失败，请稍后重试',
+      });
+    });
+
+    it('ECONNABORTED 携带后端 message 应优先使用后端文案', async () => {
+      // 设计原因：若后端在超时前已返回部分响应（如网关层 408），应优先使用后端 message
+      const error = {
+        config: postConfig,
+        code: 'ECONNABORTED',
+        response: {
+          status: 408,
+          data: { message: '网关超时，请稍后重试' },
+        },
+      };
+
+      await expect(
+        client.interceptors.response.handlers![0]!.rejected!(error)
+      ).rejects.toMatchObject({
+        name: 'ApiError',
+        code: 408,
+        message: '网关超时，请稍后重试',
+      });
     });
   });
 

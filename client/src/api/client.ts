@@ -103,6 +103,24 @@ client.interceptors.response.use(
       message: e.message ?? "",
     }));
 
+    // 无 response（网络错误/超时）时根据 error.code 区分错误类型，避免统一报 500 掩盖真实原因
+    // 设计原因：axios 网络错误无 response.status，原 `status ?? 500` 会让前端误判为服务端 500，
+    // 影响监控告警与用户错误提示。区分超时与网络错误可让用户得到更准确的反馈
+    if (!status) {
+      // axios timeout 错误 code 为 ECONNABORTED，对应 HTTP 408 语义
+      if (error.code === "ECONNABORTED") {
+        return Promise.reject(
+          new ApiError(data?.message || "请求超时，请检查网络后重试", 408, fieldErrors)
+        );
+      }
+      // axios 网络错误（DNS 失败、连接被拒、断网）code 为 ERR_NETWORK，对应 HTTP 503 语义
+      if (error.code === "ERR_NETWORK") {
+        return Promise.reject(
+          new ApiError(data?.message || "网络连接失败，请检查网络", 503, fieldErrors)
+        );
+      }
+    }
+
     const message = data?.message || "请求失败，请稍后重试";
     return Promise.reject(new ApiError(message, status ?? 500, fieldErrors));
   }
