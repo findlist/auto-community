@@ -70,7 +70,11 @@ router.delete('/:id', auditMiddleware('DELETE_ADDRESS', {
 }));
 
 // 设为默认地址
-router.put('/:id/default', asyncHandler(async (req: Request, res: Response) => {
+// 审计接入：默认地址会影响下单/发货链路，记录变更便于事后追溯异常订单来源
+router.put('/:id/default', auditMiddleware('SET_DEFAULT_ADDRESS', {
+  resourceType: 'address',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request, res: Response) => {
   await addressService.setDefault(req.params.id, req.user!.id);
   success(res, null, '已设为默认地址');
 }));

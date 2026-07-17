@@ -363,16 +363,16 @@ describe('address 路由集成测试', () => {
   });
 
   describe('审计接入不变式', () => {
-    it('3 处 PII 操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+    it('4 处 PII 操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
       // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
       // 设计原因：vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
       vi.resetModules();
       await import('../address');
 
-      // 验证 auditMiddleware 被调用 3 次，分别对应 CREATE_ADDRESS/UPDATE_ADDRESS/DELETE_ADDRESS
-      expect(mockAuditMiddleware).toHaveBeenCalledTimes(3);
+      // 验证 auditMiddleware 被调用 4 次，分别对应 CREATE/UPDATE/DELETE/SET_DEFAULT_ADDRESS
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(4);
 
-      // 验证 3 处接入的 action 与 resourceType 参数完整
+      // 验证 4 处接入的 action 与 resourceType 参数完整
       expect(mockAuditMiddleware).toHaveBeenCalledWith('CREATE_ADDRESS', expect.objectContaining({ resourceType: 'address' }));
       expect(mockAuditMiddleware).toHaveBeenCalledWith('UPDATE_ADDRESS', expect.objectContaining({
         resourceType: 'address',
@@ -382,13 +382,17 @@ describe('address 路由集成测试', () => {
         resourceType: 'address',
         getResourceId: expect.any(Function),
       }));
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('SET_DEFAULT_ADDRESS', expect.objectContaining({
+        resourceType: 'address',
+        getResourceId: expect.any(Function),
+      }));
 
       // 验证 getResourceId 从 req.params.id 提取，确保审计日志能定位到具体资源
       const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { params: { id: string } }) => string }]>;
-      const updateCall = calls.find(([action]) => action === 'UPDATE_ADDRESS');
-      const deleteCall = calls.find(([action]) => action === 'DELETE_ADDRESS');
-      expect(updateCall?.[1]?.getResourceId?.({ params: { id: 'addr-123' } })).toBe('addr-123');
-      expect(deleteCall?.[1]?.getResourceId?.({ params: { id: 'addr-456' } })).toBe('addr-456');
+      const getById = (action: string) => calls.find(([a]) => a === action)?.[1]?.getResourceId;
+      expect(getById('UPDATE_ADDRESS')?.({ params: { id: 'addr-123' } })).toBe('addr-123');
+      expect(getById('DELETE_ADDRESS')?.({ params: { id: 'addr-456' } })).toBe('addr-456');
+      expect(getById('SET_DEFAULT_ADDRESS')?.({ params: { id: 'addr-789' } })).toBe('addr-789');
     });
   });
 });
