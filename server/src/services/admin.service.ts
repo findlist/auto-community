@@ -6,6 +6,13 @@ import { logger } from '../utils/logger';
 import { userCache } from './cache.service';
 import { sanitizeObject } from '../utils/sanitize';
 import ExcelJS from 'exceljs';
+// phone 字段为 AES-256-GCM 加密存储，无法直接 LIKE 模糊查询；
+// phone_hash 为 SHA-256 哈希用于等值查询，decryptPhone 用于管理员后台展示明文
+import { hashPhone, decryptPhone } from '../utils/crypto';
+
+// 完整手机号格式：用于区分搜索意图（精确查手机号 vs 模糊查昵称）
+// 设计原因：phone 字段加密无法 LIKE 模糊匹配，仅支持完整手机号经 hashPhone 后等值查询 phone_hash
+const COMPLETE_PHONE_REGEX = /^1[3-9]\d{9}$/;
 
 // ===================== 类型定义 =====================
 
@@ -33,14 +40,24 @@ const VERIFICATION_REQUEST_COLUMNS = 'id, user_id, status';
 // ===================== 用户管理 =====================
 
 // 分页查询用户列表，支持按手机号/昵称搜索
+// 设计原因：phone 字段 AES-256-GCM 加密无法 LIKE 模糊匹配，需按搜索意图分流：
+// - 完整手机号（11 位 1[3-9]\d{9}）：经 hashPhone 后等值查询 phone_hash 命中单一用户
+// - 其他字符串：仅匹配 nickname（原 phone LIKE 永远命中密文无效）
 async function getUsers(page: number, pageSize: number, search?: string) {
   const conditions: string[] = ['deleted_at IS NULL'];
   const params: SqlParam[] = [];
   let paramIndex = 1;
 
   if (search) {
-    conditions.push(`(phone LIKE $${paramIndex++} OR nickname LIKE $${paramIndex++})`);
-    params.push(`%${search}%`, `%${search}%`);
+    if (COMPLETE_PHONE_REGEX.test(search)) {
+      // 完整手机号：hashPhone 后等值查询 phone_hash
+      conditions.push(`phone_hash = $${paramIndex++}`);
+      params.push(hashPhone(search));
+    } else {
+      // 非完整手机号：仅模糊匹配 nickname（phone 加密无法 LIKE）
+      conditions.push(`nickname LIKE $${paramIndex++}`);
+      params.push(`%${search}%`);
+    }
   }
 
   const whereClause = conditions.join(' AND ');
@@ -59,16 +76,27 @@ async function getUsers(page: number, pageSize: number, search?: string) {
   ]);
 
   const total = parseInt(countResult.rows[0].count, 10);
-  const list = listResult.rows.map((row) => ({
-    id: row.id,
-    phone: row.phone,
-    nickname: row.nickname,
-    role: row.role,
-    status: row.status,
-    createdAt: row.created_at,
-    reputationScore: row.reputation_score,
-    creditBalance: row.credit_balance,
-  }));
+  const list = listResult.rows.map((row) => {
+    // 管理员后台需要明文手机号进行用户识别与运营操作（如电话沟通）
+    // 解密失败时回退到占位符，避免单条历史脏数据导致整页 500
+    let phone: string;
+    try {
+      phone = decryptPhone(row.phone);
+    } catch {
+      logger.warn({ userId: row.id }, '管理员用户列表手机号解密失败，回退占位符');
+      phone = '******';
+    }
+    return {
+      id: row.id,
+      phone,
+      nickname: row.nickname,
+      role: row.role,
+      status: row.status,
+      createdAt: row.created_at,
+      reputationScore: row.reputation_score,
+      creditBalance: row.credit_balance,
+    };
+  });
 
   return createPaginatedResponse(list, total, page, pageSize);
 }

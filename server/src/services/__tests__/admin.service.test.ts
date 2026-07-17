@@ -36,11 +36,26 @@ vi.mock('../cache.service', () => ({
   kitchenPostCache: { get: vi.fn(), invalidate: vi.fn() },
 }));
 
+// mock crypto：getUsers 现在调用 hashPhone/decryptPhone，需隔离加解密副作用
+// 设计原因：原测试 mock 数据为明文手机号，decryptPhone 解密非密文会抛错；
+// 提供 hashPhone 返回固定哈希便于断言、decryptPhone 返回明文模拟解密成功
+vi.mock('../../utils/crypto', () => ({
+  hashPhone: vi.fn((phone: string) => `hash-${phone}`),
+  decryptPhone: vi.fn((phone: string) => phone),
+  encryptPhone: vi.fn((phone: string) => phone),
+  hashIdCard: vi.fn((id: string) => `hash-${id}`),
+  encryptIdCard: vi.fn((id: string) => id),
+  decryptIdCard: vi.fn((id: string) => id),
+}));
+
 import { adminService } from '../admin.service';
 import { query } from '../../config/database';
 import { NotFoundError, BadRequestError } from '../../utils/errors';
+import { hashPhone, decryptPhone } from '../../utils/crypto';
 
 const mockedQuery = vi.mocked(query);
+const mockedHashPhone = vi.mocked(hashPhone);
+const mockedDecryptPhone = vi.mocked(decryptPhone);
 
 // 局部类型别名：query 返回 Promise<QueryResult<QueryResultRow>>，测试 mock 只需 rows
 // 用 as unknown as DbResult 替代 as unknown as DbResult 以消除 no-explicit-any warning
@@ -48,10 +63,13 @@ type DbResult = Awaited<ReturnType<typeof query>>;
 
 beforeEach(() => {
   mockedQuery.mockReset();
+  // mockClear 仅清除调用记录与 instances，保留默认实现（hashPhone/decryptPhone 的固定返回）
+  mockedHashPhone.mockClear();
+  mockedDecryptPhone.mockClear();
 });
 
 describe('admin.service - 用户管理', () => {
-  it('getUsers 支持按 search 搜索', async () => {
+  it('getUsers 非手机号搜索仅匹配 nickname（phone 加密无法 LIKE）', async () => {
     mockedQuery
       .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
       .mockResolvedValueOnce({
@@ -62,10 +80,49 @@ describe('admin.service - 用户管理', () => {
 
     expect(result.total).toBe(1);
     expect(result.list[0].nickname).toBe('张三');
-    // SQL 应包含 phone / nickname 两个 LIKE 条件
+    // 非完整手机号仅匹配 nickname，不再有 phone LIKE（phone 加密字段无法 LIKE）
     const countSql = mockedQuery.mock.calls[0][0];
-    expect(countSql).toContain('phone LIKE');
+    expect(countSql).not.toContain('phone LIKE');
     expect(countSql).toContain('nickname LIKE');
+    // phone 字段经 decryptPhone 解密后返回明文
+    expect(mockedDecryptPhone).toHaveBeenCalledWith('13800000000');
+    expect(result.list[0].phone).toBe('13800000000');
+  });
+
+  it('getUsers 完整手机号搜索用 phone_hash 等值查询', async () => {
+    mockedQuery
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({
+        rows: [{ id: 'u2', phone: '13900139000', nickname: '李四', role: 'user', status: 'active', created_at: new Date(), reputation_score: 90, credit_balance: 200 }],
+      } as unknown as DbResult);
+
+    const result = await adminService.getUsers(1, 20, '13900139000');
+
+    expect(result.total).toBe(1);
+    // 完整手机号经 hashPhone 后等值查询 phone_hash，不再 LIKE
+    expect(mockedHashPhone).toHaveBeenCalledWith('13900139000');
+    const countSql = mockedQuery.mock.calls[0][0];
+    expect(countSql).toContain('phone_hash = $1');
+    expect(countSql).not.toContain('LIKE');
+    // query 参数第 1 个为 hash 后的手机号
+    expect(mockedQuery.mock.calls[0][1]).toEqual(['hash-13900139000']);
+  });
+
+  it('getUsers 解密失败时回退占位符不影响整页', async () => {
+    mockedDecryptPhone.mockImplementationOnce(() => {
+      throw new Error('decrypt failed');
+    });
+    mockedQuery
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({
+        rows: [{ id: 'u3', phone: 'invalid-cipher', nickname: '王五', role: 'user', status: 'active', created_at: new Date(), reputation_score: 70, credit_balance: 50 }],
+      } as unknown as DbResult);
+
+    const result = await adminService.getUsers(1, 20, '王五');
+
+    // 解密失败回退 '******'，不抛错
+    expect(result.list[0].phone).toBe('******');
+    expect(result.list[0].nickname).toBe('王五');
   });
 
   it('banUser 更新用户状态为 banned', async () => {
