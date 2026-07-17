@@ -97,11 +97,17 @@ export default function DeleteAccount() {
     }
   };
 
-  // 注销已完成，清除本地状态并跳转
+  // 注销已完成：通过 useEffect 执行副作用，避免渲染期间触发状态更新与导航
+  useEffect(() => {
+    if (status?.status === "completed") {
+      clearAuth();
+      localStorage.removeItem("token");
+      navigate("/login");
+    }
+  }, [status?.status, clearAuth, navigate]);
+
+  // 渲染守卫：completed 状态下不展示表单内容（副作用由上面的 useEffect 异步执行）
   if (status?.status === "completed") {
-    clearAuth();
-    localStorage.removeItem("token");
-    navigate("/login");
     return null;
   }
 

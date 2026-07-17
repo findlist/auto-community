@@ -69,6 +69,8 @@ export default function HomepageImage() {
     try {
       await setHomepageImage(url.trim());
       setSuccess(true);
+      // 设置新定时器前先清理旧的，避免重复保存时旧定时器提前关闭提示
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
       successTimerRef.current = setTimeout(() => setSuccess(false), 2500);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "保存失败");

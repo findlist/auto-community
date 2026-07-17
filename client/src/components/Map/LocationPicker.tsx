@@ -108,6 +108,9 @@ export default function LocationPicker({
         const newAddress = res.data || '';
         setAddress(newAddress);
         onLocationChange?.(newLocation, newAddress);
+      } catch {
+        // 逆地理失败时保留已有地址，避免 unhandled promise rejection
+        setAddress('');
       } finally {
         setLoading(false);
       }

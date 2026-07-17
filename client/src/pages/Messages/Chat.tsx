@@ -177,7 +177,11 @@ export default function Chat() {
       msgType: "text",
     };
 
-    wsClientRef.current.send(messageData);
+    const ok = wsClientRef.current.send(messageData);
+    if (!ok) {
+      toast.error("连接已断开，消息未发送");
+      return;
+    }
     setInputContent("");
   };
 
