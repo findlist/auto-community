@@ -22,6 +22,8 @@ const {
     setEx: vi.fn(),
     del: vi.fn(),
     keys: vi.fn(),
+    // scan 用于 clearCachePattern 替代 keys 命令的增量游标扫描
+    scan: vi.fn(),
   };
   // 设计原因：声明参数类型为可选 unknown，使 mock.calls[0][0] 可索引访问，
   // 否则 vi.fn 推断为无参函数，calls 元组为 [] 无法访问索引 0
@@ -74,6 +76,7 @@ describe('redis 配置模块', () => {
     mockRedisClient.setEx.mockClear();
     mockRedisClient.del.mockClear();
     mockRedisClient.keys.mockClear();
+    mockRedisClient.scan.mockClear();
     mockLogger.debug.mockClear();
     mockLogger.info.mockClear();
     mockLogger.warn.mockClear();
@@ -279,24 +282,50 @@ describe('redis 配置模块', () => {
   });
 
   describe('clearCachePattern', () => {
+    beforeEach(() => {
+      // 重置 scan 和 del mock 的 implementation 与返回值队列，避免前一个用例的
+      // mockResolvedValue/mockRejectedValue 残留影响当前用例
+      // 设计原因：mockClear() 仅清除调用记录，不清除 implementation；
+      // 前一用例设置的 mockResolvedValue({ cursor: '0' }) 或 mockRejectedValue 会持续，
+      // 导致当前用例的 mockResolvedValueOnce 优先级被默认值覆盖的假象
+      mockRedisClient.scan.mockReset();
+      mockRedisClient.del.mockReset();
+    });
+
     it('匹配到 keys 应调用 del 批量删除', async () => {
-      // 设计原因：keys 返回非空数组时需调用 del 删除所有匹配 key
-      mockRedisClient.keys.mockResolvedValue(['user:1', 'user:2']);
+      // scan 返回 cursor=0（终止游标）+ keys 列表，模拟一轮扫描即完成
+      mockRedisClient.scan.mockResolvedValue({ cursor: '0', keys: ['user:1', 'user:2'] });
       await clearCachePattern('user:*');
-      expect(mockRedisClient.keys).toHaveBeenCalledWith('user:*');
+      expect(mockRedisClient.scan).toHaveBeenCalledWith(0, { MATCH: 'user:*', COUNT: 100 });
       expect(mockRedisClient.del).toHaveBeenCalledWith(['user:1', 'user:2']);
     });
 
     it('未匹配到 keys 不应调用 del', async () => {
-      // 设计原因：keys 返回空数组时 del 调用无意义，需跳过避免无效请求
-      mockRedisClient.keys.mockResolvedValue([]);
+      mockRedisClient.scan.mockResolvedValue({ cursor: '0', keys: [] });
       await clearCachePattern('user:*');
       expect(mockRedisClient.del).not.toHaveBeenCalled();
     });
 
-    it('redisClient.keys 异常应 catch 吞错并输出 error 日志', async () => {
-      const err = new Error('keys 失败');
-      mockRedisClient.keys.mockRejectedValue(err);
+    it('多轮扫描应循环调用 scan 直到 cursor=0', async () => {
+      // 设计原因：scan 是增量游标扫描，cursor 非 0 表示还有未扫描的 keys，需循环调用
+      // 第 1 轮返回 cursor=100 + keys=['user:1']，第 2 轮返回 cursor=0 + keys=['user:2']
+      mockRedisClient.scan
+        .mockResolvedValueOnce({ cursor: '100', keys: ['user:1'] })
+        .mockResolvedValueOnce({ cursor: '0', keys: ['user:2'] });
+      await clearCachePattern('user:*');
+      // scan 被调用 2 次（第 1 次游标 0，第 2 次游标 100）
+      expect(mockRedisClient.scan).toHaveBeenCalledTimes(2);
+      expect(mockRedisClient.scan).toHaveBeenNthCalledWith(1, 0, { MATCH: 'user:*', COUNT: 100 });
+      expect(mockRedisClient.scan).toHaveBeenNthCalledWith(2, 100, { MATCH: 'user:*', COUNT: 100 });
+      // del 被调用 2 次（每轮各一次）
+      expect(mockRedisClient.del).toHaveBeenCalledTimes(2);
+      expect(mockRedisClient.del).toHaveBeenNthCalledWith(1, ['user:1']);
+      expect(mockRedisClient.del).toHaveBeenNthCalledWith(2, ['user:2']);
+    });
+
+    it('redisClient.scan 异常应 catch 吞错并输出 error 日志', async () => {
+      const err = new Error('scan 失败');
+      mockRedisClient.scan.mockRejectedValue(err);
       await expect(clearCachePattern('user:*')).resolves.toBeUndefined();
       expect(mockLogger.error).toHaveBeenCalledWith(
         { err, pattern: 'user:*' },

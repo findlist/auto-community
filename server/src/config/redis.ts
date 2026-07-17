@@ -89,10 +89,21 @@ export async function deleteCache(key: string): Promise<void> {
 
 export async function clearCachePattern(pattern: string): Promise<void> {
   try {
-    const keys = await redisClient.keys(pattern);
-    if (keys.length > 0) {
-      await redisClient.del(keys);
-    }
+    // 使用 SCAN 替代 KEYS，避免大规模 keys 阻塞 Redis 事件循环
+    // 设计原因：KEYS 是 O(N) 阻塞操作（N 为 Redis 总 keys 数），生产环境 keys 量大时会
+    // 导致 Redis 短暂无响应；SCAN 是增量游标扫描，每次 COUNT=100 仅处理一小批，
+    // 将单次长阻塞拆分为多次短操作，不阻塞事件循环
+    let cursor = 0;
+    do {
+      const result = await redisClient.scan(cursor, {
+        MATCH: pattern,
+        COUNT: 100,
+      });
+      cursor = Number(result.cursor);
+      if (result.keys.length > 0) {
+        await redisClient.del(result.keys);
+      }
+    } while (cursor !== 0);
   } catch (error) {
     logger.error({ err: error, pattern }, 'Redis清除缓存错误');
   }
