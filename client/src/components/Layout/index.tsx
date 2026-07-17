@@ -213,12 +213,21 @@ export default function Layout() {
   const useTransparent = isHome && !scrolled;
   const headerMode: "light" | "dark" = useTransparent ? "light" : "dark";
 
+  // 设计原因：getUnreadCount Promise 在组件卸载后仍可能 resolve，用 cancelled 标志守护
+  // 避免对已卸载组件 setUnreadCount 造成内存泄漏与 React 警告
   useEffect(() => {
-    if (isAuthenticated) {
-      getUnreadCount()
-        .then((res) => setUnreadCount(res.data.unreadCount))
-        .catch((err) => console.error("获取未读消息数失败:", err));
-    }
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    getUnreadCount()
+      .then((res) => {
+        if (!cancelled) setUnreadCount(res.data.unreadCount);
+      })
+      .catch((err) => {
+        if (!cancelled) console.error("获取未读消息数失败:", err);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated]);
 
   // 监听滚动，控制首页头部从透明到实色的切换
