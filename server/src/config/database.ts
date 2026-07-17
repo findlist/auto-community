@@ -91,7 +91,16 @@ export async function transaction<T>(callback: (client: PoolClient) => Promise<T
     await client.query('COMMIT');
     return result;
   } catch (error) {
-    await client.query('ROLLBACK');
+    // 事务失败时记录 error 日志，便于在 service 层 rethrow 链路中保留事务现场
+    // 设计原因：transaction 是全局基础设施，下游 service 通常只 rethrow 不记日志，
+    // 若本层不记日志，事务失败的 SQL 上下文与连接异常将在调用栈中彻底丢失
+    logger.error({ err: error }, '[transaction] 事务执行失败，将回滚');
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      // ROLLBACK 自身失败（如连接已断）不能掩盖原始错误，单独记 warn 便于排查连接异常
+      logger.warn({ err: rollbackError }, '[transaction] ROLLBACK 失败，连接可能已断开');
+    }
     throw error;
   } finally {
     client.release();
