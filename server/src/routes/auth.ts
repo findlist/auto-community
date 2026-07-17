@@ -188,9 +188,10 @@ router.post('/login', authLimiter, auditMiddleware('LOGIN', { resourceType: 'use
  *         description: refreshToken 无效或已过期
  */
 // POST /refresh-token - 刷新令牌（限流：防止通过暴力刷新令牌规避安全策略）
+// 审计接入：会话延续操作，记录刷新来源便于异常 token 使用链路追溯
 router.post('/refresh-token', authLimiter, validate([
   body('refreshToken').notEmpty().withMessage('请提供refreshToken')
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, RefreshTokenBody>, res: Response) => {
+]), auditMiddleware('REFRESH_TOKEN', { resourceType: 'session' }), asyncHandler(async (req: Request<Record<string, string>, unknown, RefreshTokenBody>, res: Response) => {
   const { refreshToken } = req.body;
   const result = await authService.refreshToken(refreshToken);
   success(res, result, '刷新成功');
@@ -256,9 +257,10 @@ router.post('/logout', authenticate, auditMiddleware('LOGOUT', { resourceType: '
  *         description: 参数校验失败
  */
 // POST /forgot-password - 忘记密码，发送验证码
+// 审计接入：短信网关调用入口，记录请求源便于事后识别短信轰炸滥用
 router.post('/forgot-password', authLimiter, validate([
   body('phone').matches(/^1[3-9]\d{9}$/).withMessage('手机号格式不正确')
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, ForgotPasswordBody>, res: Response) => {
+]), auditMiddleware('FORGOT_PASSWORD', { resourceType: 'verification_code' }), asyncHandler(async (req: Request<Record<string, string>, unknown, ForgotPasswordBody>, res: Response) => {
   const { phone } = req.body;
   await authService.forgotPassword(phone);
   success(res, null, '验证码已发送，请查收');

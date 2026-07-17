@@ -380,20 +380,30 @@ describe('auth 路由集成测试', () => {
   });
 
   describe('审计接入不变式', () => {
-    it('REGISTER/LOGIN/LOGOUT/RESET_PASSWORD 4 处敏感操作均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+    it('6 处敏感操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
       // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
       // 设计原因：beforeEach 的 vi.resetAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      // 覆盖范围：4 处原有（REGISTER/LOGIN/LOGOUT/RESET_PASSWORD）+ 2 处本轮新增（REFRESH_TOKEN/FORGOT_PASSWORD）
       vi.resetModules();
       await import('../auth');
 
-      // 验证 auditMiddleware 被调用 4 次，分别对应 REGISTER/LOGIN/LOGOUT/RESET_PASSWORD
-      expect(mockAuditMiddleware).toHaveBeenCalledTimes(4);
+      // 期望的 action 与 resourceType 映射表（数据驱动断言，新增接入只需在此追加一行）
+      const expected: Array<{ action: string; resourceType: string }> = [
+        { action: 'REGISTER', resourceType: 'user' },
+        { action: 'LOGIN', resourceType: 'user' },
+        { action: 'LOGOUT', resourceType: 'user' },
+        { action: 'REFRESH_TOKEN', resourceType: 'session' },
+        { action: 'FORGOT_PASSWORD', resourceType: 'verification_code' },
+        { action: 'RESET_PASSWORD', resourceType: 'user' },
+      ];
 
-      // 验证 4 处接入的 action 与 resourceType 参数完整
-      expect(mockAuditMiddleware).toHaveBeenCalledWith('REGISTER', expect.objectContaining({ resourceType: 'user' }));
-      expect(mockAuditMiddleware).toHaveBeenCalledWith('LOGIN', expect.objectContaining({ resourceType: 'user' }));
-      expect(mockAuditMiddleware).toHaveBeenCalledWith('LOGOUT', expect.objectContaining({ resourceType: 'user' }));
-      expect(mockAuditMiddleware).toHaveBeenCalledWith('RESET_PASSWORD', expect.objectContaining({ resourceType: 'user' }));
+      // 验证 auditMiddleware 被调用 6 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(expected.length);
+
+      // 逐项验证 action 与 resourceType 参数完整
+      for (const item of expected) {
+        expect(mockAuditMiddleware).toHaveBeenCalledWith(item.action, expect.objectContaining({ resourceType: item.resourceType }));
+      }
     });
   });
 });
