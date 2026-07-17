@@ -563,4 +563,47 @@ describe('time-bank 路由集成测试', () => {
       expect(mockGetDisputes).toHaveBeenCalledWith('user-uuid-001', { page: 1, pageSize: 10 });
     });
   });
+
+  describe('审计接入不变式（全量）', () => {
+    it('12 处敏感操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：beforeEach 的 vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      // 覆盖范围：4 处本轮新增（CREATE/UPDATE_TIME_SERVICE + CREATE_TIME_REVIEW + CREATE_TIME_DISPUTE）+ 8 处原有（CREATE_TIME_ORDER/UPDATE_TIME_ORDER_STATUS/TRANSFER/DONATE/FAMILY_BIND/CONFIRM/REJECT/UNBIND）
+      vi.resetModules();
+      await import('../time-bank');
+
+      // 期望的 action 与 resourceType 映射表（数据驱动断言，新增接入只需在此追加一行）
+      const expected: Array<{ action: string; resourceType: string; hasResourceId?: boolean }> = [
+        { action: 'CREATE_TIME_SERVICE', resourceType: 'time_service' },
+        { action: 'UPDATE_TIME_SERVICE', resourceType: 'time_service', hasResourceId: true },
+        { action: 'CREATE_TIME_ORDER', resourceType: 'time_order' },
+        { action: 'UPDATE_TIME_ORDER_STATUS', resourceType: 'time_order', hasResourceId: true },
+        { action: 'TRANSFER', resourceType: 'transaction' },
+        { action: 'DONATE', resourceType: 'transaction' },
+        { action: 'FAMILY_BIND', resourceType: 'family' },
+        { action: 'FAMILY_CONFIRM', resourceType: 'family', hasResourceId: true },
+        { action: 'FAMILY_REJECT', resourceType: 'family', hasResourceId: true },
+        { action: 'FAMILY_UNBIND', resourceType: 'family', hasResourceId: true },
+        { action: 'CREATE_TIME_REVIEW', resourceType: 'time_review' },
+        { action: 'CREATE_TIME_DISPUTE', resourceType: 'time_dispute' },
+      ];
+
+      // 验证 auditMiddleware 被调用 12 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(expected.length);
+
+      // 逐项验证 action 与 resourceType 参数完整
+      for (const item of expected) {
+        expect(mockAuditMiddleware).toHaveBeenCalledWith(item.action, expect.objectContaining({ resourceType: item.resourceType }));
+      }
+
+      // 验证带 getResourceId 的路由能正确提取 req.params.id
+      const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { params: { id: string } }) => string }]>;
+      const getById = (action: string) => calls.find(([a]) => a === action)?.[1]?.getResourceId;
+      for (const item of expected) {
+        if (item.hasResourceId) {
+          expect(getById(item.action)?.({ params: { id: `${item.action}-id` } })).toBe(`${item.action}-id`);
+        }
+      }
+    });
+  });
 });

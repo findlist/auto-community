@@ -158,7 +158,7 @@ router.get('/services/:id', optionalAuth, asyncHandler(async (req, res) => {
   success(res, result);
 }));
 
-router.post('/services', authenticate, createPostLimiter, validate([
+router.post('/services', authenticate, createPostLimiter, auditMiddleware('CREATE_TIME_SERVICE', { resourceType: 'time_service' }), validate([
   // type/category/title 必填，构成服务核心信息
   body('type').notEmpty().withMessage('请选择服务类型'),
   body('category').notEmpty().withMessage('请选择服务分类'),
@@ -186,7 +186,10 @@ router.post('/services', authenticate, createPostLimiter, validate([
   );
 }));
 
-router.put('/services/:id', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateTimeServiceBody>, res: Response) => {
+router.put('/services/:id', authenticate, auditMiddleware('UPDATE_TIME_SERVICE', {
+  resourceType: 'time_service',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateTimeServiceBody>, res: Response) => {
   const result = await timeBankService.updateService(req.params.id, req.user!.id, req.body);
   updated(res, result);
 }));
@@ -424,7 +427,8 @@ router.get('/family', authenticate, asyncHandler(async (req, res) => {
   success(res, result);
 }));
 
-router.post('/reviews', authenticate, validate([
+// 评价创建接入审计：评价影响信誉分计算，需留痕便于事后追溯
+router.post('/reviews', authenticate, auditMiddleware('CREATE_TIME_REVIEW', { resourceType: 'time_review' }), validate([
   // order_id 必填，防止空值透传 service 层
   body('order_id').notEmpty().withMessage('请提供订单ID'),
   // rating 必须为 1-5 整数，与业务评价口径一致
@@ -437,7 +441,8 @@ router.post('/reviews', authenticate, validate([
   created(res, result);
 }));
 
-router.post('/disputes', authenticate, validate([
+// 纠纷创建接入审计：纠纷触发退款/争议流程，需留痕便于事后追溯
+router.post('/disputes', authenticate, auditMiddleware('CREATE_TIME_DISPUTE', { resourceType: 'time_dispute' }), validate([
   body('order_id').notEmpty().withMessage('请提供订单ID'),
   body('reason').notEmpty().isLength({ max: 100 }).withMessage('纠纷原因不能为空且不能超过100字符'),
   body('description').optional().isLength({ max: 1000 }).withMessage('纠纷描述不能超过1000字符'),
