@@ -200,6 +200,18 @@ router.get('/posts/:id',
 // PUT /api/kitchen/posts/:id - 更新美食
 router.put('/posts/:id',
   authenticate,
+  // 更新场景字段全部 optional（PATCH 语义），仅校验传入字段的格式合法性
+  // 设计原因：原实现无 validate 中间件，req.body 直接透传 service 层，
+  // 非法值（负数 quantity、超长 title）依赖 service 层兜底校验或导致 500
+  validate([
+    body('title').optional().isLength({ min: 1, max: 100 }).withMessage('标题长度为1-100字符'),
+    body('category').optional().isLength({ min: 1, max: 50 }).withMessage('类别长度为1-50字符'),
+    body('quantity').optional().isInt({ min: 1 }).withMessage('份数必须大于0'),
+    body('price').optional().isInt({ min: 0 }).withMessage('价格必须为非负整数'),
+    body('pickupType').optional().isIn(['self_pickup', 'delivery']).withMessage('领取方式不正确'),
+    body('images').optional().isArray().withMessage('图片格式不正确'),
+    body('allergens').optional().isArray().withMessage('过敏原必须为数组'),
+  ]),
   asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateKitchenPostBody>, res: Response) => {
     const result = await kitchenService.update(req.params.id, req.user!.id, req.body);
     success(res, result, '更新成功');

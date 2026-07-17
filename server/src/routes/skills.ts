@@ -150,7 +150,18 @@ router.post('/posts', authenticate, createPostLimiter, validate([
   );
 }));
 
-router.put('/posts/:id', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateSkillPostBody>, res: Response) => {
+router.put('/posts/:id', authenticate, validate([
+  // 更新场景字段全部 optional（Partial<CreateSkillPostDTO>），仅校验传入字段格式
+  // 设计原因：原实现无 validate 中间件，req.body 直接透传 service 层，
+  // 非法值（负数 credit_price、超长 title）依赖 service 层兜底校验或导致 500
+  body('title').optional().isLength({ min: 1, max: 100 }).withMessage('标题长度为1-100字符'),
+  body('category').optional().isLength({ min: 1, max: 50 }).withMessage('类别长度为1-50字符'),
+  body('description').optional().isLength({ max: 2000 }).withMessage('描述不能超过2000字符'),
+  body('credit_price').optional().isInt({ min: 0 }).withMessage('积分价格必须为非负整数'),
+  body('images').optional().isArray().withMessage('图片必须为数组'),
+  body('tags').optional().isArray().withMessage('标签必须为数组'),
+  body('address').optional().isLength({ max: 200 }).withMessage('地址不能超过200字符'),
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateSkillPostBody>, res: Response) => {
   const post = await skillService.updatePost(req.params.id, req.user!.id, req.body);
   success(res, post);
 }));
