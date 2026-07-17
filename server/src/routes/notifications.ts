@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 import { getPagination } from '../middleware/validator';
+import { auditMiddleware } from '../middleware/auditLog';
 import { success, paginated } from '../utils/response';
 import { notificationService } from '../services/notification.service';
 import { NotFoundError } from '../utils/errors';
@@ -143,7 +144,10 @@ router.get('/unread-count', authenticate, asyncHandler(async (req: Request, res:
  *       401:
  *         description: 未授权
  */
-router.post('/:id/read', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.post('/:id/read', authenticate, auditMiddleware('MARK_NOTIFICATION_READ', {
+  resourceType: 'notification',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const marked = await notificationService.markAsRead(req.user!.id, id);
   if (!marked) {
@@ -180,7 +184,11 @@ router.post('/:id/read', authenticate, asyncHandler(async (req: Request, res: Re
  *       401:
  *         description: 未授权
  */
-router.post('/read-all', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.post('/read-all', authenticate, auditMiddleware('MARK_ALL_NOTIFICATIONS_READ', {
+  resourceType: 'notification',
+  // 批量操作无单一资源 id，用当前登录用户 id 作为关联键，便于按用户追溯批量已读行为
+  getResourceId: (req) => req.user!.id,
+}), asyncHandler(async (req: Request, res: Response) => {
   const markedCount = await notificationService.markAllAsRead(req.user!.id);
   success(res, { markedCount }, '全部标记已读成功');
 }));

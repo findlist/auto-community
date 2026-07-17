@@ -26,15 +26,20 @@ process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.DB_PASSWORD = 'test-db-password';
 
 // vi.hoisted 提前创建 mock 引用，避免 vi.mock 工厂内 TDZ 问题
-const { mockAuthenticate, mockGetNotifications, mockGetUnreadCount, mockMarkAsRead, mockMarkAllAsRead } = vi.hoisted(() => ({
+const { mockAuthenticate, mockGetNotifications, mockGetUnreadCount, mockMarkAsRead, mockMarkAllAsRead, mockAuditMiddleware } = vi.hoisted(() => ({
   mockAuthenticate: vi.fn(),
   mockGetNotifications: vi.fn(),
   mockGetUnreadCount: vi.fn(),
   mockMarkAsRead: vi.fn(),
   mockMarkAllAsRead: vi.fn(),
+  // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
+  // 设计原因：notifications 路由本身不依赖审计中间件的具体行为，审计逻辑由 auditLog 单测覆盖
+  mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
 }));
 
 vi.mock('../../middleware/auth', () => ({ authenticate: mockAuthenticate }));
+// auditMiddleware mock 为 pass-through 工厂，审计逻辑由 auditLog 单测覆盖
+vi.mock('../../middleware/auditLog', () => ({ auditMiddleware: mockAuditMiddleware }));
 vi.mock('../../services/notification.service', () => ({
   notificationService: {
     getNotifications: mockGetNotifications,
@@ -249,6 +254,33 @@ describe('notifications 路由集成测试', () => {
       expect(res.status).toBe(500);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_SERVER_ERROR');
+    });
+  });
+
+  // ===================== 审计接入不变式（全量） =====================
+  describe('审计接入不变式（全量）', () => {
+    it('2 处通知操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      // 覆盖范围：单条已读（MARK_NOTIFICATION_READ）+ 批量已读（MARK_ALL_NOTIFICATIONS_READ）
+      vi.resetModules();
+      await import('../notifications');
+
+      // 验证 auditMiddleware 被调用 2 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(2);
+
+      // 验证 2 处接入的 action 与 resourceType 参数完整
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('MARK_NOTIFICATION_READ', expect.objectContaining({ resourceType: 'notification' }));
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('MARK_ALL_NOTIFICATIONS_READ', expect.objectContaining({ resourceType: 'notification' }));
+
+      // 验证 getResourceId 提取逻辑
+      const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { params?: { id: string }; user?: { id: string } }) => string }]>;
+      // MARK_NOTIFICATION_READ 从 req.params.id 提取（单条已读定位到具体通知）
+      const markOneCall = calls.find(([action]) => action === 'MARK_NOTIFICATION_READ');
+      expect(markOneCall?.[1]?.getResourceId?.({ params: { id: 'notif-123' } })).toBe('notif-123');
+      // MARK_ALL_NOTIFICATIONS_READ 从 req.user.id 提取（批量操作无单一资源 id，用用户 id 作为关联键）
+      const markAllCall = calls.find(([action]) => action === 'MARK_ALL_NOTIFICATIONS_READ');
+      expect(markAllCall?.[1]?.getResourceId?.({ user: { id: 'user-abc' } })).toBe('user-abc');
     });
   });
 });
