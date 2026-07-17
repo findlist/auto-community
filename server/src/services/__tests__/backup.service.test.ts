@@ -1,12 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // 用 vi.hoisted 提前创建 mock 引用，确保 vi.mock 工厂内能安全访问（vi.mock 是 hoisted 的）
 // 设计原因：spawn 返回的 child 对象需要在测试中触发 close/error 事件，必须提前创建引用
+// kill 方法用于模拟超时强制终止子进程的真实接口
 const { mockSpawn, mockChild, mockFs, mockLogger } = vi.hoisted(() => {
   const mockChild = {
     stdout: { on: vi.fn() },
     stderr: { on: vi.fn() },
     on: vi.fn(),
+    kill: vi.fn(),
   };
   const mockSpawn = vi.fn(() => mockChild);
   const mockFs = {
@@ -70,6 +72,14 @@ describe('backup.service', () => {
     // 默认 stdout/stderr on 不触发（避免干扰 spawn 事件模拟）
     mockChild.stdout.on.mockReturnValue(undefined);
     mockChild.stderr.on.mockReturnValue(undefined);
+    // 默认 kill 不触发副作用（超时专项测试用例会显式覆盖）
+    mockChild.kill.mockReturnValue(true);
+  });
+
+  // fake timers 守护：超时专项测试用例使用 vi.useFakeTimers 模拟 5 分钟超时
+  // 必须在 afterEach 中恢复真实 timers，避免影响后续测试用例的真实 setTimeout/setInterval
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe('performBackup', () => {
@@ -217,6 +227,34 @@ describe('backup.service', () => {
       expect(result.success).toBe(true);
       // statSync 抛错的文件不会被删除（catch 中 logger.warn 后继续）
       expect(mockFs.unlinkSync).not.toHaveBeenCalled();
+    });
+
+    it('备份超时：5 分钟内 spawn 未触发 close 事件，强制 kill 子进程并返回超时错误', async () => {
+      // 设计原因：pg_dump 挂起（如远程 DB 不可达）时 spawn 既不触发 close 也不触发 error，
+      // 必须依赖超时机制强制 kill 子进程避免 Promise 永不 resolve 占用 scheduler 单线程
+      // 使用 fake timers 加速 5 分钟超时场景，避免真实等待
+      vi.useFakeTimers();
+
+      // spawn 不触发任何事件，模拟子进程挂起
+      mockChild.on.mockImplementation(() => undefined);
+      // existsSync 在 catch 中检查部分文件是否存在并清理
+      mockFs.existsSync.mockReturnValue(true);
+
+      // 启动备份（不 await，让其在后台挂起）
+      const backupPromise = performBackup();
+
+      // 推进 5 分钟 + 1ms，触发 setTimeout 超时回调
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 1);
+
+      const result = await backupPromise;
+
+      // 验证超时后返回失败结果
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('备份命令超时');
+      // 验证子进程被强制 SIGKILL 终止
+      expect(mockChild.kill).toHaveBeenCalledWith('SIGKILL');
+      // 验证 catch 中清理部分备份文件
+      expect(mockFs.unlinkSync).toHaveBeenCalled();
     });
   });
 

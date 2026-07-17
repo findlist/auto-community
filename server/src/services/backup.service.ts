@@ -7,6 +7,12 @@ import { logger } from '../utils/logger';
 // 备份文件保留天数
 const BACKUP_RETENTION_DAYS = 7;
 
+// 单次备份命令最长执行时间（毫秒）
+// 设计原因：pg_dump 通常 1-2 分钟内完成，5 分钟超时阈值预留充裕缓冲；
+// 超时后强制 SIGKILL 终止子进程，避免 pg_dump 挂起（如等待远程 DB 响应）导致
+// 定时备份任务积压、Promise 永不 resolve 占用 scheduler 单线程
+const BACKUP_TIMEOUT_MS = 5 * 60 * 1000;
+
 // 备份服务配置
 interface BackupConfig {
   backupDir: string;
@@ -62,6 +68,8 @@ function generateBackupFileName(): string {
 }
 
 // 执行命令并返回结果
+// 设计原因：spawn 子进程必须设置超时保护，避免 pg_dump 挂起（如远程 DB 不可达）
+// 导致定时备份任务积压、Promise 永不 resolve 占用 scheduler 单线程
 function executeCommand(command: string, args: string[], envVars: Record<string, string>): Promise<string> {
   return new Promise((resolve, reject) => {
     const childEnv = { ...process.env, ...envVars };
@@ -74,6 +82,13 @@ function executeCommand(command: string, args: string[], envVars: Record<string,
     let stdout = '';
     let stderr = '';
 
+    // 超时定时器：达到 BACKUP_TIMEOUT_MS 阈值后强制 SIGKILL 终止子进程
+    // 设计原因：SIGKILL 不可被捕获，确保子进程必然退出；SIGTERM 可能被子进程忽略或处理不及时
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      reject(new Error(`备份命令超时（${BACKUP_TIMEOUT_MS / 1000}秒），已强制终止`));
+    }, BACKUP_TIMEOUT_MS);
+
     child.stdout.on('data', (data) => {
       stdout += data.toString();
     });
@@ -83,10 +98,12 @@ function executeCommand(command: string, args: string[], envVars: Record<string,
     });
 
     child.on('error', (error) => {
+      clearTimeout(timer);
       reject(new Error(`命令执行失败: ${error.message}`));
     });
 
     child.on('close', (code) => {
+      clearTimeout(timer);
       if (code === 0) {
         resolve(stdout);
       } else {
