@@ -3,6 +3,7 @@ import { body } from 'express-validator';
 import { authenticate, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
+import { auditMiddleware } from '../middleware/auditLog';
 import { success } from '../utils/response';
 import { abTestService } from '../services/ab-test.service';
 
@@ -75,7 +76,12 @@ router.get('/:testName/config', authenticate, asyncHandler(async (req: Request, 
  *       404:
  *         description: 测试不存在
  */
-router.post('/:testName/assign', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.post('/:testName/assign', authenticate, auditMiddleware('AB_TEST_ASSIGN', {
+  resourceType: 'ab_test',
+  // getResourceId 从 req.params.testName 提取（实验名称作为资源标识）
+  // 设计原因：A/B 测试分桶影响实验数据完整性，实验数据异常时可追溯分桶来源
+  getResourceId: (req) => req.params.testName,
+}), asyncHandler(async (req: Request, res: Response) => {
   const result = await abTestService.assignVariant(req.params.testName, req.user!.id);
   success(res, result);
 }));

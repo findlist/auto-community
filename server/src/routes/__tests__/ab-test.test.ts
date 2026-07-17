@@ -27,7 +27,7 @@ process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.DB_PASSWORD = 'test-db-password';
 
 // vi.hoisted 提前创建 mock 引用，避免 vi.mock 工厂内 TDZ 问题
-const { mockAuthenticate, mockRequireRoleMiddleware, mockGetAllTestConfigs, mockGetTestConfig, mockAssignVariant, mockRecordEvent, mockGetTestResults } = vi.hoisted(() => ({
+const { mockAuthenticate, mockRequireRoleMiddleware, mockGetAllTestConfigs, mockGetTestConfig, mockAssignVariant, mockRecordEvent, mockGetTestResults, mockAuditMiddleware } = vi.hoisted(() => ({
   mockAuthenticate: vi.fn(),
   // requireRole 高阶函数返回的中间件：默认通过，可重写为拒绝以覆盖 403 分支
   mockRequireRoleMiddleware: vi.fn(),
@@ -36,6 +36,9 @@ const { mockAuthenticate, mockRequireRoleMiddleware, mockGetAllTestConfigs, mock
   mockAssignVariant: vi.fn(),
   mockRecordEvent: vi.fn(),
   mockGetTestResults: vi.fn(),
+  // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
+  // 设计原因：ab-test 路由本身不依赖审计中间件的具体行为，审计逻辑由 auditLog 单测覆盖
+  mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
 }));
 
 vi.mock('../../middleware/auth', () => ({
@@ -43,6 +46,8 @@ vi.mock('../../middleware/auth', () => ({
   // requireRole 为高阶函数，调用后返回中间件；mock 为返回 mockRequireRoleMiddleware 的函数
   requireRole: vi.fn(() => mockRequireRoleMiddleware),
 }));
+// auditMiddleware mock 为 pass-through 工厂，审计逻辑由 auditLog 单测覆盖
+vi.mock('../../middleware/auditLog', () => ({ auditMiddleware: mockAuditMiddleware }));
 vi.mock('../../services/ab-test.service', () => ({
   abTestService: {
     getAllTestConfigs: mockGetAllTestConfigs,
@@ -301,6 +306,28 @@ describe('ab-test 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/homepage_layout/results`);
       expect(res.status).toBe(401);
       expect(mockGetTestResults).not.toHaveBeenCalled();
+    });
+  });
+
+  // ===================== 审计接入不变式（全量） =====================
+  describe('审计接入不变式（全量）', () => {
+    it('1 处 A/B 测试分桶操作路由以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      // 覆盖范围：分配变体（AB_TEST_ASSIGN），实验数据异常时可追溯分桶来源
+      vi.resetModules();
+      await import('../ab-test');
+
+      // 验证 auditMiddleware 被调用 1 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(1);
+
+      // 验证接入的 action 与 resourceType 参数完整
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('AB_TEST_ASSIGN', expect.objectContaining({ resourceType: 'ab_test' }));
+
+      // 验证 getResourceId 从 req.params.testName 提取（实验名称作为资源标识）
+      const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { params?: { testName: string } }) => string | undefined }]>;
+      const assignCall = calls.find(([action]) => action === 'AB_TEST_ASSIGN');
+      expect(assignCall?.[1]?.getResourceId?.({ params: { testName: 'homepage_layout' } })).toBe('homepage_layout');
     });
   });
 });
