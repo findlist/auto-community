@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiError } from "@/api/client";
+import { useSafeTimeout } from "@/hooks/useSafeTimeout";
 import {
   getRequests, getRequest, createRequest, respondToRequest,
   updateResponseStatus, submitFalseReport, getResources,
@@ -117,22 +118,18 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
 
 function useModalTransition() {
   const [isVisible, setIsVisible] = useState(false);
-  // 关闭动画定时器引用：组件卸载时清理，避免 onClose 作用于已卸载组件；快速点击关闭时清理上一个避免累积
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 安全定时器：组件卸载时自动清理，调用前自动清理上一个，避免 onClose 作用于已卸载组件与快速点击累积
+  const safeSetTimeout = useSafeTimeout();
 
   useEffect(() => {
     requestAnimationFrame(() => setIsVisible(true));
-    return () => {
-      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-    };
   }, []);
 
   return {
     isVisible,
     handleClose: (onClose: () => void) => {
       setIsVisible(false);
-      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = setTimeout(onClose, 300);
+      safeSetTimeout(onClose, 300);
     },
   };
 }
@@ -480,19 +477,26 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
   }, [showMap, mapLoaded, resources, userLocation]);
 
   // 尝试获取用户位置
+  // 设计原因：getCurrentPosition 的回调是异步执行的，组件可能在回调触发前已卸载（用户关闭地图），
+  // 直接 setUserLocation 会触发 React 警告或无意义的状态更新；用 cancelled 标志在 cleanup 时标记放弃回调结果
   useEffect(() => {
     if (!showMap) return;
+    if (!navigator.geolocation) return;
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserLocation({ lng: pos.coords.longitude, lat: pos.coords.latitude });
-        },
-        () => {
-          // 获取失败，使用默认位置
-        }
-      );
-    }
+    let cancelled = false;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (cancelled) return;
+        setUserLocation({ lng: pos.coords.longitude, lat: pos.coords.latitude });
+      },
+      () => {
+        // 获取失败，使用默认位置；无需额外处理 cancelled（不更新状态）
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
   }, [showMap]);
 
   return (

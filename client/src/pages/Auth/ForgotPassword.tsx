@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Phone, ArrowRight, ArrowLeft, Send, Loader2 } from "lucide-react";
 import { forgotPassword } from "@/api/auth";
 import { ApiError } from "@/api/client";
+import { useSafeTimeout } from "@/hooks/useSafeTimeout";
 
 // 忘记密码第一步：仅输入手机号触发验证码下发，后续重置在 /reset-password 完成
 // 设计原因：原 simpleResetPassword 端点仅凭手机号即可重置密码，存在任意账号接管风险；
@@ -14,14 +15,8 @@ export default function ForgotPassword() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  // 跳转定时器引用：组件卸载时清理，避免 navigate 作用于已卸载组件
-  const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (navigateTimerRef.current) clearTimeout(navigateTimerRef.current);
-    };
-  }, []);
+  // 安全定时器：组件卸载时自动清理，避免 navigate 作用于已卸载组件
+  const safeSetTimeout = useSafeTimeout();
 
   const validate = () => {
     const errors: Record<string, string> = {};
@@ -43,7 +38,7 @@ export default function ForgotPassword() {
       await forgotPassword({ phone });
       setSuccess(true);
       // 2秒后带 phone 参数跳转到重置密码页，免去用户重复输入
-      navigateTimerRef.current = setTimeout(() => {
+      safeSetTimeout(() => {
         navigate(`/reset-password?phone=${encodeURIComponent(phone)}`);
       }, 2000);
     } catch (err) {

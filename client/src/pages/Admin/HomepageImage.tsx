@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Loader2, AlertCircle, Save, Check } from "lucide-react";
 import { getHomepageImage, setHomepageImage } from "@/api/admin";
 import { uploadImage } from "@/api/upload";
 import { ApiError } from "@/api/client";
+import { useSafeTimeout } from "@/hooks/useSafeTimeout";
 
 export default function HomepageImage() {
   const [url, setUrl] = useState("");
@@ -11,14 +12,8 @@ export default function HomepageImage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  // 保存成功提示定时器引用：组件卸载时清理，避免 setState 作用于已卸载组件
-  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (successTimerRef.current) clearTimeout(successTimerRef.current);
-    };
-  }, []);
+  // 安全定时器：组件卸载时自动清理，调用前自动清理上一个，避免重复保存时旧定时器提前关闭提示
+  const safeSetTimeout = useSafeTimeout();
 
   // 加载当前首页图片
   // 设计原因：用 useCallback 包装稳定引用，与项目其他页面（ABTestResults/SystemConfig 等）模式一致，
@@ -69,9 +64,8 @@ export default function HomepageImage() {
     try {
       await setHomepageImage(url.trim());
       setSuccess(true);
-      // 设置新定时器前先清理旧的，避免重复保存时旧定时器提前关闭提示
-      if (successTimerRef.current) clearTimeout(successTimerRef.current);
-      successTimerRef.current = setTimeout(() => setSuccess(false), 2500);
+      // safeSetTimeout 内部已实现"调用前清理上一个"，无需手动 clear
+      safeSetTimeout(() => setSuccess(false), 2500);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "保存失败");
     } finally {

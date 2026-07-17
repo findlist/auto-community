@@ -8,6 +8,7 @@ import { getResources } from "@/api/emergency";
 import { escapeHtml } from "@/utils/format";
 // Empty 组件统一空状态视觉规范，替代零散 emoji + 文案组合
 import Empty from "@/components/Empty";
+import { useSafeTimeout } from "@/hooks/useSafeTimeout";
 import type { EmergencyResource } from "@/types";
 
 // 资源类型元数据：用于列表图标与标记颜色区分，未命中时回退为通用样式
@@ -150,8 +151,8 @@ export default function ResourceMap() {
   const mapRef = useRef<AMapMap | null>(null);
   const markersRef = useRef<Map<string, AMapMarker>>(new Map());
   const infoWindowRef = useRef<AMapInfoWindow | null>(null);
-  // 导航按钮事件绑定的延迟定时器引用：每次 showInfoWindow 调用前清理上一个，避免快速切换标记时定时器累积；组件卸载时也会清理，防止卸载后操作 DOM 导致内存泄漏
-  const navBtnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 安全定时器：组件卸载时自动清理，调用前自动清理上一个，避免快速切换标记时定时器累积与卸载后操作 DOM
+  const safeSetTimeout = useSafeTimeout();
 
   // 竞态守卫：跟踪当前活跃的 typeFilter，避免快速切换筛选时旧请求覆盖新数据
   // 设计原因：fetchResources 是 useCallback 依赖 typeFilter，用户快速切换类型筛选时
@@ -200,15 +201,6 @@ export default function ResourceMap() {
       },
       { timeout: 8000, enableHighAccuracy: true }
     );
-  }, []);
-
-  // 组件卸载时清理导航按钮事件绑定的延迟定时器，防止卸载后仍操作 DOM 导致内存泄漏
-  useEffect(() => {
-    return () => {
-      if (navBtnTimerRef.current) {
-        clearTimeout(navBtnTimerRef.current);
-      }
-    };
   }, []);
 
   // 初始化地图实例与信息窗体
@@ -311,18 +303,14 @@ export default function ResourceMap() {
     infoWindowRef.current.open(mapRef.current, new window.AMap.LngLat(coord.lng, coord.lat));
 
     // 绑定导航按钮点击事件：延迟绑定以等待 InfoWindow DOM 渲染完成
-    // 设计原因：每次调用前清理上一个定时器，避免快速切换标记时多个定时器累积执行无效 DOM 查询；
-    // 组件卸载时也会清理（见卸载 cleanup effect），防止卸载后操作 DOM 导致内存泄漏
-    if (navBtnTimerRef.current) {
-      clearTimeout(navBtnTimerRef.current);
-    }
-    navBtnTimerRef.current = setTimeout(() => {
+    // 设计原因：safeSetTimeout 内部已实现"调用前清理上一个 + 组件卸载时清理"，无需手动管理 ref
+    safeSetTimeout(() => {
       const btn = document.getElementById("res-nav-btn");
       if (btn) {
         btn.onclick = () => openNavigation(coord.lng, coord.lat, resource.name);
       }
     }, 50);
-  }, [userLocation]);
+  }, [userLocation, safeSetTimeout]);
 
   // 列表项点击：聚焦地图标记并打开信息窗体
   const handleSelectResource = useCallback((r: EmergencyResource) => {
