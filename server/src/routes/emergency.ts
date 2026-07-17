@@ -177,7 +177,7 @@ router.post('/requests', authenticate, createPostLimiter, validate([
   body('category').notEmpty().withMessage('请选择求助类别'),
   body('title').notEmpty().withMessage('请输入求助标题').isLength({ max: 100 }).withMessage('标题不超过100字'),
   body('description').notEmpty().withMessage('请输入求助描述'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateRequestBody>, res: Response) => {
+]), auditMiddleware('CREATE_EMERGENCY_REQUEST', { resourceType: 'emergency_request' }), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateRequestBody>, res: Response) => {
   const result = await emergencyService.createRequest(req.user!.id, req.body);
   success(res, result, '发布成功');
 }));

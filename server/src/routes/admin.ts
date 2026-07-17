@@ -273,9 +273,10 @@ router.get('/homepage-image', asyncHandler(async (_req: Request, res: Response) 
 }));
 
 // 设置首页展示图片
+// 审计接入：首页门面图片属高危篡改目标，需记录操作者便于事后追溯
 router.put('/homepage-image', validate([
   body('url').isString().withMessage('图片 URL 必须为字符串'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateHomepageImageBody>, res: Response) => {
+]), auditMiddleware('UPDATE_HOMEPAGE_IMAGE', { resourceType: 'homepage_image' }), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateHomepageImageBody>, res: Response) => {
   const { url } = req.body;
   const result = await adminService.setHomepageImage(url, req.user!.id);
   success(res, result, '首页展示图片已更新');

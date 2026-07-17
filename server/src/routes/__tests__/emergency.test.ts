@@ -484,17 +484,18 @@ describe('emergency 路由集成测试', () => {
   });
 
   describe('审计接入不变式（全量）', () => {
-    it('7 处敏感操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+    it('8 处敏感操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
       // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
       // 设计原因：vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
-      // 覆盖范围：2 处原有（RESPOND_EMERGENCY_REQUEST/RESOLVE_FALSE_REPORT）+ 5 处本轮新增
+      // 覆盖范围：2 处原有（RESPOND_EMERGENCY_REQUEST/RESOLVE_FALSE_REPORT）+ 6 处本轮新增
       vi.resetModules();
       await import('../emergency');
 
-      // 验证 auditMiddleware 被调用 7 次
-      expect(mockAuditMiddleware).toHaveBeenCalledTimes(7);
+      // 验证 auditMiddleware 被调用 8 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(8);
 
-      // 验证 7 处接入的 action 与 resourceType 参数完整
+      // 验证 8 处接入的 action 与 resourceType 参数完整
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('CREATE_EMERGENCY_REQUEST', expect.objectContaining({ resourceType: 'emergency_request' }));
       expect(mockAuditMiddleware).toHaveBeenCalledWith('RESPOND_EMERGENCY_REQUEST', expect.objectContaining({ resourceType: 'emergency_request' }));
       expect(mockAuditMiddleware).toHaveBeenCalledWith('UPDATE_EMERGENCY_RESPONSE_STATUS', expect.objectContaining({ resourceType: 'emergency_response' }));
       expect(mockAuditMiddleware).toHaveBeenCalledWith('CREATE_FALSE_REPORT', expect.objectContaining({ resourceType: 'false_report' }));
@@ -514,7 +515,8 @@ describe('emergency 路由集成测试', () => {
       // UPDATE/DELETE_EMERGENCY_RESOURCE 从 req.params.id 提取
       expect(getById('UPDATE_EMERGENCY_RESOURCE')?.({ params: { id: 'res-789' } })).toBe('res-789');
       expect(getById('DELETE_EMERGENCY_RESOURCE')?.({ params: { id: 'res-999' } })).toBe('res-999');
-      // CREATE_EMERGENCY_RESOURCE 无 getResourceId（创建时无 id）
+      // CREATE_EMERGENCY_REQUEST 与 CREATE_EMERGENCY_RESOURCE 无 getResourceId（创建时无 id）
+      expect(getById('CREATE_EMERGENCY_REQUEST')).toBeUndefined();
       expect(getById('CREATE_EMERGENCY_RESOURCE')).toBeUndefined();
     });
   });

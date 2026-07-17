@@ -820,10 +820,10 @@ describe('admin 路由集成测试', () => {
   });
 
   describe('审计接入不变式（全量）', () => {
-    it('15 处敏感操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+    it('16 处敏感操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
       // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
       // 设计原因：beforeEach 的 vi.resetAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
-      // 覆盖范围：6 处原有（batch-ban/batch-unban/batch-status/export/settings-update/settings-delete）+ 9 处本轮新增
+      // 覆盖范围：6 处原有（batch-ban/batch-unban/batch-status/export/settings-update/settings-delete）+ 10 处本轮新增
       vi.resetModules();
       await import('../admin');
 
@@ -837,6 +837,7 @@ describe('admin 路由集成测试', () => {
         { action: 'UPDATE_CONTENT_STATUS', resourceType: 'content', hasResourceId: true },
         { action: 'BATCH_UPDATE_CONTENT_STATUS', resourceType: 'content' },
         { action: 'ADMIN_UPDATE_CONTENT', resourceType: 'content', hasResourceId: true },
+        { action: 'UPDATE_HOMEPAGE_IMAGE', resourceType: 'homepage_image' },
         { action: 'FORCE_CANCEL_ORDER', resourceType: 'order', hasResourceId: true },
         { action: 'HANDLE_REPORT', resourceType: 'report', hasResourceId: true },
         { action: 'REVIEW_VERIFICATION', resourceType: 'verification', hasResourceId: true },
@@ -846,7 +847,7 @@ describe('admin 路由集成测试', () => {
         { action: 'DELETE_SYSTEM_CONFIG', resourceType: 'system_setting' },
       ];
 
-      // 验证 auditMiddleware 被调用 15 次
+      // 验证 auditMiddleware 被调用 16 次
       expect(mockAuditMiddleware).toHaveBeenCalledTimes(expected.length);
 
       // 逐项验证 action 与 resourceType 参数完整
