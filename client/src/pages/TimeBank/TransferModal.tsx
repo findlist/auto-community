@@ -34,6 +34,9 @@ export default function TransferModal({ open, onClose, onSuccess, currentBalance
   const [remark, setRemark] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  // 标记用户是否尝试过提交：仅在此后显示渲染期校验错误，避免用户刚输入第一字符就出现红色提示
+  // 设计原因：原实现 error=validate() 在渲染期同步计算并直接展示，用户开始输入即触发校验，UX 不友好
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   if (!open) return null;
 
@@ -50,7 +53,10 @@ export default function TransferModal({ open, onClose, onSuccess, currentBalance
   const error = validate();
 
   const handleSubmit = async () => {
-    if (error || submitting) return;
+    // 首次点击即标记提交尝试，后续输入错误可实时显示
+    if (submitting) return;
+    setSubmitAttempted(true);
+    if (error) return;
     setSubmitting(true);
     setFormError(null);
     try {
@@ -59,6 +65,7 @@ export default function TransferModal({ open, onClose, onSuccess, currentBalance
       setToUserId("");
       setAmount("");
       setRemark("");
+      setSubmitAttempted(false);
       toast.success("转赠成功");
       onSuccess();
       onClose();
@@ -71,9 +78,10 @@ export default function TransferModal({ open, onClose, onSuccess, currentBalance
     }
   };
 
-  // 关闭弹窗时清空错误状态，避免下次打开仍残留
+  // 关闭弹窗时清空错误状态与提交标记，避免下次打开仍残留
   const handleClose = () => {
     setFormError(null);
+    setSubmitAttempted(false);
     onClose();
   };
 
@@ -129,7 +137,8 @@ export default function TransferModal({ open, onClose, onSuccess, currentBalance
         </div>
 
         {/* 字段级错误提示：AlertCircle 红色背景，符合项目错误提示规范 */}
-        {(formError || error) && (
+        {/* submitAttempted 守卫：用户提交尝试前不显示渲染期校验错误，避免输入即报红 */}
+        {((submitAttempted && error) || formError) && (
           <div className="mt-3 flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
             <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-red-700">{formError || error}</p>
@@ -138,7 +147,7 @@ export default function TransferModal({ open, onClose, onSuccess, currentBalance
 
         <button
           onClick={handleSubmit}
-          disabled={!!error || submitting}
+          disabled={submitting}
           className="w-full mt-5 py-3 bg-emerald-600 text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? (
