@@ -77,6 +77,9 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
     } else if (error instanceof jwt.TokenExpiredError) {
       next(new UnauthorizedError('认证令牌已过期'));
     } else {
+      // 非 JWT 错误（DB 查询失败、Redis 异常等）需留痕便于排查认证链路基础设施故障
+      // 设计原因：与 optionalAuth 的 debug 日志区分——authenticate 失败会阻断请求，需更高日志级别
+      logger.error({ err: error, userId: req.user?.id, path: req.path }, '[authenticate] 认证链路非 JWT 错误');
       next(error);
     }
   }
@@ -130,6 +133,8 @@ export function requireRole(...roles: string[]) {
       }
       next();
     } catch (error) {
+      // requireRole 内 DB 查询失败属于基础设施故障，需留痕便于排查权限校验异常
+      logger.error({ err: error, userId: req.user?.id, path: req.path, requiredRoles: roles }, '[requireRole] 角色查询失败');
       next(error);
     }
   };

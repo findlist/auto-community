@@ -5,6 +5,7 @@ import { auditMiddleware } from '../middleware/auditLog';
 import { success } from '../utils/response';
 import { BadRequestError } from '../utils/errors';
 import { getStorageAdapter, batchPutWithRollback } from '../services/storage-adapter';
+import logger from '../utils/logger';
 import path from 'path';
 
 const router = Router();
@@ -86,6 +87,8 @@ router.post('/image', auditMiddleware('CREATE_UPLOAD_IMAGE', { resourceType: 'up
         mimetype: req.file.mimetype
       }, '上传成功');
     } catch (e) {
+      // 存储失败可能由 OSS 配额、磁盘满、网络中断等导致，留痕便于运维介入
+      logger.error({ err: e, userId: req.user?.id, mimetype: req.file?.mimetype, size: req.file?.size }, '[上传] 单图存储失败');
       next(e);
     }
   });
@@ -171,6 +174,8 @@ router.post('/images', auditMiddleware('CREATE_UPLOAD_IMAGES', { resourceType: '
       const images = await batchPutWithRollback(adapter, items);
       success(res, { images }, '上传成功');
     } catch (e) {
+      // 批量上传已通过 batchPutWithRollback 自动回滚已成功项，此处仅留痕便于运维定位失败原因
+      logger.error({ err: e, userId: req.user?.id, fileCount: files.length }, '[上传] 批量图片存储失败（已回滚）');
       next(e);
     }
   });

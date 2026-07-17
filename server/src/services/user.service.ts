@@ -4,6 +4,7 @@ import { toUserResponse, UserRow, USER_COLUMNS } from './auth.service';
 import { userCache } from './cache.service';
 import { encryptIdCard, hashIdCard } from '../utils/crypto';
 import { validateImageUrl } from '../utils/sanitize';
+import logger from '../utils/logger';
 
 // credit_transactions 表显式查询列：替代 SELECT *，防御未来新增字段意外泄露
 // 字段对齐 CreditTransactionRow 接口声明，列为硬编码常量非用户输入，模板插值无注入风险
@@ -243,6 +244,8 @@ async function submitVerification(userId: string, realName: string, idCard: stri
     if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
       throw new ConflictError('该身份证号已被其他用户认证');
     }
+    // 非 23505 错误（连接断开、表损坏等）原样抛出，留痕便于运维定位
+    logger.error({ err, userId }, '[submitVerification] 实名认证提交 DB 异常');
     throw err;
   }
 
