@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
+import { auditMiddleware } from '../middleware/auditLog';
 import { success, cursorPaginated } from '../utils/response';
 import { messageService, OrderType } from '../services/message.service';
 import { BadRequestError } from '../utils/errors';
@@ -154,7 +155,13 @@ router.get('/', authenticate, asyncHandler(async (req: Request, res: Response) =
  *       401:
  *         description: 未授权
  */
-router.post('/read', authenticate, asyncHandler(async (req: Request<Record<string, string>, unknown, MarkReadBody>, res: Response) => {
+router.post('/read', authenticate, auditMiddleware('MARK_MESSAGE_READ', {
+  resourceType: 'message',
+  // getResourceId 从 req.body.order_id 提取（订单维度的消息已读）
+  // 设计原因：messages 路由的资源标识是 order_id（订单 ID），与 notifications 的 notification id 不同
+  // 标记已读会一次性影响订单内所有未读消息，order_id 是合适的关联键
+  getResourceId: (req) => (req.body as { order_id?: string } | undefined)?.order_id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, MarkReadBody>, res: Response) => {
   const { order_id } = req.body;
   if (!order_id) throw new BadRequestError('order_id 参数必填');
 

@@ -31,14 +31,20 @@ const {
   mockGetMessages,
   mockMarkAsRead,
   mockGetUnreadCount,
+  mockAuditMiddleware,
 } = vi.hoisted(() => ({
   mockAuthenticate: vi.fn(),
   mockGetMessages: vi.fn(),
   mockMarkAsRead: vi.fn(),
   mockGetUnreadCount: vi.fn(),
+  // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
+  // 设计原因：messages 路由本身不依赖审计中间件的具体行为，审计逻辑由 auditLog 单测覆盖
+  mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
 }));
 
 vi.mock('../../middleware/auth', () => ({ authenticate: mockAuthenticate }));
+// auditMiddleware mock 为 pass-through 工厂，审计逻辑由 auditLog 单测覆盖
+vi.mock('../../middleware/auditLog', () => ({ auditMiddleware: mockAuditMiddleware }));
 vi.mock('../../services/message.service', () => ({
   messageService: {
     getMessages: mockGetMessages,
@@ -289,6 +295,30 @@ describe('messages 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/unread-count`);
       expect(res.status).toBe(401);
       expect(mockGetUnreadCount).not.toHaveBeenCalled();
+    });
+  });
+
+  // ===================== 审计接入不变式（全量） =====================
+  describe('审计接入不变式（全量）', () => {
+    it('1 处消息操作路由以正确 action 与 resourceType 调用 auditMiddleware', async () => {
+      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
+      // 设计原因：vi.clearAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
+      // 覆盖范围：标记订单消息已读（MARK_MESSAGE_READ），与 notifications.ts 标记已读操作保持一致
+      vi.resetModules();
+      await import('../messages');
+
+      // 验证 auditMiddleware 被调用 1 次
+      expect(mockAuditMiddleware).toHaveBeenCalledTimes(1);
+
+      // 验证接入的 action 与 resourceType 参数完整
+      expect(mockAuditMiddleware).toHaveBeenCalledWith('MARK_MESSAGE_READ', expect.objectContaining({ resourceType: 'message' }));
+
+      // 验证 getResourceId 从 req.body.order_id 提取（订单维度的消息已读）
+      const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { body?: { order_id?: string } }) => string | undefined }]>;
+      const markReadCall = calls.find(([action]) => action === 'MARK_MESSAGE_READ');
+      expect(markReadCall?.[1]?.getResourceId?.({ body: { order_id: 'order-abc-123' } })).toBe('order-abc-123');
+      // order_id 缺失时返回 undefined（auditLog 会以 undefined 记录，不阻塞审计）
+      expect(markReadCall?.[1]?.getResourceId?.({ body: {} })).toBeUndefined();
     });
   });
 });
