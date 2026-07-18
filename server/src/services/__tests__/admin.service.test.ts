@@ -358,3 +358,34 @@ describe('admin.service - 首页展示图片', () => {
     await expect(adminService.setHomepageImage(null as unknown as string, 'admin-1')).rejects.toBeInstanceOf(BadRequestError);
   });
 });
+
+describe('admin.service - 举报处理', () => {
+  it('createReport 入库前清洗 reason 中的 XSS 节点，避免存储型 XSS 污染管理员审核界面', async () => {
+    // 模拟 INSERT RETURNING：回显清洗后的 reason，验证 service 层确实把清洗后的值写入 DB
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{
+        id: 'r1',
+        reporter_id: 'u1',
+        target_type: 'skill',
+        target_id: 's1',
+        reason: '举报理由',
+        status: 'pending',
+        created_at: new Date(),
+      }],
+    } as unknown as DbResult);
+
+    // payload 包含 <script> 与 onerror 事件处理器两类常见 XSS 向量
+    const xssPayload = '<script>alert("xss")</script>正常举报理由<img src=x onerror=alert(1)>';
+    await adminService.createReport('u1', 'skill', 's1', xssPayload);
+
+    // 不变式：传入 query 的第 4 个参数（reason）不得包含可执行的 <script> 与 onerror 危险节点
+    // xss 库默认将 <script> 转义为 HTML entity（&lt;script&gt;）而非剥离，同时剥离 onerror 属性
+    const insertCall = mockedQuery.mock.calls[0];
+    const reasonParam = (insertCall[1] as unknown[])[3] as string;
+    expect(reasonParam).not.toContain('<script>');
+    expect(reasonParam).not.toContain('</script>');
+    expect(reasonParam).not.toContain('onerror');
+    // 正常举报文本应被保留，便于管理员阅读
+    expect(reasonParam).toContain('正常举报理由');
+  });
+});

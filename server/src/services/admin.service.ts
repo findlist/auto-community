@@ -4,7 +4,7 @@ import { BadRequestError, NotFoundError } from '../utils/errors';
 import { createPaginatedResponse } from '../utils/pagination';
 import { logger } from '../utils/logger';
 import { userCache } from './cache.service';
-import { sanitizeObject } from '../utils/sanitize';
+import { sanitizeObject, sanitizeXss } from '../utils/sanitize';
 import ExcelJS from 'exceljs';
 // phone 字段为 AES-256-GCM 加密存储，无法直接 LIKE 模糊查询；
 // phone_hash 为 SHA-256 哈希用于等值查询，decryptPhone 用于管理员后台展示明文
@@ -950,11 +950,14 @@ async function createReport(
   targetId: string,
   reason: string,
 ) {
+  // 清洗 reason 中的 XSS 节点：reason 会写入 reports 表并展示在管理员后台审核界面，
+  // 未清洗的恶意脚本会在管理员查看举报列表/详情时触发存储型 XSS，危及管理员账号
+  const safeReason = sanitizeXss(reason);
   const { rows } = await query(
     `INSERT INTO reports (reporter_id, target_type, target_id, reason, status)
      VALUES ($1, $2, $3, $4, 'pending')
      RETURNING id, reporter_id, target_type, target_id, reason, status, created_at`,
-    [reporterId, targetType, targetId, reason],
+    [reporterId, targetType, targetId, safeReason],
   );
 
   const row = rows[0];
