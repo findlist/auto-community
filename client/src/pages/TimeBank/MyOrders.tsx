@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Star, Play, CheckCircle, XCircle, MessageSquare, AlertCircle, Loader2 } from "lucide-react";
 import Empty from "@/components/Empty";
@@ -44,21 +44,28 @@ export default function MyOrders() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   // 页面级错误：替代原生 alert，与项目其他页面风格一致（红色背景 + AlertCircle）
   const [error, setError] = useState<string | null>(null);
+  // 挂载标志：useEffect cleanup 时置为 false，loadOrders await 后检查避免卸载后 setState 泄漏
+  // 设计原因：MyOrders 的 statusTabs 切换是前端 filter 不触发 loadOrders，无竞态场景，mountedRef 模式比 reqKey 更简洁
+  const mountedRef = useRef(true);
 
   const loadOrders = useCallback(async (reset = false) => {
     try {
       const p = reset ? 1 : page;
       const res = await getOrders({ page: p, pageSize: 20 });
+      // 卸载后不再 setState，避免 React 警告与内存泄漏
+      if (!mountedRef.current) return;
       const { list, hasNext } = res.data;
       setOrders(prev => reset ? list : [...prev, ...list]);
       setHasMore(hasNext);
       setPage(p + 1);
       setError(null);
     } catch (err) {
+      if (!mountedRef.current) return;
       // ApiError 精准提取后端错误消息，兜底通用提示
       setError(err instanceof ApiError ? err.message : "加载订单失败");
     } finally {
-      setLoading(false);
+      // 仅挂载中才更新 loading，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setLoading(false);
     }
   }, [page]);
 
@@ -67,8 +74,12 @@ export default function MyOrders() {
       navigate("/login");
       return;
     }
+    // 重置挂载标志：组件重新挂载时（用户切换回来）恢复为 true
+    mountedRef.current = true;
     setLoading(true);
     loadOrders(true);
+    // cleanup：组件卸载时置为 false，使进行中的 loadOrders 失效
+    return () => { mountedRef.current = false; };
     // navigate 由 React Router 保证引用稳定，安全纳入依赖
     // loadOrders 依赖 page，纳入会导致分页后无限重载，故显式排除
     // eslint-disable-next-line react-hooks/exhaustive-deps

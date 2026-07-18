@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：userEvent 内部用 async act 包裹交互，自动等待微任务 flush，
 // 消除"异步 state 更新未被 act 包裹"警告，模拟真实用户点击序列
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import MyOrders from '../MyOrders';
@@ -525,5 +525,40 @@ describe('TimeBank/MyOrders 订单列表', () => {
     });
     // getOrders 应被调用2次
     expect(vi.mocked(getOrders)).toHaveBeenCalledTimes(2);
+  });
+
+  it('卸载后 loadOrders resolve 不触发 setState（mountedRef 防御）', async () => {
+    // 设计原因：useEffect 触发的 loadOrders 异步进行中，用户切换页面卸载组件，
+    // 异步完成后调用 setState 会触发 React 警告与内存泄漏；mountedRef 模式在 cleanup 时置 false，await 后跳过 setState
+    type OrderListResp = { code: number; message: string; data: { list: TimeOrder[]; total: number; page: number; pageSize: number; totalPages: number; hasNext: boolean } };
+    let resolveLoad!: (v: OrderListResp) => void;
+    vi.mocked(getOrders).mockImplementationOnce(() => new Promise<OrderListResp>((resolve) => { resolveLoad = resolve; }));
+
+    const spyConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = renderMyOrders();
+    // 等待 useEffect 触发 loadOrders
+    await waitFor(() => { expect(vi.mocked(getOrders)).toHaveBeenCalledTimes(1); });
+
+    // 卸载组件触发 cleanup（mountedRef.current = false）
+    unmount();
+
+    // 让慢请求 resolve：mountedRef 防御应跳过所有 setState，不抛错也不触发 React 警告
+    await act(async () => {
+      resolveLoad({
+        code: 0,
+        message: 'ok',
+        data: { list: mockOrders, total: mockOrders.length, page: 1, pageSize: 20, totalPages: 1, hasNext: false },
+      });
+      // 让微任务 flush
+      await Promise.resolve();
+    });
+
+    // 验证无 React 卸载后 setState 相关警告
+    const reactUnmountWarn = spyConsoleError.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('unmounted')
+    );
+    expect(reactUnmountWarn).toBeUndefined();
+    spyConsoleError.mockRestore();
   });
 });
