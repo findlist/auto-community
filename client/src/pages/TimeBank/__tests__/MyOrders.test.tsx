@@ -371,6 +371,39 @@ describe('TimeBank/MyOrders 订单列表', () => {
     });
   });
 
+  // 重复提交守卫不变式：弱网下用户连点状态变更按钮应只触发一次 updateOrderStatus API 调用
+  // 设计原因：原实现仅靠 disabled={isLoading} 单一防御，但 React 状态更新是异步批处理的，
+  // actionLoading 在批处理结束前仍为 null，弱网下用户在按钮 disabled 生效前的微任务窗口内连点
+  // 会触发多次 updateOrderStatus 调用。订单状态机有 pending→accepted→in_progress→completed
+  // 严格流转，重复调用可能导致状态跳级。入口 if (actionLoading) return 守卫作为第二道防线
+  it('状态变更进行中按钮显示"处理中..."加载态且重复点击不触发第二次 API 调用', async () => {
+    // 永不 resolve：锁定 actionLoading 状态，模拟弱网下请求挂起
+    vi.mocked(updateOrderStatus).mockImplementation(() => new Promise(() => {}));
+
+    renderMyOrders();
+
+    await screen.findByText('陪老人聊天服务');
+
+    // 点击 pending 订单的"接受"按钮（provider 视角）
+    await user.click(screen.getByRole('button', { name: '接受' }));
+
+    // 第一次点击应触发 updateOrderStatus 调用
+    await waitFor(() => {
+      expect(updateOrderStatus).toHaveBeenCalledWith('order-pending-1', 'accepted');
+      expect(updateOrderStatus).toHaveBeenCalledTimes(1);
+    });
+
+    // actionLoading 命中后，pending 订单的"接受"和"取消"按钮均进入加载态
+    // 设计原因：actionLoading 是订单级别状态，同一订单的所有操作按钮都应禁用，避免并发状态变更
+    const processingButtons = await screen.findAllByRole('button', { name: '处理中...' });
+    expect(processingButtons.length).toBeGreaterThanOrEqual(1);
+
+    // 重复点击"处理中..."按钮（已 disabled）：不应触发第二次 API 调用
+    // userEvent 默认不触发 disabled 按钮的 onClick，此用例验证 disabled 状态生效作为第一道防线
+    await user.click(processingButtons[0]!);
+    expect(updateOrderStatus).toHaveBeenCalledTimes(1);
+  });
+
   it('点击"评价"打开评价表单', async () => {
     switchUser(mockRequester);
 
