@@ -628,6 +628,25 @@ describe('time-bank.service createFamilyBinding', () => {
     // 应通知家长（parent.id = user-2）
     expect(mockNotifyFamily).toHaveBeenCalledWith('user-2', 'fb-1', 'request');
   });
+
+  it('XSS 不变式：relationship 含 script 标签时入库前被清洗', async () => {
+    // 设计原因：relationship 会展示给对方用户与管理员，未清洗会触发存储型 XSS
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'user-2' }] });
+    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 'fb-1', user_id: 'user-1', parent_id: 'user-2', relationship: 'parent' }] });
+
+    await timeBankService.createFamilyBinding('user-1', '13800000000', '<script>alert(1)</script>父亲');
+
+    // 验证 INSERT 第三参数（relationship）已被剥离 script 标签
+    const insertCall = mockClient.query.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('INSERT INTO family_bindings'),
+    );
+    expect(insertCall).toBeDefined();
+    const insertParams = insertCall![1] as unknown[];
+    const relationshipParam = insertParams[2];
+    expect(relationshipParam).not.toContain('<script>');
+    expect(relationshipParam).not.toContain('</script>');
+  });
 });
 
 // ===================== confirmFamilyBinding =====================

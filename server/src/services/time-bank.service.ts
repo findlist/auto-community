@@ -941,6 +941,10 @@ async function getTransactions(
 }
 
 async function createFamilyBinding(userId: string, parentPhone: string, relationship: string) {
+  // 入库前清洗用户输入的 relationship（如"父亲"/"母亲"/"配偶"），防止通过关系字段注入恶意脚本
+  // 设计原因：relationship 会在家庭绑定列表页向对方用户与管理员展示，未清洗会触发存储型 XSS
+  const safeRelationship = sanitizeXss(relationship) as string;
+
   // 事务包裹"查家长→查重复→插入"全流程，保证原子性；通知逻辑置于事务外 fire-and-forget
   const { parentId, binding } = await transaction(async (client) => {
     // phone 字段为 AES 加密密文，无法等值查询，改用 phone_hash（与 auth.service 保持一致）
@@ -960,7 +964,7 @@ async function createFamilyBinding(userId: string, parentPhone: string, relation
     const insertResult = await client.query(
       `INSERT INTO family_bindings (user_id, parent_id, relationship)
        VALUES ($1, $2, $3) RETURNING ${FAMILY_BINDING_COLUMNS}`,
-      [userId, parent.id, relationship],
+      [userId, parent.id, safeRelationship],
     );
     return { parentId: parent.id, binding: insertResult.rows[0] };
   });
