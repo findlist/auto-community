@@ -1072,6 +1072,8 @@ async function unbindFamilyBinding(bindingId: string, userId: string) {
 }
 
 async function getFamilyBindings(userId: string) {
+  // 加 LIMIT 50 防御性约束：单用户家庭绑定正常 < 10，超限通常意味着脏数据或异常膨胀，
+  // 提前截断避免单次查询返回过多行拖累家庭绑定列表页渲染
   const result = await query(
     `SELECT ${prefixColumns(FAMILY_BINDING_COLUMNS, 'fb')},
             CASE WHEN fb.user_id = $1 THEN u1.nickname ELSE u2.nickname END AS other_nickname,
@@ -1081,7 +1083,8 @@ async function getFamilyBindings(userId: string) {
      LEFT JOIN users u1 ON fb.user_id = u1.id
      LEFT JOIN users u2 ON fb.parent_id = u2.id
      WHERE fb.user_id = $1 OR fb.parent_id = $1
-     ORDER BY fb.created_at DESC`,
+     ORDER BY fb.created_at DESC
+     LIMIT 50`,
     [userId],
   );
 

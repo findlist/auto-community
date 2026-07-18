@@ -59,7 +59,7 @@ export async function getAllTestConfigs(): Promise<TestConfig[]> {
 
   const result = await query(
     `SELECT id, test_name, description, variants, status, start_date, end_date, created_at, updated_at
-     FROM ab_test_configs ORDER BY created_at DESC`,
+     FROM ab_test_configs ORDER BY created_at DESC LIMIT 100`,
   );
 
   const configs = result.rows as TestConfig[];

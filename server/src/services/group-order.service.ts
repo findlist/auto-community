@@ -444,12 +444,15 @@ async function getById(id: string) {
   const row = orderResult.rows[0];
 
   // 查询参与人列表
+  // 加 LIMIT 100 防御性约束：拼单参与人受 max_participants 业务约束（通常 < 100），
+  // 超限通常意味着脏数据，提前截断避免极端场景下参与人列表拖累详情页渲染
   const participantsResult = await query<GroupOrderParticipantRow>(
     `SELECT ${prefixColumns(GROUP_ORDER_PARTICIPANT_COLUMNS, 'gop')}, u.nickname, u.avatar
      FROM group_order_participants gop
      LEFT JOIN users u ON gop.user_id = u.id
      WHERE gop.group_order_id = $1
-     ORDER BY gop.created_at`,
+     ORDER BY gop.created_at
+     LIMIT 100`,
     [id]
   );
 

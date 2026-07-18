@@ -743,6 +743,26 @@ describe('group-order.service - getById 获取详情', () => {
       groupOrderService.getById('nonexistent'),
     ).rejects.toThrow(NotFoundError);
   });
+
+  it('参与者子查询含 LIMIT 100 防御性约束，避免极端场景拖累详情页', async () => {
+    // 设计原因：拼单参与人受 max_participants 业务约束（通常 < 100），
+    // 超限通常意味着脏数据，提前截断避免极端场景下参与人列表拖累详情页渲染
+    const mockRow = {
+      id: 'order-1', initiator_id: 'user-1', title: '测试', description: null,
+      target_amount: 300, current_amount: 150, min_participants: 2, max_participants: 5,
+      current_participants: 3, address: '地址', deadline: new Date('2026-01-01'),
+      status: 'open', created_at: new Date('2026-01-01'), updated_at: new Date('2026-01-01'),
+      initiator_uid: 'user-1', initiator_nickname: '张三', initiator_avatar: 'avatar.png',
+    };
+    mockedQuery.mockResolvedValueOnce({ rows: [mockRow] } as unknown as DbResult);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    await groupOrderService.getById('order-1');
+
+    // 第二次 query 是参与者子查询，SQL 应含 LIMIT 100
+    const participantsSql = String(mockedQuery.mock.calls[1][0]);
+    expect(participantsSql).toContain('LIMIT 100');
+  });
 });
 
 // ==================== checkExpired 测试 ====================

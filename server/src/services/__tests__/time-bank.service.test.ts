@@ -751,6 +751,17 @@ describe('time-bank.service getFamilyBindings', () => {
 
     expect(result).toEqual([]);
   });
+
+  it('SQL 含 LIMIT 50 防御性约束，避免脏数据膨胀拖累列表页', async () => {
+    // 设计原因：单用户家庭绑定正常 < 10，超限通常意味着脏数据或异常膨胀，
+    // 提前截断避免单次查询返回过多行拖累家庭绑定列表页渲染
+    mockQuery.mockResolvedValue({ rows: [] });
+
+    await timeBankService.getFamilyBindings('user-1');
+
+    const sql = String(mockQuery.mock.calls[0][0]);
+    expect(sql).toContain('LIMIT 50');
+  });
 });
 
 // ===================== createReview =====================

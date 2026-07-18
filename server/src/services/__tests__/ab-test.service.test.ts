@@ -133,6 +133,16 @@ describe('ab-test.service getAllTestConfigs', () => {
     // 验证 SQL 含 ORDER BY created_at DESC
     expect(mockQuery.mock.calls[0][0]).toContain('ORDER BY created_at DESC');
   });
+
+  it('SQL 含 LIMIT 100 防御性约束，避免配置异常膨胀拖垮后台渲染', async () => {
+    // 设计原因：AB 测试配置正常 < 20，超限通常意味着脏数据，
+    // 提前截断避免单次查询返回过多行拖垮后台渲染
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    await abTestService.getAllTestConfigs();
+
+    expect(mockQuery.mock.calls[0][0]).toContain('LIMIT 100');
+  });
 });
 
 describe('ab-test.service assignVariant', () => {
