@@ -5,6 +5,7 @@ import { logger } from '../utils/logger';
 import { safeNotify } from '../utils/safeNotify';
 import { notificationService } from './notification.service';
 import { prefixColumns } from '../utils/sql';
+import { sanitizeObject } from '../utils/sanitize';
 
 // 成团后(ongoing)退出的部分退款比例：退还参与者 90%，10% 作为已发生成本补偿给发起人
 const ONGOING_REFUND_RATE = 0.9;
@@ -108,6 +109,10 @@ async function create(userId: string, data: {
   address: string;
   deadline: string;
 }) {
+  // XSS 清洗：title/description/address 三个用户输入字段在拼单列表/详情中高频渲染
+  // 设计原因：未清洗的恶意脚本会触发存储型 XSS，影响所有浏览该拼单的用户
+  const sanitized = sanitizeObject(data, ['title', 'description', 'address']);
+
   // 事务包裹三条 SQL：避免 INSERT group_orders 成功但参与记录或计数更新失败时
   // 留下 current_participants = 0 且无发起人参与记录的孤儿拼单，破坏后续 join/cancel 逻辑
   const result = await transaction(async (client) => {
@@ -118,13 +123,13 @@ async function create(userId: string, data: {
        RETURNING ${GROUP_ORDER_COLUMNS}`,
       [
         userId,
-        data.title,
-        data.description || null,
-        data.targetAmount,
-        data.minParticipants,
-        data.maxParticipants,
-        data.address,
-        data.deadline
+        sanitized.title,
+        sanitized.description || null,
+        sanitized.targetAmount,
+        sanitized.minParticipants,
+        sanitized.maxParticipants,
+        sanitized.address,
+        sanitized.deadline
       ]
     );
 

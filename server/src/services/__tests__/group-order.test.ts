@@ -564,6 +564,38 @@ describe('group-order.service - create 创建拼单', () => {
     // 验证未执行第三步 UPDATE（事务在第二步失败后中止）
     expect(mockClient.query).toHaveBeenCalledTimes(2);
   });
+
+  it('XSS 不变式：title/description/address 入库前被清洗', async () => {
+    // 设计原因：三个字段在拼单列表/详情中高频渲染，未清洗会触发存储型 XSS
+    const mockRow = {
+      id: 'order-1', initiator_id: 'user-1', title: 't', description: null,
+      target_amount: 100, current_amount: 0, min_participants: 1, max_participants: 5,
+      current_participants: 0, address: 'a', deadline: new Date('2026-01-01'),
+      status: 'open', created_at: new Date('2026-01-01'), updated_at: new Date('2026-01-01'),
+    };
+    mockClient.query.mockResolvedValueOnce({ rows: [mockRow] } as unknown as DbResult);
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+    mockClient.query.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    await groupOrderService.create('user-1', {
+      title: '<script>alert("t")</script>正常标题',
+      description: '<img src=x onerror=alert(1)>描述',
+      targetAmount: 100,
+      minParticipants: 1, maxParticipants: 5,
+      address: '<script>alert("a")</script>正常地址',
+      deadline: '2026-01-01',
+    });
+
+    // 验证 INSERT group_orders（第一次 client.query）的参数被清洗
+    const insertCall = mockClient.query.mock.calls[0];
+    const params = insertCall[1] as unknown[];
+    // params 顺序：userId, title, description, targetAmount, minParticipants, maxParticipants, address, deadline
+    expect(params[1]).not.toContain('<script>');
+    expect(params[1]).toContain('正常标题');
+    expect(params[2]).not.toContain('onerror');
+    expect(params[6]).not.toContain('<script>');
+    expect(params[6]).toContain('正常地址');
+  });
 });
 
 // ==================== join 测试 ====================
