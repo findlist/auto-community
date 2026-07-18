@@ -60,6 +60,11 @@ export async function recordMetric(
   }
 }
 
+// 默认时间窗 90 天：未传 startDate 时强制约束，避免 metrics 表全量扫描
+// 设计原因：调用方未传日期时全表 AVG/COUNT 聚合在指标累积后会拖垮 DB，90 天覆盖近一季度数据满足 dashboard 场景
+const DEFAULT_LOOKBACK_DAYS = 90;
+const DEFAULT_LOOKBACK_MS = DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+
 // 获取指标汇总数据（avg, min, max, count）
 export async function getMetricSummary(
   name: string,
@@ -71,10 +76,10 @@ export async function getMetricSummary(
   const params: SqlParam[] = [name];
   let paramIndex = 2;
 
-  if (startDate) {
-    conditions.push(`recorded_at >= $${paramIndex++}`);
-    params.push(startDate);
-  }
+  // 未传 startDate 时回退到 90 天前：避免 metrics 表全表扫描聚合
+  const effectiveStart = startDate ?? new Date(Date.now() - DEFAULT_LOOKBACK_MS).toISOString();
+  conditions.push(`recorded_at >= $${paramIndex++}`);
+  params.push(effectiveStart);
 
   if (endDate) {
     conditions.push(`recorded_at <= $${paramIndex++}`);
@@ -117,10 +122,10 @@ export async function getMetricTrend(
   const params: SqlParam[] = [name];
   let paramIndex = 2;
 
-  if (startDate) {
-    conditions.push(`recorded_at >= $${paramIndex++}`);
-    params.push(startDate);
-  }
+  // 未传 startDate 时回退到 90 天前：与 getMetricSummary 保持一致，避免趋势查询全表扫描
+  const effectiveStart = startDate ?? new Date(Date.now() - DEFAULT_LOOKBACK_MS).toISOString();
+  conditions.push(`recorded_at >= $${paramIndex++}`);
+  params.push(effectiveStart);
 
   if (endDate) {
     conditions.push(`recorded_at <= $${paramIndex++}`);

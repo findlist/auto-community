@@ -96,24 +96,31 @@ describe('metrics-collector.service', () => {
   });
 
   describe('getMetricSummary', () => {
-    it('无日期范围时 SQL 仅含 name 条件，params 仅 [name]', async () => {
-      // 设计原因：动态 WHERE 构建，无日期时不应产生额外的占位符
+    it('无日期范围时回退到 90 天前默认时间窗，避免全表扫描', async () => {
+      // 设计原因：未传 startDate 时若不加约束会全表 AVG/COUNT，指标累积后拖垮 DB
+      // 默认时间窗 90 天覆盖近一季度数据，满足 dashboard 场景
       mockQuery.mockResolvedValueOnce({
         rows: [{ avg: '123.45', min: '10', max: '200', count: '5' }],
       });
 
+      const before = Date.now();
       const result = await getMetricSummary('response_time');
+      const after = Date.now();
 
       expect(mockQuery).toHaveBeenCalledOnce();
       const [sql, params] = mockQuery.mock.calls[0];
       expect(sql).toContain('WHERE name = $1');
-      expect(sql).not.toContain('recorded_at');
-      expect(params).toEqual(['response_time']);
+      expect(sql).toContain('recorded_at >= $2');
+      // params 第二个值应为 90 天前的 ISO 字符串，时间戳应在 [before-90d, after-90d] 区间内
+      const fallbackStart = params[1] as string;
+      const fallbackMs = new Date(fallbackStart).getTime();
+      expect(fallbackMs).toBeGreaterThanOrEqual(before - 90 * 24 * 60 * 60 * 1000);
+      expect(fallbackMs).toBeLessThanOrEqual(after - 90 * 24 * 60 * 60 * 1000);
       // string → number 转换
       expect(result).toEqual({ name: 'response_time', avg: 123.45, min: 10, max: 200, count: 5 });
     });
 
-    it('有 startDate 时 SQL 含 recorded_at >= $2，params 含 startDate', async () => {
+    it('有 startDate 时使用调用方值，不回退默认时间窗', async () => {
       mockQuery.mockResolvedValueOnce({
         rows: [{ avg: '50', min: '10', max: '100', count: '3' }],
       });
@@ -138,7 +145,8 @@ describe('metrics-collector.service', () => {
       expect(params).toEqual(['response_time', '2026-01-01', '2026-01-31']);
     });
 
-    it('仅有 endDate 时 paramIndex 从 $2 开始', async () => {
+    it('仅有 endDate 时仍会补默认 startDate（90 天前），endDate 占用 $3', async () => {
+      // 设计原因：startDate 始终被填充（默认或显式），endDate 接在其后
       mockQuery.mockResolvedValueOnce({
         rows: [{ avg: '0', min: '0', max: '0', count: '0' }],
       });
@@ -146,22 +154,30 @@ describe('metrics-collector.service', () => {
       await getMetricSummary('response_time', undefined, '2026-01-31');
 
       const [sql, params] = mockQuery.mock.calls[0];
-      expect(sql).not.toContain('recorded_at >= $2');
-      expect(sql).toContain('recorded_at <= $2');
-      expect(params).toEqual(['response_time', '2026-01-31']);
+      expect(sql).toContain('recorded_at >= $2');
+      expect(sql).toContain('recorded_at <= $3');
+      // params[1] 为默认 90 天前 ISO 字符串，params[2] 为显式 endDate
+      expect(params[0]).toBe('response_time');
+      expect(params[2]).toBe('2026-01-31');
     });
   });
 
   describe('getMetricTrend', () => {
-    it('默认 granularity=day 时 SQL 含 DATE_TRUNC(\'day\')', async () => {
+    it('默认 granularity=day 且无 startDate 时回退到 90 天前', async () => {
+      // 设计原因：与 getMetricSummary 行为对齐，避免趋势查询全表扫描
       mockQuery.mockResolvedValueOnce({
         rows: [{ date: '2026-01-01', value: '100' }, { date: '2026-01-02', value: '200' }],
       });
 
       const result = await getMetricTrend('response_time');
 
-      const [sql] = mockQuery.mock.calls[0];
+      const [sql, params] = mockQuery.mock.calls[0];
       expect(sql).toContain("DATE_TRUNC('day'");
+      expect(sql).toContain('recorded_at >= $2');
+      // params[1] 为默认 90 天前 ISO 字符串
+      expect(params[0]).toBe('response_time');
+      expect(params[1]).toBeTypeOf('string');
+      expect(new Date(params[1] as string).toString()).not.toBe('Invalid Date');
       expect(result).toEqual([{ date: '2026-01-01', value: 100 }, { date: '2026-01-02', value: 200 }]);
     });
 
