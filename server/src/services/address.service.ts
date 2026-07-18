@@ -1,5 +1,6 @@
 import { query, transaction, SqlParam } from '../config/database';
 import { NotFoundError } from '../utils/errors';
+import { sanitizeObject } from '../utils/sanitize';
 
 // delivery_addresses 表显式查询列：替代 SELECT *，防御未来新增字段意外泄露
 // 字段对齐 DeliveryAddressRow 接口声明，列为硬编码常量非用户输入，模板插值无注入风险
@@ -50,9 +51,14 @@ async function create(
   userId: string,
   data: { recipient: string; phone: string; address: string; isDefault?: boolean },
 ) {
+  // 入库前清洗收件人姓名与详细地址，防止存储型 XSS
+  // 设计原因：recipient 与 address 会在地址列表、订单详情、配送通知等多处直接渲染，
+  // phone 为数字字符串不涉及 XSS 风险，无需清洗
+  const safeData = sanitizeObject(data, ['recipient', 'address']);
+
   return transaction(async (client) => {
     // 设为默认时，先取消其他默认地址
-    if (data.isDefault) {
+    if (safeData.isDefault) {
       await client.query(
         'UPDATE delivery_addresses SET is_default = false WHERE user_id = $1',
         [userId],
@@ -72,7 +78,7 @@ async function create(
       `INSERT INTO delivery_addresses (user_id, recipient, phone, address, is_default)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING ${DELIVERY_ADDRESS_COLUMNS}`,
-      [userId, data.recipient, data.phone, data.address, data.isDefault || isFirst],
+      [userId, safeData.recipient, safeData.phone, safeData.address, safeData.isDefault || isFirst],
     );
 
     return toAddress(rows[0]);
@@ -85,6 +91,11 @@ async function update(
   userId: string,
   data: Partial<{ recipient: string; phone: string; address: string; isDefault: boolean }>,
 ) {
+  // 入库前清洗收件人姓名与详细地址（仅清洗已传入的字段），防止存储型 XSS
+  // 设计原因：recipient 与 address 会在地址列表、订单详情、配送通知等多处直接渲染，
+  // 未清洗会触发存储型 XSS；phone 为数字字符串不涉及 XSS 风险，无需清洗
+  const safeData = sanitizeObject(data, ['recipient', 'address']);
+
   return transaction(async (client) => {
     // 校验地址归属权：SELECT * FOR UPDATE 结果含完整行，泛型 DeliveryAddressRow 精确化
     const existing = await client.query<DeliveryAddressRow>(
@@ -94,7 +105,7 @@ async function update(
     if (existing.rows.length === 0) throw new NotFoundError('地址');
 
     // 设为默认时，先取消其他默认地址
-    if (data.isDefault) {
+    if (safeData.isDefault) {
       await client.query(
         'UPDATE delivery_addresses SET is_default = false WHERE user_id = $1 AND id != $2',
         [userId, id],
@@ -113,10 +124,10 @@ async function update(
       isDefault: 'is_default',
     };
     for (const [key, column] of Object.entries(fieldMap)) {
-      if (data[key as keyof typeof data] !== undefined) {
+      if (safeData[key as keyof typeof safeData] !== undefined) {
         fields.push(`${column} = $${paramIndex++}`);
-        // data[key] 类型为 string | boolean | undefined，过滤 undefined 后为 string | boolean
-        values.push(data[key as keyof typeof data] as SqlParam);
+        // safeData[key] 类型为 string | boolean | undefined，过滤 undefined 后为 string | boolean
+        values.push(safeData[key as keyof typeof safeData] as SqlParam);
       }
     }
     fields.push('updated_at = NOW()');

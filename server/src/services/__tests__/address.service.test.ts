@@ -114,6 +114,33 @@ describe('address.service - create', () => {
     // 第一次调用应为 UPDATE ... SET is_default = false
     expect(mockClient.query.mock.calls[0][0]).toContain('UPDATE delivery_addresses SET is_default = false');
   });
+
+  it('XSS 不变式：recipient 与 address 含 script 标签时入库前被清洗', async () => {
+    // 设计原因：recipient 与 address 会在地址列表、订单详情、配送通知等多处直接渲染，
+    // 未清洗会触发存储型 XSS。此处验证 INSERT 的 recipient 与 address 参数已剥离 <script> 标签
+    mockClient.query
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult) // COUNT
+      .mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult); // INSERT RETURNING
+
+    await addressService.create('user-1', {
+      recipient: '<script>alert(1)</script>张三',
+      phone: '13800000000',
+      address: '<script>alert(2)</script>北京市朝阳区',
+    });
+
+    const insertCall = mockClient.query.mock.calls[1];
+    expect(insertCall[0]).toContain('INSERT INTO delivery_addresses');
+    const insertParams = insertCall[1] as unknown[];
+    // 参数顺序：user_id, recipient, phone, address, is_default
+    const recipientParam = insertParams[1] as string;
+    const addressParam = insertParams[3] as string;
+    expect(recipientParam).not.toContain('<script>');
+    expect(recipientParam).not.toContain('</script>');
+    expect(recipientParam).toContain('张三');
+    expect(addressParam).not.toContain('<script>');
+    expect(addressParam).not.toContain('</script>');
+    expect(addressParam).toContain('北京市朝阳区');
+  });
 });
 
 describe('address.service - update', () => {
@@ -149,6 +176,32 @@ describe('address.service - update', () => {
     // 第二次调用应为取消其他默认
     expect(mockClient.query.mock.calls[1][0]).toContain('UPDATE delivery_addresses SET is_default = false');
     expect(mockClient.query.mock.calls[1][0]).toContain('id != $2');
+  });
+
+  it('XSS 不变式：update 传入含 script 的 recipient 与 address 时入库前被清洗', async () => {
+    // 设计原因：update 路径同样会写入 recipient 与 address 字段，未清洗会在下游渲染触发存储型 XSS
+    mockClient.query
+      .mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult) // SELECT FOR UPDATE
+      .mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult); // UPDATE RETURNING
+
+    await addressService.update('addr-1', 'user-1', {
+      recipient: '<script>alert(1)</script>新名字',
+      address: '<script>alert(2)</script>新地址',
+    });
+
+    const updateCall = mockClient.query.mock.calls[1];
+    expect(updateCall[0]).toContain('UPDATE delivery_addresses SET');
+    const updateParams = updateCall[1] as unknown[];
+    // 参数顺序按 fieldMap 收集：recipient、address（isDefault 未传入跳过），最后追加 id
+    // recipient 与 address 均应已剥离 <script> 标签
+    const recipientParam = updateParams[0] as string;
+    const addressParam = updateParams[1] as string;
+    expect(recipientParam).not.toContain('<script>');
+    expect(recipientParam).not.toContain('</script>');
+    expect(recipientParam).toContain('新名字');
+    expect(addressParam).not.toContain('<script>');
+    expect(addressParam).not.toContain('</script>');
+    expect(addressParam).toContain('新地址');
   });
 });
 
