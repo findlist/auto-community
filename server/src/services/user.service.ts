@@ -3,7 +3,7 @@ import { NotFoundError, BadRequestError, ConflictError } from '../utils/errors';
 import { toUserResponse, UserRow, USER_COLUMNS } from './auth.service';
 import { userCache } from './cache.service';
 import { encryptIdCard, hashIdCard } from '../utils/crypto';
-import { validateImageUrl } from '../utils/sanitize';
+import { validateImageUrl, sanitizeXss } from '../utils/sanitize';
 import logger from '../utils/logger';
 
 // credit_transactions 表显式查询列：替代 SELECT *，防御未来新增字段意外泄露
@@ -78,14 +78,18 @@ async function updateProfile(userId: string, data: { nickname?: string; avatar?:
     validateImageUrl(data.avatar);
   }
 
+  // nickname XSS 清洗：与 auth.service register 入口对齐
+  // 设计原因：nickname 在几乎所有业务列表中渲染（帖子/订单/评价/通知），未清洗会触发存储型 XSS
+  const safeNickname = data.nickname !== undefined ? sanitizeXss(data.nickname) as string : undefined;
+
   const fields: string[] = [];
   // SQL 参数数组：收紧为 SqlParam[]，避免误传函数/Symbol 等非 SQL 友好类型
   const values: SqlParam[] = [];
   let paramIndex = 1;
 
-  if (data.nickname !== undefined) {
+  if (safeNickname !== undefined) {
     fields.push(`nickname = $${paramIndex++}`);
-    values.push(data.nickname);
+    values.push(safeNickname);
   }
   if (data.avatar !== undefined) {
     fields.push(`avatar = $${paramIndex++}`);

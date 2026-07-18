@@ -205,6 +205,22 @@ describe('user.service updateProfile 边界', () => {
 
     expect(mockUserCacheInvalidate).toHaveBeenCalledWith('user-1');
   });
+
+  it('nickname 含 XSS payload 时入库前被清洗（防存储型 XSS）', async () => {
+    // 设计原因：nickname 在帖子/订单/评价/通知等几乎所有业务列表中渲染，未清洗会触发存储型 XSS
+    mockQuery.mockResolvedValue({ rows: [{ id: 'user-1' }] });
+
+    const xssPayload = '<script>alert("xss")</script>正常昵称';
+    await userService.updateProfile('user-1', { nickname: xssPayload });
+
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    const [, params] = mockQuery.mock.calls[0];
+    // 入库的 nickname 不应包含原始 <script> 标签
+    expect(params[0]).not.toContain('<script>');
+    expect(params[0]).not.toContain('</script>');
+    // 正常文本应保留
+    expect(params[0]).toContain('正常昵称');
+  });
 });
 
 // ===================== getUserById =====================
