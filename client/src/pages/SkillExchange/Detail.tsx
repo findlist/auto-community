@@ -52,6 +52,10 @@ export default function Detail() {
 
   const handleCreateOrder = async () => {
     if (!id) return;
+    // 入口 if 守卫：与 disabled + 文案变化形成三重防御
+    // 设计原因：React 状态更新是异步批处理的，submitting 在批处理结束前仍为 false，
+    // 弱网下用户连点"发起交易"会在 submitting 生效前触发多次 createOrder，产生多个订单
+    if (submitting) return;
     setSubmitting(true);
     try {
       await createOrder({ postId: id });

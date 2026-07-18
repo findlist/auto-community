@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：userEvent 内部用 async act 包裹交互，自动等待微任务 flush，
 // 消除"异步 state 更新未被 act 包裹"警告，模拟真实用户点击序列
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Detail from '../Detail';
@@ -404,5 +404,37 @@ describe('SkillExchange/Detail 帖子详情', () => {
     await screen.findByText('音乐培训');
     // AI 推荐组件应渲染
     expect(screen.getByTestId('ai-recommend-mock')).toBeInTheDocument();
+  });
+
+  // 重复提交守卫不变式：弱网下用户连点"发起交易"应只触发一次 createOrder
+  // 设计原因：React 状态更新是异步批处理的，submitting 在批处理结束前仍为 false，
+  // 三重防御（入口 if 守卫 + 按钮 disabled + 文案变化）确保 submitting 期间无法触发第二次调用
+  // 验证方式：fireEvent.click 绕过 disabled 检查直接触发 onClick，验证入口 if 守卫作为第二道防线
+  it('发起交易进行中按钮显示"提交中..."且 fireEvent 绕过 disabled 重复点击不触发第二次 createOrder', async () => {
+    // 切换到非发布者视角，否则看不到"发起交易"按钮
+    switchUser(mockOtherUser);
+    // 永不 resolve：锁定 submitting 状态，模拟弱网
+    vi.mocked(createOrder).mockImplementation(() => new Promise(() => {}));
+
+    renderDetail();
+
+    await screen.findByRole('button', { name: '发起交易' });
+
+    // 第一次点击触发 createOrder
+    await user.click(screen.getByRole('button', { name: '发起交易' }));
+    await waitFor(() => {
+      expect(createOrder).toHaveBeenCalledTimes(1);
+    });
+
+    // 按钮应进入加载态：显示"提交中..."文案
+    await screen.findByText('提交中...');
+
+    // fireEvent.click 绕过 disabled 检查直接触发 onClick，验证入口 if 守卫阻断连点
+    const submitButton = screen.getByRole('button', { name: '提交中...' });
+    fireEvent.click(submitButton);
+    fireEvent.click(submitButton);
+
+    // 重复点击不应触发第二次 createOrder（入口 if 守卫已阻断）
+    expect(createOrder).toHaveBeenCalledTimes(1);
   });
 });
