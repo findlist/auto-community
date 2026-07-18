@@ -67,7 +67,7 @@ describe('review.service createReview', () => {
   });
 
   it('无 content 时正常创建，INSERT 参数 content 透传为 null', async () => {
-    // 第1次：查重 count=0；第2次：INSERT RETURNING *
+    // 事务内 3 次 query：查重 count=0 → INSERT RETURNING * → 信誉分 UPDATE
     mockQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] });
     const insertedRow = {
       id: 'rev-1',
@@ -81,6 +81,8 @@ describe('review.service createReview', () => {
       updated_at: new Date('2026-07-08T10:00:00Z'),
     };
     mockQuery.mockResolvedValueOnce({ rows: [insertedRow] });
+    // 第3次：reputationService.updateReputationScore 的 UPDATE，返回空 rows 即可（函数不使用返回值）
+    mockQuery.mockResolvedValueOnce({ rows: [] });
 
     const result = await reviewService.createReview('r1', 'r2', 'o1', 'skill', 5);
 
@@ -108,6 +110,8 @@ describe('review.service createReview', () => {
         updated_at: new Date('2026-07-08T10:00:00Z'),
       }],
     });
+    // 第3次：信誉分 UPDATE 返回空 rows
+    mockQuery.mockResolvedValueOnce({ rows: [] });
 
     const result = await reviewService.createReview('r1', 'r2', 'o1', 'kitchen', 4.5, '服务不错');
 
@@ -115,6 +119,35 @@ describe('review.service createReview', () => {
     expect(result.rating).toBe(4.5);
     expect(result.content).toBe('服务不错');
     expect(result.orderType).toBe('kitchen');
+  });
+
+  it('createReview 包裹 transaction 且事务内调用 reputationService.updateReputationScore 保证评价与信誉分原子性', async () => {
+    // 不变式：查重 + INSERT + 信誉分 UPDATE 必须在同一事务内，任一步失败回滚
+    mockQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{
+      id: 'rev-3',
+      reviewer_id: 'r1',
+      reviewed_id: 'r2',
+      order_id: 'o1',
+      order_type: 'skill',
+      rating: '5',
+      content: null,
+      created_at: new Date('2026-07-08T10:00:00Z'),
+      updated_at: new Date('2026-07-08T10:00:00Z'),
+    }] });
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    await reviewService.createReview('r1', 'r2', 'o1', 'skill', 5);
+
+    // 验证 transaction 被调用一次（包裹 查重 + INSERT + 信誉分 UPDATE）
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+    // 验证事务内 3 次 client.query（mockTransaction 默认 client.query 复用 mockQuery）
+    expect(mockQuery).toHaveBeenCalledTimes(3);
+    // 第3次 query 为信誉分 UPDATE：SQL 含 UPDATE users SET reputation_score
+    const updateCall = mockQuery.mock.calls[2];
+    expect(updateCall[0]).toContain('UPDATE users SET reputation_score');
+    // 参数为 [reviewedId]（updateReputationScore(client, userId) 透传 reviewedId）
+    expect(updateCall[1]).toEqual(['r2']);
   });
 });
 

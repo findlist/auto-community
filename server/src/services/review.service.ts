@@ -3,6 +3,7 @@ import type { SqlParam } from '../config/database';
 import { BadRequestError } from '../utils/errors';
 import { prefixColumns } from '../utils/sql';
 import { sanitizeXss } from '../utils/sanitize';
+import { reputationService } from './reputation.service';
 
 /**
  * reviews 表行类型
@@ -67,25 +68,34 @@ async function createReview(
     throw new BadRequestError('评分必须在1-5之间');
   }
 
-  const existResult = await query<{ count: string }>(
-    'SELECT COUNT(*) FROM reviews WHERE reviewer_id = $1 AND order_id = $2',
-    [reviewerId, orderId],
-  );
-  if (parseInt(existResult.rows[0].count) > 0) {
-    throw new BadRequestError('已评价过此订单');
-  }
+  // 使用事务保证 查重 + INSERT + 信誉分更新 原子性
+  // 设计原因：原实现三步分别独立 query，并发评价场景下存在 lost update：
+  // 事务 A/B 均读到未评价状态 → 都 INSERT → 重复评价；或 INSERT 成功但信誉分更新失败导致评价与信誉分不一致
+  // 与 time-bank.service.createReview 行为对齐，复用 reputationService.updateReputationScore(client, userId)
+  return transaction(async (client) => {
+    const existResult = await client.query<{ count: string }>(
+      'SELECT COUNT(*) FROM reviews WHERE reviewer_id = $1 AND order_id = $2',
+      [reviewerId, orderId],
+    );
+    if (parseInt(existResult.rows[0].count) > 0) {
+      throw new BadRequestError('已评价过此订单');
+    }
 
-  // 防御纵深：清洗评价内容中的 XSS 节点，剥离 <script>、事件处理器等危险标签
-  // 设计原因：当前前端使用 React 安全文本插值无真实 XSS 风险，但 service 是数据库写入
-  // 的最后防线，避免未来非 React 渲染场景（如 SSR、邮件预览、导出报告）触发存储型 XSS
-  const sanitizedContent = content !== undefined ? sanitizeXss(content) : undefined;
-  const result = await query<ReviewListRow>(
-    `INSERT INTO reviews (reviewer_id, reviewed_id, order_id, order_type, rating, content)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING ${REVIEW_COLUMNS}`,
-    [reviewerId, reviewedId, orderId, orderType, rating, sanitizedContent || null],
-  );
+    // 防御纵深：清洗评价内容中的 XSS 节点，剥离 <script>、事件处理器等危险标签
+    // 设计原因：当前前端使用 React 安全文本插件无真实 XSS 风险，但 service 是数据库写入
+    // 的最后防线，避免未来非 React 渲染场景（如 SSR、邮件预览、导出报告）触发存储型 XSS
+    const sanitizedContent = content !== undefined ? sanitizeXss(content) : undefined;
+    const result = await client.query<ReviewListRow>(
+      `INSERT INTO reviews (reviewer_id, reviewed_id, order_id, order_type, rating, content)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING ${REVIEW_COLUMNS}`,
+      [reviewerId, reviewedId, orderId, orderType, rating, sanitizedContent || null],
+    );
 
-  return toReview(result.rows[0]);
+    // 事务内调用：复用传入的 client，保证信誉分更新与评价写入在同一事务内提交/回滚
+    await reputationService.updateReputationScore(client, reviewedId);
+
+    return toReview(result.rows[0]);
+  });
 }
 
 // 计算并更新用户信誉分
