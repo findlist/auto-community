@@ -421,10 +421,14 @@ async function updateService(id: string, userId: string, data: Partial<{
     throw new OrderStatusInvalidError('该服务已完成或关闭，无法修改');
   }
 
+  // 入库前清洗富文本字段，防止存储型 XSS（与 createService 保持一致的处理方式）
+  // 设计原因：updateService 同样会写入 title/description，若不清洗用户可通过 PUT 路由注入 XSS
+  const sanitized = sanitizeObject(data, ['title', 'description']);
+
   // images 更新前校验 URL 合法性，与 createService 保持一致
   // 设计原因：避免恶意 URL 入库，统一走 validateImageUrls（支持 /uploads/ 与 HTTPS 白名单）
-  if (data.images !== undefined) {
-    validateImageUrls(data.images);
+  if (sanitized.images !== undefined) {
+    validateImageUrls(sanitized.images);
   }
 
   const fields: string[] = [];
@@ -433,15 +437,16 @@ async function updateService(id: string, userId: string, data: Partial<{
 
   // 仅遍历白名单字段，确保字段名为受控常量，杜绝用户输入直接拼入 SQL
   for (const field of UPDATABLE_SERVICE_FIELDS) {
-    if (data[field] !== undefined) {
+    if (sanitized[field] !== undefined) {
       fields.push(`${field} = $${paramIndex++}`);
-      params.push(data[field]);
+      params.push(sanitized[field]);
     }
   }
 
   // 检测并告警白名单外的可疑字段，便于安全审计追踪
   // 类型断言为白名单字面量联合类型，避免 as any 掩盖 key 与白名单的类型不匹配
-  const incomingFields = Object.keys(data || {});
+  // 注意：sanitizeObject 仅清洗字段值不会增删 key，因此 Object.keys 等价于原 data
+  const incomingFields = Object.keys(sanitized || {});
   const suspiciousFields = incomingFields.filter(
     (key) => !UPDATABLE_SERVICE_FIELDS.includes(key as (typeof UPDATABLE_SERVICE_FIELDS)[number]),
   );

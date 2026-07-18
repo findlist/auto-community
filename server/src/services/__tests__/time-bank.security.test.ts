@@ -301,4 +301,28 @@ describe('time-bank.service updateService SQL 注入防护', () => {
     expect(setClause).not.toMatch(/description/);
     expect(sqlParams).toEqual(['新标题', 'svc-1']);
   });
+
+  // XSS 防护不变式：updateService 入库前应清洗 title/description 富文本字段，与 createService 对齐
+  // 设计原因：若仅 createService 清洗而 updateService 不清洗，攻击者可通过 PUT /time-bank/services/:id
+  // 路由绕过 XSS 防御，将恶意脚本写入数据库并在前端渲染时执行
+  it('title/description 中的 XSS payload 应被清洗后再写入数据库', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [mockServiceRow()] });
+    mockQuery.mockResolvedValueOnce({ rows: [mockServiceRow()] });
+
+    const xssPayload = '<script>alert("xss")</script>';
+    const data = {
+      title: xssPayload,
+      description: xssPayload,
+    };
+    await timeBankService.updateService('svc-1', 'user-1', data);
+
+    const updateCall = mockQuery.mock.calls[1];
+    const sqlParams = updateCall[1] as unknown[];
+
+    // script 标签应被剥离（sanitizeXss 默认移除危险标签）
+    expect(sqlParams[0]).not.toContain('<script>');
+    expect(sqlParams[0]).not.toContain('</script>');
+    expect(sqlParams[1]).not.toContain('<script>');
+    expect(sqlParams[1]).not.toContain('</script>');
+  });
 });
