@@ -54,6 +54,10 @@ export default function ServiceDetail() {
 
   const handleCreateOrder = async () => {
     if (!id) return;
+    // 入口 if 守卫：与 disabled + 文案变化形成三重防御
+    // 设计原因：React 状态更新是异步批处理的，submitting 在批处理结束前仍为 false，
+    // 弱网下用户连点"发起请求"会在 submitting 生效前触发多次 createOrder，产生多个时间银行订单
+    if (submitting) return;
     setSubmitting(true);
     try {
       await createOrder({ serviceId: id });
