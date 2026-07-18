@@ -811,6 +811,23 @@ describe('time-bank.service createDispute', () => {
     expect(result.id).toBe('dispute-1');
     expect(result.reason).toBe('质量问题');
   });
+
+  it('XSS 不变式：reason 入库前被清洗', async () => {
+    // 设计原因：reason 会展示给对方用户与管理员，未清洗会触发存储型 XSS
+    mockQuery.mockResolvedValueOnce({ rows: [{ provider_id: 'user-2', requester_id: 'user-1' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'dispute-1', reason: 'safe' }] });
+
+    await timeBankService.createDispute(
+      'order-1', 'user-1', '<script>alert("x")</script>正常原因',
+    );
+
+    // 验证 INSERT（第二次 query）的参数中 reason 被清洗
+    // params 顺序：orderId, reporterId, reason, evidence
+    const insertCall = mockQuery.mock.calls[1];
+    const params = insertCall[1] as unknown[];
+    expect(params[2]).not.toContain('<script>');
+    expect(params[2]).toContain('正常原因');
+  });
 });
 
 // ===================== getDisputes =====================

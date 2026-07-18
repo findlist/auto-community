@@ -1140,10 +1140,14 @@ async function createDispute(
     throw new PermissionDeniedError();
   }
 
+  // XSS 清洗：reason 会写入 service_disputes 表并展示给对方用户与管理员，未清洗会触发存储型 XSS
+  // 设计原因：与 skill-order.service disputeOrder 行为对齐
+  const safeReason = sanitizeXss(reason) as string;
+
   const result = await query(
     `INSERT INTO service_disputes (order_id, initiator_id, reason, evidence)
      VALUES ($1, $2, $3, $4) RETURNING ${SERVICE_DISPUTE_COLUMNS}`,
-    [orderId, reporterId, reason, evidence || null],
+    [orderId, reporterId, safeReason, evidence || null],
   );
 
   return result.rows[0];
