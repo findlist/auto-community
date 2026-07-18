@@ -2,11 +2,12 @@
  * public 路由集成测试
  *
  * 测试目标：
- * - GET /stats：聚合统计用户数与互助订单数，sum 为 null 时兜底 0
+ * - GET /stats：聚合统计用户数与互助订单数，sum 为 null 时兜底 0，含 60s Redis 缓存
  * - GET /homepage-image：获取首页展示图，未配置时 url 为 null
  *
  * 测试策略：
  * - mock config/database 的 query（public.ts 直接调用 query 执行两段 SQL）
+ * - mock config/redis 的 getCache/setCache（验证缓存命中与未命中两条路径）
  * - mock services/admin.service 的 getHomepageImage（避免真实 DB 查询）
  * - 挂载 errorHandler 中间件验证错误分支返回 500
  * - 设计原因：路由集成测试覆盖完整中间件链路（asyncHandler→handler→errorHandler），
@@ -23,12 +24,18 @@ process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.DB_PASSWORD = 'test-db-password';
 
 // vi.hoisted 提前创建 mock 引用，避免 vi.mock 工厂内 TDZ 问题
-const { mockQuery, mockGetHomepageImage } = vi.hoisted(() => ({
+const { mockQuery, mockGetHomepageImage, mockGetCache, mockSetCache } = vi.hoisted(() => ({
   mockQuery: vi.fn(),
   mockGetHomepageImage: vi.fn(),
+  mockGetCache: vi.fn(),
+  mockSetCache: vi.fn(),
 }));
 
 vi.mock('../../config/database', () => ({ query: mockQuery }));
+vi.mock('../../config/redis', () => ({
+  getCache: mockGetCache,
+  setCache: mockSetCache,
+}));
 vi.mock('../../services/admin.service', () => ({
   adminService: { getHomepageImage: mockGetHomepageImage },
 }));
@@ -64,6 +71,8 @@ describe('public 路由集成测试', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    // 默认缓存未命中：强制走 DB 查询路径，单测可按需覆盖为命中
+    mockGetCache.mockResolvedValue(null);
     mockGetHomepageImage.mockResolvedValue('https://example.com/banner.jpg');
     ({ server, baseUrl } = await startServer());
   });
@@ -73,7 +82,7 @@ describe('public 路由集成测试', () => {
   });
 
   describe('GET /stats', () => {
-    it('正常返回 totalUsers 与 totalMutualAids', async () => {
+    it('正常返回 totalUsers 与 totalMutualAids（缓存未命中走 DB 并写缓存）', async () => {
       // Promise.all 内按数组顺序消费：先 users 查询，再 mutualAids 查询
       mockQuery
         .mockResolvedValueOnce({ rows: [{ count: '128' }] } as never)
@@ -87,6 +96,27 @@ describe('public 路由集成测试', () => {
       expect((data.data as Record<string, unknown>).totalMutualAids).toBe(256);
       // 验证两段 SQL 均被调用
       expect(mockQuery).toHaveBeenCalledTimes(2);
+      // 验证写入缓存：缓存键 'public:stats'，TTL 60s
+      expect(mockSetCache).toHaveBeenCalledWith(
+        'public:stats',
+        { totalUsers: 128, totalMutualAids: 256 },
+        60,
+      );
+    });
+
+    it('缓存命中时直接返回，不触发 DB 查询', async () => {
+      // 缓存命中场景：高 QPS 下避免每次请求都打 DB
+      mockGetCache.mockResolvedValue({ totalUsers: 99, totalMutualAids: 11 });
+
+      const res = await fetch(`${baseUrl}/stats`);
+      expect(res.status).toBe(200);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).totalUsers).toBe(99);
+      expect((data.data as Record<string, unknown>).totalMutualAids).toBe(11);
+      // 缓存命中时不应触发 DB 查询
+      expect(mockQuery).not.toHaveBeenCalled();
+      // 缓存命中时也不应再次写入缓存（避免无谓的 Redis 写）
+      expect(mockSetCache).not.toHaveBeenCalled();
     });
 
     it('sum 为 null 时 totalMutualAids 兜底为 0', async () => {
