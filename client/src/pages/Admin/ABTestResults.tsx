@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Beaker, BarChart3, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
 import {
   getTestConfig,
@@ -100,13 +100,19 @@ export default function ABTestResults() {
   const [resultsError, setResultsError] = useState<string | null>(null);
   // 派生合并错误：配置错误优先展示（无配置则测试信息卡片无法渲染，更关键）
   const error = configError ?? resultsError;
+  // 挂载标志：useEffect cleanup 时置为 false，loadConfig/loadResults await 后检查避免卸载后 setState 泄漏
+  // 设计原因：loadData 用 Promise.all 并发两路异步，任一路在卸载后 resolve 都会触发 setState 泄漏
+  const mountedRef = useRef(true);
 
   const loadConfig = useCallback(async () => {
     try {
       const res = await getTestConfig("ai_recommendation_vs_keyword");
+      // 卸载后不再 setState，避免 React 警告与内存泄漏
+      if (!mountedRef.current) return;
       setConfig(res.data);
       setConfigError(null);
     } catch (err) {
+      if (!mountedRef.current) return;
       // 拦截器已将 HTTP 错误统一转为 ApiError，getErrorMessage 负责类型收窄并提取 message
       setConfigError(getErrorMessage(err, "加载测试配置失败"));
     }
@@ -115,9 +121,11 @@ export default function ABTestResults() {
   const loadResults = useCallback(async () => {
     try {
       const res = await getTestResults("ai_recommendation_vs_keyword");
+      if (!mountedRef.current) return;
       setResults(res.data);
       setResultsError(null);
     } catch (err) {
+      if (!mountedRef.current) return;
       setResultsError(getErrorMessage(err, "加载测试结果失败"));
     }
   }, []);
@@ -128,11 +136,18 @@ export default function ABTestResults() {
     setConfigError(null);
     setResultsError(null);
     // 并发加载，两路各自独立 try/catch 互不覆盖，finally 控制 loading
-    await Promise.all([loadConfig(), loadResults()]).finally(() => setLoading(false));
+    // 仅挂载中才更新 loading，避免卸载后 finally 触发 setState
+    await Promise.all([loadConfig(), loadResults()]).finally(() => {
+      if (mountedRef.current) setLoading(false);
+    });
   }, [loadConfig, loadResults]);
 
   useEffect(() => {
+    // 重置挂载标志：组件重新挂载时恢复为 true
+    mountedRef.current = true;
     loadData();
+    // cleanup：组件卸载时置为 false，使进行中的 loadConfig/loadResults 失效
+    return () => { mountedRef.current = false; };
   }, [loadData]);
 
   if (loading) {

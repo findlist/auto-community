@@ -6,7 +6,7 @@
  * 测试策略：mock @/api/ab-test 的 getTestConfig/getTestResults，验证并行加载错误独立性与数据渲染
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import ABTestResults from '../ABTestResults';
 import { ApiError } from '@/api/client';
 
@@ -256,5 +256,42 @@ describe('ABTestResults 端到端测试', () => {
       // 样本量不足提示（totalImpressions=0 < 100 触发）
       expect(screen.getByText(/样本量不足/)).toBeInTheDocument();
     });
+  });
+
+  it('卸载后 loadData resolve 不触发 setState（mountedRef 防御）', async () => {
+    // 设计原因：loadData 用 Promise.all 并发两路异步（getTestConfig + getTestResults），
+    // 任一路在卸载后 resolve 都会触发 setState 泄漏；mountedRef 模式在 cleanup 时置 false，await 后跳过 setState
+    type ConfigResp = { data: typeof mockConfig };
+    type ResultsResp = { data: typeof mockResults };
+    let resolveConfig!: (v: ConfigResp) => void;
+    let resolveResults!: (v: ResultsResp) => void;
+    getTestConfigMock.mockImplementationOnce(() => new Promise<ConfigResp>((resolve) => { resolveConfig = resolve; }));
+    getTestResultsMock.mockImplementationOnce(() => new Promise<ResultsResp>((resolve) => { resolveResults = resolve; }));
+
+    const spyConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = render(<ABTestResults />);
+    // 等待 useEffect 触发 loadData（两路 mock 均被调用一次）
+    await waitFor(() => {
+      expect(getTestConfigMock).toHaveBeenCalledTimes(1);
+      expect(getTestResultsMock).toHaveBeenCalledTimes(1);
+    });
+
+    // 卸载组件触发 cleanup（mountedRef.current = false）
+    unmount();
+
+    // 让两路慢请求 resolve：mountedRef 防御应跳过所有 setState，不抛错也不触发 React 警告
+    await act(async () => {
+      resolveConfig({ data: mockConfig });
+      resolveResults({ data: mockResults });
+      await Promise.resolve();
+    });
+
+    // 验证无 React 卸载后 setState 相关警告
+    const reactUnmountWarn = spyConsoleError.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('unmounted')
+    );
+    expect(reactUnmountWarn).toBeUndefined();
+    spyConsoleError.mockRestore();
   });
 });
