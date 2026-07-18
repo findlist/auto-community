@@ -296,6 +296,42 @@ describe('auth.service - register', () => {
     expect(clientQuerySpy.mock.calls[0][0]).toContain('INSERT INTO users');
     expect(clientQuerySpy.mock.calls[1][0]).toContain('INSERT INTO credit_transactions');
   });
+
+  // XSS 防护不变式：register 入库前应清洗 nickname 富文本字段
+  // 设计原因：nickname 会在社区列表/详情/评论等多处前端场景渲染，未清洗将导致存储型 XSS；
+  // 同时 JWT payload 内的 nickname 也应清洗，避免解码后被注入 XSS
+  it('nickname 中的 XSS payload 应被清洗后再写入数据库与 JWT', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    const userRow = createMockUserRow();
+    const clientQuerySpy = vi.fn();
+    clientQuerySpy.mockResolvedValueOnce({ rows: [userRow] });
+    clientQuerySpy.mockResolvedValueOnce({ rows: [] });
+
+    mockTransaction.mockImplementation(async (cb: (client: { query: typeof clientQuerySpy }) => Promise<unknown>) => {
+      return await cb({ query: clientQuerySpy });
+    });
+
+    const xssPayload = '<script>alert("xss")</script>用户';
+    await authService.register(PHONE, PASSWORD, xssPayload, PRIVACY_VERSION);
+
+    // 第1次事务内 query：INSERT INTO users，参数第4位为 nickname
+    const insertCall = clientQuerySpy.mock.calls[0];
+    const insertParams = insertCall[1] as unknown[];
+    const nicknameParam = insertParams[3];
+    expect(nicknameParam).not.toContain('<script>');
+    expect(nicknameParam).not.toContain('</script>');
+
+    // JWT 签发时 nickname 也应是清洗后的值
+    expect(mockGenerateAccessToken).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'user-1' }),
+    );
+    const jwtCallArgs = mockGenerateAccessToken.mock.calls[0][0] as { nickname?: string };
+    expect(typeof jwtCallArgs.nickname === 'string').toBe(true);
+    if (typeof jwtCallArgs.nickname === 'string') {
+      expect(jwtCallArgs.nickname).not.toContain('<script>');
+      expect(jwtCallArgs.nickname).not.toContain('</script>');
+    }
+  });
 });
 
 describe('auth.service - login', () => {

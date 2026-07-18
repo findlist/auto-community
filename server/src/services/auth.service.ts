@@ -10,6 +10,7 @@ import { tokenBlacklist } from '../utils/tokenBlacklist';
 import { encryptPhone, decryptPhone, hashPhone } from '../utils/crypto';
 import { maskPhone } from '../utils/mask';
 import { logger } from '../utils/logger';
+import { sanitizeXss } from '../utils/sanitize';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -95,6 +96,10 @@ async function register(phone: string, password: string, nickname: string, priva
     throw new BadRequestError('手机号格式不正确');
   }
 
+  // 入库前清洗昵称，防止存储型 XSS
+  // 设计原因：nickname 会在社区列表/详情/评论等多处前端场景渲染，未清洗将导致存储型 XSS
+  const safeNickname = sanitizeXss(nickname);
+
   // 按 phone_hash 查询：phone 字段已加密无法等值查询，使用哈希索引
   const phoneHash = hashPhone(phone);
   const existing = await query('SELECT id FROM users WHERE phone_hash = $1', [phoneHash]);
@@ -111,7 +116,7 @@ async function register(phone: string, password: string, nickname: string, priva
     // RETURNING 显式列名：仅返回 toUserResponse 所需字段，避免 phone_hash/id_card_encrypted 等敏感字段出现在结果集
     const userResult = await client.query<UserRow>(
       `INSERT INTO users (phone, phone_hash, password_hash, nickname, credit_balance, privacy_consent_version, privacy_consent_at) VALUES ($1, $2, $3, $4, 100, $5, NOW()) RETURNING ${USER_COLUMNS}`,
-      [encryptedPhone, phoneHash, passwordHash, nickname, privacyConsentVersion]
+      [encryptedPhone, phoneHash, passwordHash, safeNickname, privacyConsentVersion]
     );
     const user = userResult.rows[0];
 
@@ -124,8 +129,9 @@ async function register(phone: string, password: string, nickname: string, priva
   });
 
   // JWT payload 不再携带 phone，避免 token 泄露后暴露 PII
-  const token = generateAccessToken({ id: result.id, nickname });
-  const refreshToken = generateRefreshToken({ id: result.id, nickname });
+  // 使用 safeNickname 确保 token 内也是清洗后的值，避免 JWT 解码后被注入 XSS
+  const token = generateAccessToken({ id: result.id, nickname: safeNickname });
+  const refreshToken = generateRefreshToken({ id: result.id, nickname: safeNickname });
 
   return {
     token,
