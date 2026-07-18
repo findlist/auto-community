@@ -95,7 +95,8 @@ async function createPost(userId: string, data: CreateSkillPostDTO) {
   }
 
   // 入库前清洗富文本字段，防止存储型 XSS
-  const sanitized = sanitizeObject(data, ['title', 'description']);
+  // address 同属跨用户可见字段（详情/列表渲染），需同步清洗避免存储型 XSS
+  const sanitized = sanitizeObject(data, ['title', 'description', 'address']);
   // 校验图片 URL：必须 HTTPS 且在域名白名单内
   validateImageUrls(sanitized.images);
 
@@ -199,7 +200,8 @@ async function updatePost(id: string, userId: string, data: UpdateSkillPostDTO) 
   if (existing[0].user_id !== userId) throw new PermissionDeniedError('无权修改此帖子');
 
   // 更新前清洗富文本字段并校验图片 URL
-  const sanitized = sanitizeObject(data, ['title', 'description']);
+  // address 同属跨用户可见字段，与 createPost 入口清洗行为对齐避免遗漏
+  const sanitized = sanitizeObject(data, ['title', 'description', 'address']);
   if (sanitized.images !== undefined) {
     validateImageUrls(sanitized.images);
   }

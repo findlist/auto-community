@@ -381,3 +381,38 @@ describe('skill.service getUserPosts', () => {
     expect(result.totalPages).toBe(0);
   });
 });
+
+// XSS 不变式：createPost 与 updatePost 入口的 sanitizeObject 字段列表必须包含 address
+// 设计原因：address 落库后写入 skill_posts.address，跨用户在详情/列表渲染，
+// 未清洗会触发存储型 XSS。此测试锁定字段列表，避免后续重构不慎移除 address
+describe('skill.service - address XSS 不变式', () => {
+  it('createPost 入口 sanitizeObject 字段列表包含 address', async () => {
+    mockQuery.mockResolvedValue({ rows: [makeRow()] });
+
+    await skillService.createPost('u1', {
+      type: 'offer',
+      category: '技术',
+      title: '钢琴教学',
+      credit_price: 50,
+      address: '北京市朝阳区某街道',
+    });
+
+    const { sanitizeObject } = await import('../../utils/sanitize');
+    const fieldsArg = vi.mocked(sanitizeObject).mock.calls[0][1] as string[];
+    expect(fieldsArg).toContain('address');
+    expect(fieldsArg).toContain('title');
+    expect(fieldsArg).toContain('description');
+  });
+
+  it('updatePost 入口 sanitizeObject 字段列表包含 address', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u1' }] })
+      .mockResolvedValueOnce({ rows: [makeRow()] });
+
+    await skillService.updatePost('post-1', 'u1', { address: '北京市海淀区某街道' });
+
+    const { sanitizeObject } = await import('../../utils/sanitize');
+    const fieldsArg = vi.mocked(sanitizeObject).mock.calls[0][1] as string[];
+    expect(fieldsArg).toContain('address');
+  });
+});
