@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：userEvent 内部用 async act 包裹所有交互，自动等待微任务队列清空，
 // 从根本上消除"异步 state 更新未被 act 包裹"警告，相比 fireEvent + 同步 act 更可靠。
 // fireEvent 仅触发单一 DOM 事件，userEvent 模拟真实用户交互序列（focus/mousedown/click 等）。
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import FamilyBindingPage from '../FamilyBinding';
@@ -100,6 +100,7 @@ import {
   confirmFamilyBinding,
   rejectFamilyBinding,
   unbindFamilyBinding,
+  createFamilyBinding,
 } from '@/api/timeBank';
 
 // 包装组件：注入 MemoryRouter 提供 useNavigate 上下文
@@ -389,5 +390,43 @@ describe('FamilyBinding 状态展示与操作', () => {
     // 重复点击不应再次触发 rejectFamilyBinding
     await user.click(rejectingButton);
     expect(vi.mocked(rejectFamilyBinding)).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('FamilyBinding 发起绑定入口守卫', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getFamilyBindings).mockResolvedValue({
+      code: 0,
+      message: 'ok',
+      data: mockBindings,
+    });
+  });
+
+  it('弱网连点不产生多个绑定申请：入口 if 守卫阻断第二次 onClick', async () => {
+    // createFamilyBinding 永不 resolve，锁定 submitting 状态模拟弱网
+    vi.mocked(createFamilyBinding).mockReturnValue(new Promise(() => {}));
+
+    renderFamilyBinding();
+    // 等待列表加载完成，确保表单已渲染
+    await screen.findByText('父亲大人');
+
+    // 填写有效手机号通过字段校验
+    const phoneInput = screen.getByPlaceholderText('请输入家长手机号');
+    fireEvent.change(phoneInput, { target: { value: '13800138000' } });
+
+    // 第一次点击：触发 setSubmitting(true)，进入提交中态
+    fireEvent.click(screen.getByRole('button', { name: '发起绑定' }));
+    // 等待 submitting 状态生效，按钮文案变为"提交中..."
+    await waitFor(() => {
+      expect(screen.getByText('提交中...')).toBeInTheDocument();
+    });
+
+    // 第二次点击：fireEvent 绕过 disabled 检查直接触发 onClick
+    // 入口 if (submitting) return 守卫作为第二道防线，阻断重复调用
+    fireEvent.click(screen.getByText('提交中...'));
+
+    // 不变式：createFamilyBinding 仅被调用 1 次，第二次点击被入口守卫拦截
+    expect(vi.mocked(createFamilyBinding)).toHaveBeenCalledTimes(1);
   });
 });

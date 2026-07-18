@@ -128,6 +128,8 @@ export default function FamilyBindingPage() {
   }, [bindings, user?.id]);
 
   const handleCreate = async () => {
+    // 入口守卫：与 disabled + 文案变化形成三重防御，避免 React 批处理延迟导致弱网下连点产生多个绑定申请
+    if (submitting) return;
     // 字段级校验：手机号格式不合法时直接拦截
     const trimmedPhone = parentPhone.trim();
     if (!trimmedPhone) {
