@@ -378,20 +378,34 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
   const [userLocation, setUserLocation] = useState<{ lng: number; lat: number } | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<AMapMap | null>(null);
+  // 请求键：每次发起递增，用于过滤过期响应（typeFilter 快速切换竞态）+ 卸载后使进行中的请求失效
+  // 设计原因：与同文件 fetchRequest 的 activeRequestIdRef 模式对齐，覆盖 ResourceModal 卸载与 typeFilter 切换两类场景
+  const fetchResourcesReqKeyRef = useRef(0);
 
   const fetchResources = useCallback(async () => {
+    const reqKey = ++fetchResourcesReqKeyRef.current;
     setLoading(true);
     try {
       const res = await getResources(typeFilter ? { type: typeFilter } : undefined);
+      // 过滤过期响应：typeFilter 快速切换时旧请求慢于新请求会覆盖新响应；组件卸载后 reqKey 已被 cleanup 自增，同样跳过
+      if (reqKey !== fetchResourcesReqKeyRef.current) return;
       setResources(res.data.list);
     } catch (err) {
+      if (reqKey !== fetchResourcesReqKeyRef.current) return;
       toast.error(getErrorMessage(err, "加载应急资源失败"));
     } finally {
-      setLoading(false);
+      // 仅当前最新请求才更新 loading，避免旧请求 finally 覆盖新请求的 loading 状态
+      if (reqKey === fetchResourcesReqKeyRef.current) {
+        setLoading(false);
+      }
     }
   }, [typeFilter]);
 
-  useEffect(() => { fetchResources(); }, [fetchResources]);
+  useEffect(() => {
+    fetchResources();
+    // cleanup：组件卸载时自增 reqKey，使所有进行中的请求失效，避免卸载后 setState 泄漏
+    return () => { fetchResourcesReqKeyRef.current++; };
+  }, [fetchResources]);
 
   // 加载高德地图 SDK
   // 设计原因：与 ResourceMap.tsx useAMapScript / LocationPicker 保持一致的 scriptId 与 cancelled 模式，

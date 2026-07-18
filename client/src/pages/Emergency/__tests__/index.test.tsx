@@ -9,6 +9,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import type { EmergencyResource } from '@/types';
 import Emergency from '../index';
 
 // vi.hoisted 提升 mock 数据避免 TDZ：测试模块加载时 vi.mock 工厂会立即引用这些变量
@@ -364,5 +365,62 @@ describe('Emergency/index 应急邻里列表页（ListView）', () => {
 
     // createRequest 应只被调用一次（入口 if 守卫作为第二道防线）
     expect(createRequestMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('ResourceModal typeFilter 快速切换时旧响应不覆盖新响应（activeRequestKeyRef 防御）', async () => {
+    // 设计原因：typeFilter 切换会重建 fetchResources 并触发 useEffect，旧请求若慢于新请求 resolve 会覆盖新数据
+    // activeRequestKeyRef 模式：每次自增 reqKey，await 后比对 reqKey 跳过过期响应
+    type ResourceListResp = { code: number; message: string; data: { list: EmergencyResource[]; total: number; page: number; pageSize: number; hasNext: boolean } };
+    const oldResource = { id: 'r-old', type: 'fire_extinguisher', name: '灭火器-旧', status: 'available' as const, createdAt: '2024-01-01' };
+    const newResource = { id: 'r-new', type: 'aed', name: 'AED-新', status: 'available' as const, createdAt: '2024-01-01' };
+
+    // 用 deferred 控制第一次请求的 resolve 时机：模拟慢响应
+    let resolveOld!: (v: ResourceListResp) => void;
+    const oldPromise = new Promise<ResourceListResp>((resolve) => {
+      resolveOld = resolve;
+    });
+    getResourcesMock.mockImplementationOnce(() => oldPromise);
+    // 第二次请求（切换 typeFilter=aed 后）立即返回新数据
+    getResourcesMock.mockImplementationOnce(() => Promise.resolve({
+      code: 0,
+      message: 'ok',
+      data: { list: [newResource], total: 1, page: 1, pageSize: 10, hasNext: false },
+    } satisfies ResourceListResp));
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('老人摔倒需要帮助')).toBeInTheDocument();
+    });
+
+    // 打开 ResourceModal 触发第一次 fetchResources（reqKey=1，旧请求）
+    act(() => {
+      screen.getByText('资源').click();
+    });
+    await waitFor(() => {
+      expect(getResourcesMock).toHaveBeenCalledTimes(1);
+    });
+
+    // 切换 typeFilter 到 "AED" 触发第二次 fetchResources（reqKey=2，新请求）
+    act(() => {
+      screen.getByText('AED').click();
+    });
+    await waitFor(() => {
+      expect(getResourcesMock).toHaveBeenCalledTimes(2);
+    });
+
+    // 现在让旧请求 resolve（包含旧数据）—— 应被 activeRequestKeyRef 跳过
+    act(() => {
+      resolveOld({
+        code: 0,
+        message: 'ok',
+        data: { list: [oldResource], total: 1, page: 1, pageSize: 10, hasNext: false },
+      });
+    });
+
+    // 最终应显示新数据 "AED-新"，不显示旧数据 "灭火器-旧"
+    await waitFor(() => {
+      expect(screen.getByText('AED-新')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('灭火器-旧')).not.toBeInTheDocument();
   });
 });
