@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Loader2,
   AlertCircle,
@@ -94,6 +94,9 @@ export default function SystemConfig() {
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SystemSetting | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // 挂载标志：useEffect cleanup 时置为 false，loadSettings await 后检查避免卸载后 setState 泄漏
+  // 设计原因：loadSettings 同时被 handleSave/handleDelete 成功后调用，任一异步路径中组件卸载均会泄漏
+  const mountedRef = useRef(true);
 
   // 加载配置列表
   const loadSettings = useCallback(async () => {
@@ -101,16 +104,24 @@ export default function SystemConfig() {
     setError(null);
     try {
       const res = await getSettings();
+      // 卸载后不再 setState，避免 React 警告与内存泄漏
+      if (!mountedRef.current) return;
       setList(res.data);
     } catch (err) {
+      if (!mountedRef.current) return;
       setError(err instanceof ApiError ? err.message : "加载配置失败");
     } finally {
-      setLoading(false);
+      // 仅挂载中才更新 loading，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // 重置挂载标志：组件重新挂载时恢复为 true
+    mountedRef.current = true;
     loadSettings();
+    // cleanup：组件卸载时置为 false，使进行中的 loadSettings 失效
+    return () => { mountedRef.current = false; };
   }, [loadSettings]);
 
   // 提交新增/编辑配置
