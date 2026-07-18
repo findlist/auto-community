@@ -24,6 +24,10 @@ export default function Orders() {
   const [confirmAction, setConfirmAction] = useState<
     { orderId: string; action: "confirm" | "cancel"; message: string } | null
   >(null);
+  // 状态变更进行中的订单 ID：用作重复提交守卫与按钮加载态指示
+  // 设计原因：confirmFoodOrder/cancelFoodOrder 非幂等，弱网下用户连点弹窗内"确定"或快速打开多个弹窗
+  // 会触发多次状态变更，可能导致订单状态不一致（如同时确认又取消）
+  const [actioningId, setActioningId] = useState<string | null>(null);
 
   // 竞态守卫：跟踪当前活跃的请求标识，避免快速切换 Tab/筛选时旧请求覆盖新数据
   // 设计原因：useEffect 依赖 activeTab/statusFilter，用户快速切换时旧请求的 await 仍在进行，
@@ -99,11 +103,14 @@ export default function Orders() {
   };
 
   // 用户在弹窗中点击"确定"后执行实际状态变更
-  // 先清空 confirmAction 关闭弹窗，避免重复点击；内部 try/catch 已有 toast 兜底
+  // 先清空 confirmAction 关闭弹窗避免重复点击，再用 actioningId 守卫防止后续连点
+  // 设计原因：confirmFoodOrder/cancelFoodOrder 非幂等，弹窗关闭瞬间用户可能再次操作触发并发请求
   const confirmActionRun = async () => {
     if (!confirmAction) return;
+    if (actioningId) return;
     const { orderId, action } = confirmAction;
     setConfirmAction(null);
+    setActioningId(orderId);
     try {
       if (action === "confirm") {
         await confirmFoodOrder(orderId);
@@ -114,6 +121,8 @@ export default function Orders() {
     } catch (error) {
       // axios 拦截器已将 HTTP 错误统一转为 ApiError，用 getErrorMessage 提取可读文案
       toast.error(getErrorMessage(error, "操作失败"));
+    } finally {
+      setActioningId(null);
     }
   };
 
@@ -169,19 +178,26 @@ export default function Orders() {
       </div>
 
       {/* 操作按钮 */}
+      {/* 全局禁用：任一订单状态变更进行中时，所有操作按钮都不可点，避免并发触发多个状态变更 */}
       <div className="flex gap-2">
         {activeTab === "seller" && order.status === "pending" && (
           <button
             onClick={() => handleConfirm(order.id)}
-            className="flex-1 py-2 bg-emerald-600 text-white text-sm rounded-lg"
+            disabled={actioningId !== null}
+            className={`flex-1 py-2 bg-emerald-600 text-white text-sm rounded-lg ${
+              actioningId !== null ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           >
-            确认
+            {actioningId === order.id ? "处理中..." : "确认"}
           </button>
         )}
         {activeTab === "buyer" && order.status === "confirmed" && (
           <button
             onClick={() => handleComplete(order.id)}
-            className="flex-1 py-2 bg-emerald-600 text-white text-sm rounded-lg"
+            disabled={actioningId !== null}
+            className={`flex-1 py-2 bg-emerald-600 text-white text-sm rounded-lg ${
+              actioningId !== null ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           >
             完成
           </button>
@@ -189,9 +205,12 @@ export default function Orders() {
         {["pending", "confirmed"].includes(order.status) && (
           <button
             onClick={() => handleCancel(order.id)}
-            className="flex-1 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg"
+            disabled={actioningId !== null}
+            className={`flex-1 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg ${
+              actioningId !== null ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           >
-            取消
+            {actioningId === order.id ? "处理中..." : "取消"}
           </button>
         )}
       </div>

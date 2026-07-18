@@ -45,6 +45,10 @@ export default function SkillExchangeOrders() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   // 确认弹窗状态：null 表示弹窗关闭，非 null 即待执行的操作
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  // 状态变更进行中的订单 ID：用作重复提交守卫与按钮加载态指示
+  // 设计原因：updateOrderStatus 非幂等（订单状态机严格递进），弱网下用户连点会触发多次状态变更，
+  // 可能跳过中间状态（如 pending → accepted 后再次点击变成 in_progress，绕过 accepted 阶段）
+  const [actioningId, setActioningId] = useState<string | null>(null);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -63,12 +67,17 @@ export default function SkillExchangeOrders() {
   }, [loadOrders]);
 
   const handleUpdateStatus = async (orderId: string, status: string) => {
+    // 重复提交守卫：避免弱网下连点触发多次状态变更，破坏订单状态机严格递进
+    if (actioningId) return;
+    setActioningId(orderId);
     try {
       await updateOrderStatus(orderId, status);
       toast.success("操作成功");
       loadOrders();
     } catch (error) {
       toast.error(getErrorMessage(error, "操作失败"));
+    } finally {
+      setActioningId(null);
     }
   };
 
@@ -83,7 +92,7 @@ export default function SkillExchangeOrders() {
   };
 
   // 用户在弹窗中点击"确定"后执行实际状态更新
-  // 先清空 confirmAction 关闭弹窗，避免重复点击；handleUpdateStatus 内部已有 try/catch + toast 兜底
+  // 先清空 confirmAction 关闭弹窗，避免重复点击；handleUpdateStatus 内部已有 actioningId 守卫与 try/catch + toast 兜底
   const confirmActionRun = async () => {
     if (!confirmAction) return;
     const { orderId, status } = confirmAction;
@@ -98,19 +107,31 @@ export default function SkillExchangeOrders() {
   const renderActionButton = (order: SkillOrder) => {
     const isBuyer = order.buyerId === user?.id;
     const isSeller = order.sellerId === user?.id;
+    // 当前订单正在进行状态变更：按钮禁用 + 显示加载态
+    // 设计原因：updateOrderStatus 非幂等，弱网下连点会破坏订单状态机严格递进
+    const isActioning = actioningId === order.id;
+    // 全局禁用：任一订单状态变更进行中时，所有操作按钮都不可点，避免并发触发多个状态变更
+    const disabledAny = actioningId !== null;
+    // 状态变更按钮统一加 disabled + 加载文案，与按钮原 emerald/gray 配色协调
+    const actionBtnClass = (base: string) =>
+      `flex-1 py-2 text-sm rounded-lg transition-colors ${base} ${
+        disabledAny ? "opacity-50 cursor-not-allowed" : ""
+      }`;
 
     if (order.status === "pending" && isSeller) {
       return (
         <>
           <button
             onClick={() => handleUpdateStatus(order.id, "accepted")}
-            className="flex-1 py-2 bg-emerald-600 text-white text-sm rounded-lg"
+            disabled={disabledAny}
+            className={actionBtnClass("bg-emerald-600 text-white")}
           >
-            接受
+            {isActioning ? "处理中..." : "接受"}
           </button>
           <button
             onClick={() => handleReject(order.id)}
-            className="flex-1 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg"
+            disabled={disabledAny}
+            className={actionBtnClass("border border-gray-200 text-gray-600")}
           >
             拒绝
           </button>
@@ -122,7 +143,8 @@ export default function SkillExchangeOrders() {
       return (
         <button
           onClick={() => handleCancel(order.id)}
-          className="flex-1 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg"
+          disabled={disabledAny}
+          className={actionBtnClass("border border-gray-200 text-gray-600")}
         >
           取消
         </button>
@@ -135,20 +157,23 @@ export default function SkillExchangeOrders() {
           {isSeller && (
             <button
               onClick={() => handleUpdateStatus(order.id, "in_progress")}
-              className="flex-1 py-2 bg-emerald-600 text-white text-sm rounded-lg"
+              disabled={disabledAny}
+              className={actionBtnClass("bg-emerald-600 text-white")}
             >
-              开始服务
+              {isActioning ? "处理中..." : "开始服务"}
             </button>
           )}
           <button
             onClick={() => handleCancel(order.id)}
-            className="flex-1 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg"
+            disabled={disabledAny}
+            className={actionBtnClass("border border-gray-200 text-gray-600")}
           >
             取消
           </button>
           <button
             onClick={() => navigate(`/skill-exchange/orders/${order.id}/dispute`)}
-            className="flex-1 py-2 border border-red-200 text-red-600 text-sm rounded-lg"
+            disabled={disabledAny}
+            className={actionBtnClass("border border-red-200 text-red-600")}
           >
             发起争议
           </button>
@@ -161,13 +186,15 @@ export default function SkillExchangeOrders() {
         <>
           <button
             onClick={() => handleUpdateStatus(order.id, "completed")}
-            className="flex-1 py-2 bg-emerald-600 text-white text-sm rounded-lg"
+            disabled={disabledAny}
+            className={actionBtnClass("bg-emerald-600 text-white")}
           >
-            完成
+            {isActioning ? "处理中..." : "完成"}
           </button>
           <button
             onClick={() => navigate(`/skill-exchange/orders/${order.id}/dispute`)}
-            className="flex-1 py-2 border border-red-200 text-red-600 text-sm rounded-lg"
+            disabled={disabledAny}
+            className={actionBtnClass("border border-red-200 text-red-600")}
           >
             发起争议
           </button>
@@ -179,7 +206,8 @@ export default function SkillExchangeOrders() {
       return (
         <button
           onClick={() => navigate(`/skill-exchange/orders/${order.id}/dispute`)}
-          className="flex-1 py-2 border border-red-200 text-red-600 text-sm rounded-lg"
+          disabled={disabledAny}
+          className={actionBtnClass("border border-red-200 text-red-600")}
         >
           查看争议
         </button>
@@ -190,7 +218,8 @@ export default function SkillExchangeOrders() {
       return (
         <button
           onClick={() => navigate(`/chat/${order.id}`)}
-          className="flex-1 py-2 bg-blue-600 text-white text-sm rounded-lg"
+          disabled={disabledAny}
+          className={actionBtnClass("bg-blue-600 text-white")}
         >
           去聊天
         </button>

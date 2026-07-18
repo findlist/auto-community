@@ -442,4 +442,51 @@ describe('SharedKitchen 订单列表与状态操作', () => {
     // 验证 toast.error 提示（getErrorMessage 从 ApiError 提取后端返回的 message）
     expect(toastErrorMock).toHaveBeenCalledWith('确认失败');
   });
+
+  it('重复提交守卫：状态变更进行中按钮显示"处理中..."且禁用所有操作', async () => {
+    // 不变式：confirmFoodOrder 进行中时 actioningId 非空，所有操作按钮应禁用并显示加载文案
+    // 设计原因：confirmFoodOrder/cancelFoodOrder 非幂等，弱网下连点会触发多次状态变更导致订单状态不一致
+    // 让 confirmFoodOrder 永不 resolve，保持 actioningId 不被释放
+    vi.mocked(confirmFoodOrder).mockImplementation(() => new Promise(() => {}));
+    vi.mocked(getFoodOrders).mockResolvedValue(buildPageResponse([mockOrders[0]!]));
+
+    renderOrdersPage();
+    await waitForListLoaded();
+
+    // 切换到 seller Tab
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '我分享的' }));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
+    });
+
+    // 点击"确认"按钮打开弹窗
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    });
+
+    // 弹窗出现后点击"确定"触发 confirmFoodOrder（不会 resolve，actioningId 保持非空）
+    const dialog = await screen.findByRole('dialog', { name: '操作确认' });
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: '确定' }));
+    });
+
+    // 等待"处理中..."文案出现，证明 actioningId 守卫已激活
+    // pending + seller 视角同时渲染"确认"+"取消"两个按钮，actioningId 非空时均变为"处理中..."
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: '处理中...' }).length).toBeGreaterThan(0);
+    });
+
+    // 所有"处理中..."按钮应被禁用（HTML disabled 属性）
+    const processingButtons = screen.getAllByRole('button', { name: '处理中...' });
+    processingButtons.forEach((btn) => expect(btn).toBeDisabled());
+
+    // 再次点击任意"处理中..."按钮不应触发第二次调用：验证 mock 调用次数仍为 1
+    await act(async () => {
+      fireEvent.click(processingButtons[0]!);
+    });
+    expect(vi.mocked(confirmFoodOrder).mock.calls.length).toBe(1);
+  });
 });

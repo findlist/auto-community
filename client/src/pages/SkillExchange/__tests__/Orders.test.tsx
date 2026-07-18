@@ -457,4 +457,35 @@ describe('SkillExchange 订单列表与状态操作', () => {
     // 验证 toast.error 提示
     expect(toastErrorMock).toHaveBeenCalledWith('操作失败');
   });
+
+  it('重复提交守卫：状态变更进行中按钮显示"处理中..."且禁用所有操作', async () => {
+    // 不变式：updateOrderStatus 进行中时 actioningId 非空，所有操作按钮应禁用并显示加载文案
+    // 设计原因：updateOrderStatus 非幂等（订单状态机严格递进），弱网下连点会跳过中间状态
+    // 让 updateOrderStatus 永不 resolve，保持 actioningId 不被释放
+    vi.mocked(updateOrderStatus).mockImplementation(() => new Promise(() => {}));
+    const pendingOrders = [mockOrders[0]!];
+    vi.mocked(getOrders).mockResolvedValue(buildPageResponse(pendingOrders));
+
+    renderOrdersPage();
+    await waitForListLoaded();
+
+    // 点击"接受"按钮触发状态变更（不会 resolve，actioningId 保持非空）
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '接受' }));
+    });
+
+    // 等待"处理中..."文案出现，证明 actioningId 守卫已激活
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '处理中...' })).toBeInTheDocument();
+    });
+
+    // "拒绝"按钮应被禁用（HTML disabled 属性）
+    expect(screen.getByRole('button', { name: '拒绝' })).toBeDisabled();
+
+    // 再次点击"处理中..."按钮不应触发第二次调用：验证 mock 调用次数仍为 1
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '处理中...' }));
+    });
+    expect(vi.mocked(updateOrderStatus).mock.calls.length).toBe(1);
+  });
 });
