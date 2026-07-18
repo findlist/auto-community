@@ -68,6 +68,9 @@ export default function Dispute() {
 
   // 提交争议
   const handleSubmit = async () => {
+    // 入口守卫：与按钮 disabled 形成双重防御，避免弱网下连点产生多条争议记录
+    // 设计原因：disputeOrder 会将订单置为 disputed 状态并冻结后续操作，重复触发会污染争议队列
+    if (submitting) return;
     const finalReason = reason.trim() || selectedReason;
     if (!finalReason) {
       setError("请输入或选择争议原因");
