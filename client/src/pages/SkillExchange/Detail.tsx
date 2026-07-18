@@ -27,6 +27,10 @@ export default function Detail() {
   // 设计原因：原生 confirm() 阻塞主线程且移动端样式不可控，改用状态驱动的自定义 Modal，
   // 用户点击"删除"后才真正调用 deletePost，与 SystemStatus/SkillExchange/Orders 弹窗风格统一
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  // 删除进行中标志：独立于 submitting（submitting 用于 createOrder），用于防止 confirmDelete 重复触发
+  // 设计原因：弱网下用户在弹窗内多次点击"删除"会触发多次 deletePost 请求，
+  // 后端虽幂等但前端会显示多个 toast 与多次 navigate，体验混乱；同时配合按钮 disabled + 文案变化形成三重防御
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -66,16 +70,22 @@ export default function Detail() {
   };
 
   // 用户在弹窗中点击"删除"后执行实际删除
-  // 先关闭弹窗避免重复点击；try/catch 内已有 toast 兜底
+  // 三重防御：deleting 状态守卫 + 按钮 disabled + 文案变化，防止弱网下重复提交
+  // 不在入口关闭弹窗：deleting 期间保留弹窗显示"删除中..."文案，让用户感知请求进行中；
+  // 成功后 navigate 自动卸载组件弹窗消失；失败后关闭弹窗让用户看到 toast 并能重试
   const confirmDelete = async () => {
     if (!id) return;
-    setShowDeleteConfirm(false);
+    if (deleting) return;
+    setDeleting(true);
     try {
       await deletePost(id);
       toast.success("删除成功");
       navigate("/skills");
     } catch (error) {
       toast.error(getErrorMessage(error, "删除失败"));
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -254,7 +264,8 @@ export default function Detail() {
       {showDeleteConfirm && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 animate-backdrop"
-          onClick={() => setShowDeleteConfirm(false)}
+          // deleting 期间禁止点击背景关闭弹窗，避免请求进行中状态错乱
+          onClick={() => { if (!deleting) setShowDeleteConfirm(false); }}
         >
           <div
             role="dialog"
@@ -267,15 +278,17 @@ export default function Detail() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-sm text-neutral-600 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors"
+                disabled={deleting}
+                className="px-4 py-2 text-sm text-neutral-600 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 取消
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                disabled={deleting}
+                className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                删除
+                {deleting ? "删除中..." : "删除"}
               </button>
             </div>
           </div>
