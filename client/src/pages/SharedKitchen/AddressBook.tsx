@@ -36,6 +36,12 @@ export default function AddressBook() {
   // 设计原因：原生 confirm() 阻塞主线程且移动端样式不可控，改用状态驱动的自定义 Modal，
   // 用户点击"确定"后才真正调用 deleteAddress，与 SystemStatus/SkillExchange 弹窗风格统一
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  // 删除进行中标志：用作 confirmDelete 重复提交守卫与弹窗按钮加载态指示
+  // 设计原因：原实现仅靠 if (!pendingDeleteId) return + setPendingDeleteId(null) 关闭弹窗防御，
+  // 但 React 状态更新是异步批处理的，pendingDeleteId 在批处理结束前仍是旧值，
+  // 弱网下用户在弹窗内连点"删除"会再次进入 await deleteAddress，第二次调用因记录已删返回 404，
+  // 前端显示"删除失败" toast 体验混乱。与 SkillExchange/Detail 的 deleting 守卫风格统一形成三重防御
+  const [deleting, setDeleting] = useState(false);
   // 设为默认操作进行中的地址 ID：用作重复提交守卫与按钮加载态指示
   // 设计原因：setDefaultAddress 接口非幂等（多地址中只有一个默认），重复调用会产生多次
   // UPDATE 与缓存失效，弱网下用户连点会触发竞态，导致最终默认地址与用户期望不符
@@ -116,16 +122,25 @@ export default function AddressBook() {
   };
 
   // 用户在弹窗中点击"确定"后执行实际删除
-  // 先清空 pendingDeleteId 关闭弹窗，避免重复点击；try/catch 内已有 setError 兜底
+  // 三重防御：deleting 状态守卫 + 按钮 disabled + 文案变化，防止弱网下重复提交
+  // 设计原因：不在 await 前关闭弹窗，deleting 期间保留弹窗显示"删除中..."文案让用户感知请求进行中；
+  // 成功后 setPendingDeleteId(null) 关闭弹窗并刷新列表；失败后也关闭弹窗让用户看到列表顶部错误提示并能重试
   const confirmDelete = async () => {
     if (!pendingDeleteId) return;
+    if (deleting) return;
     const id = pendingDeleteId;
-    setPendingDeleteId(null);
+    setDeleting(true);
     try {
       await deleteAddress(id);
+      // 成功后关闭弹窗并刷新列表
+      setPendingDeleteId(null);
       loadAddresses();
     } catch (err) {
+      // 失败后关闭弹窗让用户看到列表顶部错误提示，并能重试
       setError(err instanceof ApiError ? err.message : "删除失败");
+      setPendingDeleteId(null);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -334,7 +349,8 @@ export default function AddressBook() {
       {pendingDeleteId && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-          onClick={() => setPendingDeleteId(null)}
+          // deleting 期间禁止点击背景关闭弹窗，避免请求进行中状态错乱
+          onClick={() => { if (!deleting) setPendingDeleteId(null); }}
         >
           <div
             role="dialog"
@@ -347,15 +363,17 @@ export default function AddressBook() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setPendingDeleteId(null)}
-                className="px-4 py-2 text-sm text-neutral-600 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors"
+                disabled={deleting}
+                className="px-4 py-2 text-sm text-neutral-600 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 取消
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                disabled={deleting}
+                className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                删除
+                {deleting ? "删除中..." : "删除"}
               </button>
             </div>
           </div>
