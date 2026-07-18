@@ -262,7 +262,9 @@ function toReportResponse(row: FalseReportRow) {
 
 async function createRequest(userId: string, data: CreateRequestData) {
   // 入库前清洗富文本字段，防止存储型 XSS
-  const sanitized = sanitizeObject(data, ['title', 'description']);
+  // 设计原因：address 字段由用户填写并展示在应急详情页与应急资源地图列表，跨用户可见，
+  // 未清洗会在受害者或地图浏览者侧触发存储型 XSS
+  const sanitized = sanitizeObject(data, ['title', 'description', 'address']);
   // 校验图片 URL：必须 HTTPS 且在域名白名单内
   validateImageUrls(sanitized.images);
 

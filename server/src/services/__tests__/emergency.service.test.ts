@@ -79,7 +79,7 @@ import { aiService } from '../ai.service';
 import { idempotency } from '../../utils/idempotency';
 import { notificationService } from '../notification.service';
 import { creditService } from '../credit.service';
-import { sanitizeXss } from '../../utils/sanitize';
+import { sanitizeXss, sanitizeObject } from '../../utils/sanitize';
 import {
   NotFoundError,
   ConflictError,
@@ -201,6 +201,35 @@ describe('emergency.service - createRequest', () => {
 
     expect(result.urgency).toBe('medium');
     expect(mockedAi).not.toHaveBeenCalled();
+  });
+
+  // XSS 防护不变式：address 字段跨用户可见（应急详情页/地图列表），必须随 title/description 一起被 sanitizeObject 清洗
+  // 设计原因：sanitizeObject 在本文件被 mock 为透传，无法验证清洗效果，但可断言字段列表包含 address，
+  // 避免后续重构时不慎移除 address 字段导致存储型 XSS 防护回归
+  it('address 字段应被纳入 sanitizeObject 清洗字段列表', async () => {
+    mockedQuery.mockResolvedValueOnce({
+      rows: [{
+        id: 'e1', user_id: 'u1', type: 'emergency', category: '医疗',
+        title: 't', description: 'd', urgency: 'low',
+        location: null, address: null, contact_phone: null,
+        is_anonymous: false, images: [], status: 'open',
+        timeout_at: new Date(), created_at: new Date(), updated_at: new Date(),
+      }],
+    } as unknown as DbResult);
+
+    await emergencyService.createRequest('u1', {
+      category: '医疗',
+      title: 't',
+      description: 'd',
+      urgency: 'low',
+      address: '某地',
+    });
+
+    expect(sanitizeObject).toHaveBeenCalled();
+    const fieldsArg = vi.mocked(sanitizeObject).mock.calls[0][1] as string[];
+    expect(fieldsArg).toContain('address');
+    expect(fieldsArg).toContain('title');
+    expect(fieldsArg).toContain('description');
   });
 });
 
