@@ -57,6 +57,7 @@ vi.mock('../credit.service', () => ({
 }));
 
 // mock sanitize：直接透传，避免 xss 库依赖
+// 注意：具体测试用例可通过 vi.mocked(sanitizeXss).mockReturnValue 覆盖返回值验证集成
 vi.mock('../../utils/sanitize', () => ({
   sanitizeObject: vi.fn(<T extends Record<string, unknown>>(data: T): T => data),
   sanitizeXss: vi.fn((v: unknown) => v),
@@ -78,6 +79,7 @@ import { aiService } from '../ai.service';
 import { idempotency } from '../../utils/idempotency';
 import { notificationService } from '../notification.service';
 import { creditService } from '../credit.service';
+import { sanitizeXss } from '../../utils/sanitize';
 import {
   NotFoundError,
   ConflictError,
@@ -108,6 +110,9 @@ beforeEach(() => {
   mockedNotify.mockClear();
   mockedEarnCredits.mockReset();
   mockedEarnCredits.mockResolvedValue({ balance: 100 });
+  // 重置 sanitizeXss mock 至默认透传实现，避免单测 mockReturnValue 状态泄漏到后续测试
+  vi.mocked(sanitizeXss).mockReset();
+  vi.mocked(sanitizeXss).mockImplementation((v: unknown) => v);
 });
 
 describe('emergency.service - classifyUrgency', () => {
@@ -410,6 +415,39 @@ describe('emergency.service - createReport', () => {
     const result = await emergencyService.createReport('u1', 'e1', '虚假求助');
     expect(result.id).toBe('f1');
     expect(result.status).toBe('pending');
+  });
+
+  // XSS 防护不变式：createReport 入库前应调用 sanitizeXss 清洗 reason 富文本字段
+  // 设计原因：reason 会在管理员后台 false_reports 列表/详情页直接渲染，未清洗将导致存储型 XSS
+  // 测试策略：sanitize 模块在本文件被 mock 为透传，因此通过 mockReturnValue 验证集成点
+  //   1. sanitizeXss 被调用且入参为原始 reason
+  //   2. INSERT 接收到的是 sanitizeXss 的返回值（而非原始 reason）
+  it('reason 应经过 sanitizeXss 清洗后再写入数据库', async () => {
+    mockedQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'e1' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult)
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'f1', request_id: 'e1', reporter_id: 'u1', reason: 'sanitized-reason',
+          evidence: null, status: 'pending', penalty: null,
+          resolution: null, resolved_at: null, resolved_by: null,
+          created_at: new Date(), updated_at: new Date(),
+        }],
+      } as unknown as DbResult);
+
+    // 让 mock 返回固定值，便于断言 INSERT 接收的是清洗后的值而非原始 reason
+    vi.mocked(sanitizeXss).mockReturnValue('sanitized-reason');
+
+    const xssPayload = '<script>alert("xss")</script>虚假求助';
+    await emergencyService.createReport('u1', 'e1', xssPayload);
+
+    // 验证 sanitizeXss 被调用且入参为原始 reason
+    expect(sanitizeXss).toHaveBeenCalledWith(xssPayload);
+
+    // 第3次 query 是 INSERT INTO false_reports，参数第3位为 reason
+    const insertCall = mockedQuery.mock.calls[2];
+    const insertParams = insertCall[1] as unknown[];
+    expect(insertParams[2]).toBe('sanitized-reason');
   });
 });
 

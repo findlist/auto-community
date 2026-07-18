@@ -608,6 +608,10 @@ async function updateResponseStatus(
 }
 
 async function createReport(userId: string, requestId: string, reason: string) {
+  // 入库前清洗举报原因，防止存储型 XSS
+  // 设计原因：reason 会在管理员后台 false_reports 列表/详情页直接渲染，未清洗将导致存储型 XSS
+  const safeReason = sanitizeXss(reason) as string;
+
   const requestResult = await query(
     'SELECT id FROM emergency_requests WHERE id = $1 AND deleted_at IS NULL',
     [requestId]
@@ -630,7 +634,7 @@ async function createReport(userId: string, requestId: string, reason: string) {
     `INSERT INTO false_reports (request_id, reporter_id, reason, status)
      VALUES ($1, $2, $3, 'pending')
      RETURNING ${FALSE_REPORT_COLUMNS}`,
-    [requestId, userId, reason]
+    [requestId, userId, safeReason]
   );
 
   return toReportResponse(result.rows[0] as FalseReportRow);
