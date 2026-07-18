@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：userEvent 内部用 async act 包裹交互，自动等待微任务 flush，
 // 消除"异步 state 更新未被 act 包裹"警告，模拟真实用户点击序列
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Detail from '../Detail';
@@ -473,5 +473,28 @@ describe('SharedKitchen/Detail 美食详情', () => {
     await screen.findByText('加载失败');
     // "返回列表"按钮应可见
     expect(screen.getByRole('button', { name: '返回列表' })).toBeInTheDocument();
+  });
+
+  it('重复提交守卫：弱网下连点"确认预约"只触发一次 createFoodOrder', async () => {
+    // 设计原因：React 状态更新是异步批处理的，ordering 在批处理结束前仍为 false，disabled 单一防御不足以阻断连点
+    // 让 createFoodOrder 永不 resolve 锁定 ordering 状态，模拟弱网场景
+    vi.mocked(createFoodOrder).mockImplementation(() => new Promise(() => {}));
+
+    renderDetail();
+
+    await screen.findByText('家常红烧肉');
+    await user.click(screen.getByRole('button', { name: '立即预约' }));
+
+    // 第一次点击：进入 ordering=true，按钮文案变为"提交中..."
+    fireEvent.click(screen.getByRole('button', { name: '确认预约' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '提交中...' })).toBeInTheDocument();
+    });
+
+    // 第二次点击：fireEvent 绕过 disabled 触发 onClick，但入口 if(ordering) return 应阻断
+    fireEvent.click(screen.getByRole('button', { name: '提交中...' }));
+
+    // createFoodOrder 应只被调用一次（入口 if 守卫作为第二道防线）
+    expect(vi.mocked(createFoodOrder)).toHaveBeenCalledTimes(1);
   });
 });

@@ -39,7 +39,10 @@ export default function Detail() {
 
   // 预约领取
   const handleOrder = async () => {
+    // 入口守卫：弱网下用户在弹窗内连点"确认预约"会触发多次 createFoodOrder，产生多个订单
+    // 设计原因：React 状态更新是异步批处理的，ordering 在批处理结束前仍为 false，disabled 单一防御不足以阻断连点
     if (!id || !post) return;
+    if (ordering) return;
     setOrdering(true);
     try {
       await createFoodOrder({
@@ -308,7 +311,8 @@ export default function Detail() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowOrderModal(false)}
-                className="flex-1 py-3 border border-neutral-200 text-neutral-700 rounded-full"
+                disabled={ordering}
+                className="flex-1 py-3 border border-neutral-200 text-neutral-700 rounded-full disabled:opacity-50"
               >
                 取消
               </button>
