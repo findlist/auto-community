@@ -304,7 +304,10 @@ async function exit(groupOrderId: string, userId: string): Promise<void> {
       }
     } else if (order.status === 'ongoing') {
       // 向下取整避免多退，差额归发起人，保证总额守恒
-      const refundAmount = Math.floor(participant.amount * ONGOING_REFUND_RATE);
+      // amount>0 时至少退 1，避免 amount=1 时 Math.floor(0.9)=0 全额归发起人违反 90% 设计意图
+      const refundAmount = participant.amount > 0
+        ? Math.max(1, Math.floor(participant.amount * ONGOING_REFUND_RATE))
+        : 0;
       const feeAmount = participant.amount - refundAmount;
 
       if (refundAmount > 0) {
