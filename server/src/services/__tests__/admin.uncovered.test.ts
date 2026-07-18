@@ -670,3 +670,59 @@ describe('admin.service - reviewVerificationRequest 审核认证申请', () => {
     expect(params).toEqual(['approved', 'admin-1', null, 'v-1']);
   });
 });
+
+// ===================== XSS 不变式测试 =====================
+// 设计原因：handleReport/reviewVerificationRequest/forceCancelOrder 三处入口已补 sanitizeXss，
+// 需补不变式测试验证 XSS payload 在入库前被剥离，避免依赖 xss 库具体输出格式
+describe('admin.service - XSS 不变式（handleReport/reviewVerificationRequest/forceCancelOrder）', () => {
+  it('handleReport 含 <script> 的 handleNote 入库前被剥离', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ id: 'r-1', status: 'resolved', handler_id: 'admin-1', handle_note: 'cleaned', handled_at: new Date() }],
+    } as never);
+
+    await adminService.handleReport('r-1', 'admin-1', 'resolved', '正常备注<script>alert(1)</script>');
+
+    // UPDATE 参数第 3 位为 handleNote，应剥离 <script> 标签
+    const params = mockQuery.mock.calls[0][1] as unknown[];
+    expect(params[2]).not.toContain('<script>');
+    expect(params[2]).not.toContain('</script>');
+    // 正常文本应保留
+    expect(params[2]).toContain('正常备注');
+  });
+
+  it('reviewVerificationRequest reject 含 <script> 的 rejectReason 入库前被剥离', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ id: 'v-1', status: 'pending', user_id: 'u-1' }],
+    } as never);
+    mockClient.query
+      .mockResolvedValueOnce({ rows: [] } as never)
+      .mockResolvedValueOnce({ rows: [] } as never);
+
+    await adminService.reviewVerificationRequest('v-1', 'admin-1', 'reject', '证件不清晰<script>alert(1)</script>');
+
+    // 事务内第一次 UPDATE 参数第 3 位为 rejectReason，应剥离 <script> 标签
+    const params = mockClient.query.mock.calls[0][1] as unknown[];
+    expect(params[2]).not.toContain('<script>');
+    expect(params[2]).not.toContain('</script>');
+    expect(params[2]).toContain('证件不清晰');
+  });
+
+  it('forceCancelOrder skill 含 <script> 的 reason 拼接 description 前被剥离', async () => {
+    // skill pending：1.SELECT 2.UPDATE order 3.UPDATE buyer 4.INSERT refund（reason 拼入 description）
+    mockClient.query
+      .mockResolvedValueOnce({ rows: [{ id: 'o-1', status: 'pending', credit_amount: 50, buyer_id: 'u1', seller_id: 'u2' }] } as never)
+      .mockResolvedValueOnce({ rows: [] } as never)
+      .mockResolvedValueOnce({ rows: [] } as never)
+      .mockResolvedValueOnce({ rows: [] } as never);
+
+    await adminService.forceCancelOrder('skill', 'o-1', '违规<script>alert(1)</script>', 'admin-1');
+
+    // 第 4 次 client.query 是 INSERT credit_transactions，description 参数（第 4 位）含 reason
+    const insertParams = mockClient.query.mock.calls[3][1] as unknown[];
+    const description = insertParams[3] as string;
+    expect(description).not.toContain('<script>');
+    expect(description).not.toContain('</script>');
+    expect(description).toContain('违规');
+    expect(description).toContain('管理员强制取消');
+  });
+});

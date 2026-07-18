@@ -489,8 +489,10 @@ const DEFAULT_VALUE_TYPE: ValueType = 'string';
 
 // 列出全部系统配置项，按 key 字典序返回，便于后台分页或一次性展示
 async function listSettings() {
+  // 加 LIMIT 500 防御性约束：site_settings 正常规模 < 100，超限通常意味着异常膨胀或脏数据注入，
+  // 提前截断避免单次查询拖垮 DB 与后台渲染
   const { rows } = await query(
-    'SELECT key, value, value_type, description, updated_by, updated_at FROM site_settings ORDER BY key ASC'
+    'SELECT key, value, value_type, description, updated_by, updated_at FROM site_settings ORDER BY key ASC LIMIT 500'
   );
   return rows.map((row) => ({
     key: row.key,
@@ -645,14 +647,19 @@ async function forceCancelOrder(type: OrderType, orderId: string, reason: string
   const config = ORDER_CONFIG[type];
   if (!config) throw new BadRequestError('无效的订单类型');
 
+  // 清洗 reason 中的 XSS 节点：reason 会拼入 credit_transactions.description（"管理员强制取消：${reason}"）并展示在买卖家积分流水页，
+  // 跨管理员→用户场景，未清洗的恶意脚本会在用户查看积分流水时触发存储型 XSS。
+  // 在 forceCancelOrder 入口统一清洗，让 skill/kitchen/time_bank 三个子函数自动复用，避免重复清洗与遗漏
+  const safeReason = sanitizeXss(reason);
+
   if (type === 'skill') {
-    return forceCancelSkillOrder(orderId, reason, adminId);
+    return forceCancelSkillOrder(orderId, safeReason, adminId);
   }
   if (type === 'kitchen') {
-    return forceCancelKitchenOrder(orderId, reason, adminId);
+    return forceCancelKitchenOrder(orderId, safeReason, adminId);
   }
   // time_bank：完成时才结算，取消无需退还
-  return forceCancelTimeOrder(orderId, reason, adminId);
+  return forceCancelTimeOrder(orderId, safeReason, adminId);
 }
 
 // 强制取消技能订单：退还买家积分
@@ -1033,12 +1040,16 @@ async function handleReport(
     throw new BadRequestError('无效的举报处理状态');
   }
 
+  // 清洗 handleNote 中的 XSS 节点：handleNote 会写入 reports.handle_note 并展示在管理员后台举报详情页，
+  // 与举报人 reason 同样属于跨用户可见内容，未清洗的恶意脚本会在管理员/复核人查看时触发存储型 XSS
+  const safeHandleNote = sanitizeXss(handleNote);
+
   const { rows } = await query(
     `UPDATE reports
      SET status = $1, handler_id = $2, handle_note = $3, handled_at = NOW()
      WHERE id = $4 AND status = 'pending'
      RETURNING id, status, handler_id, handle_note, handled_at`,
-    [status, handlerId, handleNote, reportId],
+    [status, handlerId, safeHandleNote, reportId],
   );
 
   if (rows.length === 0) {
@@ -1406,13 +1417,17 @@ async function reviewVerificationRequest(
 
   const newStatus = action === 'approve' ? 'approved' : 'rejected';
 
+  // 清洗 rejectReason 中的 XSS 节点：rejectReason 会写入 verification_requests.reject_reason 并展示在用户认证结果回执页，
+  // 跨管理员→用户场景，未清洗的恶意脚本会在用户查看拒绝原因时触发存储型 XSS
+  const safeRejectReason = rejectReason ? sanitizeXss(rejectReason) : undefined;
+
   // 更新申请状态和用户认证状态
   await transaction(async (client) => {
     await client.query(
       `UPDATE verification_requests
        SET status = $1, reviewed_by = $2, reviewed_at = NOW(), reject_reason = $3
        WHERE id = $4`,
-      [newStatus, reviewerId, rejectReason || null, requestId],
+      [newStatus, reviewerId, safeRejectReason || null, requestId],
     );
 
     await client.query(

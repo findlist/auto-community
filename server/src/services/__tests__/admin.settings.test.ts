@@ -80,6 +80,15 @@ describe('admin.service - 系统配置 listSettings', () => {
     const result = await adminService.listSettings();
     expect(result).toEqual([]);
   });
+
+  it('SQL 含 LIMIT 500 防御性约束，避免配置异常膨胀拖垮 DB 与后台渲染', async () => {
+    // 设计原因：site_settings 正常规模 < 100，超限通常意味着异常膨胀或脏数据注入，
+    // 提前截断避免单次查询返回过多行拖垮 DB 与后台渲染
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+    await adminService.listSettings();
+    const sql = mockedQuery.mock.calls[0][0] as string;
+    expect(sql).toContain('LIMIT 500');
+  });
 });
 
 describe('admin.service - 系统配置 getSetting', () => {
