@@ -769,6 +769,11 @@ async function transferTime(fromUserId: string, toUserId: string, amount: number
   if (fromUserId === toUserId) throw new BadRequestError('不能向自己转账');
   if (!Number.isInteger(amount) || amount <= 0) throw new ValidationError('转账金额必须为正整数');
 
+  // 入库前清洗转账备注，防止存储型 XSS
+  // 设计原因：remark 会写入 time_transactions 表，并在用户时间币流水列表页直接渲染，
+  // 接收方与发送方均可见，未清洗会在流水详情触发存储型 XSS
+  const safeRemark = remark !== undefined ? sanitizeXss(remark) as string : undefined;
+
   return transaction(async (client) => {
     // 1. 对双方 users 行按 id 排序加 FOR UPDATE 行锁，避免并发超扣与死锁
     const userMap = await lockUsersForUpdate(client, [fromUserId, toUserId]);
@@ -806,7 +811,7 @@ async function transferTime(fromUserId: string, toUserId: string, amount: number
     await client.query(
       `INSERT INTO time_transactions (from_user_id, to_user_id, amount, type, status, remark)
        VALUES ($1, $2, $3, 'transfer', 'completed', $4)`,
-      [fromUserId, toUserId, amount, remark || null],
+      [fromUserId, toUserId, amount, safeRemark || null],
     );
 
     // 通知接收方：携带发送方昵称让接收方知道是谁转赠的（空昵称兜底"一位用户"）
@@ -841,6 +846,11 @@ async function transferTime(fromUserId: string, toUserId: string, amount: number
 async function donateTime(fromUserId: string, toUserId: string, amount: number, remark?: string) {
   if (fromUserId === toUserId) throw new BadRequestError('不能向自己捐赠');
   if (!Number.isInteger(amount) || amount <= 0) throw new ValidationError('捐赠金额必须为正整数');
+
+  // 入库前清洗捐赠备注，防止存储型 XSS
+  // 设计原因：remark 会写入 time_transactions 表（type='donate'），并在用户时间币流水列表页
+  // 直接渲染，接收方与发送方均可见，未清洗会在流水详情触发存储型 XSS
+  const safeRemark = remark !== undefined ? sanitizeXss(remark) as string : undefined;
 
   return transaction(async (client) => {
     // 1. 双方 users 行按 id 排序加 FOR UPDATE 行锁，统一加锁顺序避免死锁
@@ -883,7 +893,7 @@ async function donateTime(fromUserId: string, toUserId: string, amount: number, 
     await client.query(
       `INSERT INTO time_transactions (from_user_id, to_user_id, amount, type, status, remark)
        VALUES ($1, $2, $3, 'donate', 'completed', $4)`,
-      [fromUserId, toUserId, amount, remark || null],
+      [fromUserId, toUserId, amount, safeRemark || null],
     );
 
     // 通知接收方：携带发送方昵称让接收方知道是谁捐赠的（空昵称兜底"一位用户"）

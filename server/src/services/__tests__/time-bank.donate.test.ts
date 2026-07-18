@@ -363,4 +363,32 @@ describe('time-bank.service - donateTime', () => {
     expect(lockCalls[0][1]).toEqual(['user-a']);
     expect(lockCalls[1][1]).toEqual(['user-b']);
   });
+
+  it('XSS 不变式：remark 含 script 标签时入库前被清洗', async () => {
+    // 设计原因：remark 会写入 time_transactions 表（type='donate'）并在用户时间币流水列表页
+    // 直接渲染，未清洗会在流水详情触发存储型 XSS。此处验证 INSERT 第四个参数（remark）已剥离 <script> 标签
+    setupMockClient({
+      users: {
+        'user-a': { timeBalance: 100, exists: true },
+        'user-b': { timeBalance: 0, exists: true },
+      },
+      accounts: {
+        'user-a': { balance: 100, exists: true },
+        'user-b': { balance: 0, exists: true },
+      },
+    });
+
+    await timeBankService.donateTime('user-a', 'user-b', 10, '<script>alert(1)</script>感谢帮助');
+
+    const insertCall = mockClient.query.mock.calls.find(
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].startsWith('INSERT INTO time_transactions') && call[0].includes("'donate'"),
+    );
+    expect(insertCall).toBeDefined();
+    const insertParams = insertCall![1] as unknown[];
+    const remarkParam = insertParams[3] as string;
+    expect(remarkParam).not.toContain('<script>');
+    expect(remarkParam).not.toContain('</script>');
+    // 清洗后仍应保留正常备注字符
+    expect(remarkParam).toContain('感谢帮助');
+  });
 });
