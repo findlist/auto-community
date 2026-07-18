@@ -383,3 +383,53 @@ describe('VerificationReview 实名认证审核', () => {
     expect(lastCall[0]).toBe(2);
   });
 });
+
+describe('VerificationReview 审核入口守卫', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getVerificationRequests).mockResolvedValue({
+      code: 0,
+      message: 'ok',
+      data: {
+        list: mockRequests,
+        total: mockRequests.length,
+        page: 1,
+        pageSize: 20,
+        totalPages: 1,
+        hasNext: false,
+      },
+    });
+  });
+
+  it('弱网连点不产生多次审核：入口 if 守卫阻断第二次 onClick', async () => {
+    // reviewVerification 永不 resolve，锁定 submitting 状态模拟弱网
+    vi.mocked(reviewVerification).mockReturnValue(new Promise(() => {}));
+
+    await act(async () => {
+      renderVerificationReview();
+    });
+    // 等待列表加载完成
+    await waitFor(() => {
+      expect(screen.getAllByText('通过').length).toBeGreaterThan(0);
+    });
+
+    // 点击"通过"打开弹窗
+    fireEvent.click(screen.getAllByText('通过')[0]!);
+
+    // 第一次点击：触发 setSubmitting(true)，按钮文案变为"处理中..."
+    // 弹窗内"确认通过"按钮渲染最晚，取最后一个
+    const confirmBtns = screen.getAllByRole('button', { name: '确认通过' });
+    fireEvent.click(confirmBtns[confirmBtns.length - 1]!);
+    // 等待 submitting 状态生效：按钮文案变为"处理中..."
+    await waitFor(() => {
+      expect(screen.getByText('处理中...')).toBeInTheDocument();
+    });
+
+    // 第二次点击：fireEvent 绕过 disabled 检查直接触发 onClick
+    // 入口 if (submitting) return 守卫作为第二道防线，阻断重复调用
+    fireEvent.click(screen.getByText('处理中...'));
+
+    // 不变式：reviewVerification 仅被调用 1 次，第二次点击被入口守卫拦截
+    expect(vi.mocked(reviewVerification)).toHaveBeenCalledTimes(1);
+  });
+});

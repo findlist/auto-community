@@ -91,6 +91,8 @@ export default function VerificationReview() {
 
   // 执行审核操作
   const handleReviewAction = async () => {
+    // 入口守卫：与 disabled + 文案变化形成三重防御，避免 React 批处理延迟导致弱网下连点产生多次认证审核
+    if (submitting) return;
     if (!review) return;
     if (review.action === "reject" && !rejectReason.trim()) {
       setError("拒绝认证时必须填写原因");
