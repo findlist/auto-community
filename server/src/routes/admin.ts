@@ -340,7 +340,12 @@ router.get('/dashboard', asyncHandler(async (req: Request, res: Response) => {
 // 7日趋势图
 router.get('/dashboard/trend', asyncHandler(async (req: Request, res: Response) => {
   const type = req.query.type as 'registration' | 'order';
-  const days = parseInt(req.query.days as string, 10) || 7;
+  // days 白名单 clamp 到 [1, 365]：
+  // - 负数会让 generate_series 反向生成空集
+  // - 极大值（如 100000）会让三张订单表的 created_at >= CURRENT_DATE - '99999 days'::interval 退化为全表扫描
+  // 默认值 7，未传或非法值回退到 7 天视图
+  const rawDays = parseInt(req.query.days as string, 10) || 7;
+  const days = Math.min(Math.max(rawDays, 1), 365);
   const result = type === 'order'
     ? await adminService.getOrderTrend(days)
     : await adminService.getRegistrationTrend(days);

@@ -534,6 +534,19 @@ describe('admin 路由集成测试', () => {
       expect(mockGetOrderTrend).toHaveBeenCalledWith(7);
     });
 
+    it('GET /dashboard/trend days 超出 [1,365] 时 clamp 到边界值，避免全表扫描与反向序列', async () => {
+      // 防御性测试：负数 / 极大值都应被 clamp，避免 generate_series 反向或订单表全表扫描
+      mockGetOrderTrend.mockResolvedValue([]);
+
+      // 负数 → clamp 到 1
+      await fetch(`${baseUrl}/dashboard/trend?type=order&days=-5`);
+      expect(mockGetOrderTrend).toHaveBeenLastCalledWith(1);
+
+      // 极大值 → clamp 到 365
+      await fetch(`${baseUrl}/dashboard/trend?type=order&days=100000`);
+      expect(mockGetOrderTrend).toHaveBeenLastCalledWith(365);
+    });
+
     it('GET /dashboard/reputation 返回信誉分分布', async () => {
       mockGetReputationDistribution.mockResolvedValue({ '5.0': 10, '4.5': 20 });
       const res = await fetch(`${baseUrl}/dashboard/reputation`);
