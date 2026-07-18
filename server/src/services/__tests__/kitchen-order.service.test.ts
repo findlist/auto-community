@@ -219,6 +219,33 @@ describe('kitchen-order.service create', () => {
     expect(updateSql).toContain('UPDATE kitchen_posts');
     expect(updateSql).toContain('remaining_portions = remaining_portions - ');
   });
+
+  it('XSS 不变式：remark 含 script 标签时入库前被清洗', async () => {
+    // 设计原因：remark 会写入 kitchen_orders 表并在订单详情页直接渲染，卖家与买家均可见，
+    // 未清洗会在订单详情触发存储型 XSS。此处验证 INSERT 的 remark 参数已剥离 <script> 标签
+    mockClientQuery
+      .mockResolvedValueOnce({ rows: [makePostRow({ remaining_portions: 5, credit_price: 10 })] }) // SELECT post
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE remaining_portions
+      .mockResolvedValueOnce({ rows: [makeOrderRow()] }); // INSERT order
+
+    await kitchenOrderService.create('buyer-1', {
+      postId: 'post-1',
+      quantity: 2,
+      remark: '<script>alert(1)</script>多加辣',
+    });
+
+    const insertCall = mockClientQuery.mock.calls[2];
+    expect(insertCall[0]).toContain('INSERT INTO kitchen_orders');
+    const insertParams = insertCall[1] as unknown[];
+    // 参数顺序：post_id, user_id, seller_id, portions, credit_amount,
+    //          pickup_type, pickup_time, delivery_address, remark
+    // remark 为第 9 个参数（索引 8）
+    const remarkParam = insertParams[8] as string;
+    expect(remarkParam).not.toContain('<script>');
+    expect(remarkParam).not.toContain('</script>');
+    // 清洗后仍应保留正常备注字符
+    expect(remarkParam).toContain('多加辣');
+  });
 });
 
 describe('kitchen-order.service confirm', () => {
