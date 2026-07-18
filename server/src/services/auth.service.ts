@@ -70,8 +70,10 @@ export function toUserResponse(row: UserRow, isSelf: boolean = false): UserRespo
     // 解密手机号：本人查询返回明文，他人查询返回脱敏后的字符串
     const plainPhone = decryptPhone(row.phone);
     phone = isSelf ? plainPhone : maskPhone(plainPhone);
-  } catch {
+  } catch (err) {
     // 解密失败时返回脱敏占位，避免抛错导致接口 500（可能是历史数据未加密）
+    // 留痕 warn 便于运维识别"密钥变更/字段损坏"等真实故障（区别于历史脏数据）
+    logger.warn({ userId: row.id, err: err instanceof Error ? err.message : String(err) }, '用户手机号解密失败，返回脱敏占位');
     phone = '******';
   }
 
@@ -176,7 +178,9 @@ async function refreshToken(token: string) {
   let payload: ReturnType<typeof verifyRefreshToken>;
   try {
     payload = verifyRefreshToken(token);
-  } catch {
+  } catch (err) {
+    // 留痕 warn 便于安全审计：refresh token 校验失败可能源于签名伪造/密钥轮换异常/客户端 bug
+    logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'refresh token 校验失败');
     throw new UnauthorizedError('refresh token 已过期，请重新登录');
   }
 

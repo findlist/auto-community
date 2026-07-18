@@ -33,6 +33,7 @@ const {
   mockBcryptCompare,
   mockJwtDecode,
   mockLoggerInfo,
+  mockLoggerWarn,
 } = vi.hoisted(() => ({
   mockQuery: vi.fn(),
   mockTransaction: vi.fn(),
@@ -51,6 +52,7 @@ const {
   mockBcryptCompare: vi.fn(),
   mockJwtDecode: vi.fn(),
   mockLoggerInfo: vi.fn(),
+  mockLoggerWarn: vi.fn(),
 }));
 
 // mock database 模块：register 用 transaction，login/refresh/reset 等用 query
@@ -96,10 +98,11 @@ vi.mock('../../utils/mask', () => ({
 }));
 
 // mock logger：捕获 info 调用参数，守护「日志不得记录明文验证码」安全不变式
+// 同时捕获 warn 调用，验证 decryptPhone/refreshToken 失败场景的留痕行为
 vi.mock('../../utils/logger', () => ({
   logger: {
     info: mockLoggerInfo,
-    warn: vi.fn(),
+    warn: mockLoggerWarn,
     error: vi.fn(),
   },
 }));
@@ -199,7 +202,7 @@ describe('auth.service - toUserResponse', () => {
     expect(mockMaskPhone).toHaveBeenCalledWith(PHONE);
   });
 
-  it('decryptPhone 失败时返回占位 "******"（历史数据未加密场景）', () => {
+  it('decryptPhone 失败时返回占位 "******"（历史数据未加密场景）并 logger.warn 留痕', () => {
     // 模拟历史数据未加密导致解密异常
     mockDecryptPhone.mockImplementation(() => {
       throw new Error('密文格式错误');
@@ -207,6 +210,11 @@ describe('auth.service - toUserResponse', () => {
     const row = createMockUserRow();
     const result = toUserResponse(row, true);
     expect(result.phone).toBe('******');
+    // 留痕 warn 便于运维识别"密钥变更/字段损坏"等真实故障
+    expect(mockLoggerWarn).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: row.id, err: '密文格式错误' }),
+      '用户手机号解密失败，返回脱敏占位',
+    );
   });
 
   it('reputation_score 为 string 时通过 Number() 转换为 number', () => {
@@ -385,7 +393,7 @@ describe('auth.service - refreshToken', () => {
     expect(mockGenerateAccessToken).toHaveBeenCalledWith({ id: 'user-1', nickname: NICKNAME });
   });
 
-  it('token 无效时抛 UnauthorizedError', async () => {
+  it('token 无效时抛 UnauthorizedError 并 logger.warn 留痕便于安全审计', async () => {
     // verifyRefreshToken 抛错时，service 应转为 UnauthorizedError
     mockVerifyRefreshToken.mockImplementation(() => {
       throw new Error('invalid token');
@@ -394,6 +402,11 @@ describe('auth.service - refreshToken', () => {
     await expect(authService.refreshToken('bad-token')).rejects.toBeInstanceOf(UnauthorizedError);
     // token 无效不应查库
     expect(mockQuery).not.toHaveBeenCalled();
+    // 留痕 warn 便于发现 token 伪造、密钥轮换异常或客户端 bug
+    expect(mockLoggerWarn).toHaveBeenCalledWith(
+      expect.objectContaining({ err: 'invalid token' }),
+      'refresh token 校验失败',
+    );
   });
 
   it('用户不存在时抛 UnauthorizedError', async () => {
