@@ -15,9 +15,10 @@ function DetailSkeleton() {
   return (
     <div className="p-4">
       <div className="animate-pulse space-y-4">
-        <div className="h-6 bg-gray-200 rounded w-3/4" />
-        <div className="h-4 bg-gray-200 rounded w-1/2" />
-        <div className="h-32 bg-gray-200 rounded" />
+        {/* 骨架灰阶对齐设计令牌 neutral-200，与 SharedKitchen/Detail 加载骨架一致 */}
+        <div className="h-6 bg-neutral-200 rounded w-3/4" />
+        <div className="h-4 bg-neutral-200 rounded w-1/2" />
+        <div className="h-32 bg-neutral-200 rounded" />
       </div>
     </div>
   );
@@ -127,16 +128,16 @@ export default function ServiceDetail() {
   return (
     // max-w-2xl mx-auto：详情页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="pb-20 max-w-2xl mx-auto">
-      <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
-        <button onClick={() => navigate(-1)} aria-label="返回" className="p-2.5 hover:bg-gray-100 rounded transition-colors">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+      <div className="px-4 py-3 flex items-center gap-3 border-b border-neutral-100">
+        <button onClick={() => navigate(-1)} aria-label="返回" className="p-2.5 hover:bg-neutral-100 rounded transition-colors">
+          <ArrowLeft className="w-5 h-5 text-neutral-600" />
         </button>
-        <h1 className="text-lg font-medium text-gray-900 flex-1 truncate">{service.title}</h1>
+        <h1 className="text-lg font-medium text-neutral-900 flex-1 truncate">{service.title}</h1>
         {/* 仅发布者本人且服务处于 active 时可编辑，与后端 updateService 权限校验一致 */}
         {user && service.userId === user.id && service.status === "active" && (
           <button
             onClick={() => setEditing(true)}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors"
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-violet-600 border border-violet-200 rounded-lg hover:bg-violet-50 transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
             编辑
@@ -148,40 +149,41 @@ export default function ServiceDetail() {
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
+              {/* 类型徽章：提供=翡翠绿（积极给出），需求=时间银行模块紫，与 ServiceCard 竖条配色一致 */}
               <span
                 className={`inline-block px-2 py-0.5 text-xs rounded ${
-                  isProvide ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
+                  isProvide ? "bg-emerald-50 text-emerald-600" : "bg-violet-50 text-violet-600"
                 }`}
               >
                 {isProvide ? "提供服务" : "需要服务"}
               </span>
-              <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+              <span className="inline-block px-2 py-0.5 bg-neutral-100 text-neutral-600 text-xs rounded">
                 {service.category}
               </span>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">{service.title}</h2>
+            <h2 className="text-xl font-bold text-neutral-900 mb-1">{service.title}</h2>
           </div>
-          <div className="text-lg font-bold text-emerald-600 whitespace-nowrap ml-4">
+          <div className="text-lg font-bold text-violet-600 whitespace-nowrap ml-4">
             {formatTime(service.durationMinutes)}
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">详细描述</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">{service.description}</p>
+        <div className="bg-neutral-50 rounded-lg p-4 mb-4">
+          <h3 className="text-sm font-medium text-neutral-700 mb-2">详细描述</h3>
+          <p className="text-neutral-600 text-sm leading-relaxed">{service.description}</p>
         </div>
 
         {/* 服务配图：仅在有图片时渲染，使用网格布局适配多图 */}
         {service.images && service.images.length > 0 && (
           <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">服务配图</h3>
+            <h3 className="text-sm font-medium text-neutral-700 mb-2">服务配图</h3>
             <div className="grid grid-cols-3 gap-2">
               {service.images.map((img, idx) => (
                 <img
                   key={idx}
                   src={img}
                   alt={`服务配图${idx + 1}`}
-                  className="w-full aspect-square object-cover rounded-lg bg-gray-100"
+                  className="w-full aspect-square object-cover rounded-lg bg-neutral-100"
                 />
               ))}
             </div>
@@ -190,28 +192,28 @@ export default function ServiceDetail() {
 
         <div className="space-y-3 mb-4">
           {(service.location || service.address) && (
-            <div className="flex items-center gap-2 text-gray-600 text-sm">
-              <MapPin className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2 text-neutral-600 text-sm">
+              <MapPin className="w-4 h-4 text-neutral-400" />
               <span>{service.location || service.address}</span>
             </div>
           )}
-          <div className="flex items-center gap-2 text-gray-600 text-sm">
-            <Clock className="w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-2 text-neutral-600 text-sm">
+            <Clock className="w-4 h-4 text-neutral-400" />
             <span>{new Date(service.createdAt).toLocaleString()}</span>
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">发布者信息</h3>
+        <div className="bg-neutral-50 rounded-lg p-4 mb-4">
+          <h3 className="text-sm font-medium text-neutral-700 mb-3">发布者信息</h3>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+            <div className="w-12 h-12 rounded-full bg-neutral-200 overflow-hidden">
               {/* 头像 alt 使用用户昵称，屏幕阅读器可识别服务发布者身份 */}
               {service.user?.avatar && (
                 <img src={service.user.avatar} alt={service.user.nickname ? `${service.user.nickname}的头像` : "用户头像"} className="w-full h-full object-cover" />
               )}
             </div>
             <div className="flex-1">
-              <div className="font-medium text-gray-900">{service.user?.nickname}</div>
+              <div className="font-medium text-neutral-900">{service.user?.nickname}</div>
               {service.user?.reputationScore != null && (
                 <div className="flex items-center gap-1 text-sm text-amber-500 mt-0.5">
                   <Star className="w-3.5 h-3.5 fill-current" />
@@ -234,12 +236,13 @@ export default function ServiceDetail() {
             请求已发起成功！
           </div>
         ) : !isAuthenticated ? (
-          <div className="text-center text-gray-500 py-2">请先登录后再发起请求</div>
+          <div className="text-center text-neutral-500 py-2">请先登录后再发起请求</div>
         ) : (
           <button
             onClick={handleCreateOrder}
             disabled={submitting || service.status !== "active"}
-            className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            // 发起请求按钮使用时间银行模块紫，与 CreateService 提交按钮配色一致
+            className="w-full py-3 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors disabled:opacity-50"
           >
             {submitting ? "提交中..." : "发起请求"}
           </button>
@@ -322,22 +325,23 @@ function EditServiceModal({ service, saving, onClose, onSave }: EditServiceModal
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 overflow-y-auto">
       <div className="bg-white rounded-xl w-full max-w-md p-5 shadow-lg my-8">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-bold text-gray-800">编辑服务</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600" disabled={saving}>
+          <h3 className="text-lg font-bold text-neutral-800">编辑服务</h3>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600" disabled={saving}>
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">服务类型</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-2">服务类型</label>
             <div className="flex gap-3">
               {([["provide", "提供服务"], ["request", "需求服务"]] as const).map(([val, label]) => (
                 <button
                   key={val}
                   onClick={() => setType(val)}
+                  // 编辑弹窗内类型切换同样使用时间银行模块紫，与 CreateService 保持一致
                   className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    type === val ? "bg-emerald-600 text-white" : "bg-gray-100 text-gray-600"
+                    type === val ? "bg-violet-600 text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
                   }`}
                 >
                   {label}
@@ -347,65 +351,65 @@ function EditServiceModal({ service, saving, onClose, onSave }: EditServiceModal
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">分类 *</label>
             <input
               type="text"
               value={category}
               onChange={e => setCategory(e.target.value)}
               placeholder="如：家政服务、教育培训"
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-400 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">标题 *</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">标题 *</label>
             <input
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="请输入服务标题"
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-400 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">描述</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="详细描述服务内容"
               rows={4}
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+              className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-400 transition-all resize-none"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">预计时长（分钟）*</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">预计时长（分钟）*</label>
             <div className="relative">
-              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
                 type="number"
                 value={durationMinutes}
                 onChange={e => setDurationMinutes(e.target.value)}
                 min="1"
-                className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full pl-9 pr-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-400 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">服务地址</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">服务地址</label>
             <input
               type="text"
               value={address}
               onChange={e => setAddress(e.target.value)}
               placeholder="请输入服务地址（选填）"
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-400 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">服务配图</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">服务配图</label>
             <ImageUpload
               value={images}
               onChange={setImages}
@@ -427,14 +431,15 @@ function EditServiceModal({ service, saving, onClose, onSave }: EditServiceModal
           <button
             onClick={onClose}
             disabled={saving}
-            className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="px-4 py-2 text-sm text-neutral-600 border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
           >
             取消
           </button>
           <button
             onClick={handleSubmit}
             disabled={!!error || saving}
-            className="px-4 py-2 text-sm text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+            // 保存按钮使用时间银行模块紫，与 CreateService 提交按钮一致
+            className="px-4 py-2 text-sm text-white bg-violet-600 rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? "保存中..." : "保存"}

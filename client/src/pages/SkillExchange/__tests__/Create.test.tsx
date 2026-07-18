@@ -80,11 +80,11 @@ describe('SkillExchange/Create 发布技能表单', () => {
     renderCreatePage();
     const offerBtn = screen.getByRole('button', { name: '提供技能' });
     const requestBtn = screen.getByRole('button', { name: '需求技能' });
-    // 默认 offer 高亮（bg-emerald-600）
-    expect(offerBtn.className).toContain('bg-emerald-600');
+    // 默认 offer 高亮（bg-blue-600，技能模块蓝）
+    expect(offerBtn.className).toContain('bg-blue-600');
     act(() => { fireEvent.click(requestBtn); });
-    expect(requestBtn.className).toContain('bg-emerald-600');
-    expect(offerBtn.className).not.toContain('bg-emerald-600');
+    expect(requestBtn.className).toContain('bg-blue-600');
+    expect(offerBtn.className).not.toContain('bg-blue-600');
   });
 
   it('offer 类型显示积分价格输入框，切换到 request 类型隐藏', () => {
@@ -251,11 +251,11 @@ describe('SkillExchange/Create 发布技能表单', () => {
   it('点击分类按钮选中并高亮显示', () => {
     renderCreatePage();
     const categoryBtn = screen.getByRole('button', { name: '电脑维修' });
-    // 未选中时为灰色背景
-    expect(categoryBtn.className).toContain('bg-gray-100');
+    // 未选中时为中性色背景
+    expect(categoryBtn.className).toContain('bg-neutral-100');
     act(() => { fireEvent.click(categoryBtn); });
-    // 选中后为 emerald 高亮
-    expect(categoryBtn.className).toContain('bg-emerald-100');
-    expect(categoryBtn.className).toContain('text-emerald-700');
+    // 选中后为蓝色高亮
+    expect(categoryBtn.className).toContain('bg-blue-100');
+    expect(categoryBtn.className).toContain('text-blue-700');
   });
 });

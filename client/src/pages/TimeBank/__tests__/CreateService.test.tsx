@@ -127,14 +127,14 @@ describe('TimeBank/CreateService 发布服务表单', () => {
 
   it('默认服务类型为"提供服务"，点击切换为"需求服务"', () => {
     renderCreateServicePage();
-    // 默认 provide 高亮（emerald 背景白字），点击 request 切换
+    // 默认 provide 高亮（violet 背景白字，时间银行模块紫），点击 request 切换
     const provideBtn = screen.getByRole('button', { name: '提供服务' });
     const requestBtn = screen.getByRole('button', { name: '需求服务' });
-    // 通过 class 判断当前激活状态（provide 激活时含 bg-emerald-600）
-    expect(provideBtn.className).toContain('bg-emerald-600');
+    // 通过 class 判断当前激活状态（provide 激活时含 bg-violet-600）
+    expect(provideBtn.className).toContain('bg-violet-600');
     act(() => { fireEvent.click(requestBtn); });
-    expect(requestBtn.className).toContain('bg-emerald-600');
-    expect(provideBtn.className).not.toContain('bg-emerald-600');
+    expect(requestBtn.className).toContain('bg-violet-600');
+    expect(provideBtn.className).not.toContain('bg-violet-600');
   });
 
   it('标题为空时校验失败显示"请填写标题"', () => {

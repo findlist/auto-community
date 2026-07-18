@@ -84,24 +84,25 @@ export default function Create() {
   return (
     // max-w-2xl mx-auto：表单页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="pb-24 max-w-2xl mx-auto">
-      <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
+      <div className="px-4 py-3 flex items-center gap-3 border-b border-neutral-100">
         {/* 触控区域标准：py-1.5 px-2 ≥40px，-ml-2 抵消父容器 px-4 保持视觉对齐 */}
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1 py-1.5 px-2 -ml-2 rounded text-gray-600 hover:bg-gray-100 transition-colors"
+          className="flex items-center gap-1 py-1.5 px-2 -ml-2 rounded text-neutral-600 hover:bg-neutral-100 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
           返回
         </button>
-        <h1 className="text-lg font-medium text-gray-900">发布技能</h1>
+        <h1 className="text-lg font-medium text-neutral-900">发布技能</h1>
       </div>
 
       <div className="p-4">
-        <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
+        <div className="flex bg-neutral-100 rounded-lg p-1 mb-6">
           <button
             onClick={() => setType("offer")}
+            // 类型切换激活态使用技能模块蓝，与列表页 Tab 下划线 bg-blue-600 一致
             className={`flex-1 py-2 rounded-md transition-colors text-sm ${
-              type === "offer" ? "bg-emerald-600 text-white" : "text-gray-600"
+              type === "offer" ? "bg-blue-600 text-white" : "text-neutral-600 hover:text-neutral-900"
             }`}
           >
             提供技能
@@ -109,7 +110,7 @@ export default function Create() {
           <button
             onClick={() => setType("request")}
             className={`flex-1 py-2 rounded-md transition-colors text-sm ${
-              type === "request" ? "bg-emerald-600 text-white" : "text-gray-600"
+              type === "request" ? "bg-blue-600 text-white" : "text-neutral-600 hover:text-neutral-900"
             }`}
           >
             需求技能
@@ -118,7 +119,7 @@ export default function Create() {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               标题 <span className="text-red-500">*</span>
             </label>
             <input
@@ -127,26 +128,27 @@ export default function Create() {
               onChange={e => setTitle(e.target.value)}
               onBlur={() => setTouched("title")}
               placeholder={type === "offer" ? "例如：擅长电脑维修、系统安装" : "例如：想学英语、需要家教"}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm ${getFieldError("title") ? "border-red-500" : "border-gray-200"}`}
+              // 焦点环改用技能模块蓝 15% 透明度光晕 + 400 阶边框，与列表页搜索框 focus:ring-blue-500/15 一致
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 transition-all text-sm ${getFieldError("title") ? "border-red-500" : "border-neutral-200"}`}
             />
             {getFieldError("title") && <p className="text-red-500 text-xs mt-1">{getFieldError("title")}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">详细描述</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">详细描述</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
               onBlur={() => setTouched("description")}
               placeholder="详细描述你的技能或需求..."
-              className={`w-full px-3 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm ${getFieldError("description") ? "border-red-500" : "border-gray-200"}`}
+              className={`w-full px-3 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 transition-all text-sm ${getFieldError("description") ? "border-red-500" : "border-neutral-200"}`}
               rows={4}
             />
             {getFieldError("description") && <p className="text-red-500 text-xs mt-1">{getFieldError("description")}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               分类 <span className="text-red-500">*</span>
             </label>
             <div className="flex flex-wrap gap-2">
@@ -154,10 +156,11 @@ export default function Create() {
                 <button
                   key={cat}
                   onClick={() => { setCategory(cat); setTouched("category"); }}
+                  // 分类按钮激活态使用技能模块蓝浅色变体，与列表项悬停 group-hover:text-blue-700 同色系
                   className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
                     category === cat
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-gray-100 text-gray-600"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-neutral-100 text-neutral-600 hover:bg-blue-50 hover:text-blue-700"
                   }`}
                 >
                   {cat}
@@ -169,7 +172,7 @@ export default function Create() {
 
           {type === "offer" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 积分价格 <span className="text-red-500">*</span>
               </label>
               <input
@@ -179,25 +182,25 @@ export default function Create() {
                 onBlur={() => setTouched("creditPrice")}
                 placeholder="设置每次服务的积分价格"
                 min={1}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm ${getFieldError("creditPrice") ? "border-red-500" : "border-gray-200"}`}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 transition-all text-sm ${getFieldError("creditPrice") ? "border-red-500" : "border-neutral-200"}`}
               />
               {getFieldError("creditPrice") && <p className="text-red-500 text-xs mt-1">{getFieldError("creditPrice")}</p>}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">服务地址</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">服务地址</label>
             <input
               type="text"
               value={location}
               onChange={e => setLocation(e.target.value)}
               placeholder="如：3号楼1单元（选填）"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+              className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 transition-all text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">图片（选填）</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">图片（选填）</label>
             <ImageUpload value={images} onChange={setImages} maxCount={5} />
           </div>
         </div>
@@ -208,7 +211,8 @@ export default function Create() {
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 active:scale-[0.99]"
+          // 提交按钮使用技能模块蓝，与列表页发布按钮 hover 光晕 rgba(59,130,246,0.5) 同色系
+          className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 active:scale-[0.99]"
         >
           {submitting ? "发布中..." : "立即发布"}
         </button>

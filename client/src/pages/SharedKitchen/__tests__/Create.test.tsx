@@ -84,11 +84,11 @@ describe('SharedKitchen/Create 发布美食表单', () => {
     renderCreatePage();
     const offerBtn = screen.getByRole('button', { name: '🍲 我要分享' });
     const needBtn = screen.getByRole('button', { name: '🍜 我有需求' });
-    // 默认 offer 高亮（bg-emerald-600）
-    expect(offerBtn.className).toContain('bg-emerald-600');
+    // 默认 offer 高亮（bg-orange-600，厨房模块橙）
+    expect(offerBtn.className).toContain('bg-orange-600');
     act(() => { fireEvent.click(needBtn); });
-    expect(needBtn.className).toContain('bg-emerald-600');
-    expect(offerBtn.className).not.toContain('bg-emerald-600');
+    expect(needBtn.className).toContain('bg-orange-600');
+    expect(offerBtn.className).not.toContain('bg-orange-600');
   });
 
   it('offer 类型显示领取地点/领取时间/领取方式/过敏原，切换到 need 类型隐藏', () => {
@@ -178,15 +178,15 @@ describe('SharedKitchen/Create 发布美食表单', () => {
   it('点击过敏原按钮选中并高亮，再次点击取消选中', () => {
     renderCreatePage();
     const allergenBtn = screen.getByRole('button', { name: '鸡蛋' });
-    // 未选中为灰色
-    expect(allergenBtn.className).toContain('bg-gray-100');
+    // 未选中为中性色
+    expect(allergenBtn.className).toContain('bg-neutral-100');
     // 选中为橙色
     act(() => { fireEvent.click(allergenBtn); });
     expect(allergenBtn.className).toContain('bg-orange-100');
     expect(allergenBtn.className).toContain('text-orange-700');
     // 再次点击取消
     act(() => { fireEvent.click(allergenBtn); });
-    expect(allergenBtn.className).toContain('bg-gray-100');
+    expect(allergenBtn.className).toContain('bg-neutral-100');
     expect(allergenBtn.className).not.toContain('bg-orange-100');
   });
 
@@ -213,12 +213,12 @@ describe('SharedKitchen/Create 发布美食表单', () => {
     const selfBtn = screen.getByRole('button', { name: '自取' });
     const deliveryBtn = screen.getByRole('button', { name: '可配送' });
     // 默认 self_pickup
-    expect(selfBtn.className).toContain('border-emerald-500');
-    expect(selfBtn.className).toContain('bg-emerald-50');
+    expect(selfBtn.className).toContain('border-orange-500');
+    expect(selfBtn.className).toContain('bg-orange-50');
     act(() => { fireEvent.click(deliveryBtn); });
-    expect(deliveryBtn.className).toContain('border-emerald-500');
-    expect(deliveryBtn.className).toContain('bg-emerald-50');
-    expect(selfBtn.className).not.toContain('border-emerald-500');
+    expect(deliveryBtn.className).toContain('border-orange-500');
+    expect(deliveryBtn.className).toContain('bg-orange-50');
+    expect(selfBtn.className).not.toContain('border-orange-500');
   });
 
   it('need 类型不显示分享份数字段', () => {
@@ -266,11 +266,11 @@ describe('SharedKitchen/Create 发布美食表单', () => {
   it('点击分类按钮选中并高亮显示', () => {
     renderCreatePage();
     const categoryBtn = screen.getByRole('button', { name: '家常菜' });
-    // 未选中为灰色
-    expect(categoryBtn.className).toContain('bg-gray-100');
+    // 未选中为中性色
+    expect(categoryBtn.className).toContain('bg-neutral-100');
     act(() => { fireEvent.click(categoryBtn); });
-    // 选中为 emerald 高亮
-    expect(categoryBtn.className).toContain('bg-emerald-100');
-    expect(categoryBtn.className).toContain('text-emerald-700');
+    // 选中为橙色高亮
+    expect(categoryBtn.className).toContain('bg-orange-100');
+    expect(categoryBtn.className).toContain('text-orange-700');
   });
 });

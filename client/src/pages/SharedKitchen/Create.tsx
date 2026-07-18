@@ -90,15 +90,16 @@ export default function Create() {
     // max-w-2xl mx-auto：表单页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="p-4 pb-24 max-w-2xl mx-auto">
       {/* 返回按钮：与 SkillExchange/Create 风格统一，触控区域 ≥40px */}
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-neutral-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-neutral-100 transition-colors">
         <ArrowLeft className="w-4 h-4" />返回
       </button>
       {/* 类型切换 */}
-      <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
+      <div className="flex bg-neutral-100 rounded-lg p-1 mb-6">
         <button
           onClick={() => setType("offer")}
+          // 类型切换激活态使用厨房模块橙，与列表页 Tab 下划线 bg-orange-600 一致
           className={`flex-1 py-2 rounded-md transition-colors ${
-            type === "offer" ? "bg-emerald-600 text-white" : "text-gray-600"
+            type === "offer" ? "bg-orange-600 text-white" : "text-neutral-600 hover:text-neutral-900"
           }`}
         >
           🍲 我要分享
@@ -106,7 +107,7 @@ export default function Create() {
         <button
           onClick={() => setType("need")}
           className={`flex-1 py-2 rounded-md transition-colors ${
-            type === "need" ? "bg-emerald-600 text-white" : "text-gray-600"
+            type === "need" ? "bg-orange-600 text-white" : "text-neutral-600 hover:text-neutral-900"
           }`}
         >
           🍜 我有需求
@@ -117,7 +118,7 @@ export default function Create() {
       <div className="space-y-4">
         {/* 标题 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-neutral-700 mb-1">
             标题 <span className="text-red-500">*</span>
           </label>
           <input
@@ -126,20 +127,21 @@ export default function Create() {
             onChange={e => setTitle(e.target.value)}
             onBlur={() => setTouched("title")}
             placeholder={type === "offer" ? "今天做了什么好吃的？" : "想吃什么美食？"}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${getFieldError("title") ? "border-red-500" : "border-gray-200"}`}
+            // 焦点环改用厨房模块橙 15% 透明度光晕 + 400 阶边框，与列表页 Tab/发布按钮的橙色语言一致
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/15 focus:border-orange-400 transition-all ${getFieldError("title") ? "border-red-500" : "border-neutral-200"}`}
           />
           {getFieldError("title") && <p className="text-red-500 text-xs mt-1">{getFieldError("title")}</p>}
         </div>
 
         {/* 描述 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">详细描述</label>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">详细描述</label>
           <textarea
             value={description}
             onChange={e => setDescription(e.target.value)}
             onBlur={() => setTouched("description")}
             placeholder="描述一下这道美食..."
-            className={`w-full px-3 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 ${getFieldError("description") ? "border-red-500" : "border-gray-200"}`}
+            className={`w-full px-3 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500/15 focus:border-orange-400 transition-all ${getFieldError("description") ? "border-red-500" : "border-neutral-200"}`}
             rows={3}
           />
           {getFieldError("description") && <p className="text-red-500 text-xs mt-1">{getFieldError("description")}</p>}
@@ -147,7 +149,7 @@ export default function Create() {
 
         {/* 类别 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-neutral-700 mb-1">
             类别 <span className="text-red-500">*</span>
           </label>
           <div className="flex flex-wrap gap-2">
@@ -155,10 +157,11 @@ export default function Create() {
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
-                className={`px-3 py-1 rounded-full text-sm ${
+                // 分类按钮激活态使用厨房模块橙浅色变体，与列表项悬停 group-hover:text-orange-700 同色系
+                className={`px-3 py-1 rounded-full text-sm transition-colors ${
                   category === cat
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-gray-100 text-gray-600"
+                    ? "bg-orange-100 text-orange-700"
+                    : "bg-neutral-100 text-neutral-600 hover:bg-orange-50 hover:text-orange-700"
                 }`}
               >
                 {cat}
@@ -170,26 +173,26 @@ export default function Create() {
         {/* 价格和份数 */}
         <div className="flex gap-4">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">价格（积分）</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">价格（积分）</label>
             <input
               type="number"
               value={price}
               onChange={e => setPrice(Number(e.target.value))}
               onBlur={() => setTouched("price")}
               min={0}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${getFieldError("price") ? "border-red-500" : "border-gray-200"}`}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/15 focus:border-orange-400 transition-all ${getFieldError("price") ? "border-red-500" : "border-neutral-200"}`}
             />
             {getFieldError("price") && <p className="text-red-500 text-xs mt-1">{getFieldError("price")}</p>}
           </div>
           {type === "offer" && (
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">分享份数</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">分享份数</label>
               <input
                 type="number"
                 value={quantity}
                 onChange={e => setQuantity(Number(e.target.value))}
                 min={1}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/15 focus:border-orange-400 transition-all"
               />
             </div>
           )}
@@ -199,44 +202,45 @@ export default function Create() {
         {type === "offer" && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">领取地点</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">领取地点</label>
               <input
                 type="text"
                 value={pickupLocation}
                 onChange={e => setPickupLocation(e.target.value)}
                 onBlur={() => setTouched("pickupLocation")}
                 placeholder="如：3号楼1单元102"
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${getFieldError("pickupLocation") ? "border-red-500" : "border-gray-200"}`}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/15 focus:border-orange-400 transition-all ${getFieldError("pickupLocation") ? "border-red-500" : "border-neutral-200"}`}
               />
               {getFieldError("pickupLocation") && <p className="text-red-500 text-xs mt-1">{getFieldError("pickupLocation")}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">领取时间</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">领取时间</label>
               <input
                 type="text"
                 value={pickupTime}
                 onChange={e => setPickupTime(e.target.value)}
                 placeholder="如：今天17:00-19:00"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/15 focus:border-orange-400 transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">领取方式</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">领取方式</label>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPickupType("self_pickup")}
-                  className={`flex-1 py-2 rounded-lg border ${
-                    pickupType === "self_pickup" ? "border-emerald-500 bg-emerald-50" : "border-gray-200"
+                  // 领取方式选中态使用厨房模块橙边框 + 浅橙背景，与列表项 hover 橙色语言一致
+                  className={`flex-1 py-2 rounded-lg border transition-colors ${
+                    pickupType === "self_pickup" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
                   }`}
                 >
                   自取
                 </button>
                 <button
                   onClick={() => setPickupType("delivery")}
-                  className={`flex-1 py-2 rounded-lg border ${
-                    pickupType === "delivery" ? "border-emerald-500 bg-emerald-50" : "border-gray-200"
+                  className={`flex-1 py-2 rounded-lg border transition-colors ${
+                    pickupType === "delivery" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
                   }`}
                 >
                   可配送
@@ -246,7 +250,7 @@ export default function Create() {
 
             {/* 过敏原 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">过敏原标注（可选）</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">过敏原标注（可选）</label>
               <div className="flex flex-wrap gap-2">
                 {allergenOptions.map(allergen => (
                   <button
@@ -258,10 +262,10 @@ export default function Create() {
                           : [...prev, allergen]
                       );
                     }}
-                    className={`px-3 py-1 rounded-full text-sm ${
+                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
                       selectedAllergens.includes(allergen)
                         ? "bg-orange-100 text-orange-700"
-                        : "bg-gray-100 text-gray-600"
+                        : "bg-neutral-100 text-neutral-600 hover:bg-orange-50 hover:text-orange-700"
                     }`}
                   >
                     {allergen}
@@ -274,7 +278,7 @@ export default function Create() {
 
         {/* 图片上传：offer 和 need 类型均可上传 */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">图片（选填）</label>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">图片（选填）</label>
           <ImageUpload value={images} onChange={setImages} maxCount={5} />
         </div>
       </div>
@@ -284,7 +288,8 @@ export default function Create() {
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="w-full py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 active:scale-[0.99]"
+          // 提交按钮使用厨房模块橙，与列表页发布按钮 hover 光晕 rgba(249,115,22,0.5) 同色系
+          className="w-full py-3 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 active:scale-[0.99]"
         >
           {submitting ? "发布中..." : "立即发布"}
         </button>
