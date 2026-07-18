@@ -7,6 +7,14 @@ import { logger } from '../utils/logger';
 const CACHE_TTL = 300;
 const CACHE_PREFIX = 'ab_test:';
 
+// eventType 白名单：INSERT 前校验避免脏数据污染 getTestResults 聚合
+// 设计原因：参数化 SQL 已无注入风险，但任意字符串会写入 ab_test_results，
+// 下游聚合 GROUP BY event_type 会产生未预期分组，影响 A/B 测试结果可信度
+const ALLOWED_EVENT_TYPES = ['impression', 'click', 'conversion', 'order', 'dismiss'] as const;
+
+// 结果聚合时间窗：90 天覆盖长跑测试，避免历史事件累积导致 COUNT DISTINCT 全表扫描
+const RESULT_LOOKBACK_INTERVAL = "INTERVAL '90 days'";
+
 interface TestConfig {
   id: number;
   test_name: string;
@@ -85,6 +93,11 @@ export async function recordEvent(
   eventType: string,
   metadata?: Record<string, unknown>,
 ): Promise<void> {
+  // eventType 白名单校验：避免任意字符串污染下游聚合
+  if (!ALLOWED_EVENT_TYPES.includes(eventType as (typeof ALLOWED_EVENT_TYPES)[number])) {
+    throw new BadRequestError(`不支持的 eventType：${eventType}`);
+  }
+
   await query(
     `INSERT INTO ab_test_results (test_name, user_id, variant, event_type, metadata)
      VALUES ($1, $2, $3, $4, $5)`,
@@ -97,15 +110,17 @@ export async function recordEvent(
 export async function getTestResults(testName: string): Promise<TestResults> {
   const config = await getTestConfig(testName);
 
+  // 加 90 天时间窗：避免长跑测试累积事件导致 COUNT DISTINCT 全表扫描
   const participantsResult = await query(
-    `SELECT COUNT(DISTINCT user_id) AS total FROM ab_test_results WHERE test_name = $1`,
+    `SELECT COUNT(DISTINCT user_id) AS total FROM ab_test_results
+     WHERE test_name = $1 AND created_at >= NOW() - ${RESULT_LOOKBACK_INTERVAL}`,
     [testName],
   );
 
   const statsResult = await query(
     `SELECT variant, event_type, COUNT(*) AS cnt
      FROM ab_test_results
-     WHERE test_name = $1
+     WHERE test_name = $1 AND created_at >= NOW() - ${RESULT_LOOKBACK_INTERVAL}
      GROUP BY variant, event_type
      ORDER BY variant, event_type`,
     [testName],
@@ -137,12 +152,13 @@ export async function getTestResults(testName: string): Promise<TestResults> {
 }
 
 export async function calculateConversionRate(testName: string, variant: string): Promise<number> {
+  // 加 90 天时间窗：与 getTestResults 保持一致，避免历史事件累积全表扫描
   const result = await query(
     `SELECT
        COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions,
        COUNT(*) FILTER (WHERE event_type = 'conversion') AS conversions
      FROM ab_test_results
-     WHERE test_name = $1 AND variant = $2`,
+     WHERE test_name = $1 AND variant = $2 AND created_at >= NOW() - ${RESULT_LOOKBACK_INTERVAL}`,
     [testName, variant],
   );
 

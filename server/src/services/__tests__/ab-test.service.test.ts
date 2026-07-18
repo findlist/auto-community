@@ -201,6 +201,16 @@ describe('ab-test.service recordEvent', () => {
     // metadata 应被 JSON.stringify
     expect(callArgs[1][4]).toBe(JSON.stringify({ source: 'button' }));
   });
+
+  it('非法 eventType 抛 BadRequestError，避免脏数据污染下游聚合', async () => {
+    // 白名单防御：任意字符串会写入 ab_test_results，
+    // 下游 GROUP BY event_type 会产生未预期分组，影响 A/B 测试结果可信度
+    await expect(
+      abTestService.recordEvent('homepage_test', 'user-1', 'control', 'malicious_event'),
+    ).rejects.toThrow(BadRequestError);
+    // 抛错时不应触发 DB 写入
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
 });
 
 describe('ab-test.service getTestResults', () => {
@@ -259,6 +269,22 @@ describe('ab-test.service getTestResults', () => {
 
     // participantsResult.rows[0]?.total || 0 → 0
     expect(result.totalParticipants).toBe(0);
+  });
+
+  it('聚合 SQL 含 90 天时间窗，避免长跑测试累积事件全表扫描', async () => {
+    // 防御性断言：长跑 A/B 测试累积事件后，COUNT DISTINCT user_id 与 GROUP BY 会全表扫描
+    // 加 90 天时间窗覆盖近一季度数据，满足 dashboard 场景
+    mockGetCache.mockResolvedValueOnce(makeConfig());
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ total: '0' }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    await abTestService.getTestResults('homepage_test');
+
+    const participantsSql = mockQuery.mock.calls[0][0] as string;
+    const statsSql = mockQuery.mock.calls[1][0] as string;
+    expect(participantsSql).toContain("created_at >= NOW() - INTERVAL '90 days'");
+    expect(statsSql).toContain("created_at >= NOW() - INTERVAL '90 days'");
   });
 });
 
