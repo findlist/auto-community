@@ -219,6 +219,9 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   };
 
   const handleSubmit = async () => {
+    // 入口守卫：弱网下用户连点"提交"会触发多次 createRequest，产生多个求助记录
+    // 设计原因：紧急场景下用户更易焦虑连点，disabled 单一防御不足以阻断异步批处理窗口内的连点
+    if (submitting) return;
     if (!validateAll()) return;
     setSubmitting(true);
     try {
@@ -603,6 +606,9 @@ function ResponseItem({
   const isResponder = currentUserId === response.userId;
 
   const handleConfirmArrival = async () => {
+    // 入口守卫：弱网下用户连点"确认到达"会触发多次 updateResponseStatus，状态机可能跳过中间状态
+    // 设计原因：disabled 单一防御不足以阻断异步批处理窗口内的连点
+    if (updating) return;
     setUpdating(true);
     try {
       await updateResponseStatus(response.id, { status: "arrived" });
@@ -697,6 +703,8 @@ function DetailView({ requestId }: { requestId: string }) {
   }, [fetchRequest, requestId]);
 
   const handleRespond = async () => {
+    // 入口守卫：弱网下用户连点"响应"会触发多次 respondToRequest，产生多个响应记录
+    if (responding) return;
     if (!responseMsg.trim()) return;
     setResponding(true);
     try {
@@ -712,6 +720,8 @@ function DetailView({ requestId }: { requestId: string }) {
   };
 
   const handleComplete = async () => {
+    // 入口守卫：弱网下用户连点"完成"会触发多次 updateResponseStatus，状态机可能跳过中间状态
+    if (completing) return;
     const acceptedResponse = request?.responses.find((r) => r.status === "arrived");
     if (!acceptedResponse) return;
     setCompleting(true);

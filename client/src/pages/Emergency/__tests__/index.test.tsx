@@ -7,7 +7,7 @@
  *           让 useParams 返回空 id 走 ListView 分支，断言 API 调用与渲染结果
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Emergency from '../index';
 
@@ -332,5 +332,37 @@ describe('Emergency/index 应急邻里列表页（ListView）', () => {
     });
     // 加载完成后骨架屏应消失
     expect(screen.queryByTestId('skeleton-list')).not.toBeInTheDocument();
+  });
+
+  it('重复提交守卫：弱网下连点"提交"只触发一次 createRequest', async () => {
+    // 设计原因：紧急场景下用户更易焦虑连点，disabled 单一防御不足以阻断异步批处理窗口内的连点
+    // 让 createRequest 永不 resolve 锁定 submitting 状态，模拟弱网场景
+    createRequestMock.mockImplementation(() => new Promise(() => {}));
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('老人摔倒需要帮助')).toBeInTheDocument();
+    });
+
+    // 打开 CreateModal
+    act(() => {
+      screen.getByText('求助').click();
+    });
+    expect(screen.getByText('发布求助')).toBeInTheDocument();
+
+    // 输入标题（必填，validateAll 已 mock 为 true 但仍触发受控组件更新）
+    fireEvent.change(screen.getByPlaceholderText('简要描述您的求助'), { target: { value: '测试求助' } });
+
+    // 第一次点击：进入 submitting=true，按钮文案变为"提交中..."
+    fireEvent.click(screen.getByRole('button', { name: '提交' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '提交中...' })).toBeInTheDocument();
+    });
+
+    // 第二次点击：fireEvent 绕过 disabled 触发 onClick，但入口 if(submitting) return 应阻断
+    fireEvent.click(screen.getByRole('button', { name: '提交中...' }));
+
+    // createRequest 应只被调用一次（入口 if 守卫作为第二道防线）
+    expect(createRequestMock).toHaveBeenCalledTimes(1);
   });
 });
