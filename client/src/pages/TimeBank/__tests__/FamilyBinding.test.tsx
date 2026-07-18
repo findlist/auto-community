@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：userEvent 内部用 async act 包裹所有交互，自动等待微任务队列清空，
 // 从根本上消除"异步 state 更新未被 act 包裹"警告，相比 fireEvent + 同步 act 更可靠。
 // fireEvent 仅触发单一 DOM 事件，userEvent 模拟真实用户交互序列（focus/mousedown/click 等）。
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import FamilyBindingPage from '../FamilyBinding';
