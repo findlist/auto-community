@@ -166,20 +166,28 @@ describe("HomepageImage 首页图片配置页", () => {
     });
   });
 
-  it("保存中按钮禁用", async () => {
-    // 未决 Promise 锁定 saving 态
+  it("保存中按钮显示'保存中...'加载态、disabled 且重复点击不触发第二次 API 调用", async () => {
+    // 未决 Promise 锁定 saving 态，模拟弱网下请求挂起
     setHomepageImageMock.mockReturnValue(new Promise(() => {}));
     renderHomepageImage();
     await waitFor(() => {
       expect(screen.getByAltText("首页展示图片")).toBeInTheDocument();
     });
+    // 第一次点击"保存配置"按钮
     await act(async () => {
       fireEvent.click(screen.getByText("保存配置"));
     });
-    await waitFor(() => {
-      // 保存中按钮文案不变但禁用，通过 disabled 属性判断
-      const saveBtn = screen.getByText("保存配置").closest("button");
-      expect(saveBtn).toBeDisabled();
+    // saving 命中后按钮文案应变为"保存中..."且 disabled
+    // 设计原因：三重防御之按钮文案变化 + disabled，让用户感知保存进行中并阻止重复点击
+    const savingBtn = await screen.findByText("保存中...");
+    expect(savingBtn.closest("button")).toBeDisabled();
+    // 第一次点击应触发 setHomepageImage 调用一次
+    expect(setHomepageImageMock).toHaveBeenCalledTimes(1);
+    // 重复点击"保存中..."按钮：fireEvent 绕过 disabled 直接触发 onClick，
+    // 验证入口 if (saving) return 守卫作为第二道防线阻止第二次 API 调用
+    await act(async () => {
+      fireEvent.click(savingBtn);
     });
+    expect(setHomepageImageMock).toHaveBeenCalledTimes(1);
   });
 });

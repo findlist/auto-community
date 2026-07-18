@@ -53,11 +53,16 @@ export default function HomepageImage() {
   };
 
   // 保存图片配置
+  // 三重防御：saving 状态守卫 + 按钮 disabled + 文案变化"保存中..."，防止弱网下重复提交
   const handleSave = async () => {
     if (!url.trim()) {
       setError("图片 URL 不能为空");
       return;
     }
+    // 重复提交守卫：saving 非空表示保存进行中，避免连点按钮触发多次 setHomepageImage 调用
+    // 设计原因：原实现仅靠 disabled={saving} 单一防御，但 React 状态更新是异步批处理的，
+    // saving 在批处理结束前仍为 false，弱网下用户在 disabled 生效前的微任务窗口内连点会触发多次保存
+    if (saving) return;
     setSaving(true);
     setError(null);
     setSuccess(false);
@@ -150,7 +155,7 @@ export default function HomepageImage() {
             className="flex items-center gap-1.5 px-5 py-2 text-sm text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            保存配置
+            {saving ? "保存中..." : "保存配置"}
           </button>
           {success && (
             <span className="flex items-center gap-1 text-sm text-emerald-600">
