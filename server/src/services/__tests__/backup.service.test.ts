@@ -355,6 +355,38 @@ describe('backup.service', () => {
       // 20260101 抛错被跳过，仅剩 20260102
       expect(status.files).toHaveLength(1);
       expect(status.files[0].name).toBe('backup_20260102_000000.sql.gz');
+      // 验证本轮新增的 warn 留痕：避免权限错配或磁盘故障被静默掩盖
+      // 设计原因：getBackupStatus 原 catch 块仅注释"忽略无法访问的文件"，运维侧无任何日志线索
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ file: 'backup_20260101_000000.sql.gz' }),
+        '[备份] 无法访问备份文件',
+      );
+    });
+
+    it('备份失败清理半成品文件时 unlinkSync 抛错：本轮新增 warn 留痕不阻塞主流程', async () => {
+      // 设计原因：executeBackup catch 块清理半成品文件原静默吞错，权限/磁盘故障无任何日志线索
+      // 本轮修复补 warn 留痕，本用例验证 warn 被调用且不阻塞 performBackup 返回失败结果
+      mockChild.on.mockImplementation((event: string, cb: (arg: unknown) => void) => {
+        if (event === 'error') {
+          setTimeout(() => cb(new Error('spawn ENOENT')), 0);
+        }
+      });
+      mockFs.existsSync.mockReturnValue(true);
+      // 清理半成品文件抛错（模拟权限不足或文件被占用）
+      mockFs.unlinkSync.mockImplementation(() => {
+        throw new Error('EACCES');
+      });
+
+      const result = await performBackup();
+
+      // 主流程仍返回失败结果（不被清理失败阻塞）
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('spawn ENOENT');
+      // 验证本轮新增的 warn 日志被调用：消息含 '[备份] 清理半成品备份文件失败'
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'EACCES' }),
+        '[备份] 清理半成品备份文件失败',
+      );
     });
 
     it('readdirSync 抛错：catch 返回空文件列表不向上抛出', () => {

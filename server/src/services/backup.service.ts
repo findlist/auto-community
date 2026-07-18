@@ -202,8 +202,10 @@ async function executeBackup(config: BackupConfig): Promise<BackupResult> {
     if (fs.existsSync(filePath)) {
       try {
         fs.unlinkSync(filePath);
-      } catch {
-        // 忽略清理失败
+      } catch (error) {
+        // 设计原因：清理半成品文件失败通常意味着文件系统权限或磁盘故障，记录告警便于运维介入，
+        // 避免半成品文件长期残留占用磁盘空间却无人察觉
+        logger.warn({ fileName, error: error instanceof Error ? error.message : String(error) }, '[备份] 清理半成品备份文件失败');
       }
     }
 
@@ -365,8 +367,10 @@ export function getBackupStatus(): {
             size: stats.size,
             createdAt: stats.mtime,
           });
-        } catch {
-          // 忽略无法访问的文件
+        } catch (error) {
+          // 设计原因：备份目录文件无法访问通常意味着权限错配或底层磁盘故障，
+          // 记录告警便于运维及时发现，避免 getBackupStatus 静默返回空列表掩盖真实故障
+          logger.warn({ file: name, error: error instanceof Error ? error.message : String(error) }, '[备份] 无法访问备份文件');
         }
       }
 
