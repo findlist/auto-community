@@ -136,6 +136,27 @@ describe('data-deletion.service - submitDeletionRequest', () => {
     // 无 reason 时应传 null，匹配 SQL 默认值语义
     expect(insertCall[1]).toEqual(['user-1', null]);
   });
+
+  it('submitDeletionRequest 入库前清洗 reason 中的 XSS 节点，避免存储型 XSS 污染管理员审核界面', async () => {
+    // 模拟用户存在且无重复申请，进入 INSERT 分支
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'user-1', status: 'active' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'req-x', status: 'pending' }] });
+
+    // 构造含 script 与 onerror 的恶意 reason：xss 库会将 <script> 转义为 HTML entity，
+    // 同时剥离 onerror 事件处理器，正常文本应保留
+    const xssPayload = '<script>alert("xss")</script>不再使用<img src=x onerror=alert(1)>';
+    await dataDeletionService.submitDeletionRequest('user-1', xssPayload);
+
+    // 不变式：传入 query 的第 2 个参数（reason）不得包含可执行的 <script> 与 onerror 危险节点
+    // xss 库默认将 <script> 转义为 HTML entity（&lt;script&gt;）而非剥离，与 admin.service 行为一致
+    const insertCall = mockQuery.mock.calls[2];
+    const reasonParam = (insertCall[1] as unknown[])[1] as string;
+    expect(reasonParam).not.toContain('<script>');
+    expect(reasonParam).not.toContain('</script>');
+    expect(reasonParam).not.toContain('onerror');
+    expect(reasonParam).toContain('不再使用');
+  });
 });
 
 describe('data-deletion.service - getDeletionRequestStatus', () => {

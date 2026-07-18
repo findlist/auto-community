@@ -2,6 +2,7 @@ import { query, transaction, SqlParam } from '../config/database';
 import { BadRequestError, NotFoundError, ConflictError } from '../utils/errors';
 import { userCache } from './cache.service';
 import { logger } from '../utils/logger';
+import { sanitizeXss } from '../utils/sanitize';
 import crypto from 'crypto';
 // PoolClient 用于 executeAnonymization 的 externalClient 参数，复用外层事务避免嵌套 BEGIN
 import type { PoolClient } from 'pg';
@@ -95,12 +96,15 @@ async function submitDeletionRequest(userId: string, reason?: string): Promise<{
     throw new ConflictError('您已提交过注销申请，请等待审核');
   }
 
+  // 清洗 reason 中的 XSS 节点：reason 会写入 deletion_requests 表并展示在管理员审核界面，
+  // 未清洗的恶意脚本会在管理员查看注销申请列表/详情时触发存储型 XSS，危及管理员账号
+  const safeReason = reason !== undefined ? sanitizeXss(reason) as string : undefined;
   // 创建注销申请记录
   const { rows } = await query(
     `INSERT INTO deletion_requests (user_id, reason, status)
      VALUES ($1, $2, 'pending')
      RETURNING id, status`,
-    [userId, reason || null],
+    [userId, safeReason || null],
   );
 
   logger.info({ userId, requestId: rows[0].id }, '[数据删除] 用户提交注销申请');
