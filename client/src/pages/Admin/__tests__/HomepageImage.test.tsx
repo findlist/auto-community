@@ -190,4 +190,34 @@ describe("HomepageImage 首页图片配置页", () => {
     });
     expect(setHomepageImageMock).toHaveBeenCalledTimes(1);
   });
+
+  it("卸载后 loadImage resolve 不触发 setState（mountedRef 防御）", async () => {
+    // 设计原因：useEffect 触发的 loadImage 异步进行中，用户切换页面卸载组件，
+    // 异步完成后调用 setState 会触发 React 警告与内存泄漏；mountedRef 模式在 cleanup 时置 false，await 后跳过 setState
+    type ImageResp = { data: { url: string } };
+    let resolveLoad!: (v: ImageResp) => void;
+    getHomepageImageMock.mockImplementationOnce(() => new Promise<ImageResp>((resolve) => { resolveLoad = resolve; }));
+
+    const spyConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { unmount } = render(<HomepageImage />);
+    // 等待 useEffect 触发 loadImage
+    await waitFor(() => { expect(getHomepageImageMock).toHaveBeenCalledTimes(1); });
+
+    // 卸载组件触发 cleanup（mountedRef.current = false）
+    unmount();
+
+    // 让慢请求 resolve：mountedRef 防御应跳过所有 setState，不抛错也不触发 React 警告
+    await act(async () => {
+      resolveLoad({ data: { url: "https://example.com/test.png" } });
+      await Promise.resolve();
+    });
+
+    // 验证无 React 卸载后 setState 相关警告
+    const reactUnmountWarn = spyConsoleError.mock.calls.find(
+      (call) => typeof call[0] === "string" && call[0].includes("unmounted")
+    );
+    expect(reactUnmountWarn).toBeUndefined();
+    spyConsoleError.mockRestore();
+  });
 });

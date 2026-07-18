@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Loader2, AlertCircle, Save, Check } from "lucide-react";
 import { getHomepageImage, setHomepageImage } from "@/api/admin";
 import { uploadImage } from "@/api/upload";
@@ -14,6 +14,9 @@ export default function HomepageImage() {
   const [success, setSuccess] = useState(false);
   // 安全定时器：组件卸载时自动清理，调用前自动清理上一个，避免重复保存时旧定时器提前关闭提示
   const safeSetTimeout = useSafeTimeout();
+  // 挂载标志：useEffect cleanup 时置为 false，loadImage/handleUpload await 后检查避免卸载后 setState 泄漏
+  // 设计原因：loadImage 由 useEffect 触发，handleUpload 由用户事件触发，两路异步在卸载后 resolve 都会触发 setState 泄漏
+  const mountedRef = useRef(true);
 
   // 加载当前首页图片
   // 设计原因：用 useCallback 包装稳定引用，与项目其他页面（ABTestResults/SystemConfig 等）模式一致，
@@ -23,16 +26,24 @@ export default function HomepageImage() {
     setError(null);
     try {
       const res = await getHomepageImage();
+      // 卸载后不再 setState，避免 React 警告与内存泄漏
+      if (!mountedRef.current) return;
       setUrl(res.data.url || "");
     } catch (err) {
+      if (!mountedRef.current) return;
       setError(err instanceof ApiError ? err.message : "加载失败");
     } finally {
-      setLoading(false);
+      // 仅挂载中才更新 loading，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // 重置挂载标志：组件重新挂载时恢复为 true
+    mountedRef.current = true;
     loadImage();
+    // cleanup：组件卸载时置为 false，使进行中的 loadImage 失效
+    return () => { mountedRef.current = false; };
   }, [loadImage]);
 
   // 上传图片文件
@@ -43,11 +54,15 @@ export default function HomepageImage() {
     setError(null);
     try {
       const res = await uploadImage(file);
+      // 卸载后不再 setState（用户上传中切换页面场景）
+      if (!mountedRef.current) return;
       setUrl(res.url);
     } catch (err) {
+      if (!mountedRef.current) return;
       setError(err instanceof ApiError ? err.message : "上传失败");
     } finally {
-      setUploading(false);
+      // 仅挂载中才更新 uploading，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setUploading(false);
       e.target.value = "";
     }
   };
