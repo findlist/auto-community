@@ -171,6 +171,37 @@ describe('notification.service createNotification', () => {
 
     expect(result.readAt).toBe('2026-07-08T11:00:00.000Z');
   });
+
+  it('createNotification 入库前清洗 title 与 content 中的 XSS 节点，避免存储型 XSS 通过通知推送污染前端', async () => {
+    // 通知会通过 WebSocket 推送到用户端，content 中常拼接用户昵称等外部输入，
+    // 未清洗的恶意脚本会在前端通知列表/详情渲染时触发存储型 XSS
+    mockQuery.mockResolvedValueOnce({ rows: [makeRow()] });
+
+    // 构造含 script 与 onerror 的恶意 title/content：xss 库会将 <script> 转义为 HTML entity，
+    // 同时剥离 onerror 事件处理器，正常文本应保留
+    // 注：xss 库默认不剥离 svg onload（svg 是合法 HTML5 标签），故采用 img onerror 验证剥离行为
+    const xssTitle = '<script>alert("xss")</script>订单已完成<img src=x onerror=alert(1)>';
+    const xssContent = '<script>alert("c")</script>您的订单已处理<img src=x onerror=alert(2)>';
+    await notificationService.createNotification({
+      userId: 'u1',
+      type: 'order_status',
+      title: xssTitle,
+      content: xssContent,
+    });
+
+    // 不变式：传入 query 的第 3 个参数（title）与第 4 个参数（content）不得包含可执行的 <script> 与 onerror 危险节点
+    const insertCall = mockQuery.mock.calls[0];
+    const titleParam = (insertCall[1] as unknown[])[2] as string;
+    const contentParam = (insertCall[1] as unknown[])[3] as string;
+    expect(titleParam).not.toContain('<script>');
+    expect(titleParam).not.toContain('</script>');
+    expect(titleParam).not.toContain('onerror');
+    expect(titleParam).toContain('订单已完成');
+    expect(contentParam).not.toContain('<script>');
+    expect(contentParam).not.toContain('</script>');
+    expect(contentParam).not.toContain('onerror');
+    expect(contentParam).toContain('您的订单已处理');
+  });
 });
 
 // ==================== getNotifications 测试 ====================

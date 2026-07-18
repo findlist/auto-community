@@ -3,6 +3,7 @@ import { createPaginatedResponse } from '../utils/pagination';
 import { safeNotify } from '../utils/safeNotify';
 import { sendToUser } from '../websocket/index';
 import { dispatchExternalChannels } from './notification-channels';
+import { sanitizeXss } from '../utils/sanitize';
 
 // 通知类型：订单状态变更、求助响应、举报结果、系统通知
 export type NotificationType = 'order_status' | 'emergency_response' | 'report_result' | 'system';
@@ -77,12 +78,16 @@ function toNotification(row: NotificationRow): NotificationData {
 
 // 创建通知并实时推送
 async function createNotification(params: CreateNotificationParams): Promise<NotificationData> {
+  // 清洗 title/content 中的 XSS 节点：通知会推送到用户端 WebSocket 与管理员后台，
+  // content 中可能拼接用户昵称、举报处理结果等外部输入，未清洗的恶意脚本会触发存储型 XSS
+  const safeTitle = sanitizeXss(params.title) as string;
+  const safeContent = params.content !== undefined ? sanitizeXss(params.content) as string : undefined;
   // 泛型 NotificationRow：INSERT RETURNING 显式列名，结果传给 toNotification，需精确类型
   const { rows } = await query<NotificationRow>(
     `INSERT INTO notifications (user_id, type, title, content, reference_id, reference_type)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING ${NOTIFICATION_COLUMNS}`,
-    [params.userId, params.type, params.title, params.content || null, params.referenceId || null, params.referenceType || null],
+    [params.userId, params.type, safeTitle, safeContent || null, params.referenceId || null, params.referenceType || null],
   );
 
   const notification = toNotification(rows[0]);
