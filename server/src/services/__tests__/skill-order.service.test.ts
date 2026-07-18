@@ -592,6 +592,27 @@ describe('skill-order.service - disputeOrder', () => {
       skillOrderService.disputeOrder('order-1', 'buyer-1', '原因'),
     ).rejects.toBeInstanceOf(OrderStatusInvalidError);
   });
+
+  it('XSS 不变式：reason 入库前被清洗', async () => {
+    // 设计原因：reason 会展示给对方用户与管理员，未清洗会触发存储型 XSS
+    const updated = buildOrderRow({ status: 'disputed', previous_status: 'accepted' });
+    const mockClient = mockTransactionQuery(
+      [buildOrderRow({ status: 'accepted' })],
+      [],
+      [updated],
+    );
+
+    await skillOrderService.disputeOrder(
+      'order-1', 'buyer-1', '<script>alert("x")</script>正常原因',
+    );
+
+    const updateCalls = mockClient.query.mock.calls.filter(
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].includes("status = 'disputed'"),
+    );
+    const params = updateCalls[0][1] as unknown[];
+    expect(params[2]).not.toContain('<script>');
+    expect(params[2]).toContain('正常原因');
+  });
 });
 
 // ===================== resolveDispute =====================
@@ -678,6 +699,27 @@ describe('skill-order.service - resolveDispute', () => {
     await expect(
       skillOrderService.resolveDispute('order-1', 'admin-1', '说明', 'refund'),
     ).rejects.toBeInstanceOf(OrderStatusInvalidError);
+  });
+
+  it('XSS 不变式：resolution 入库前被清洗', async () => {
+    // 设计原因：resolution 会展示给买卖双方，管理员账号被盗时降低 XSS 扩散面
+    const mockClient = mockTransactionQuery(
+      [buildOrderRow({ status: 'disputed', previous_status: 'accepted' })],
+      [],
+      [buildOrderRow({ status: 'accepted' })],
+    );
+
+    await skillOrderService.resolveDispute(
+      'order-1', 'admin-1', '<script>alert("r")</script>正常裁决', 'continue',
+    );
+
+    const updateCalls = mockClient.query.mock.calls.filter(
+      (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('resolved_at = NOW()'),
+    );
+    const params = updateCalls[0][1] as unknown[];
+    // params 顺序：orderId, previousStatus, resolution, adminId
+    expect(params[2]).not.toContain('<script>');
+    expect(params[2]).toContain('正常裁决');
   });
 });
 

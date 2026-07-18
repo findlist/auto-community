@@ -410,6 +410,9 @@ async function disputeOrder(orderId: string, userId: string, reason: string) {
       throw new BadRequestError('争议原因不能为空');
     }
 
+    // XSS 清洗：reason 会写入 dispute_reason 字段并展示给对方用户与管理员，未清洗会触发存储型 XSS
+    const safeReason = sanitizeXss(reason.trim()) as string;
+
     // 记录 previous_status 以便 continue 时恢复，避免状态丢失
     await client.query(
       `UPDATE skill_orders
@@ -419,7 +422,7 @@ async function disputeOrder(orderId: string, userId: string, reason: string) {
            dispute_time = NOW(),
            updated_at = NOW()
        WHERE id = $1`,
-      [orderId, order.status, reason.trim()],
+      [orderId, order.status, safeReason],
     );
 
     const updatedResult = await client.query<SkillOrderRow>(
@@ -449,6 +452,10 @@ async function resolveDispute(
     throw new BadRequestError('处理结果说明不能为空');
   }
 
+  // XSS 清洗：resolution 会写入 resolution 字段并展示给买卖双方，管理员输入虽相对可信但同样需要清洗
+  // 设计原因：管理员账号被盗时降低 XSS 扩散面，与 admin.service handleReport 风险模型一致
+  const safeResolution = sanitizeXss(resolution.trim()) as string;
+
   return transaction(async (client) => {
     const orderResult = await client.query<SkillOrderRow>(
       `SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1 FOR UPDATE`,
@@ -472,7 +479,7 @@ async function resolveDispute(
              resolved_by = $4,
              updated_at = NOW()
          WHERE id = $1`,
-        [orderId, previousStatus, resolution.trim(), adminId],
+        [orderId, previousStatus, safeResolution, adminId],
       );
     } else {
       // refund / cancel 均退款买家并取消订单
@@ -495,7 +502,7 @@ async function resolveDispute(
              resolved_by = $3,
              updated_at = NOW()
          WHERE id = $1`,
-        [orderId, resolution.trim(), adminId],
+        [orderId, safeResolution, adminId],
       );
     }
 
