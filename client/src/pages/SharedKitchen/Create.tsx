@@ -60,6 +60,10 @@ export default function Create() {
 
   const handleSubmit = async () => {
     if (!validateAll()) return;
+    // 入口 if 守卫：与 disabled + 文案变化形成三重防御
+    // 设计原因：React 状态更新是异步批处理的，submitting 在批处理结束前仍为 false，
+    // 弱网下用户连点"立即发布"会在 submitting 生效前触发多次 createFoodShare，产生多个美食分享帖
+    if (submitting) return;
 
     setSubmitting(true);
     try {

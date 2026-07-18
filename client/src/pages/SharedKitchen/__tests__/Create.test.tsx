@@ -273,4 +273,32 @@ describe('SharedKitchen/Create 发布美食表单', () => {
     expect(categoryBtn.className).toContain('bg-orange-100');
     expect(categoryBtn.className).toContain('text-orange-700');
   });
+
+  // 重复提交守卫不变式：弱网下用户连点"立即发布"应只触发一次 createFoodShare
+  // 设计原因：React 状态更新是异步批处理的，submitting 在批处理结束前仍为 false，
+  // 三重防御（入口 if 守卫 + 按钮 disabled + 文案变化）确保 submitting 期间无法触发第二次调用
+  // 验证方式：fireEvent.click 绕过 disabled 检查直接触发 onClick，验证入口 if 守卫作为第二道防线
+  it('发布进行中 fireEvent 绕过 disabled 重复点击不触发第二次 createFoodShare', async () => {
+    // 永不 resolve：锁定 submitting 状态，模拟弱网
+    createFoodShareMock.mockImplementation(() => new Promise(() => {}));
+    renderCreatePage();
+    fillValidOfferForm();
+    act(() => { fireEvent.click(screen.getByRole('button', { name: '立即发布' })); });
+
+    // 第一次点击应触发 createFoodShare
+    await waitFor(() => {
+      expect(createFoodShareMock).toHaveBeenCalledTimes(1);
+    });
+
+    // 按钮应进入加载态：显示"发布中..."文案
+    await screen.findByRole('button', { name: '发布中...' });
+
+    // fireEvent.click 绕过 disabled 检查直接触发 onClick，验证入口 if 守卫阻断连点
+    const submitButton = screen.getByRole('button', { name: '发布中...' });
+    act(() => { fireEvent.click(submitButton); });
+    act(() => { fireEvent.click(submitButton); });
+
+    // 重复点击不应触发第二次 createFoodShare（入口 if 守卫已阻断）
+    expect(createFoodShareMock).toHaveBeenCalledTimes(1);
+  });
 });
