@@ -18,12 +18,14 @@ const statusTabs = [
   { key: "cancelled", label: "已取消" },
 ];
 
+// 状态徽章配色：保留语义色（pending=黄/accepted=蓝/disputed=红），进行中改为时间银行模块紫强化身份
+// 已取消使用 neutral 中性色，避免与绿色语义混淆
 const statusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: "待接受", color: "bg-yellow-100 text-yellow-700" },
   accepted: { label: "已接受", color: "bg-blue-100 text-blue-700" },
-  in_progress: { label: "进行中", color: "bg-emerald-100 text-emerald-700" },
-  completed: { label: "已完成", color: "bg-green-100 text-green-700" },
-  cancelled: { label: "已取消", color: "bg-gray-100 text-gray-500" },
+  in_progress: { label: "进行中", color: "bg-violet-100 text-violet-700" },
+  completed: { label: "已完成", color: "bg-emerald-100 text-emerald-700" },
+  cancelled: { label: "已取消", color: "bg-neutral-100 text-neutral-500" },
   disputed: { label: "纠纷中", color: "bg-red-100 text-red-700" },
 };
 
@@ -75,6 +77,10 @@ export default function MyOrders() {
   const filteredOrders = activeTab ? orders.filter(o => o.status === activeTab) : orders;
 
   const handleStatusUpdate = async (orderId: string, status: string) => {
+    // 重复提交守卫：弱网下用户连点状态变更按钮会触发多次 updateOrderStatus 调用，
+    // 接口非幂等（订单状态机有 pending→accepted→in_progress→completed 严格流转），
+    // 重复调用可能导致状态跳过中间阶段，与 SkillExchange/Orders actioningId 守卫模式对齐
+    if (actionLoading) return;
     setActionLoading(orderId);
     try {
       await updateOrderStatus(orderId, status);
@@ -116,10 +122,11 @@ export default function MyOrders() {
           key="accept"
           onClick={() => handleStatusUpdate(order.id, "accepted")}
           disabled={isLoading}
-          className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium flex items-center justify-center gap-1 hover:bg-emerald-700 transition-colors disabled:opacity-50"
+          // 接受按钮使用时间银行模块紫，与 CreateService 提交按钮配色一致
+          className="flex-1 py-2 bg-violet-600 text-white rounded-lg text-xs font-medium flex items-center justify-center gap-1 hover:bg-violet-700 transition-colors disabled:opacity-50"
         >
-          <CheckCircle className="w-3.5 h-3.5" />
-          接受
+          {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+          {isLoading ? "处理中..." : "接受"}
         </button>
       );
     }
@@ -130,10 +137,11 @@ export default function MyOrders() {
           key="start"
           onClick={() => handleStatusUpdate(order.id, "in_progress")}
           disabled={isLoading}
-          className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium flex items-center justify-center gap-1 hover:bg-blue-700 transition-colors disabled:opacity-50"
+          // 开始服务同样使用模块紫，保持操作按钮组色彩统一
+          className="flex-1 py-2 bg-violet-600 text-white rounded-lg text-xs font-medium flex items-center justify-center gap-1 hover:bg-violet-700 transition-colors disabled:opacity-50"
         >
-          <Play className="w-3.5 h-3.5" />
-          开始服务
+          {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+          {isLoading ? "处理中..." : "开始服务"}
         </button>
       );
     }
@@ -144,10 +152,10 @@ export default function MyOrders() {
           key="complete"
           onClick={() => handleStatusUpdate(order.id, "completed")}
           disabled={isLoading}
-          className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium flex items-center justify-center gap-1 hover:bg-emerald-700 transition-colors disabled:opacity-50"
+          className="flex-1 py-2 bg-violet-600 text-white rounded-lg text-xs font-medium flex items-center justify-center gap-1 hover:bg-violet-700 transition-colors disabled:opacity-50"
         >
-          <CheckCircle className="w-3.5 h-3.5" />
-          完成服务
+          {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+          {isLoading ? "处理中..." : "完成服务"}
         </button>
       );
     }
@@ -158,10 +166,11 @@ export default function MyOrders() {
           key="cancel"
           onClick={() => handleStatusUpdate(order.id, "cancelled")}
           disabled={isLoading}
-          className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1 hover:bg-gray-200 transition-colors"
+          // 取消按钮使用 neutral 中性色，与模块紫形成主次对比，强调"放弃操作"语义
+          className="flex-1 py-2 bg-neutral-100 text-neutral-600 rounded-lg text-xs font-medium flex items-center justify-center gap-1 hover:bg-neutral-200 transition-colors disabled:opacity-50"
         >
-          <XCircle className="w-3.5 h-3.5" />
-          取消
+          {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+          {isLoading ? "处理中..." : "取消"}
         </button>
       );
     }
@@ -185,12 +194,12 @@ export default function MyOrders() {
   const renderReviewForm = (orderId: string) => {
     if (reviewingOrderId !== orderId) return null;
     return (
-      <div className="mt-3 pt-3 border-t border-gray-100">
+      <div className="mt-3 pt-3 border-t border-neutral-100">
         <div className="flex items-center gap-1 mb-2">
           {[1, 2, 3, 4, 5].map(n => (
             <button key={n} onClick={() => setReviewRating(n)}>
               <Star
-                className={`w-5 h-5 ${n <= reviewRating ? "text-amber-400 fill-amber-400" : "text-gray-300"}`}
+                className={`w-5 h-5 ${n <= reviewRating ? "text-amber-400 fill-amber-400" : "text-neutral-300"}`}
               />
             </button>
           ))}
@@ -200,19 +209,20 @@ export default function MyOrders() {
           onChange={e => setReviewContent(e.target.value)}
           placeholder="写下您的评价..."
           rows={2}
-          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none mb-2"
+          // 评价输入框焦点环：时间银行模块紫 15% 透明度光晕 + 400 阶边框
+          className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/15 focus:border-violet-400 transition-all resize-none mb-2"
         />
         <div className="flex gap-2">
           <button
             onClick={() => handleReview(orderId)}
             disabled={reviewSubmitting}
-            className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50"
+            className="flex-1 py-2 bg-violet-600 text-white rounded-lg text-xs font-medium hover:bg-violet-700 transition-colors disabled:opacity-50"
           >
             {reviewSubmitting ? "提交中..." : "提交评价"}
           </button>
           <button
             onClick={() => { setReviewingOrderId(null); setReviewContent(""); setReviewRating(5); }}
-            className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
+            className="flex-1 py-2 bg-neutral-100 text-neutral-600 rounded-lg text-xs font-medium hover:bg-neutral-200 transition-colors"
           >
             取消
           </button>
@@ -225,10 +235,10 @@ export default function MyOrders() {
     // max-w-2xl mx-auto：订单列表页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="px-4 py-4 pb-20 max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-4">
-        <button onClick={() => navigate(-1)} className="text-gray-500">
+        <button onClick={() => navigate(-1)} aria-label="返回" className="p-2 -ml-2 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-lg font-semibold text-gray-900">我的订单</h1>
+        <h1 className="text-lg font-semibold text-neutral-900">我的订单</h1>
       </div>
 
       {error && (
@@ -242,7 +252,7 @@ export default function MyOrders() {
               loadOrders(true);
             }}
             // 触摸目标提升：原纯 text-xs underline 无 padding，移动端难以精准点击
-            className="ml-auto text-xs underline py-1 px-2 rounded hover:bg-red-50 transition-colors"
+            className="ml-auto text-xs underline py-1 px-2 rounded hover:bg-red-100 transition-colors"
           >
             重试
           </button>
@@ -254,10 +264,11 @@ export default function MyOrders() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
+            // 状态 Tab 激活态使用时间银行模块紫，与 CreateService 提交按钮同色系
             className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${
               activeTab === tab.key
-                ? "bg-emerald-600 text-white"
-                : "bg-gray-100 text-gray-600"
+                ? "bg-violet-600 text-white"
+                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
             }`}
           >
             {tab.label}
@@ -267,11 +278,11 @@ export default function MyOrders() {
 
       <div className="space-y-3">
         {filteredOrders.map(order => {
-          const cfg = statusConfig[order.status] ?? { label: order.status, color: "bg-gray-100 text-gray-500" };
+          const cfg = statusConfig[order.status] ?? { label: order.status, color: "bg-neutral-100 text-neutral-500" };
           return (
             <div key={order.id} className="bg-white rounded-lg p-4 shadow-sm">
               <div className="flex items-start justify-between mb-2">
-                <h3 className="font-medium text-gray-900 flex-1 truncate pr-2">
+                <h3 className="font-medium text-neutral-900 flex-1 truncate pr-2">
                   {order.service?.title || "服务订单"}
                 </h3>
                 <span className={`text-xs px-2 py-0.5 rounded whitespace-nowrap ${cfg.color}`}>
@@ -279,14 +290,14 @@ export default function MyOrders() {
                 </span>
               </div>
 
-              <div className="flex items-center gap-4 text-sm text-gray-500 mb-1">
+              <div className="flex items-center gap-4 text-sm text-neutral-500 mb-1">
                 <span className="flex items-center gap-1">
                   <MessageSquare className="w-3.5 h-3.5" />
                   {formatTime(order.durationMinutes)}
                 </span>
               </div>
 
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-neutral-400">
                 {new Date(order.createdAt).toLocaleString("zh-CN")}
               </p>
 
@@ -298,8 +309,8 @@ export default function MyOrders() {
       </div>
 
       {loading && (
-        <div className="text-center py-8 text-gray-500 inline-flex items-center justify-center w-full gap-2">
-          <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
+        <div className="text-center py-8 text-neutral-500 inline-flex items-center justify-center w-full gap-2">
+          <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
           加载中...
         </div>
       )}
@@ -307,7 +318,7 @@ export default function MyOrders() {
       {hasMore && !loading && filteredOrders.length > 0 && (
         <button
           onClick={() => loadOrders()}
-          className="w-full py-3 mt-4 text-center text-emerald-600 hover:bg-emerald-50 rounded-lg"
+          className="w-full py-3 mt-4 text-center text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
         >
           加载更多
         </button>
