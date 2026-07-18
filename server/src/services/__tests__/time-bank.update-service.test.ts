@@ -186,3 +186,39 @@ describe('time-bank.service updateService images 校验', () => {
     ).rejects.toThrow(OrderStatusInvalidError);
   });
 });
+
+// XSS 不变式：updateService 入口必须清洗 address 字段
+// 设计原因：address 落库后跨用户可见，与 createService 入口清洗行为对齐避免遗漏
+describe('time-bank.service updateService address XSS 清洗', () => {
+  const baseService = {
+    id: 'svc-1',
+    user_id: 'user-1',
+    type: 'provide',
+    category: '家政服务',
+    title: '保洁服务',
+    description: '专业保洁',
+    duration_minutes: 60,
+    location: null,
+    address: null,
+    certification: null,
+    images: [],
+    status: 'active',
+    created_at: new Date(),
+    updated_at: new Date(),
+    deleted_at: null,
+  };
+
+  it('address 含 XSS 片段时被清洗后入库，原样脚本标签不进入 SQL 参数', async () => {
+    setupMockQuery(baseService, { ...baseService, address: '北京市朝阳区' });
+
+    await timeBankService.updateService('svc-1', 'user-1', {
+      address: '<script>alert(1)</script>北京市朝阳区',
+    });
+
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+    const updateCallArgs = mockQuery.mock.calls[1];
+    // UPDATE 参数中应能找到含"北京市朝阳区"的字符串，但不包含 <script> 标签
+    const addressArg = updateCallArgs[1].find((v: unknown) => typeof v === 'string' && v.includes('北京市朝阳区'));
+    expect(addressArg).not.toContain('<script>');
+  });
+});

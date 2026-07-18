@@ -255,7 +255,8 @@ async function createService(
   }
 
   // 入库前清洗富文本字段，防止存储型 XSS（与 kitchen.service 保持一致的处理方式）
-  const sanitized = sanitizeObject(data, ['title', 'description']);
+  // address 同属跨用户可见字段（详情/列表渲染），需同步清洗避免存储型 XSS
+  const sanitized = sanitizeObject(data, ['title', 'description', 'address']);
   // 校验图片 URL：必须为 /uploads/ 相对路径或 HTTPS 白名单域名
   validateImageUrls(sanitized.images);
 
@@ -423,7 +424,8 @@ async function updateService(id: string, userId: string, data: Partial<{
 
   // 入库前清洗富文本字段，防止存储型 XSS（与 createService 保持一致的处理方式）
   // 设计原因：updateService 同样会写入 title/description，若不清洗用户可通过 PUT 路由注入 XSS
-  const sanitized = sanitizeObject(data, ['title', 'description']);
+  // address 同属跨用户可见字段，与 createService 入口清洗行为对齐避免遗漏
+  const sanitized = sanitizeObject(data, ['title', 'description', 'address']);
 
   // images 更新前校验 URL 合法性，与 createService 保持一致
   // 设计原因：避免恶意 URL 入库，统一走 validateImageUrls（支持 /uploads/ 与 HTTPS 白名单）

@@ -190,4 +190,25 @@ describe('time-bank.service createService', () => {
     const titleArg = callArgs[1].find((v: unknown) => typeof v === 'string' && v.includes('保洁'));
     expect(titleArg).not.toContain('<script>');
   });
+
+  // XSS 不变式：address 字段必须被 sanitizeObject 包含在清洗字段列表
+  // 设计原因：address 落库后写入 time_services.address，跨用户在详情/列表渲染，
+  // 未清洗会触发存储型 XSS。此测试锁定清洗行为，避免后续重构不慎移除 address
+  it('address 含 XSS 片段时被清洗后入库，原样脚本标签不进入 SQL 参数', async () => {
+    mockQuery.mockResolvedValue({ rows: [{ id: 'svc-6', created_at: new Date() }] });
+
+    await timeBankService.createService('user-1', {
+      type: 'provide',
+      category: '家政服务',
+      title: '保洁服务',
+      duration_minutes: 60,
+      address: '<script>alert(1)</script>北京市朝阳区',
+    });
+
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    const callArgs = mockQuery.mock.calls[0];
+    // 清洗后的 address 不应包含 <script> 标签，但保留正常地址字符
+    const addressArg = callArgs[1].find((v: unknown) => typeof v === 'string' && v.includes('北京市朝阳区'));
+    expect(addressArg).not.toContain('<script>');
+  });
 });
