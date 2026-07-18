@@ -539,6 +539,38 @@ describe('emergency.service - resolveFalseReport', () => {
     // 参数列表：[status, interval, userId]
     expect(mockClient.query.mock.calls[3][1]).toEqual(['banned', '7 days', 'u-requester']);
   });
+
+  it('XSS 不变式：resolution 含 script 标签时入库与通知前被清洗', async () => {
+    // 设计原因：resolution 会写入 false_reports 表并通过 notifyReportResult 推送给举报者，
+    // 管理员后台审核详情页也会展示，未清洗会触发存储型 XSS
+    mockClient.query
+      .mockResolvedValueOnce({
+        rows: [{ id: 'f1', status: 'pending', request_id: 'e1', reporter_id: 'u-reporter' }],
+      } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u-requester' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'f1', status: 'resolved', penalty: 'warning', resolution: 'sanitized-resolution',
+          resolved_at: new Date(), resolved_by: 'admin-1', request_id: 'e1', reporter_id: 'u-reporter',
+          reason: '虚假', evidence: null, created_at: new Date(), updated_at: new Date(),
+        }],
+      } as unknown as DbResult);
+
+    // 让 sanitizeXss 返回固定值，验证 UPDATE 举报 SQL 与 notifyReportResult 都接收到清洗后值
+    vi.mocked(sanitizeXss).mockReturnValue('sanitized-resolution');
+
+    await emergencyService.resolveFalseReport('f1', 'admin-1', 'warning', '<script>alert(1)</script>处理意见');
+
+    // 验证 sanitizeXss 被调用且入参为原始 resolution
+    expect(sanitizeXss).toHaveBeenCalledWith('<script>alert(1)</script>处理意见');
+    // 验证 UPDATE 举报 SQL 第二参数（resolution）为清洗后值
+    const updateCall = mockClient.query.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('UPDATE false_reports'),
+    );
+    expect(updateCall).toBeDefined();
+    const updateParams = updateCall![1] as unknown[];
+    expect(updateParams[1]).toBe('sanitized-resolution');
+  });
 });
 
 describe('emergency.service - updateResponseStatus', () => {

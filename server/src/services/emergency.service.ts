@@ -661,6 +661,11 @@ async function resolveFalseReport(
   penalty: string,
   resolution: string
 ) {
+  // 入库前清洗管理员输入的处理意见 resolution，防止存储型 XSS
+  // 设计原因：resolution 会写入 false_reports 表，并通过 notifyReportResult 推送给举报者，
+  // 管理员后台审核详情页也会展示，未清洗会在多个下游渲染场景触发存储型 XSS
+  const safeResolution = sanitizeXss(resolution) as string;
+
   // 校验处罚类型，防止非法值
   const penaltyConfig = PENALTY_CONFIG[penalty];
   if (!penaltyConfig) {
@@ -699,7 +704,7 @@ async function resolveFalseReport(
        SET status = 'resolved', penalty = $1, resolution = $2, resolved_by = $3, resolved_at = NOW(), updated_at = NOW()
        WHERE id = $4
        RETURNING ${FALSE_REPORT_COLUMNS}`,
-      [penalty, resolution, adminId, reportId]
+      [penalty, safeResolution, adminId, reportId]
     );
 
     // 执行处罚：根据处罚类型更新用户状态与封禁到期时间
@@ -727,7 +732,7 @@ async function resolveFalseReport(
       notificationService.notifyReportResult(
         report.reporter_id,
         report.request_id,
-        resolution,
+        safeResolution,
       ),
       { userId: report.reporter_id, requestId: report.request_id },
     );
