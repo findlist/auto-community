@@ -211,6 +211,8 @@ export function ReviewSubmitModal({ orderId, visible, onClose, onSuccess }: Revi
   const [error, setError] = useState("");
 
   const handleSubmit = async () => {
+    // 入口守卫：与 disabled + 文案变化形成三重防御，避免 React 批处理延迟导致弱网下连点产生多个评价
+    if (submitting) return;
     if (rating < 1 || rating > 5) {
       setError("请选择评分");
       return;
@@ -290,7 +292,8 @@ export function ReviewSubmitModal({ orderId, visible, onClose, onSuccess }: Revi
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-100">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+            disabled={submitting}
+            className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50"
           >
             取消
           </button>

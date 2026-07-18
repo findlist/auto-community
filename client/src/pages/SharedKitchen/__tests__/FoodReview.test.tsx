@@ -306,4 +306,28 @@ describe("ReviewSubmitModal 评价提交弹窗", () => {
     // 提交中按钮禁用
     expect(screen.getByText("提交中...").closest("button")).toBeDisabled();
   });
+
+  it("弱网连点不产生多个评价：入口 if 守卫阻断第二次 onClick", async () => {
+    // 未决 Promise 锁定 submitting 态，模拟弱网下第一次提交未完成
+    completeFoodOrderMock.mockReturnValue(new Promise(() => {}));
+    render(
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <ReviewSubmitModal {...baseProps} visible={true} />
+      </MemoryRouter>
+    );
+    // 第一次点击：触发 setSubmitting(true)，进入提交中态
+    await act(async () => {
+      fireEvent.click(screen.getByText("提交评价"));
+    });
+    await waitFor(() => {
+      expect(screen.getByText("提交中...")).toBeInTheDocument();
+    });
+    // 第二次点击：fireEvent 绕过 disabled 检查直接触发 onClick，
+    // 入口 if (submitting) return 守卫作为第二道防线，阻断重复调用
+    await act(async () => {
+      fireEvent.click(screen.getByText("提交中..."));
+    });
+    // 不变式：completeFoodOrder 仅被调用 1 次，第二次点击被入口守卫拦截
+    expect(completeFoodOrderMock).toHaveBeenCalledTimes(1);
+  });
 });
