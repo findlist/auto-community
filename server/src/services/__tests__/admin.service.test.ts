@@ -320,6 +320,42 @@ describe('admin.service - updateContent', () => {
     expect(updateParams[0]).toEqual(['https://cdn.example.com/a.png', 'https://cdn.example.com/b.png']);
     expect(updateParams[1]).toEqual(['编程', '设计']);
   });
+
+  // XSS 不变式：address 字段必须被纳入 textFields 清洗字段列表
+  // 设计原因：管理员编辑入口与业务侧 create/update 入口清洗行为对齐，避免遗漏导致存储型 XSS
+  it('skill type 的 address 含 XSS 片段时被清洗后入库', async () => {
+    mockedQuery
+      .mockResolvedValueOnce({ rows: [{ id: 's1' }] } as unknown as DbResult) // SELECT id
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult) // UPDATE
+      .mockResolvedValueOnce({
+        rows: [{ id: 's1', title: 't', description: '', credit_price: 50, images: [], tags: [], address: '北京市朝阳区', status: 'active', created_at: new Date() }],
+      } as unknown as DbResult);
+
+    await adminService.updateContent('skill', 's1', {
+      address: '<script>alert(1)</script>北京市朝阳区',
+    }, 'admin-1');
+
+    const updateParams = mockedQuery.mock.calls[1][1] as unknown[];
+    const addressArg = updateParams.find((v: unknown) => typeof v === 'string' && v.includes('北京市朝阳区'));
+    expect(addressArg).not.toContain('<script>');
+  });
+
+  it('kitchen type 的 pickupAddress（驼峰映射 pickup_address）含 XSS 片段时被清洗后入库', async () => {
+    mockedQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'k1' }] } as unknown as DbResult) // SELECT id
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult) // UPDATE
+      .mockResolvedValueOnce({
+        rows: [{ id: 'k1', title: 't', description: '', credit_price: 50, images: [], category: 'c', portions: 1, pickup_address: '北京市海淀区', allergens: [], status: 'active', created_at: new Date() }],
+      } as unknown as DbResult);
+
+    await adminService.updateContent('kitchen', 'k1', {
+      pickupAddress: '<script>alert(1)</script>北京市海淀区',
+    }, 'admin-1');
+
+    const updateParams = mockedQuery.mock.calls[1][1] as unknown[];
+    const pickupAddressArg = updateParams.find((v: unknown) => typeof v === 'string' && v.includes('北京市海淀区'));
+    expect(pickupAddressArg).not.toContain('<script>');
+  });
 });
 
 describe('admin.service - 首页展示图片', () => {

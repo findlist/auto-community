@@ -308,6 +308,8 @@ async function batchUpdateContentStatus(type: ContentType, ids: string[], status
 // ===================== 内容编辑（管理员） =====================
 
 // 各内容类型可编辑字段配置：字段白名单 + 富文本字段 + 详情查询字段
+// textFields 包含所有跨用户可见的富文本字段（title/description/address/pickup_address），
+// 设计原因：管理员编辑入口与业务侧 create/update 入口清洗行为对齐，避免遗漏导致存储型 XSS
 const CONTENT_EDIT_CONFIG: Record<ContentType, {
   table: string;
   editableFields: string[];
@@ -317,25 +319,25 @@ const CONTENT_EDIT_CONFIG: Record<ContentType, {
   skill: {
     table: 'skill_posts',
     editableFields: ['title', 'description', 'credit_price', 'images', 'tags', 'address'],
-    textFields: ['title', 'description'],
+    textFields: ['title', 'description', 'address'],
     detailSelect: 'id, title, description, credit_price, images, tags, address, status, created_at',
   },
   kitchen: {
     table: 'kitchen_posts',
     editableFields: ['title', 'description', 'credit_price', 'images', 'category', 'portions', 'pickup_address', 'allergens'],
-    textFields: ['title', 'description'],
+    textFields: ['title', 'description', 'pickup_address'],
     detailSelect: 'id, title, description, credit_price, images, category, portions, pickup_address, allergens, status, created_at',
   },
   time_bank: {
     table: 'time_services',
     editableFields: ['title', 'description', 'duration_minutes', 'category', 'address'],
-    textFields: ['title', 'description'],
+    textFields: ['title', 'description', 'address'],
     detailSelect: 'id, title, description, duration_minutes, category, address, status, created_at',
   },
   emergency: {
     table: 'emergency_requests',
     editableFields: ['title', 'description', 'images', 'urgency', 'category', 'address'],
-    textFields: ['title', 'description'],
+    textFields: ['title', 'description', 'address'],
     detailSelect: 'id, title, description, images, urgency, category, address, status, created_at',
   },
 };
