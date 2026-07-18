@@ -58,6 +58,9 @@ export default function Create() {
   const { setTouched, getFieldError, validateAll } = useFormValidation(fieldConfigs);
 
   const handleSubmit = async () => {
+    // 入口守卫：与按钮 disabled 形成双重防御，避免弱网下连点产生多条技能帖子
+    // 设计原因：createPost 是创建非幂等资源，重复触发会污染列表并浪费审核资源
+    if (submitting) return;
     if (!validateAll()) return;
 
     setSubmitting(true);
