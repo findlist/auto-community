@@ -430,6 +430,32 @@ describe('AddressBook 配送地址簿', () => {
     await screen.findByText('设置失败');
   });
 
+  // 重复提交守卫不变式：弱网下用户连点"设为默认"应只触发一次 API 调用
+  // 设计原因：setDefaultAddress 非幂等（多地址中只有一个默认），重复调用会导致最终默认地址与用户期望不符
+  it('设为默认进行中按钮显示加载态且重复点击不触发第二次 API 调用', async () => {
+    // 永不 resolve：锁定 settingDefaultId 状态，模拟弱网
+    vi.mocked(setDefaultAddress).mockImplementation(() => new Promise(() => {}));
+
+    renderAddressBook();
+
+    await screen.findByText('李四');
+
+    // 第一次点击应触发 API 调用
+    await user.click(screen.getByRole('button', { name: /设为默认/ }));
+    await waitFor(() => {
+      expect(setDefaultAddress).toHaveBeenCalledTimes(1);
+    });
+
+    // 按钮应进入加载态：显示"设置中..."文案与 spinner
+    await screen.findByText('设置中...');
+    expect(document.querySelector('.animate-spin')).toBeInTheDocument();
+
+    // 重复点击不应触发第二次 API 调用
+    await user.click(screen.getByRole('button', { name: /设置中/ }));
+    await user.click(screen.getByRole('button', { name: /设置中/ }));
+    expect(setDefaultAddress).toHaveBeenCalledTimes(1);
+  });
+
   it('点击"删除"在弹窗确认后调用 deleteAddress', async () => {
     renderAddressBook();
 

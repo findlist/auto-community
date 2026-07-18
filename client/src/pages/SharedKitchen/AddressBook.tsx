@@ -36,6 +36,10 @@ export default function AddressBook() {
   // 设计原因：原生 confirm() 阻塞主线程且移动端样式不可控，改用状态驱动的自定义 Modal，
   // 用户点击"确定"后才真正调用 deleteAddress，与 SystemStatus/SkillExchange 弹窗风格统一
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  // 设为默认操作进行中的地址 ID：用作重复提交守卫与按钮加载态指示
+  // 设计原因：setDefaultAddress 接口非幂等（多地址中只有一个默认），重复调用会产生多次
+  // UPDATE 与缓存失效，弱网下用户连点会触发竞态，导致最终默认地址与用户期望不符
+  const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
 
   // 加载地址列表
   const loadAddresses = useCallback(async () => {
@@ -127,11 +131,17 @@ export default function AddressBook() {
 
   // 设为默认
   const handleSetDefault = async (id: string) => {
+    // 重复提交守卫：弱网下用户连点会触发多次 setDefaultAddress 调用，
+    // 接口非幂等（多地址中只有一个默认），重复调用会导致最终默认地址与用户期望不符
+    if (settingDefaultId) return;
+    setSettingDefaultId(id);
     try {
       await setDefaultAddress(id);
       loadAddresses();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "设置失败");
+    } finally {
+      setSettingDefaultId(null);
     }
   };
 
@@ -197,12 +207,18 @@ export default function AddressBook() {
                 {!addr.isDefault && (
                   <button
                     onClick={() => handleSetDefault(addr.id)}
+                    disabled={settingDefaultId !== null}
                     // 触摸目标提升：原 text-xs 无 padding 仅 12px 高，移动端难以点击
                     // py-1.5 + px-2 让触摸目标达到约 32px，配合 rounded 与 hover 视觉反馈
-                    className="flex items-center gap-1 text-xs text-emerald-600 py-1.5 px-2 rounded hover:bg-emerald-50 transition-colors"
+                    // disabled:opacity-50 提供视觉反馈：操作进行中所有"设为默认"按钮都不可点
+                    className="flex items-center gap-1 text-xs text-emerald-600 py-1.5 px-2 rounded hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
                   >
-                    <Star className="w-3.5 h-3.5" />
-                    设为默认
+                    {settingDefaultId === addr.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Star className="w-3.5 h-3.5" />
+                    )}
+                    {settingDefaultId === addr.id ? "设置中..." : "设为默认"}
                   </button>
                 )}
                 <button
