@@ -383,3 +383,57 @@ describe('ReportManagement 处理弹窗', () => {
     expect(vi.mocked(getReports)).toHaveBeenLastCalledWith(1, 20, 'resolved');
   });
 });
+
+describe('ReportManagement 处理举报入口守卫', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getReports).mockResolvedValue({
+      code: 0,
+      message: 'ok',
+      data: {
+        list: mockReports,
+        total: mockReports.length,
+        page: 1,
+        pageSize: 20,
+        totalPages: 1,
+        hasNext: false,
+      },
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('弱网连点不产生多次举报处理：入口 if 守卫阻断第二次 onClick', async () => {
+    // handleReport 永不 resolve，锁定 submitting 状态模拟弱网
+    vi.mocked(handleReport).mockReturnValue(new Promise(() => {}));
+
+    renderReportManagement();
+    // 等待列表加载完成
+    await waitFor(() => {
+      expect(screen.getAllByText('内容不实').length).toBeGreaterThan(0);
+    });
+
+    // 打开处理弹窗
+    fireEvent.click(screen.getAllByRole('button', { name: '处理' })[0]!);
+    // 输入处理备注，使"确认处理"按钮启用
+    fireEvent.change(screen.getByPlaceholderText('请输入处理备注'), {
+      target: { value: '已核实并下架' },
+    });
+
+    // 第一次点击：触发 setSubmitting(true)，按钮文案变为"处理中..."
+    fireEvent.click(screen.getByRole('button', { name: '确认处理' }));
+    // 等待 submitting 状态生效：按钮文案变为"处理中..."
+    await waitFor(() => {
+      expect(screen.getByText('处理中...')).toBeInTheDocument();
+    });
+
+    // 第二次点击：fireEvent 绕过 disabled 检查直接触发 onClick
+    // 入口 if (submitting) return 守卫作为第二道防线，阻断重复调用
+    fireEvent.click(screen.getByText('处理中...'));
+
+    // 不变式：handleReport 仅被调用 1 次，第二次点击被入口守卫拦截
+    expect(handleReport).toHaveBeenCalledTimes(1);
+  });
+});
