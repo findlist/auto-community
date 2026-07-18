@@ -19,8 +19,9 @@ vi.mock('../../config/database', () => ({
 }));
 
 // mock logger，避免测试输出干扰
+// 包含 warn：sanitize.ts 引入 env 模块，env 校验失败会调用 logger.warn
 vi.mock('../../utils/logger', () => ({
-  logger: { error: vi.fn(), info: vi.fn() },
+  logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
 import { auditService } from '../audit.service';
@@ -80,6 +81,56 @@ describe('audit.service - writeAuditLog', () => {
     await expect(
       auditService.writeAuditLog({ action: 'TEST', status: 'success' }),
     ).resolves.toBeUndefined();
+  });
+
+  // XSS 不变式：所有字符串字段（action/resourceType/userAgent/errorMessage）含 XSS 片段时被清洗后入库
+  // 设计原因：userAgent 来自请求头完全用户可控，errorMessage 可能含异常 message 含用户输入片段，
+  // 管理员后台审计日志页会渲染这些字段，未清洗会触发存储型 XSS
+  it('userAgent/errorMessage/action/resourceType 含 XSS 片段时被清洗后入库', async () => {
+    mockedPoolQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    await auditService.writeAuditLog({
+      userId: 'u1',
+      action: '<script>alert(1)</script>LOGIN',
+      resourceType: '<script>alert(2)</script>user',
+      userAgent: '<script>alert(3)</script>Mozilla/5.0',
+      errorMessage: '<script>alert(4)</script>密码错误',
+      status: 'failed',
+    });
+
+    const params = mockedPoolQuery.mock.calls[0][1] as unknown[];
+    // INSERT 参数顺序：userId, action, resourceType, resourceId, ip, userAgent, requestBody, status, errorMessage
+    expect(params[1]).not.toContain('<script>'); // action
+    expect(params[2]).not.toContain('<script>'); // resourceType
+    expect(params[5]).not.toContain('<script>'); // userAgent
+    expect(params[8]).not.toContain('<script>'); // errorMessage
+    // 正常字符应保留（如 LOGIN、user、Mozilla/5.0、密码错误）
+    expect(params[1]).toContain('LOGIN');
+    expect(params[2]).toContain('user');
+    expect(params[5]).toContain('Mozilla/5.0');
+    expect(params[8]).toContain('密码错误');
+  });
+
+  it('requestBody 嵌套字符串含 XSS 片段时被清洗后入库', async () => {
+    mockedPoolQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    await auditService.writeAuditLog({
+      action: 'CREATE_REPORT',
+      status: 'success',
+      requestBody: {
+        reason: '<script>alert(1)</script>举报理由',
+        nested: { field: '<script>alert(2)</script>nested' },
+      },
+    });
+
+    const params = mockedPoolQuery.mock.calls[0][1] as unknown[];
+    // requestBody 在 JSON.stringify 后整体清洗，应同时剥离两层嵌套的 <script>
+    const requestBodyStr = params[6] as string;
+    expect(requestBodyStr).not.toContain('<script>');
+    // JSON 结构应保留（含 reason 字段名与正常字符）
+    expect(requestBodyStr).toContain('reason');
+    expect(requestBodyStr).toContain('举报理由');
+    expect(requestBodyStr).toContain('nested');
   });
 });
 

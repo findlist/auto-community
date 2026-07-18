@@ -2,6 +2,7 @@ import { pool, query, SqlParam } from '../config/database';
 import { logger } from '../utils/logger';
 import { createPaginatedResponse } from '../utils/pagination';
 import { prefixColumns } from '../utils/sql';
+import { sanitizeXss } from '../utils/sanitize';
 
 // audit_logs 表列常量：仅包含 toAuditLog 消费的字段，排除 user_agent TEXT 与 request_body JSONB 大字段
 // 设计原因：列表查询 SELECT a.* 会无谓返回两个大字段，列表场景从不消费，显式列名可减少网络传输与内存占用
@@ -53,8 +54,25 @@ interface AuditLogListRow extends AuditLogRow {
 /**
  * 写入审计日志
  * 设计原则：审计日志写入失败不影响主流程，仅记录错误日志
+ *
+ * XSS 清洗：action/resourceType/userAgent/errorMessage 均为字符串字段，会在管理员后台
+ * 审计日志页直接渲染。userAgent 来自请求头完全用户可控，errorMessage 可能含异常 message
+ * 包含用户输入片段，action/resourceType 通常受控但作为纵深防御一并清洗。
+ * requestBody 在 JSON.stringify 后整体清洗，剥离嵌套字符串中的 <script> 等危险节点，
+ * 避免管理员后台解析 JSON 后渲染某个 string 字段触发存储型 XSS。
  */
 export async function writeAuditLog(params: AuditLogParams): Promise<void> {
+  // 入口统一清洗所有字符串字段，与 service 层入口清洗行为对齐
+  const safeAction = sanitizeXss(params.action) as string;
+  const safeResourceType = params.resourceType !== undefined ? sanitizeXss(params.resourceType) as string : undefined;
+  const safeUserAgent = params.userAgent !== undefined ? sanitizeXss(params.userAgent) as string : undefined;
+  const safeErrorMessage = params.errorMessage !== undefined ? sanitizeXss(params.errorMessage) as string : undefined;
+  // requestBody 序列化后清洗：JSON 字符串中的 <script> 标签字面字符会被剥离，
+  // 不影响 JSON 结构（JSON 中 < > 不是语法元素），管理员后台解析 JSON 后渲染 string 字段也安全
+  const safeRequestBody = params.requestBody !== undefined
+    ? sanitizeXss(JSON.stringify(params.requestBody)) as string
+    : null;
+
   try {
     await pool.query(
       `INSERT INTO audit_logs
@@ -62,19 +80,19 @@ export async function writeAuditLog(params: AuditLogParams): Promise<void> {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         params.userId ?? null,
-        params.action,
-        params.resourceType ?? null,
+        safeAction,
+        safeResourceType ?? null,
         params.resourceId ?? null,
         params.ip ?? null,
-        params.userAgent ?? null,
-        params.requestBody !== undefined ? JSON.stringify(params.requestBody) : null,
+        safeUserAgent ?? null,
+        safeRequestBody,
         params.status,
-        params.errorMessage ?? null,
+        safeErrorMessage ?? null,
       ],
     );
   } catch (err) {
     // 审计日志写入失败不抛出，避免影响主业务流程
-    logger.error({ err, action: params.action }, '审计日志写入失败');
+    logger.error({ err, action: safeAction }, '审计日志写入失败');
   }
 }
 
