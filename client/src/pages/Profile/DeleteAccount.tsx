@@ -59,6 +59,8 @@ export default function DeleteAccount() {
 
   // 提交注销申请
   const handleSubmit = async () => {
+    // 入口守卫：与 disabled + 文案变化形成三重防御，避免 React 批处理延迟导致弱网下连点产生多次注销申请
+    if (submitting) return;
     setShowConfirmModal(false);
     setSubmitting(true);
     setError(null);

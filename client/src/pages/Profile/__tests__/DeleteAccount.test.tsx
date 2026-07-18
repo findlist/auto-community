@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：userEvent 内部用 async act 包裹所有交互，自动等待微任务队列清空，
 // 从根本上消除"异步 state 更新未被 act 包裹"警告，比 fireEvent + 同步 act 更可靠。
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import DeleteAccountPage from '../DeleteAccount';
@@ -481,5 +481,57 @@ describe('DeleteAccount 账号注销流程', () => {
     await waitFor(() => {
       expect(screen.getByText('取消中...')).toBeInTheDocument();
     });
+  });
+});
+
+describe('DeleteAccount 注销申请入口守卫', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useAuth).mockReturnValue({
+      user: mockUser,
+      isAuthenticated: true,
+      token: 'test-token',
+      login: vi.fn(),
+      logout: mockLogout,
+      setUser: vi.fn(),
+    });
+    vi.mocked(getDeletionRequestStatus).mockResolvedValue({
+      code: 0,
+      message: 'ok',
+      data: mockEmptyStatus,
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('弱网连点不产生多次注销申请：入口 if 守卫阻断第二次 onClick', async () => {
+    // submitDeletionRequest 永不 resolve，锁定 submitting 状态模拟弱网
+    vi.mocked(submitDeletionRequest).mockReturnValue(new Promise(() => {}));
+
+    renderDeleteAccount();
+    await screen.findByText('账号注销');
+
+    // 点击"提交注销申请"打开弹窗
+    fireEvent.click(screen.getByRole('button', { name: /提交注销申请/ }));
+    // 等待弹窗渲染完成
+    await waitFor(() => {
+      expect(screen.getByText('确认注销账号？')).toBeInTheDocument();
+    });
+
+    // 第一次点击：触发 handleSubmit → setShowConfirmModal(false) + setSubmitting(true)
+    fireEvent.click(screen.getByRole('button', { name: '确认注销' }));
+    // 等待 submitting 状态生效：弹窗关闭 + 表单按钮文案变为"提交中..."
+    await waitFor(() => {
+      expect(screen.getByText('提交中...')).toBeInTheDocument();
+    });
+
+    // 第二次点击：fireEvent 绕过 disabled 检查直接触发 onClick
+    // 入口 if (submitting) return 守卫作为第二道防线，阻断重复调用
+    fireEvent.click(screen.getByText('提交中...'));
+
+    // 不变式：submitDeletionRequest 仅被调用 1 次，第二次点击被入口守卫拦截
+    expect(submitDeletionRequest).toHaveBeenCalledTimes(1);
   });
 });
