@@ -475,6 +475,29 @@ describe('user.service submitVerification', () => {
       userService.submitVerification('user-1', '张三', '110101199001011234'),
     ).rejects.toThrow('connection terminated');
   });
+
+  it('XSS 不变式：realName 含 script 标签时入库前被清洗', async () => {
+    // 设计原因：real_name 会写入 verification_requests 表并在管理员审核详情页直接渲染，
+    // 未清洗会触发存储型 XSS。此处验证 INSERT 第二个参数（real_name）已被剥离 <script> 标签
+    mockQuery.mockResolvedValueOnce({ rows: [{ verify_status: null }] });
+    mockQuery.mockResolvedValueOnce({ rows: [] }); // 身份证号未被占用
+    const mockClient = { query: vi.fn().mockResolvedValue({ rows: [] }) };
+    mockTransaction.mockImplementation(async (cb: (client: typeof mockClient) => Promise<unknown>) => {
+      return cb(mockClient);
+    });
+
+    await userService.submitVerification('user-1', '<script>alert(1)</script>张三', '110101199001011234');
+
+    const insertCall = mockClient.query.mock.calls[0];
+    expect(insertCall[0]).toContain('INSERT INTO verification_requests');
+    const insertParams = insertCall[1] as unknown[];
+    // real_name 为第二个参数（索引 1），应已剥离 <script> 与 </script> 标签
+    const realNameParam = insertParams[1] as string;
+    expect(realNameParam).not.toContain('<script>');
+    expect(realNameParam).not.toContain('</script>');
+    // 清洗后仍应保留正常姓名字符
+    expect(realNameParam).toContain('张三');
+  });
 });
 
 // ===================== getVerificationStatus =====================

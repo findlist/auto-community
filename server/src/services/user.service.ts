@@ -195,6 +195,11 @@ async function submitVerification(userId: string, realName: string, idCard: stri
     throw new BadRequestError('真实姓名长度需在2-100字符之间');
   }
 
+  // 入库前清洗真实姓名，防止存储型 XSS
+  // 设计原因：real_name 会写入 verification_requests 表，管理员后台审核详情页直接渲染，
+  // 同时审核结果回执也会展示申请人姓名，未清洗会在管理端与用户端触发存储型 XSS
+  const safeRealName = sanitizeXss(realName) as string;
+
   // 检查用户是否已有认证记录
   const userResult = await query<UserVerifyStatusRow>(
     'SELECT verify_status FROM users WHERE id = $1 AND deleted_at IS NULL',
@@ -235,7 +240,7 @@ async function submitVerification(userId: string, realName: string, idCard: stri
       await client.query(
         `INSERT INTO verification_requests (user_id, real_name, id_card_encrypted, id_card_hash, status)
          VALUES ($1, $2, $3, $4, 'pending')`,
-        [userId, realName, idCardEncrypted, idCardHash],
+        [userId, safeRealName, idCardEncrypted, idCardHash],
       );
 
       await client.query(
