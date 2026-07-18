@@ -73,48 +73,58 @@ describe("TransferModal 转赠时间币弹窗", () => {
   });
 
   describe("字段级校验", () => {
-    it("对方用户ID 为空时显示「请输入对方用户ID」错误并禁用按钮", () => {
+    // commit d21d3f7 引入 submitAttempted 守卫：错误提示仅在首次提交尝试后渲染，避免输入即报红
+    // 测试需先点击「确认转赠」触发 setSubmitAttempted(true)，handleSubmit 因 error 存在直接 return 不调用 API
+    it("对方用户ID 为空时点击确认转赠显示「请输入对方用户ID」错误且不调用 API", () => {
       render(<TransferModal {...buildProps()} />);
       // 仅填金额，不填 toUserId
       fireEvent.change(screen.getByPlaceholderText("请输入转赠分钟数"), {
         target: { value: "30" },
       });
+      // 点击触发 submitAttempted=true，handleSubmit 因 error 存在直接 return，不调用 API
+      fireEvent.click(screen.getByText("确认转赠"));
+      // submitAttempted 守卫放行后 error 才渲染
       expect(screen.getByText("请输入对方用户ID")).toBeInTheDocument();
-      // disabled 属性存在表示按钮禁用
-      expect(screen.getByText("确认转赠").closest("button")).toBeDisabled();
+      // error 守卫阻断提交，transferTime 不应被调用
+      expect(transferTime).not.toHaveBeenCalled();
     });
 
-    it("金额为空时显示「转赠金额必须为正整数」错误", () => {
+    it("金额为空时点击确认转赠显示「转赠金额必须为正整数」错误", () => {
       render(<TransferModal {...buildProps()} />);
       fireEvent.change(screen.getByPlaceholderText("请输入对方用户ID"), {
         target: { value: "user-99" },
       });
       // 不填 amount，validate 中 Number("")=0，Number.isInteger(0)=true 但 0>0 为 false
+      fireEvent.click(screen.getByText("确认转赠"));
       expect(screen.getByText("转赠金额必须为正整数")).toBeInTheDocument();
     });
 
-    it("金额为 0 时校验失败（必须为正整数）", () => {
+    it("金额为 0 时点击确认转赠校验失败（必须为正整数）", () => {
       render(<TransferModal {...buildProps()} />);
       fillValidForm("user-99", "0");
+      fireEvent.click(screen.getByText("确认转赠"));
       expect(screen.getByText("转赠金额必须为正整数")).toBeInTheDocument();
     });
 
-    it("金额为负数时校验失败", () => {
+    it("金额为负数时点击确认转赠校验失败", () => {
       render(<TransferModal {...buildProps()} />);
       fillValidForm("user-99", "-5");
+      fireEvent.click(screen.getByText("确认转赠"));
       expect(screen.getByText("转赠金额必须为正整数")).toBeInTheDocument();
     });
 
-    it("金额为浮点数时校验失败（与后端口径一致：仅允许整数）", () => {
+    it("金额为浮点数时点击确认转赠校验失败（与后端口径一致：仅允许整数）", () => {
       render(<TransferModal {...buildProps()} />);
       fillValidForm("user-99", "1.5");
+      fireEvent.click(screen.getByText("确认转赠"));
       expect(screen.getByText("转赠金额必须为正整数")).toBeInTheDocument();
     });
 
-    it("金额超过 currentBalance 时显示「转赠金额不能超过当前余额」错误", () => {
+    it("金额超过 currentBalance 时点击确认转赠显示「转赠金额不能超过当前余额」错误", () => {
       // currentBalance=100，amount=150 触发超额校验
       render(<TransferModal {...buildProps({ currentBalance: 100 })} />);
       fillValidForm("user-99", "150");
+      fireEvent.click(screen.getByText("确认转赠"));
       expect(screen.getByText("转赠金额不能超过当前余额")).toBeInTheDocument();
     });
 
@@ -137,9 +147,11 @@ describe("TransferModal 转赠时间币弹窗", () => {
       expect(screen.getByText("确认转赠").closest("button")).not.toBeDisabled();
     });
 
-    it("对方用户ID 仅含空格时校验失败（trim 后为空）", () => {
+    it("对方用户ID 仅含空格时点击确认转赠校验失败（trim 后为空）", () => {
       render(<TransferModal {...buildProps()} />);
       fillValidForm("   ", "30");
+      // submitAttempted 守卫要求先点击提交触发 setSubmitAttempted(true)
+      fireEvent.click(screen.getByText("确认转赠"));
       expect(screen.getByText("请输入对方用户ID")).toBeInTheDocument();
     });
   });

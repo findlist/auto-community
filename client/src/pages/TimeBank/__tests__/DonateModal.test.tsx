@@ -70,33 +70,43 @@ describe("DonateModal 捐赠时间币弹窗", () => {
   });
 
   describe("字段级校验", () => {
-    it("受赠用户ID 为空时显示「请输入对方用户ID」错误并禁用按钮", () => {
+    // commit d21d3f7 引入 submitAttempted 守卫：错误提示仅在首次提交尝试后渲染，避免输入即报红
+    // 测试需先点击「确认捐赠」触发 setSubmitAttempted(true)，handleSubmit 因 error 存在直接 return 不调用 API
+    it("受赠用户ID 为空时点击确认捐赠显示「请输入对方用户ID」错误且不调用 API", () => {
       render(<DonateModal {...buildProps()} />);
       fireEvent.change(screen.getByPlaceholderText("请输入捐赠分钟数"), {
         target: { value: "20" },
       });
+      // 点击触发 submitAttempted=true，handleSubmit 因 error 存在直接 return，不调用 API
+      fireEvent.click(screen.getByText("确认捐赠"));
+      // submitAttempted 守卫放行后 error 才渲染
       expect(screen.getByText("请输入对方用户ID")).toBeInTheDocument();
-      expect(screen.getByText("确认捐赠").closest("button")).toBeDisabled();
+      // error 守卫阻断提交，donateTime 不应被调用
+      expect(donateTime).not.toHaveBeenCalled();
     });
 
-    it("金额为 0/负数/浮点数时均校验失败（仅允许正整数）", () => {
+    it("金额为 0/负数/浮点数时点击确认捐赠均校验失败（仅允许正整数）", () => {
       const { rerender } = render(<DonateModal {...buildProps()} />);
       // 0
       fillValidForm("user-88", "0");
+      fireEvent.click(screen.getByText("确认捐赠"));
       expect(screen.getByText("捐赠金额必须为正整数")).toBeInTheDocument();
       // 负数
       rerender(<DonateModal {...buildProps()} />);
       fillValidForm("user-88", "-10");
+      fireEvent.click(screen.getByText("确认捐赠"));
       expect(screen.getByText("捐赠金额必须为正整数")).toBeInTheDocument();
       // 浮点数
       rerender(<DonateModal {...buildProps()} />);
       fillValidForm("user-88", "2.5");
+      fireEvent.click(screen.getByText("确认捐赠"));
       expect(screen.getByText("捐赠金额必须为正整数")).toBeInTheDocument();
     });
 
-    it("金额超过 currentBalance 时显示「捐赠金额不能超过当前余额」错误", () => {
+    it("金额超过 currentBalance 时点击确认捐赠显示「捐赠金额不能超过当前余额」错误", () => {
       render(<DonateModal {...buildProps({ currentBalance: 50 })} />);
       fillValidForm("user-88", "100");
+      fireEvent.click(screen.getByText("确认捐赠"));
       expect(screen.getByText("捐赠金额不能超过当前余额")).toBeInTheDocument();
     });
 
