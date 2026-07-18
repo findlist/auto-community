@@ -58,7 +58,7 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => vi.fn() };
 });
 
-import { getContent, batchUpdateContentStatus } from '@/api/admin';
+import { getContent, batchUpdateContentStatus, updateContentStatus } from '@/api/admin';
 import { toast } from '@/components/Toast';
 
 // 包装组件：注入 MemoryRouter 提供 useNavigate 上下文
@@ -378,5 +378,54 @@ describe('ContentReview 批量操作', () => {
     });
     // 应以 status=inactive 重新加载
     expect(vi.mocked(getContent)).toHaveBeenLastCalledWith('skill', 'inactive', 1, 20);
+  });
+});
+
+describe('ContentReview 单条上下架入口守卫', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getContent).mockResolvedValue({
+      code: 0,
+      message: 'ok',
+      data: {
+        list: mockContents,
+        total: mockContents.length,
+        page: 1,
+        pageSize: 20,
+        totalPages: 1,
+        hasNext: false,
+      },
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('弱网连点不产生多次上下架切换：入口 if 守卫阻断第二次 onClick', async () => {
+    // updateContentStatus 永不 resolve，锁定 actioningId 状态模拟弱网
+    vi.mocked(updateContentStatus).mockReturnValue(new Promise(() => {}));
+
+    renderContentReview();
+    // 等待列表加载完成
+    await waitFor(() => {
+      expect(screen.getAllByText('技能帖A').length).toBeGreaterThan(0);
+    });
+
+    // 第一次点击：触发 setActioningId('c-1')，按钮文案变为"处理中..."
+    // 列表中 c-1 与 c-3 均为 active 状态显示"下架"按钮，桌面+移动双布局共 4 个，取第一个即 c-1 桌面
+    fireEvent.click(screen.getAllByRole('button', { name: '下架' })[0]!);
+    // 等待 actioningId 状态生效：按钮文案变为"处理中..."（桌面+移动双布局渲染 2 个）
+    await waitFor(() => {
+      expect(screen.getAllByText('处理中...').length).toBeGreaterThan(0);
+    });
+
+    // 第二次点击：fireEvent 绕过 disabled 检查直接触发 onClick
+    // 入口 if (actioningId === item.id) return 守卫作为第二道防线，阻断重复调用
+    // 取第一个"处理中..."按钮（c-1 桌面布局），与第一次点击同一个按钮
+    fireEvent.click(screen.getAllByText('处理中...')[0]!);
+
+    // 不变式：updateContentStatus 仅被调用 1 次，第二次点击被入口守卫拦截
+    expect(updateContentStatus).toHaveBeenCalledTimes(1);
   });
 });

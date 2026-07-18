@@ -185,6 +185,8 @@ export default function ContentReview() {
 
   // 切换内容状态（上架/下架）
   const handleToggleStatus = async (item: ContentItem) => {
+    // 入口守卫：与 disabled + 文案变化形成三重防御，避免 React 批处理延迟导致弱网下连点产生多次上下架切换
+    if (actioningId === item.id) return;
     const newStatus = item.status === "active" ? "inactive" : "active";
     setActioningId(item.id);
     try {
