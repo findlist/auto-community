@@ -246,6 +246,33 @@ describe('kitchen-order.service create', () => {
     // 清洗后仍应保留正常备注字符
     expect(remarkParam).toContain('多加辣');
   });
+
+  // XSS 不变式：deliveryAddress 跨用户可见（卖家履约时查看），必须经 sanitizeXss 清洗
+  // 设计原因：与 remark 同属入库后跨用户可见字段，原 createOrder 仅清洗 remark，遗漏 deliveryAddress 会在
+  // 卖家侧订单详情触发存储型 XSS。此处验证 INSERT 的 delivery_address 参数已剥离 <script> 标签
+  it('XSS 不变式：deliveryAddress 含 script 标签时入库前被清洗', async () => {
+    mockClientQuery
+      .mockResolvedValueOnce({ rows: [makePostRow({ remaining_portions: 5, credit_price: 10 })] }) // SELECT post
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE remaining_portions
+      .mockResolvedValueOnce({ rows: [makeOrderRow()] }); // INSERT order
+
+    await kitchenOrderService.create('buyer-1', {
+      postId: 'post-1',
+      quantity: 2,
+      pickupType: 'delivery',
+      deliveryAddress: '<script>alert(1)</script>北京市朝阳区',
+    });
+
+    const insertCall = mockClientQuery.mock.calls[2];
+    expect(insertCall[0]).toContain('INSERT INTO kitchen_orders');
+    const insertParams = insertCall[1] as unknown[];
+    // delivery_address 为第 8 个参数（索引 7）
+    const addressParam = insertParams[7] as string;
+    expect(addressParam).not.toContain('<script>');
+    expect(addressParam).not.toContain('</script>');
+    // 清洗后仍应保留正常地址字符
+    expect(addressParam).toContain('北京市朝阳区');
+  });
 });
 
 describe('kitchen-order.service confirm', () => {

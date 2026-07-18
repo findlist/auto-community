@@ -109,10 +109,11 @@ async function create(userId: string, data: {
   // toOrderResponse 的返回值，因此断言为 ReturnType<typeof toOrderResponse> 是安全的
   if (cached.hit) return cached.data as ReturnType<typeof toOrderResponse>;
 
-  // 入库前清洗备注，防止存储型 XSS
-  // 设计原因：remark 会写入 kitchen_orders 表并在订单详情页直接渲染，卖家与买家均可见，
-  // 未清洗会在订单详情触发存储型 XSS
+  // 入库前清洗备注与配送地址，防止存储型 XSS
+  // 设计原因：remark 与 deliveryAddress 会写入 kitchen_orders 表并在订单详情页直接渲染，
+  // 卖家与买家均可见，未清洗会在订单详情触发存储型 XSS
   const safeRemark = data.remark !== undefined ? sanitizeXss(data.remark) as string : undefined;
+  const safeDeliveryAddress = data.deliveryAddress !== undefined ? sanitizeXss(data.deliveryAddress) as string : undefined;
 
   const result = await transaction(async (client) => {
     // 1. 查询美食信息并锁定
@@ -175,7 +176,7 @@ async function create(userId: string, data: {
         price,
         data.pickupType || 'self_pickup',
         data.pickupTime || null,
-        data.deliveryAddress || null,
+        safeDeliveryAddress || null,
         safeRemark || null
       ]
     );
