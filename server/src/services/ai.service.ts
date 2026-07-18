@@ -25,6 +25,12 @@ const AI_TIMEOUT_MS = 10000;
 // 度与米的近似换算：1 度 ≈ 111km（纬度方向）
 const METERS_PER_DEGREE = 111000;
 
+// searchByEmbedding 候选集安全上限：防止 post_embeddings 表无限增长时一次性加载过多行导致 OOM
+// 设计原因：当前相似度计算在应用层（cosineSimilarity），需先加载候选 embedding 再排序取 top-K，
+// 无法用 SQL LIMIT 精确取 top-K（pgvector 扩展未启用）。1000 为业务合理上限：
+// 普通社区帖子量级远低于此值；超过时按 post_id 顺序取前 1000 条，仍能覆盖大部分场景的 top-K 模糊匹配
+const SEARCH_EMBEDDING_MAX_SCAN = 1000;
+
 // ==================== 类型定义 ====================
 
 interface LLMOptions {
@@ -546,9 +552,12 @@ export async function searchByEmbedding(
   }
 
   try {
+    // SQL 加 ORDER BY post_id + LIMIT：避免 post_embeddings 表爆炸时一次性加载全部行导致 OOM
+    // ORDER BY post_id 保证 LIMIT 取确定的行（PostgreSQL 默认不保证顺序），便于问题排查与复现
+    // 注意：此处 LIMIT 不是用户传入的 top-K，而是内部安全上限；应用层 cosineSimilarity 排序后仍取 top-K
     const result = await query(
-      `SELECT post_id, embedding FROM post_embeddings WHERE post_type = $1`,
-      [postType],
+      `SELECT post_id, embedding FROM post_embeddings WHERE post_type = $1 ORDER BY post_id LIMIT $2`,
+      [postType, SEARCH_EMBEDDING_MAX_SCAN],
     );
 
     // 行数据先按 EmbeddingRow 收窄，再统一映射

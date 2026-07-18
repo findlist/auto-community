@@ -740,6 +740,29 @@ describe('ai.service - LLM 真实路径', () => {
     expect(result).toEqual([]);
   });
 
+  it('searchByEmbedding SQL 含 ORDER BY post_id 与 LIMIT，防止 post_embeddings 表爆炸时全表扫描 OOM', async () => {
+    // 前置用例设置了 mockRejectedValue，需重置避免污染本用例
+    mockedQuery.mockReset();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ embedding: [1.0, 0.0] }] }),
+    } as never);
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as never);
+
+    await aiServiceWithKey.searchByEmbedding('test', 'skill', 10);
+
+    // 不变式：SQL 必须含 ORDER BY post_id 与 LIMIT，参数第 2 个为安全上限 1000
+    // 设计原因：相似度计算在应用层（cosineSimilarity），需先加载候选 embedding；
+    // 加 LIMIT 1000 防止表爆炸时 OOM，ORDER BY post_id 保证 LIMIT 取确定的行
+    const call = mockedQuery.mock.calls[0];
+    const sql = call[0] as string;
+    expect(sql).toContain('ORDER BY post_id');
+    expect(sql).toContain('LIMIT $2');
+    const params = call[1] as unknown[];
+    expect(params[0]).toBe('skill');
+    expect(params[1]).toBe(1000);
+  });
+
   // ---- computeMatchScores LLM 路径（通过 matchSkill treatment 变体触发） ----
   it('matchSkill treatment 变体 LLM 返回匹配度时使用 LLM 分数排序', async () => {
     // 重新加载 ab-test.service 也需要 mock，这里通过 doMock 在 isolateModules 内处理
