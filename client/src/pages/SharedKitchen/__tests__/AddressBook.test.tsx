@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：userEvent 内部用 async act 包裹交互，自动等待微任务 flush，消除 act 警告
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import AddressBookPage from '../AddressBook';
@@ -550,5 +550,35 @@ describe('AddressBook 配送地址簿', () => {
     await user.click(screen.getByRole('button', { name: '' }));
 
     expect(mockNavigate).toHaveBeenCalledWith(-1);
+  });
+
+  it('卸载后 loadAddresses resolve 不触发 setState（mountedRef 防御）', async () => {
+    // 设计原因：useEffect 触发的 loadAddresses 异步进行中，用户切换页面卸载组件，
+    // 异步完成后调用 setState 会触发 React 警告与内存泄漏；mountedRef 模式在 cleanup 时置 false，await 后跳过 setState
+    type AddressListResp = { code: number; message: string; data: Address[] };
+    let resolveLoad!: (v: AddressListResp) => void;
+    vi.mocked(getAddresses).mockImplementationOnce(() => new Promise<AddressListResp>((resolve) => { resolveLoad = resolve; }));
+
+    const spyConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = renderAddressBook();
+    // 等待 useEffect 触发 loadAddresses
+    await waitFor(() => { expect(getAddresses).toHaveBeenCalledTimes(1); });
+
+    // 卸载组件触发 cleanup（mountedRef.current = false）
+    unmount();
+
+    // 让慢请求 resolve：mountedRef 防御应跳过所有 setState，不抛错也不触发 React 警告
+    await act(async () => {
+      resolveLoad({ code: 0, message: 'ok', data: mockAddresses });
+      await Promise.resolve();
+    });
+
+    // 验证无 React 卸载后 setState 相关警告
+    const reactUnmountWarn = spyConsoleError.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('unmounted')
+    );
+    expect(reactUnmountWarn).toBeUndefined();
+    spyConsoleError.mockRestore();
   });
 });

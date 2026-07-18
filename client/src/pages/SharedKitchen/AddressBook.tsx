@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Edit2, Trash2, Star, Loader2, X, Save, AlertCircle } from "lucide-react";
 import Empty from "@/components/Empty";
@@ -46,6 +46,9 @@ export default function AddressBook() {
   // 设计原因：setDefaultAddress 接口非幂等（多地址中只有一个默认），重复调用会产生多次
   // UPDATE 与缓存失效，弱网下用户连点会触发竞态，导致最终默认地址与用户期望不符
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
+  // 挂载标志：useEffect cleanup 时置为 false，loadAddresses await 后检查避免卸载后 setState 泄漏
+  // 设计原因：loadAddresses 同时被 handleSave/confirmDelete/handleSetDefault 成功后调用，任一异步路径中组件卸载均会泄漏
+  const mountedRef = useRef(true);
 
   // 加载地址列表
   const loadAddresses = useCallback(async () => {
@@ -53,16 +56,24 @@ export default function AddressBook() {
     setError("");
     try {
       const res = await getAddresses();
+      // 卸载后不再 setState，避免 React 警告与内存泄漏
+      if (!mountedRef.current) return;
       setAddresses(res.data);
     } catch (err) {
+      if (!mountedRef.current) return;
       setError(err instanceof ApiError ? err.message : "加载失败");
     } finally {
-      setLoading(false);
+      // 仅挂载中才更新 loading，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // 重置挂载标志：组件重新挂载时恢复为 true
+    mountedRef.current = true;
     loadAddresses();
+    // cleanup：组件卸载时置为 false，使进行中的 loadAddresses 失效
+    return () => { mountedRef.current = false; };
   }, [loadAddresses]);
 
   // 打开新增表单
