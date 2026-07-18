@@ -218,7 +218,7 @@ describe('websocket 模块', () => {
       expect(code).toBe(4001);
     }, 8000);
 
-    it('auth token 无效时以 4001 关闭连接', async () => {
+    it('auth token 无效时以 4001 关闭连接并 logger.warn 留痕便于安全审计', async () => {
       mocks.mockJwtVerify.mockImplementation(() => {
         throw new Error('invalid token');
       });
@@ -226,6 +226,32 @@ describe('websocket 模块', () => {
       clients.push(client);
       const code = await waitForClose(client);
       expect(code).toBe(4001);
+      // 留痕 warn 便于发现 token 伪造、密钥泄露或客户端过期 token 重放等攻击行为
+      expect(mocks.mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ err: 'invalid token' }),
+        'WebSocket 认证 token 校验失败',
+      );
+    });
+
+    it('收到非 JSON 消息时 logger.warn 留痕，不阻塞认证流程', async () => {
+      // 防御性场景：恶意协议探测或客户端实现 bug 会发送畸形消息
+      // 留痕 warn 便于运维侧统计异常消息比例与定位恶意客户端
+      mocks.mockJwtVerify.mockReturnValue({ id: 'auth-user', phone: '13800138000', nickname: '认证用户' });
+      const client = await connectClient(port, 'valid-token');
+      clients.push(client);
+      await waitForMessage(client, 'connected');
+
+      // 清空 warn 历史便于精准断言
+      mocks.mockLogger.warn.mockClear();
+      // 直接发送非 JSON 字符串
+      client.send('not a json payload');
+
+      // 等待 server 处理消息（事件循环 tick）
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(mocks.mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ rawPreview: 'not a json payload' }),
+        'WebSocket 收到非 JSON 消息，已忽略',
+      );
     });
 
     it('auth 消息认证成功后发送 connected 消息', async () => {

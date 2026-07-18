@@ -143,7 +143,9 @@ export function initWebSocket(server: Server) {
       let data;
       try {
         data = JSON.parse(raw.toString());
-      } catch {
+      } catch (err) {
+        // 留痕 warn 便于发现恶意协议探测、客户端实现 bug 或中间件篡改
+        logger.warn({ err: err instanceof Error ? err.message : String(err), rawPreview: raw.toString().slice(0, 200) }, 'WebSocket 收到非 JSON 消息，已忽略');
         return; // 非 JSON 消息忽略，避免阻塞认证流程
       }
 
@@ -158,7 +160,9 @@ export function initWebSocket(server: Server) {
         let payload: JwtPayload;
         try {
           payload = jwt.verify(data.token, env.JWT_SECRET, { algorithms: ['HS256'] }) as JwtPayload;
-        } catch {
+        } catch (err) {
+          // 留痕 warn 便于发现 token 伪造、密钥泄露或客户端过期 token 重放等攻击行为
+          logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'WebSocket 认证 token 校验失败');
           clearTimeout(authTimeout);
           ws.close(4001, 'token 无效');
           return;
