@@ -404,4 +404,67 @@ describe('Notifications 通知中心', () => {
     // 默认 mock hasNext=false，"加载更多"按钮不应存在
     expect(screen.queryByRole('button', { name: '加载更多' })).toBeNull();
   });
+
+  // 重复提交守卫不变式：弱网下用户连点同一未读通知应只触发一次 markAsRead API 调用
+  // 设计原因：原实现仅靠 if (notification.readAt) return 幂等判断，React 状态更新是异步批处理的，
+  // readAt 在批处理结束前仍为 null，连点会触发多次 API 调用，后端虽幂等但前端 setUnreadCount(prev => prev - 1)
+  // 会被多次执行导致未读计数错误（多次减 1）
+  it('标记单条已读进行中图标显示 Loader2 且重复点击不触发第二次 API 调用', async () => {
+    // 永不 resolve：锁定 markingId 状态，模拟弱网
+    vi.mocked(markAsRead).mockImplementation(() => new Promise(() => {}));
+
+    renderNotifications();
+
+    await screen.findByText('订单状态更新');
+
+    // 点击未读通知 n-1（订单状态更新）
+    await user.click(screen.getByText('订单状态更新'));
+
+    // 第一次点击应触发 markAsRead 调用
+    await waitFor(() => {
+      expect(markAsRead).toHaveBeenCalledWith('n-1');
+      expect(markAsRead).toHaveBeenCalledTimes(1);
+    });
+
+    // 通知项图标应替换为 Loader2 旋转动画（markingId === n-1 时渲染 Loader2 替代原 Icon）
+    // 注：列表中可能有多个 animate-spin 元素（loading 顶部 spinner），用出现在通知项 div 内的 spinner 验证
+    const notificationItem = screen.getByText('订单状态更新').closest('li');
+    const itemSpinner = notificationItem?.querySelector('.animate-spin');
+    expect(itemSpinner).toBeInTheDocument();
+
+    // 重复点击同一通知不应触发第二次 API 调用（markingId 守卫已拦截）
+    await user.click(screen.getByText('订单状态更新'));
+    await user.click(screen.getByText('订单状态更新'));
+    expect(markAsRead).toHaveBeenCalledTimes(1);
+  });
+
+  // 重复提交守卫不变式：弱网下用户连点"全部已读"应只触发一次 markAllAsRead API 调用
+  // 设计原因：markAllAsRead 接口虽幂等，但弱网下重复调用造成不必要请求量，且 markingAll 期间
+  // 禁止其他通知点击避免状态错乱（已读列表与计数并发更新可能不一致）
+  it('全部标记已读进行中按钮显示"处理中..."加载态且重复点击不触发第二次 API 调用', async () => {
+    // 永不 resolve：锁定 markingAll 状态，模拟弱网
+    vi.mocked(markAllAsRead).mockImplementation(() => new Promise(() => {}));
+
+    renderNotifications();
+
+    await screen.findByText('订单状态更新');
+
+    // 点击"全部已读"按钮
+    await user.click(screen.getByRole('button', { name: '全部已读' }));
+
+    // 第一次点击应触发 markAllAsRead 调用
+    await waitFor(() => {
+      expect(markAllAsRead).toHaveBeenCalledTimes(1);
+    });
+
+    // 按钮应进入加载态：显示"处理中..."文案
+    const loadingButton = await screen.findByRole('button', { name: /处理中/ });
+    // 按钮应禁用（disabled 属性阻止 onClick 触发）
+    expect(loadingButton).toBeDisabled();
+
+    // 重复点击"处理中..."按钮不应触发第二次 API 调用（按钮 disabled + markingAll 守卫双重防御）
+    await user.click(loadingButton);
+    await user.click(loadingButton);
+    expect(markAllAsRead).toHaveBeenCalledTimes(1);
+  });
 });

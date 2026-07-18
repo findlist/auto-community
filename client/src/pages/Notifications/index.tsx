@@ -29,6 +29,15 @@ export default function Notifications() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  // 标记单条已读进行中的通知 ID：用作 handleMarkRead 重复提交守卫与图标加载态指示
+  // 设计原因：原实现仅靠 if (notification.readAt) return 幂等判断，但 React 状态更新是异步批处理的，
+  // readAt 在批处理结束前仍为 null，弱网下用户连点同一通知会触发多次 markAsRead API 调用，
+  // 后端虽幂等但前端会重复执行 setUnreadCount(prev => prev - 1) 导致未读计数被多次减 1 出现负数边缘
+  const [markingId, setMarkingId] = useState<string | null>(null);
+  // 全部标记已读进行中：用作 handleMarkAllRead 重复提交守卫与按钮加载态指示
+  // 设计原因：markAllAsRead 接口虽幂等，但弱网下重复调用造成不必要请求量，
+  // 且 markingAll 期间禁止其他通知点击避免状态错乱（已读列表与计数并发更新可能不一致）
+  const [markingAll, setMarkingAll] = useState(false);
 
   // 竞态守卫：跟踪当前活跃的请求标识（页码），快速切换/重新挂载时旧请求返回不再覆盖新数据
   // 设计原因：loadNotifications 在 page 1 时替换列表，page > 1 时追加列表，
@@ -88,8 +97,12 @@ export default function Notifications() {
   };
 
   // 标记单条已读
+  // 三重防御：markingId 状态守卫 + 图标 Loader2 替换 + 入口 if 守卫，防止弱网下重复提交
   const handleMarkRead = async (notification: Notification) => {
     if (notification.readAt) return;
+    // 重复提交守卫：markingId 非空表示有通知正在标记中，避免连点同一通知触发多次 API 调用
+    if (markingId) return;
+    setMarkingId(notification.id);
     try {
       await markAsRead(notification.id);
       setNotifications((prev) =>
@@ -101,11 +114,16 @@ export default function Notifications() {
     } catch (err) {
       console.error("标记已读失败:", err);
       toast.error("标记已读失败");
+    } finally {
+      setMarkingId(null);
     }
   };
 
   // 全部标记已读
+  // 三重防御：markingAll 状态守卫 + 按钮 disabled + 文案变化"处理中..."，防止弱网下重复提交
   const handleMarkAllRead = async () => {
+    if (markingAll) return;
+    setMarkingAll(true);
     try {
       await markAllAsRead();
       setNotifications((prev) =>
@@ -115,6 +133,8 @@ export default function Notifications() {
     } catch (err) {
       console.error("全部标记已读失败:", err);
       toast.error("操作失败，请稍后重试");
+    } finally {
+      setMarkingAll(false);
     }
   };
 
@@ -152,9 +172,11 @@ export default function Notifications() {
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllRead}
-              className="text-sm text-emerald-600 hover:text-emerald-700 py-1.5 px-2 -mr-2 rounded hover:bg-emerald-50 transition-colors"
+              disabled={markingAll}
+              className="text-sm text-emerald-600 hover:text-emerald-700 py-1.5 px-2 -mr-2 rounded hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
             >
-              全部已读
+              {markingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              {markingAll ? "处理中..." : "全部已读"}
             </button>
           )}
         </div>
@@ -186,9 +208,13 @@ export default function Notifications() {
                       className="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50"
                       onClick={() => handleMarkRead(notification)}
                     >
-                      {/* 图标 */}
+                      {/* 图标：markingId 命中时显示 Loader2 替代原 Icon，让用户感知单条标记已读进行中 */}
                       <div className={`p-2 rounded-full ${colorClass}`}>
-                        <Icon className="w-5 h-5" />
+                        {markingId === notification.id ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Icon className="w-5 h-5" />
+                        )}
                       </div>
 
                       {/* 内容 */}
