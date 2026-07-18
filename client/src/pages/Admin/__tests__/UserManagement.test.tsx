@@ -393,3 +393,40 @@ describe('UserManagement 封禁/解封弹窗', () => {
     });
   });
 });
+
+describe('UserManagement 确认操作入口守卫', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // 仅保留一条 active 用户，简化按钮定位
+    vi.mocked(getUsers).mockResolvedValue(buildPageResponse([mockUsers[0]!]));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('弱网连点不产生多次封禁：入口 if 守卫阻断第二次 onClick', async () => {
+    // banUser 永不 resolve，锁定 submitting 状态模拟弱网
+    vi.mocked(banUser).mockReturnValue(new Promise(() => {}));
+
+    renderUserManagement();
+    await waitForListLoaded();
+
+    // 点击"封禁"打开弹窗
+    fireEvent.click(screen.getAllByRole('button', { name: '封禁' })[0]!);
+
+    // 第一次点击：触发 setSubmitting(true)，按钮文案变为"处理中..."
+    fireEvent.click(screen.getByRole('button', { name: '确认封禁' }));
+    // 等待 submitting 状态生效：按钮文案变为"处理中..."
+    await waitFor(() => {
+      expect(screen.getByText('处理中...')).toBeInTheDocument();
+    });
+
+    // 第二次点击：fireEvent 绕过 disabled 检查直接触发 onClick
+    // 入口 if (submitting) return 守卫作为第二道防线，阻断重复调用
+    fireEvent.click(screen.getByText('处理中...'));
+
+    // 不变式：banUser 仅被调用 1 次，第二次点击被入口守卫拦截
+    expect(banUser).toHaveBeenCalledTimes(1);
+  });
+});

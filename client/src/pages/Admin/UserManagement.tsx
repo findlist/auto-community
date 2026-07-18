@@ -127,6 +127,8 @@ export default function UserManagement() {
 
   // 执行确认操作
   const handleConfirmAction = async () => {
+    // 入口守卫：与 disabled + 文案变化形成三重防御，避免 React 批处理延迟导致弱网下连点产生多次封禁/解封/角色变更
+    if (submitting) return;
     if (!confirm) return;
     setSubmitting(true);
     try {
