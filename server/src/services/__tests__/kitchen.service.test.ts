@@ -344,3 +344,39 @@ describe('kitchen.service - remove', () => {
     await expect(kitchenService.remove('k-x', 'u1')).rejects.toBeInstanceOf(NotFoundError);
   });
 });
+
+// XSS 不变式：create 与 update 入口的 sanitizeObject 字段列表必须包含 pickupLocation
+// 设计原因：pickupLocation 落库后写入 kitchen_posts.pickup_address，跨用户在详情/列表渲染，
+// 未清洗会触发存储型 XSS。此测试锁定字段列表，避免后续重构不慎移除 pickupLocation
+describe('kitchen.service - pickupLocation XSS 不变式', () => {
+  it('create 入口 sanitizeObject 字段列表包含 pickupLocation', async () => {
+    mockedQuery.mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult);
+
+    await kitchenService.create('u1', {
+      type: 'offer',
+      title: '红烧肉',
+      category: '荤菜',
+      quantity: 5,
+      pickupLocation: '北京市朝阳区某街道',
+    });
+
+    const { sanitizeObject } = await import('../../utils/sanitize');
+    // 第二个参数为字段列表，应包含 pickupLocation/title/description 三项
+    const fieldsArg = vi.mocked(sanitizeObject).mock.calls[0][1] as string[];
+    expect(fieldsArg).toContain('pickupLocation');
+    expect(fieldsArg).toContain('title');
+    expect(fieldsArg).toContain('description');
+  });
+
+  it('update 入口 sanitizeObject 字段列表包含 pickupLocation', async () => {
+    mockedQuery
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u1' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [mockRow()] } as unknown as DbResult);
+
+    await kitchenService.update('k1', 'u1', { pickupLocation: '北京市海淀区某街道' });
+
+    const { sanitizeObject } = await import('../../utils/sanitize');
+    const fieldsArg = vi.mocked(sanitizeObject).mock.calls[0][1] as string[];
+    expect(fieldsArg).toContain('pickupLocation');
+  });
+});

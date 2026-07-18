@@ -99,7 +99,8 @@ async function create(userId: string, data: {
   healthCert?: boolean;
 }) {
   // 入库前清洗富文本字段，防止存储型 XSS
-  const sanitized = sanitizeObject(data, ['title', 'description']);
+  // pickupLocation 同属跨用户可见字段（详情/列表渲染），需同步清洗避免存储型 XSS
+  const sanitized = sanitizeObject(data, ['title', 'description', 'pickupLocation']);
   // 校验图片 URL：必须 HTTPS 且在域名白名单内
   validateImageUrls(sanitized.images);
 
@@ -244,7 +245,8 @@ async function update(id: string, userId: string, data: Partial<{
   // 更新前清洗富文本字段并校验图片 URL
   // 设计原因：data 收紧为 Record<string, unknown>，让 sanitized 字段读取后为 unknown，
   // 强制对图片字段做 string[] 类型断言后再传给 validateImageUrls，避免 any 静默吞掉类型不匹配
-  const sanitized = sanitizeObject(data as Record<string, unknown>, ['title', 'description']);
+  // pickupLocation 同属跨用户可见字段，与 create 入口清洗行为对齐避免遗漏
+  const sanitized = sanitizeObject(data as Record<string, unknown>, ['title', 'description', 'pickupLocation']);
   if (sanitized.images !== undefined) {
     validateImageUrls(sanitized.images as string[]);
   }
