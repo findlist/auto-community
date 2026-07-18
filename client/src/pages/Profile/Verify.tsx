@@ -56,6 +56,8 @@ export default function Verify() {
   // 提交认证申请
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // 入口守卫：与 disabled + 文案变化形成三重防御，避免 React 批处理延迟导致弱网下连点产生多次认证申请
+    if (submitting) return;
     if (!realName.trim() || !idCard.trim()) {
       setError("请填写完整信息");
       return;

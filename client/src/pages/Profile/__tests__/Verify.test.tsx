@@ -8,7 +8,7 @@
  *           mock @/hooks/useAuth 的 isAuthenticated、mock useNavigate 捕获跳转
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import Verify from '../Verify';
@@ -357,5 +357,49 @@ describe('Profile/Verify 实名认证页', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /提交中/ })).toBeDisabled();
     });
+  });
+});
+
+describe('Profile/Verify 实名认证入口守卫', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsAuthenticated.mockReturnValue(true);
+    mockGetVerificationStatus.mockResolvedValue({
+      code: 0,
+      message: 'ok',
+      data: notVerifiedStatus,
+    });
+  });
+
+  it('弱网连点不产生多次认证申请：入口 if 守卫阻断第二次 onClick', async () => {
+    // submitVerification 永不 resolve，锁定 submitting 状态模拟弱网
+    mockSubmitVerification.mockReturnValue(new Promise(() => {}));
+
+    renderVerify();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /提交认证申请/ })).toBeInTheDocument();
+    });
+
+    // 填写有效表单通过字段校验
+    fireEvent.change(screen.getByPlaceholderText('请输入真实姓名（2-100字符）'), {
+      target: { value: '张三' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('请输入18位身份证号'), {
+      target: { value: '110101199001011234' },
+    });
+
+    // 第一次点击：触发 setSubmitting(true)，按钮文案变为"提交中..."
+    fireEvent.click(screen.getByRole('button', { name: /提交认证申请/ }));
+    // 等待 submitting 状态生效：按钮文案变为"提交中..."
+    await waitFor(() => {
+      expect(screen.getByText('提交中...')).toBeInTheDocument();
+    });
+
+    // 第二次点击：fireEvent 绕过 disabled 检查直接触发 onClick
+    // 入口 if (submitting) return 守卫作为第二道防线，阻断重复调用
+    fireEvent.click(screen.getByText('提交中...'));
+
+    // 不变式：submitVerification 仅被调用 1 次，第二次点击被入口守卫拦截
+    expect(mockSubmitVerification).toHaveBeenCalledTimes(1);
   });
 });
