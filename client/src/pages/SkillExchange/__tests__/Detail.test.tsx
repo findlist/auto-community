@@ -352,6 +352,37 @@ describe('SkillExchange/Detail 帖子详情', () => {
     expect(deletePost).not.toHaveBeenCalled();
   });
 
+  // 重复提交守卫不变式：弱网下用户在删除确认弹窗内连点"删除"应只触发一次 API 调用
+  // 设计原因：deletePost 后端按 id 删除，第二次调用会 404，前端 toast.error 显示"删除失败" 体验混乱；
+  // 三重防御（deleting 状态守卫 + 按钮 disabled + 文案变化）确保 deleting 期间无法触发第二次调用
+  it('删除进行中按钮显示"删除中..."加载态且重复点击不触发第二次 API 调用', async () => {
+    // 永不 resolve：锁定 deleting 状态，模拟弱网
+    vi.mocked(deletePost).mockImplementation(() => new Promise(() => {}));
+
+    renderDetail();
+
+    await screen.findByRole('button', { name: /删除/ });
+
+    // 点击底部"删除"按钮打开弹窗
+    await user.click(screen.getByRole('button', { name: /删除/ }));
+
+    // 弹窗出现后，用 within 精确定位弹窗内的"删除"按钮并点击确认
+    const dialog = await screen.findByRole('dialog', { name: '删除确认' });
+    await user.click(within(dialog).getByRole('button', { name: '删除' }));
+
+    // 第一次点击应触发 API 调用
+    await waitFor(() => {
+      expect(deletePost).toHaveBeenCalledTimes(1);
+    });
+
+    // 按钮应进入加载态：显示"删除中..."文案
+    await screen.findByText('删除中...');
+
+    // 重复点击"删除中..."按钮不应触发第二次 API 调用（按钮已禁用，userEvent 不会触发 disabled 按钮的 onClick）
+    await user.click(within(dialog).getByRole('button', { name: '删除中...' }));
+    expect(deletePost).toHaveBeenCalledTimes(1);
+  });
+
   it('location 不存在时不渲染位置信息', async () => {
     vi.mocked(getPost).mockResolvedValue({
       code: 0, message: 'ok',
