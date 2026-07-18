@@ -271,6 +271,37 @@ describe('emergency-resource.service create', () => {
     const insertColumns = sql.match(/INSERT INTO emergency_resources \(([^)]*)\)/)?.[1] || '';
     expect(insertColumns).not.toContain('description');
   });
+
+  // XSS 防护不变式：create 入库前应清洗 name/description/address 富文本字段
+  // 设计原因：这三个字段会在前端列表/详情页直接渲染，未清洗将导致存储型 XSS
+  it('name/description/address 中的 XSS payload 应被清洗后再写入数据库', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        id: 'res-xss', community_id: null, type: 'shelter', name: '',
+        description: '', location: null, address: '', contact_phone: null,
+        status: 'active', last_check: null,
+        created_at: new Date('2026-07-08T10:00:00Z'),
+        updated_at: new Date('2026-07-08T10:00:00Z'),
+      }],
+    });
+
+    const xssPayload = '<script>alert("xss")</script>';
+    await emergencyResourceService.create({
+      name: xssPayload,
+      description: xssPayload,
+      address: xssPayload,
+    });
+
+    const call = mockQuery.mock.calls[0];
+    const params = call[1] as unknown[];
+    // 所有参数中均不应出现 script 标签
+    for (const param of params) {
+      if (typeof param === 'string') {
+        expect(param).not.toContain('<script>');
+        expect(param).not.toContain('</script>');
+      }
+    }
+  });
 });
 
 describe('emergency-resource.service update', () => {
@@ -339,6 +370,39 @@ describe('emergency-resource.service update', () => {
     expect(result.id).toBe('res-1');
     // 仅触发存在性校验 + UPDATE 两次 query
     expect(mockQuery).toHaveBeenCalledTimes(2);
+  });
+
+  // XSS 防护不变式：update 入库前应清洗 name/description/address 富文本字段（与 create 对齐）
+  // 设计原因：若仅 create 清洗而 update 不清洗，攻击者可通过 PUT 路由绕过 XSS 防御
+  it('update 时 name/description/address 中的 XSS payload 应被清洗后再写入数据库', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'res-1' }] });
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        id: 'res-1', community_id: null, type: 'shelter', name: '',
+        description: '', location: null, address: '', contact_phone: null,
+        status: 'active', last_check: null,
+        created_at: new Date('2026-07-08T10:00:00Z'),
+        updated_at: new Date('2026-07-08T11:00:00Z'),
+      }],
+    });
+
+    const xssPayload = '<script>alert("xss")</script>';
+    await emergencyResourceService.update('res-1', {
+      name: xssPayload,
+      description: xssPayload,
+      address: xssPayload,
+    });
+
+    // 第2次 query 是 UPDATE，捕获参数
+    const updateCall = mockQuery.mock.calls[1];
+    const params = updateCall[1] as unknown[];
+    // SET 子句参数中不应出现 script 标签（最后一个参数为 id，跳过）
+    for (const param of params) {
+      if (typeof param === 'string') {
+        expect(param).not.toContain('<script>');
+        expect(param).not.toContain('</script>');
+      }
+    }
   });
 });
 

@@ -1,6 +1,7 @@
 import { query, SqlParam } from '../config/database';
 import { QueryResultRow } from 'pg';
 import { NotFoundError, BadRequestError } from '../utils/errors';
+import { sanitizeObject } from '../utils/sanitize';
 
 /**
  * emergency_resources 表显式查询列：替代 SELECT *，与数据库实际列结构对齐（12 字段，不含 deleted_at）。
@@ -155,13 +156,16 @@ async function getResourceById(id: string) {
  * location 字段为 POINT 类型，需将 {lat, lng} 转换为 PostgreSQL point 字面量
  */
 async function create(data: ResourceMutationData) {
-  const fields = pickResourceFields(data);
+  // 入库前清洗富文本字段，防止存储型 XSS（与 time-bank/kitchen 服务保持一致）
+  // 设计原因：name/description/address 入库后会被前端列表与详情页渲染，未清洗将导致存储型 XSS
+  const sanitized = sanitizeObject(data, ['name', 'description', 'address']);
+  const fields = pickResourceFields(sanitized);
   if (Object.keys(fields).length === 0) {
     throw new BadRequestError('未提供有效的资源字段');
   }
 
   // location 单独处理：将 {lat, lng} 转换为 PostgreSQL point 格式 (lng,lat)
-  const location = data.location ? `(${data.location.lng},${data.location.lat})` : null;
+  const location = sanitized.location ? `(${sanitized.location.lng},${sanitized.location.lat})` : null;
 
   // 动态构建 INSERT 语句，仅写入提供的字段
   const columns = Object.keys(fields);
@@ -188,9 +192,11 @@ async function create(data: ResourceMutationData) {
  * 管理员更新应急资源：仅更新请求中提供的字段
  */
 async function update(id: string, data: ResourceMutationData) {
-  const fields = pickResourceFields(data);
+  // 入库前清洗富文本字段，防止存储型 XSS（与 create 保持一致，避免 PUT 路由绕过清洗）
+  const sanitized = sanitizeObject(data, ['name', 'description', 'address']);
+  const fields = pickResourceFields(sanitized);
   // location 单独处理，不放入 fields 中
-  const hasLocation = data.location !== undefined;
+  const hasLocation = sanitized.location !== undefined;
 
   if (Object.keys(fields).length === 0 && !hasLocation) {
     throw new BadRequestError('未提供有效的更新字段');
@@ -214,7 +220,7 @@ async function update(id: string, data: ResourceMutationData) {
     values.push(val);
   }
   if (hasLocation) {
-    const location = data.location ? `(${data.location.lng},${data.location.lat})` : null;
+    const location = sanitized.location ? `(${sanitized.location.lng},${sanitized.location.lat})` : null;
     setClauses.push(`location = $${idx++}::point`);
     values.push(location);
   }
