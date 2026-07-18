@@ -160,8 +160,10 @@ export default function ContentReview() {
   };
 
   // 执行批量上下架确认操作
+  // 入口 checking 守卫与 handleToggleStatus 对齐，避免 React 批处理延迟导致弱网下连点产生多次批量请求
   const handleBatchConfirm = async () => {
     if (!batchConfirm) return;
+    if (batchSubmitting) return;
     setBatchSubmitting(true);
     try {
       const ids = Array.from(selectedIds);
@@ -238,8 +240,10 @@ export default function ContentReview() {
   };
 
   // 提交编辑：按需收集变更字段
+  // 入口 checking 守卫与 handleToggleStatus/handleBatchConfirm 对齐，避免弱网下连点产生多次编辑请求
   const handleSaveEdit = async () => {
     if (!editId) return;
+    if (editSaving) return;
     setEditSaving(true);
     setEditError(null);
     try {

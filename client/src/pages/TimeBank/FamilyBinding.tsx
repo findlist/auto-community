@@ -188,8 +188,10 @@ export default function FamilyBindingPage() {
   };
 
   // 解绑确认后的实际请求：关闭弹窗 → 调用 API → 刷新列表
+  // 入口 checking 守卫与 handleConfirm/handleReject 对齐，避免 React 批处理延迟导致弱网下连点产生多次解绑请求
   const handleUnbindConfirm = async () => {
     if (!unbindingId) return;
+    if (unbinding) return;
     setUnbinding(true);
     try {
       await unbindFamilyBinding(unbindingId);

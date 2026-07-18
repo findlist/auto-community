@@ -97,8 +97,10 @@ export default function AddressBook() {
   };
 
   // 保存（新增或更新）
+  // 入口守卫：与按钮 disabled + 文案变化形成三重防御，避免弱网下连点产生多个地址记录
   const handleSave = async () => {
     if (!validate()) return;
+    if (saving) return;
     setSaving(true);
     setError("");
     try {

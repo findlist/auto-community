@@ -49,6 +49,8 @@ export default function ResetPassword() {
     e.preventDefault();
     setError("");
     if (!validate()) return;
+    // 入口守卫：与按钮 disabled + 文案变化形成三重防御，避免 React 批处理延迟导致弱网下连点产生多次重置密码请求
+    if (loading) return;
     setLoading(true);
     try {
       await resetPassword({ phone, code, password });
