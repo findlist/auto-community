@@ -109,6 +109,9 @@ export default function OrderManagement() {
 
   // 提交强制取消订单
   const handleConfirmCancel = async () => {
+    // 入口守卫：与按钮 disabled 形成双重防御，避免弱网下连点产生多条强制取消记录
+    // 设计原因：forceCancelOrder 涉及积分退还与状态机变更，重复触发会导致积分多次退还
+    if (submitting) return;
     if (!cancelTarget || !cancelReason.trim()) return;
     setSubmitting(true);
     try {
