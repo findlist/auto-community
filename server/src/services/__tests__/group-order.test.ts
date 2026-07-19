@@ -674,7 +674,7 @@ describe('group-order.service - join 参与拼单', () => {
 // ==================== getList 测试 ====================
 
 describe('group-order.service - getList 获取列表', () => {
-  it('无 status 过滤 + 分页参数透传', async () => {
+  it('无 status 过滤 + 分页参数透传 + 默认 90 天时间窗', async () => {
     const mockRow = {
       id: 'order-1', initiator_id: 'user-1', title: '测试', description: null,
       target_amount: 300, current_amount: 150, min_participants: 2, max_participants: 5,
@@ -691,9 +691,12 @@ describe('group-order.service - getList 获取列表', () => {
     expect(result.list).toHaveLength(1);
     expect(result.list[0].id).toBe('order-1');
     expect(result.list[0].initiator).toEqual({ id: 'user-1', nickname: '张三', avatar: null });
+    // 验证 COUNT SQL 含默认 90 天时间窗（避免 group_orders 持续累积后全表 COUNT 拖垮 DB）
+    const countSql = mockedQuery.mock.calls[0][0] as string;
+    expect(countSql).toContain("go.created_at >= NOW() - INTERVAL '90 days'");
   });
 
-  it('有 status 过滤：SQL 参数含 status 值', async () => {
+  it('有 status 过滤：SQL 参数含 status 值且默认时间窗并存', async () => {
     mockedQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult);
     mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
@@ -705,6 +708,10 @@ describe('group-order.service - getList 获取列表', () => {
     const countCall = mockedQuery.mock.calls[0];
     const params = countCall[1] as unknown[];
     expect(params).toContain('open');
+    // 验证 COUNT SQL 同时含 status 条件与默认 90 天时间窗
+    const countSql = mockedQuery.mock.calls[0][0] as string;
+    expect(countSql).toContain('go.status = $1');
+    expect(countSql).toContain("go.created_at >= NOW() - INTERVAL '90 days'");
   });
 });
 

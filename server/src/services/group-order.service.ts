@@ -386,7 +386,12 @@ async function exit(groupOrderId: string, userId: string): Promise<void> {
 async function getList(filters: {
   status?: string;
 } = {}, page: number = 1, pageSize: number = 20) {
-  const conditions: string[] = ['go.deleted_at IS NULL'];
+  // conditions 默认附加 90 天时间窗：
+  // group_orders 表只增不减，无时间窗会持续触发全表 COUNT 与扫描。公开接口每刷新一次都打满 DB。
+  // 与 emergency.service.getRequests / admin.service.getReports 保持一致模式：
+  // INTERVAL 用 SQL 字面量不加参数化，参数列表稳定。90 天覆盖完整拼单生命周期（含配送/结算），
+  // 超出 90 天的拼单通常已结束，对当前用户价值低。
+  const conditions: string[] = ['go.deleted_at IS NULL', "go.created_at >= NOW() - INTERVAL '90 days'"];
   // SQL 参数数组：收紧为 SqlParam[]，避免误传函数/Symbol 等非 SQL 友好类型
   const params: SqlParam[] = [];
   let paramIndex = 1;
