@@ -42,6 +42,12 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputContent, setInputContent] = useState("");
   const [loading, setLoading] = useState(false);
+  // 持久错误状态：首次加载失败时展示 Empty error + 重新加载按钮，避免用户只能刷新整个页面
+  // 设计原因：原实现仅 toast.error 即时提示，弱网下用户错过 toast 后无重试入口；与 Admin 列表页统一交互模式
+  const [error, setError] = useState<string | null>(null);
+  // 重试触发器：递增此值强制 useEffect 重跑，重新拉取历史消息
+  // 设计原因：loadMessages 是 useEffect 内局部函数，外部无法直接调用；用 retryKey 触发 useEffect 重跑是最小改动方案
+  const [retryKey, setRetryKey] = useState(0);
   const wsClientRef = useRef<WebSocketClient | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -75,15 +81,20 @@ export default function Chat() {
 
     const loadMessages = async () => {
       setLoading(true);
+      // 清空历史错误状态，避免上一次失败的 Empty error 残留干扰新一轮加载
+      setError(null);
       try {
         // 游标分页：第一页 cursor 为空，查询最新记录
         const res = await getMessages(orderId, undefined, 50, orderType);
         if (cancelled) return;
         setMessages(res.data.list);
         await markMessagesAsRead(orderId, orderType);
-      } catch (error) {
+      } catch (err) {
         if (cancelled) return;
-        toast.error(getErrorMessage(error, "加载消息失败"));
+        // 持久错误：首次加载失败时 Empty error 占位 + 重新加载按钮
+        setError(getErrorMessage(err, "加载消息失败"));
+        // 保留 toast.error 即时反馈，与原行为一致
+        toast.error(getErrorMessage(err, "加载消息失败"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -94,7 +105,7 @@ export default function Chat() {
     return () => {
       cancelled = true;
     };
-  }, [orderId, orderType]);
+  }, [orderId, orderType, retryKey]);
 
   // WebSocket 连接（使用封装的 WebSocketClient）
   // 设计原因：onOpen 中异步 Promise 链无法被 wsClient.close() 取消，用 cancelled 标志守护
@@ -243,7 +254,24 @@ export default function Chat() {
           </div>
         )}
 
-        {!loading && messages.length === 0 && (
+        {/* 加载失败占位：首次加载失败时展示 Empty error 与重新加载按钮，避免用户只能刷新整个页面 */}
+        {/* 设计原因：与 Admin 列表页 Empty variant="error" + 重试按钮模式统一；
+            按钮色板使用 emerald-500/600，与本页发送按钮、自己消息气泡色板一致 */}
+        {!loading && error && messages.length === 0 && (
+          <Empty
+            variant="error"
+            action={
+              <button
+                onClick={() => setRetryKey(k => k + 1)}
+                className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 transition-colors"
+              >
+                重新加载
+              </button>
+            }
+          />
+        )}
+
+        {!loading && !error && messages.length === 0 && (
           <Empty title="暂无消息" description="发起对话后这里会显示聊天记录" />
         )}
 

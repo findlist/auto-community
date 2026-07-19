@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：userEvent 内部用 async act 包裹所有交互，自动等待微任务队列清空，
 // 从根本上消除"异步 state 更新未被 act 包裹"警告，与 FamilyBinding/DeleteAccount 测试规范一致。
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import Chat from '../Chat';
@@ -209,6 +209,35 @@ describe('Chat 聊天交互', () => {
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith('加载消息失败');
+    });
+  });
+
+  it('首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求', async () => {
+    // 首次加载失败触发 Empty error 占位
+    vi.mocked(getMessages).mockRejectedValueOnce(new Error('加载消息失败'));
+
+    renderChat();
+
+    // Empty error 默认 title="加载失败"
+    await screen.findByText('加载失败');
+    expect(screen.getByRole('button', { name: '重新加载' })).toBeInTheDocument();
+
+    // 重新 mock 第二次成功返回（含消息数据）
+    mockMessagesList = buildMockMessages();
+    vi.mocked(getMessages).mockResolvedValueOnce({
+      code: 0,
+      message: 'ok',
+      data: { list: mockMessagesList, nextCursor: null, hasMore: false },
+    });
+
+    // 点击重新加载触发 useEffect 重跑
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '重新加载' }));
+    });
+
+    // 第二次应成功渲染消息列表
+    await waitFor(() => {
+      expect(screen.getByText('你好，对方消息')).toBeInTheDocument();
     });
   });
 
