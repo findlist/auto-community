@@ -161,6 +161,29 @@ describe('AuditLog 筛选查询', () => {
     });
   });
 
+  it('加载失败显示"重新加载"重试按钮，点击后重新触发请求', async () => {
+    // 首次失败触发 Empty error + 重试按钮
+    vi.mocked(getAuditLogs).mockRejectedValueOnce(new ApiError('网络错误', 500));
+    // 重试成功返回数据
+    vi.mocked(getAuditLogs).mockResolvedValueOnce(buildPageResponse());
+
+    renderAuditLogPage();
+
+    // 等待错误态渲染
+    const retryBtn = await screen.findByRole('button', { name: '重新加载' });
+    expect(retryBtn).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(retryBtn);
+    });
+
+    // 重试后请求计数应增加，且最终渲染列表数据
+    await waitFor(() => {
+      expect(screen.getAllByText('张三').length).toBeGreaterThan(0);
+    });
+    expect(vi.mocked(getAuditLogs).mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('空列表显示"暂无日志记录"', async () => {
     vi.mocked(getAuditLogs).mockResolvedValue(buildPageResponse([]));
 

@@ -163,6 +163,21 @@ export default function AuditLogPage() {
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
+      ) : error ? (
+        // 加载失败时展示错误空态与重试入口，避免用户被卡在错误页只能刷新整个页面
+        // 设计原因：上方 banner 已显示具体错误原因，此处 Empty 仅提供视觉占位与重试动作，
+        // 不再重复传 description 避免与 banner 文本重复出现导致测试 getByText 多元素匹配错误
+        <Empty
+          variant="error"
+          action={
+            <button
+              onClick={() => loadLogs(page)}
+              className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 transition-colors"
+            >
+              重新加载
+            </button>
+          }
+        />
       ) : logs.length === 0 ? (
         <Empty title="暂无日志记录" description="操作日志会在这里显示" />
       ) : (
