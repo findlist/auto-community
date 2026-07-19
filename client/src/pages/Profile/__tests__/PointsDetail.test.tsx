@@ -298,4 +298,33 @@ describe('Profile/PointsDetail 积分明细页', () => {
     act(() => { backBtn.click(); });
     expect(mockNavigate).toHaveBeenCalledWith(-1);
   });
+
+  it('加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求', async () => {
+    // 加载失败触发 Empty error 占位（替代原 toast.error 即时提示）
+    // 设计原因：与 SharedKitchen/SkillExchange/Notifications 列表页 Empty variant="error" + 重新加载按钮模式统一
+    getCreditHistoryMock.mockRejectedValueOnce(new Error('网络错误'));
+
+    renderPage();
+
+    // Empty error 默认 title="加载失败"
+    await screen.findByText('加载失败');
+    expect(screen.getByRole('button', { name: '重新加载' })).toBeInTheDocument();
+
+    // 重新 mock 第二次成功返回
+    getCreditHistoryMock.mockResolvedValueOnce({
+      code: 0,
+      message: 'ok',
+      data: { list: [makeTx({ description: '技能订单完成收入' })], total: 1, page: 1, pageSize: 20, hasNext: false },
+    });
+
+    // 点击重新加载触发二次请求
+    act(() => {
+      screen.getByRole('button', { name: '重新加载' }).click();
+    });
+
+    // 第二次应成功渲染列表（用交易描述作为标志）
+    await waitFor(() => {
+      expect(screen.getByText('技能订单完成收入')).toBeInTheDocument();
+    });
+  });
 });

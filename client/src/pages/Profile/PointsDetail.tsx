@@ -5,8 +5,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getCreditHistory } from "@/api/user";
 import type { CreditTransaction } from "@/types";
-import { toast } from "@/components/Toast";
-import { getErrorMessage } from "@/utils/error";
 
 // 交易类型中文映射
 const typeLabel: Record<string, string> = {
@@ -39,6 +37,10 @@ export default function PointsDetail() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  // 持久错误状态：加载失败时展示 Empty error + 重新加载按钮，避免用户只能刷新整个页面
+  // 设计原因：原实现仅 toast.error 即时提示，弱网下用户错过 toast 后无重试入口；与 Admin 列表页 + SharedKitchen/SkillExchange/Notifications 列表页统一交互模式
+  // 本页为 page 切换场景（每次切换重新加载当前页），不区分首次 vs 翻页失败，统一 Empty error 占位
+  const [error, setError] = useState<string | null>(null);
 
   // 竞态守卫：跟踪当前活跃页码，避免快速翻页时旧请求覆盖新页数据
   // 设计原因：fetchTransactions 依赖外部 page 参数，用户快速点击下一页/上一页时
@@ -47,6 +49,8 @@ export default function PointsDetail() {
 
   const fetchTransactions = useCallback(async (p: number) => {
     setLoading(true);
+    // 清空历史错误状态，避免上一次失败的 Empty error 残留干扰新一轮加载
+    setError(null);
     try {
       const res = await getCreditHistory(p, PAGE_SIZE);
       // 竞态守卫：await 期间若 page 已变化，跳过 setState 避免旧页数据覆盖新页数据
@@ -55,8 +59,10 @@ export default function PointsDetail() {
       setTotal(res.data.total);
     } catch (err) {
       if (activePageRef.current !== p) return;
-      // 加载失败需提示用户，避免误以为账户无记录（区分"无数据"与"加载失败"）
-      toast.error(getErrorMessage(err, "加载积分明细失败，请稍后重试"));
+      console.error("加载积分明细失败:", err);
+      // 持久错误：Empty error 占位 + 重新加载按钮
+      // 设计原因：本页为 page 切换场景（每次切换重新加载），Empty error 已提供视觉反馈，不再 toast 避免双重提示
+      setError("加载积分明细失败，请稍后重试");
     } finally {
       // 仅当当前页码仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
       if (activePageRef.current === p) {
@@ -153,6 +159,21 @@ export default function PointsDetail() {
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
           </div>
+        ) : error ? (
+          // 加载失败占位：加载失败时展示 Empty error 与重新加载按钮，避免用户被卡在错误页只能刷新整个页面
+          // 设计原因：与 Admin 列表页 + SharedKitchen/SkillExchange/Notifications 列表页 Empty variant="error" + 重试按钮模式统一；
+          // 按钮色板使用 emerald-500/600，与本页积分余额卡片主色一致；重新加载当前页（fetchTransactions(page)）而非重置到第一页
+          <Empty
+            variant="error"
+            action={
+              <button
+                onClick={() => fetchTransactions(page)}
+                className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 transition-colors"
+              >
+                重新加载
+              </button>
+            }
+          />
         ) : transactions.length === 0 ? (
           <Empty title="暂无交易记录" description="积分收支记录会在这里显示" icon={<CreditCard className="w-16 h-16" />} />
         ) : (
