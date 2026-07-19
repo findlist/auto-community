@@ -183,7 +183,7 @@ export default function UserManagement() {
         <ExportButton type="users" />
       </div>
 
-      {/* 搜索框 */}
+      {/* 搜索框：focus 环细化、按钮 active 反馈，与设计令牌 emerald 主色一致 */}
       <div className="flex gap-2 mb-4">
         <input
           type="text"
@@ -191,11 +191,11 @@ export default function UserManagement() {
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           placeholder="按手机号/昵称搜索"
-          className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+          className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 transition-all"
         />
         <button
           onClick={handleSearch}
-          className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 flex items-center gap-1"
+          className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 active:scale-95 transition-all flex items-center gap-1"
         >
           <Search className="w-4 h-4" />
           搜索
@@ -316,7 +316,7 @@ export default function UserManagement() {
                             onClick={() =>
                               setConfirm({ userId: u.id, nickname: u.nickname, action: "unban" })
                             }
-                            className="text-emerald-600 hover:underline text-xs"
+                            className="text-emerald-600 text-xs px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
                           >
                             解封
                           </button>
@@ -325,7 +325,7 @@ export default function UserManagement() {
                             onClick={() =>
                               setConfirm({ userId: u.id, nickname: u.nickname, action: "ban" })
                             }
-                            className="text-red-600 hover:underline text-xs"
+                            className="text-red-600 text-xs px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
                           >
                             封禁
                           </button>
@@ -339,7 +339,7 @@ export default function UserManagement() {
                                 action: "removeAdmin",
                               })
                             }
-                            className="text-neutral-600 hover:underline text-xs"
+                            className="text-neutral-600 text-xs px-3 py-2 rounded-lg hover:bg-neutral-100 transition-colors"
                           >
                             取消管理员
                           </button>
@@ -352,7 +352,7 @@ export default function UserManagement() {
                                 action: "setAdmin",
                               })
                             }
-                            className="text-blue-600 hover:underline text-xs"
+                            className="text-blue-600 text-xs px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
                           >
                             设为管理员
                           </button>
@@ -414,7 +414,7 @@ export default function UserManagement() {
                       onClick={() =>
                         setConfirm({ userId: u.id, nickname: u.nickname, action: "unban" })
                       }
-                      className="text-emerald-600 text-xs"
+                      className="text-emerald-600 text-xs px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
                     >
                       解封
                     </button>
@@ -423,7 +423,7 @@ export default function UserManagement() {
                       onClick={() =>
                         setConfirm({ userId: u.id, nickname: u.nickname, action: "ban" })
                       }
-                      className="text-red-600 hover:underline text-xs"
+                      className="text-red-600 text-xs px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
                     >
                       封禁
                     </button>
@@ -437,7 +437,7 @@ export default function UserManagement() {
                           action: "removeAdmin",
                         })
                       }
-                      className="text-neutral-600 hover:underline text-xs"
+                      className="text-neutral-600 text-xs px-3 py-2 rounded-lg hover:bg-neutral-100 transition-colors"
                     >
                       取消管理员
                     </button>
@@ -450,7 +450,7 @@ export default function UserManagement() {
                           action: "setAdmin",
                         })
                       }
-                      className="text-blue-600 hover:underline text-xs"
+                      className="text-blue-600 text-xs px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
                     >
                       设为管理员
                     </button>
@@ -460,24 +460,28 @@ export default function UserManagement() {
             ))}
           </div>
 
-          {/* 分页控件 */}
-          <div className="flex items-center justify-between mt-4 text-sm text-neutral-600">
-            <span>共 {total} 条</span>
+          {/* 分页控件：当前页以胶囊高亮，前后按钮加 active 反馈 */}
+          <div className="flex items-center justify-between mt-6 text-sm text-neutral-600">
+            <span className="text-neutral-500">共 <span className="font-semibold text-neutral-800 tabular-nums">{total}</span> 条</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadUsers(page - 1, search)}
                 disabled={page <= 1}
-                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
+                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
+                aria-label="上一页"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <span>
-                {page} / {totalPages || 1}
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neutral-100 tabular-nums">
+                <span className="font-semibold text-neutral-900">{page}</span>
+                <span className="text-neutral-400">/</span>
+                <span className="text-neutral-500">{totalPages || 1}</span>
               </span>
               <button
                 onClick={() => loadUsers(page + 1, search)}
                 disabled={page >= totalPages}
-                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
+                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
+                aria-label="下一页"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
