@@ -335,6 +335,7 @@ export default function OrderManagement() {
               <button
                 onClick={() => loadOrders(type, status, page - 1)}
                 disabled={page <= 1}
+                aria-label="上一页"
                 className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -345,6 +346,7 @@ export default function OrderManagement() {
               <button
                 onClick={() => loadOrders(type, status, page + 1)}
                 disabled={page >= totalPages}
+                aria-label="下一页"
                 className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronRight className="w-5 h-5" />

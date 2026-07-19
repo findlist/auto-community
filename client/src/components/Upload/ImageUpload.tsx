@@ -240,6 +240,7 @@ export default function ImageUpload({
               {!disabled && !preview.uploading && (
                 <button
                   onClick={() => handleRemove(preview.id)}
+                  aria-label="删除已上传图片"
                   className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
                 >
                   <X className="w-4 h-4 text-white" />

@@ -248,7 +248,7 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">发布求助</h2>
-          <button onClick={() => handleClose(onClose)}><X className="w-5 h-5 text-[var(--color-text-tertiary)]" /></button>
+          <button onClick={() => handleClose(onClose)} aria-label="关闭发布求助弹窗"><X className="w-5 h-5 text-[var(--color-text-tertiary)]" /></button>
         </div>
 
         <div className="flex bg-[var(--color-neutral-100)] rounded-lg p-1 mb-4">
@@ -528,7 +528,7 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">应急资源</h2>
-          <button onClick={() => handleClose(onClose)}><X className="w-5 h-5 text-[var(--color-text-tertiary)]" /></button>
+          <button onClick={() => handleClose(onClose)} aria-label="关闭应急资源弹窗"><X className="w-5 h-5 text-[var(--color-text-tertiary)]" /></button>
         </div>
 
         <div className="flex gap-2 mb-4 overflow-x-auto pb-1">

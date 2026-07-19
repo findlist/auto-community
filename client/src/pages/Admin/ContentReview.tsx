@@ -527,6 +527,7 @@ export default function ContentReview() {
               <button
                 onClick={() => loadContent(type, status, page - 1)}
                 disabled={page <= 1}
+                aria-label="上一页"
                 className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -537,6 +538,7 @@ export default function ContentReview() {
               <button
                 onClick={() => loadContent(type, status, page + 1)}
                 disabled={page >= totalPages}
+                aria-label="下一页"
                 className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -553,7 +555,7 @@ export default function ContentReview() {
             {/* 弹窗头部 */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100">
               <h3 className="font-semibold text-neutral-800">编辑内容</h3>
-              <button onClick={handleCloseEdit} className="p-2.5 hover:bg-neutral-100 rounded transition-colors">
+              <button onClick={handleCloseEdit} aria-label="关闭编辑内容弹窗" className="p-2.5 hover:bg-neutral-100 rounded transition-colors">
                 <X className="w-5 h-5 text-neutral-500" />
               </button>
             </div>
@@ -746,6 +748,7 @@ export default function ContentReview() {
               </h3>
               <button
                 onClick={() => setBatchConfirm(null)}
+                aria-label="关闭批量操作确认弹窗"
                 className="text-neutral-400 hover:text-neutral-600 p-1 rounded hover:bg-neutral-100 transition-colors"
               >
                 <X className="w-5 h-5" />

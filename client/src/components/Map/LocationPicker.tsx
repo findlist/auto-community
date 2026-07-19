@@ -203,7 +203,7 @@ export default function LocationPicker({
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
             {searchText && (
-              <button onClick={() => setSearchText('')}>
+              <button onClick={() => setSearchText('')} aria-label="清除搜索内容">
                 <X className="w-4 h-4 text-gray-400" />
               </button>
             )}
