@@ -11,6 +11,9 @@ export default function GroupOrders() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<GroupOrder[]>([]);
   const [loading, setLoading] = useState(false);
+  // 持久错误状态：首次加载失败时展示 Empty error + 重新加载按钮，避免用户只能刷新整个页面
+  // 设计原因：原实现仅 toast.error 即时提示，弱网下用户错过 toast 后无重试入口；与 Admin 列表页 + SharedKitchen/index 统一交互模式
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -37,6 +40,8 @@ export default function GroupOrders() {
   const loadOrders = useCallback(async (reset = false) => {
     if (loading) return;
     setLoading(true);
+    // reset 时清空历史错误状态，避免上一次失败的 Empty error 残留干扰新一轮加载
+    if (reset) setError(null);
     try {
       const newPage = reset ? 1 : page;
       const res = await getGroupOrders({ page: newPage, pageSize: 10 });
@@ -49,10 +54,13 @@ export default function GroupOrders() {
       }
       setHasMore(res.data.hasNext);
       setPage(newPage + 1);
-    } catch (error) {
+    } catch (err) {
       if (!mountedRef.current) return;
-      console.error("加载失败:", error);
-      toast.error("加载拼单列表失败，请稍后重试");
+      console.error("加载失败:", err);
+      // 持久错误：首次加载失败时 Empty error 占位 + 重新加载按钮
+      setError("加载拼单列表失败，请稍后重试");
+      // loadMore 失败时列表已有数据，Empty error 不展示，需 toast 提供即时反馈
+      if (!reset) toast.error("加载更多失败，请稍后重试");
     } finally {
       // 仅挂载中才更新 loading，避免卸载后 finally 触发 setState
       if (mountedRef.current) setLoading(false);
@@ -207,8 +215,24 @@ export default function GroupOrders() {
         </button>
       )}
 
-      {/* 空状态 */}
-      {!loading && orders.length === 0 && (
+      {/* 加载失败占位：首次加载失败时展示 Empty error 与重新加载按钮，避免用户被卡在错误页只能刷新整个页面 */}
+      {/* 设计原因：与 Admin 列表页 + SharedKitchen/index Empty variant="error" + 重试按钮模式统一；按钮色板使用厨房模块橙（orange-500/600），与模块主色一致 */}
+      {!loading && error && orders.length === 0 && (
+        <Empty
+          variant="error"
+          action={
+            <button
+              onClick={() => loadOrders(true)}
+              className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 transition-colors"
+            >
+              重新加载
+            </button>
+          }
+        />
+      )}
+
+      {/* 空状态：仅在无错误且列表为空时展示，避免与 Empty error 冲突 */}
+      {!loading && !error && orders.length === 0 && (
         <Empty title="暂无拼单" description="发起一个吧！" />
       )}
 

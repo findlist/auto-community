@@ -119,12 +119,32 @@ describe("SharedKitchen/GroupOrders 拼单列表", () => {
     expect(screen.getByText("拼单牛奶")).toBeInTheDocument();
   });
 
-  it("加载失败调用 console.error 兜底（无 UI 错误提示）", async () => {
+  it("加载失败调用 console.error 兜底（持久错误占位 + 重试按钮）", async () => {
     vi.mocked(getGroupOrders).mockRejectedValue(new Error("网络异常"));
     renderGroupOrders();
     await waitFor(() => {
       expect(consoleErrorSpy).toHaveBeenCalled();
     });
+    // 持久错误占位：Empty variant="error" 渲染"加载失败"标题
+    await screen.findByText("加载失败");
+    // 重新加载按钮存在
+    expect(screen.getByRole("button", { name: "重新加载" })).toBeInTheDocument();
+  });
+
+  it("加载失败显示重新加载重试按钮，点击后重新触发请求并渲染列表", async () => {
+    // 首次加载失败 → 点击重试 → 二次成功渲染列表
+    vi.mocked(getGroupOrders)
+      .mockRejectedValueOnce(new Error("网络异常"))
+      .mockResolvedValueOnce({ code: 0, message: "ok", data: makePage(mockOrders, true) });
+    renderGroupOrders();
+    // 等待 Empty error 占位渲染
+    await screen.findByText("加载失败");
+    // 点击重新加载按钮
+    fireEvent.click(screen.getByRole("button", { name: "重新加载" }));
+    // 二次请求成功后渲染列表（用第一个拼单标题作为标志）
+    await screen.findByText("拼单买海鲜");
+    // getGroupOrders 至少被调用 2 次（首次失败 + 重试成功）
+    expect(vi.mocked(getGroupOrders).mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
   it("空列表显示'暂无拼单'空状态", async () => {
