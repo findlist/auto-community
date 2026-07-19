@@ -257,7 +257,7 @@ export default function OrderManagement() {
                       {item.status !== "cancelled" && item.status !== "completed" ? (
                         <button
                           onClick={() => setCancelTarget({ id: item.id })}
-                          className="text-red-600 hover:underline text-xs"
+                          className="text-red-600 text-xs px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
                         >
                           强制取消
                         </button>
@@ -304,7 +304,7 @@ export default function OrderManagement() {
                 {item.status !== "cancelled" && item.status !== "completed" && (
                   <button
                     onClick={() => setCancelTarget({ id: item.id })}
-                    className="text-red-600 hover:underline text-xs"
+                    className="text-red-600 text-xs px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
                   >
                     强制取消
                   </button>

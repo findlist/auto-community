@@ -212,7 +212,7 @@ export default function ReportManagement() {
                       {report.status === "pending" ? (
                         <button
                           onClick={() => openHandleModal(report)}
-                          className="text-emerald-600 hover:underline text-xs"
+                          className="text-emerald-600 text-xs px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
                         >
                           处理
                         </button>
@@ -259,7 +259,7 @@ export default function ReportManagement() {
                 {report.status === "pending" && (
                   <button
                     onClick={() => openHandleModal(report)}
-                    className="text-emerald-600 hover:underline text-xs"
+                    className="text-emerald-600 text-xs px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
                   >
                     处理
                   </button>

@@ -421,7 +421,7 @@ export default function ContentReview() {
                       <button
                         onClick={() => handleOpenEdit(item)}
                         // 触摸目标提升：原无 padding 行内按钮，移动端难以精准点击
-                        className="text-xs text-blue-600 hover:underline py-1 px-2 rounded hover:bg-blue-50 transition-colors"
+                        className="text-xs text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
                       >
                         编辑
                       </button>
@@ -429,7 +429,7 @@ export default function ContentReview() {
                         onClick={() => handleToggleStatus(item)}
                         disabled={actioningId === item.id}
                         // 触摸目标提升：原无 padding 行内按钮，移动端难以精准点击
-                        className={`text-xs hover:underline disabled:opacity-50 py-1 px-2 rounded hover:bg-neutral-50 transition-colors ${
+                        className={`text-xs disabled:opacity-50 px-3 py-2 rounded-lg hover:bg-neutral-50 transition-colors ${
                           item.status === "active"
                             ? "text-red-600"
                             : "text-emerald-600"
@@ -480,7 +480,7 @@ export default function ContentReview() {
                   <button
                     onClick={() => handleOpenEdit(item)}
                     // 触摸目标提升：原无 padding 行内按钮，移动端难以精准点击
-                    className="text-xs text-blue-600 hover:underline py-1 px-2 rounded hover:bg-blue-50 transition-colors"
+                    className="text-xs text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
                   >
                     编辑
                   </button>
