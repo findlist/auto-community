@@ -157,17 +157,43 @@ describe("Metrics 效果度量页", () => {
     revokeObjectURLSpy.mockRestore();
   });
 
-  it("dashboard 加载失败时静默处理（不崩溃）", async () => {
-    // Metrics 内部 catch console.error，不渲染错误 UI，loading 消失后卡片值回退为 0
+  it("dashboard 加载失败时展示错误 UI 与重试按钮", async () => {
+    // 错误状态：渲染层应展示 Empty variant=error + 重试按钮，不再静默回退空数据
     getMetricsDashboardMock.mockRejectedValue(new Error("网络错误"));
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     renderMetrics();
-    // 等待 loading 消失后指标卡片渲染（值回退为 0）
+    // 等待 loading 消失后错误 UI 渲染
+    await waitFor(() => {
+      expect(screen.getByText("加载失败")).toBeInTheDocument();
+    });
+    // 错误描述应展示通用错误信息（非 ApiError 时使用兜底文案）
+    expect(screen.getByText("加载仪表盘数据失败")).toBeInTheDocument();
+    // 重试按钮存在
+    expect(screen.getByText("重新加载")).toBeInTheDocument();
+    expect(errorSpy).toHaveBeenCalledWith("加载仪表盘数据失败:", expect.any(Error));
+    errorSpy.mockRestore();
+  });
+
+  it("点击重新加载按钮触发 retryKey 递增并重新请求 dashboard", async () => {
+    // 首次失败、重试成功：验证 retryKey 递增触发 useEffect 重新执行 loadDashboard
+    getMetricsDashboardMock.mockRejectedValueOnce(new Error("网络错误"));
+    getMetricsDashboardMock.mockResolvedValueOnce({ code: 0, message: "ok", data: mockDashboardData });
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    renderMetrics();
+    // 等待错误 UI 渲染
+    await waitFor(() => {
+      expect(screen.getByText("加载失败")).toBeInTheDocument();
+    });
+    // 点击重新加载
+    await act(async () => {
+      fireEvent.click(screen.getByText("重新加载"));
+    });
+    // 等待重试成功后指标卡片渲染
     await waitFor(() => {
       expect(screen.getByText("应急响应时间")).toBeInTheDocument();
     });
-    expect(screen.getByText("0.0s")).toBeInTheDocument();
-    expect(errorSpy).toHaveBeenCalledWith("加载仪表盘数据失败:", expect.any(Error));
+    // dashboard 接口被调用 2 次（初次 + 重试）
+    expect(getMetricsDashboardMock).toHaveBeenCalledTimes(2);
     errorSpy.mockRestore();
   });
 });

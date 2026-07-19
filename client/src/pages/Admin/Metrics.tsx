@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 // 使用 lucide 图标统一项目视觉语言：原 emoji 在不同平台渲染差异较大，且与全项目图标体系不一致
 import { Loader2, Siren, Target, Package, Star, Bot } from "lucide-react";
 import MetricsChart from "@/components/MetricsChart";
+import Empty from "@/components/Empty";
+import { ApiError } from "@/api/client";
 import {
   getMetricsDashboard,
   getMetricTrend,
@@ -57,16 +59,23 @@ export default function Metrics() {
   const [expandedMetric, setExpandedMetric] = useState<MetricName | null>(null);
   const [loading, setLoading] = useState(true);
   const [trendLoading, setTrendLoading] = useState<Record<string, boolean>>({});
+  // 错误状态：保存仪表盘加载失败原因，渲染层据此展示错误 UI 与重试入口
+  // 设计原因：原实现仅 toast 提示后回退空数据，用户无法区分"加载失败"与"真无数据"
+  const [error, setError] = useState<string | null>(null);
+  // 重试触发器：递增后作为 useEffect 依赖触发仪表盘重新加载
+  const [retryKey, setRetryKey] = useState(0);
 
   // 加载仪表盘数据
   const loadDashboard = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await getMetricsDashboard();
       setDashboardData(response.data || []);
-    } catch (error) {
-      console.error("加载仪表盘数据失败:", error);
-      toast.error("加载仪表盘数据失败，请稍后重试");
+    } catch (err) {
+      // 保存错误信息到 state，渲染层展示错误 UI 与重试按钮，不再仅 toast
+      setError(err instanceof ApiError ? err.message : "加载仪表盘数据失败");
+      console.error("加载仪表盘数据失败:", err);
     } finally {
       setLoading(false);
     }
@@ -105,7 +114,10 @@ export default function Metrics() {
 
   useEffect(() => {
     loadDashboard();
-  }, [loadDashboard]);
+  }, [loadDashboard, retryKey]);
+
+  // 重试：递增 retryKey 触发上方 useEffect 重新执行加载
+  const handleRetry = () => setRetryKey((k) => k + 1);
 
   // 展开/收起指标详情
   const handleToggleMetric = (metricName: MetricName) => {
@@ -165,6 +177,27 @@ export default function Metrics() {
       <div className="flex flex-col items-center justify-center gap-3 h-64">
         <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         <span className="text-sm text-neutral-400">加载中...</span>
+      </div>
+    );
+  }
+
+  // 错误状态：展示失败原因与重试入口，避免静默回退空数据让用户误判为"无数据"
+  if (error) {
+    return (
+      <div className="bg-white rounded-2xl border border-neutral-200">
+        <Empty
+          variant="error"
+          title="加载失败"
+          description={error}
+          action={
+            <button
+              onClick={handleRetry}
+              className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 transition-colors"
+            >
+              重新加载
+            </button>
+          }
+        />
       </div>
     );
   }
