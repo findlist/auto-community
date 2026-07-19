@@ -45,6 +45,11 @@ export default function Notifications() {
   // 正常使用场景下 page 1 完成后才能触发 page 2（disabled={loading} 防护），不会互相取消
   const activeRequestKeyRef = useRef<string>("");
 
+  // mountedRef 守卫：loadUnreadCount 与同文件 loadNotifications 防御模式对齐
+  // 设计原因：loadUnreadCount 在 await getUnreadCount() 后调用 setUnreadCount，
+  // 组件卸载后旧请求 resolve 仍会触发 setState，引发 React 警告
+  const mountedRef = useRef(true);
+
   // 加载通知列表
   const loadNotifications = useCallback(async (pageNum: number) => {
     // 闭包捕获当前请求标识，await 后比对是否仍为最新请求
@@ -77,16 +82,23 @@ export default function Notifications() {
   const loadUnreadCount = useCallback(async () => {
     try {
       const res = await getUnreadCount();
+      // 卸载后跳过 setState，与 loadNotifications 防御模式对齐
+      if (!mountedRef.current) return;
       setUnreadCount(res.data.unreadCount);
     } catch (err) {
+      if (!mountedRef.current) return;
       console.error("加载未读数量失败:", err);
     }
   }, []);
 
   // 初始化加载
   useEffect(() => {
+    mountedRef.current = true;
     loadNotifications(1);
     loadUnreadCount();
+    return () => {
+      mountedRef.current = false;
+    };
   }, [loadNotifications, loadUnreadCount]);
 
   // 加载更多
