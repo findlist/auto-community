@@ -132,11 +132,15 @@ export default function AdminLayout() {
 
         {/* 主内容区域 */}
         <main className="flex-1 p-4 md:p-6 overflow-x-auto">
-          {/* 路由级错误边界：key 绑定 pathname 确保切换路由时重置错误状态
-              设计原因：管理后台页面异常不应崩溃整个后台，侧边栏与顶部保持可用便于切换到其他管理页 */}
-          <ErrorBoundary key={location.pathname}>
-            <Outlet />
-          </ErrorBoundary>
+          {/* 响应式容器约束：限制超宽屏内容横向拉伸过度，2K/4K 屏幕保持可读行宽
+              设计原因：未约束时表格、卡片等元素跨度失衡影响扫读，统一在此处包裹避免 12+ 子页面重复定义 */}
+          <div className="max-w-7xl mx-auto w-full">
+            {/* 路由级错误边界：key 绑定 pathname 确保切换路由时重置错误状态
+                设计原因：管理后台页面异常不应崩溃整个后台，侧边栏与顶部保持可用便于切换到其他管理页 */}
+            <ErrorBoundary key={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
+          </div>
         </main>
       </div>
     </div>
