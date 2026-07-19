@@ -236,10 +236,10 @@ export default function AddressBook() {
                   <button
                     onClick={() => handleSetDefault(addr.id)}
                     disabled={settingDefaultId !== null}
-                    // 触摸目标提升：原 text-xs 无 padding 仅 12px 高，移动端难以点击
-                    // py-1.5 + px-2 让触摸目标达到约 32px，配合 rounded 与 hover 视觉反馈
+                    // 触控目标提升：原 py-1.5 px-2 约 24px 不足 32px 标准，移动端难以精准点击
+                    // 升级至 px-3 py-2 rounded-lg 达到约 32px，与编辑/删除按钮统一触控尺寸
                     // disabled:opacity-50 提供视觉反馈：操作进行中所有"设为默认"按钮都不可点
-                    className="flex items-center gap-1 text-xs text-emerald-600 py-1.5 px-2 rounded hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
+                    className="flex items-center gap-1 text-xs text-emerald-600 px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
                   >
                     {settingDefaultId === addr.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -251,14 +251,17 @@ export default function AddressBook() {
                 )}
                 <button
                   onClick={() => handleEdit(addr)}
-                  className="flex items-center gap-1 text-xs text-blue-600 py-1.5 px-2 rounded hover:bg-blue-50 transition-colors"
+                  // 与设为默认/删除按钮统一触控目标尺寸（约 32px），色板对齐 emerald
+                  // 设计原因：编辑属于积极正向操作，与本轮 commit 266d3c5（UserManagement/ContentReview）色板约定一致
+                  className="flex items-center gap-1 text-xs text-emerald-600 px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                   编辑
                 </button>
                 <button
                   onClick={() => handleDelete(addr.id)}
-                  className="flex items-center gap-1 text-xs text-red-600 py-1.5 px-2 rounded hover:bg-red-50 transition-colors"
+                  // 与设为默认/编辑按钮统一触控目标尺寸（约 32px），删除为破坏性操作保留 red 色板
+                  className="flex items-center gap-1 text-xs text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   删除
