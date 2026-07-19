@@ -115,7 +115,7 @@
 5.2 P1 生产就绪验收
 - 全页面移动端适配、交互体验、状态提示完整性人工最终复查
 - CD 流水线 GitHub Secrets 与远程服务器 GHCR 登录态运维确认
-- 高德地图 Key 配置后处理 ResourceMap setTimeout onclick 清理问题
+- 高德地图 Key 配置（Key 配置后即可启用完整地图能力；setTimeout onclick 清理问题已通过 useSafeTimeout + map.destroy() + 显式置 null ref 完整解决）
 5.3 P2 技术债清理（当前 Phase 3 推进重点）
 - 无剩余 P2 任务项
 - 已剔除历史完成项：
