@@ -117,10 +117,13 @@
 - CD 流水线 GitHub Secrets 与远程服务器 GHCR 登录态运维确认
 - 高德地图 Key 配置后处理 ResourceMap setTimeout onclick 清理问题
 5.3 P2 技术债清理（当前 Phase 3 推进重点）
-- isSqlParam 对 class 实例放行的设计限制（可选改用 prototype 链检查）
+- 无剩余 P2 任务项
 - 已剔除历史完成项：
   - metrics-calculation.service 接入评估（已接入 scheduler.ts 每小时第 5 分钟触发 handleMetricsCollection）
   - 迁移文件时间戳规范化（012/018 时间戳冲突已修复，012 重命名为 030，018 → 031/032 等已落地）
+  - isSqlParam 对 class 实例放行的设计限制（已改用 prototype 链检查并测试覆盖，见 server/src/config/database.ts:24-45）
+  - reconcileCreditBalance 全表 JOIN credit_transactions（已改为 keyset pagination 分批扫描，每批 500 用户做局部聚合，见 server/src/jobs/scheduler.ts:400-454）
+  - scheduler.ts 定时任务全表扫描候选评估（11 处候选已逐一评估，所有任务都已用 status + 时间窗过滤或数据量小，无需 LIMIT 分批改造；handleEmergencyResourceCheck 表数据量受社区规模限制且已有 status 索引，不构成性能风险）
 5.4 P3 体验与质量补全
 - 全页面样式统一精修、移动端适配查漏补缺（持续滚动推进）
 - 核心模块单元测试补全（测试覆盖率已达 95.4%+，远超 70% 标准，按缺口滚动补全）
