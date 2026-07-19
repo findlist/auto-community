@@ -42,6 +42,9 @@ export default function SkillExchangeOrders() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<SkillOrder[]>([]);
   const [loading, setLoading] = useState(false);
+  // 持久错误状态：首次加载失败时展示 Empty error + 重新加载按钮，避免用户只能刷新整个页面
+  // 设计原因：原实现仅 toast.error 即时提示，弱网下用户错过 toast 后无重试入口；与 Admin 列表页 + SharedKitchen/SkillExchange 列表页统一交互模式
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("");
   // 确认弹窗状态：null 表示弹窗关闭，非 null 即待执行的操作
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
@@ -55,14 +58,19 @@ export default function SkillExchangeOrders() {
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
+    // 清空历史错误状态，避免上一次失败的 Empty error 残留干扰新一轮加载
+    setError(null);
     try {
       const res = await getOrders({ page: 1, pageSize: 20 });
       // 卸载后不再 setState，避免 React 警告与内存泄漏
       if (!mountedRef.current) return;
       setOrders(res.data.list);
-    } catch (error) {
+    } catch (err) {
       if (!mountedRef.current) return;
-      toast.error(getErrorMessage(error, "加载订单失败"));
+      console.error("加载失败:", err);
+      // 持久错误：首次加载失败时 Empty error 占位 + 重新加载按钮
+      // 设计原因：本页为单一加载场景（无 loadMore 分页），Empty error 已提供视觉反馈，不再 toast 避免双重提示
+      setError("加载订单列表失败，请稍后重试");
     } finally {
       // 仅挂载中才更新 loading，避免卸载后 finally 触发 setState
       if (mountedRef.current) setLoading(false);
@@ -287,7 +295,23 @@ export default function SkillExchangeOrders() {
         </div>
       )}
 
-      {!loading && filteredOrders.length === 0 && (
+      {/* 加载失败占位：首次加载失败时展示 Empty error 与重新加载按钮，避免用户被卡在错误页只能刷新整个页面 */}
+      {/* 设计原因：与 Admin 列表页 + SharedKitchen/SkillExchange 列表页 Empty variant="error" + 重试按钮模式统一；按钮色板使用 emerald-500/600，与本页订单操作按钮主色一致 */}
+      {!loading && error && orders.length === 0 && (
+        <Empty
+          variant="error"
+          action={
+            <button
+              onClick={loadOrders}
+              className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 transition-colors"
+            >
+              重新加载
+            </button>
+          }
+        />
+      )}
+
+      {!loading && !error && filteredOrders.length === 0 && (
         <Empty title="暂无订单" description="订单记录会在这里显示" />
       )}
 

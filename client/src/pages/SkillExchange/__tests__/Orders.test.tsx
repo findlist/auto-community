@@ -242,14 +242,28 @@ describe('SkillExchange 订单列表与状态操作', () => {
     expect(document.querySelector('.animate-spin')).toBeInTheDocument();
   });
 
-  it('加载失败显示 toast.error 错误提示', async () => {
-    // 模拟 API 抛出 ApiError
-    vi.mocked(getOrders).mockRejectedValue(new ApiError('加载订单失败', 500));
+  it('加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求', async () => {
+    // 首次加载失败触发 Empty error 占位（替代原 toast.error 即时提示）
+    // 设计原因：与 SharedKitchen/SkillExchange 列表页 Empty variant="error" + 重新加载按钮模式统一
+    vi.mocked(getOrders).mockRejectedValueOnce(new ApiError('加载订单失败', 500));
 
     renderOrdersPage();
 
+    // Empty error 默认 title="加载失败"
+    await screen.findByText('加载失败');
+    expect(screen.getByRole('button', { name: '重新加载' })).toBeInTheDocument();
+
+    // 重新 mock 第二次成功返回
+    vi.mocked(getOrders).mockResolvedValueOnce(buildPageResponse());
+
+    // 点击重新加载触发二次请求
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '重新加载' }));
+    });
+
+    // 第二次应成功渲染列表（用第一条订单标题作为标志）
     await waitFor(() => {
-      expect(toastErrorMock).toHaveBeenCalledWith('加载订单失败');
+      expect(screen.getByText('待接受订单-卖方视角')).toBeInTheDocument();
     });
   });
 
