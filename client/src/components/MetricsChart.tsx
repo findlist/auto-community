@@ -66,10 +66,11 @@ export default function MetricsChart({
         </div>
         <div className="flex gap-1 bg-[var(--color-neutral-100)] rounded-lg p-0.5">
           {TIME_RANGE_OPTIONS.map((option) => (
+            // 触控目标升级：py-1→py-1.5 使按钮高度达 32px（原 24px 不达移动端触控标准）
             <button
               key={option.value}
               onClick={() => handleTimeRangeChange(option.value)}
-              className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
                 timeRange === option.value
                   ? "bg-white text-[var(--color-text-primary)] shadow-sm font-medium"
                   : "text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]"

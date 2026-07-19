@@ -92,12 +92,13 @@ function CandidateCard({ candidate, type }: { candidate: MatchCandidate; type: "
         </div>
       </div>
       {candidate.post && (
+        // 触控目标升级：py-1→py-1.5 使按钮高度达 32px（原 24px 不达移动端触控标准）
         <Link
           to={`${path}/${candidate.post.id}`}
           onClick={() => {
             trackEvent('ai_recommendation_vs_keyword', 'click', { postId: candidate.post?.id }).catch(() => {});
           }}
-          className="flex-shrink-0 text-xs text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)] font-medium px-2 py-1"
+          className="flex-shrink-0 text-xs text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)] font-medium px-3 py-1.5"
           aria-label={`查看 ${candidate.post.title}`}
         >
           查看
