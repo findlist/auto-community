@@ -490,6 +490,10 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
 
     return () => {
       map.destroy();
+      // 显式置 null 避免悬挂引用：与 ResourceMap.tsx 保持一致清理模式，
+      // 防御 React 18 严格模式下双重执行 effect 时 mapRef 指向已销毁实例，
+      // 也为未来新增 marker click 等异步回调提前布防
+      mapRef.current = null;
     };
   }, [showMap, mapLoaded, resources, userLocation]);
 
