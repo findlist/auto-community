@@ -389,30 +389,70 @@ export async function handleAutoUnban(): Promise<void> {
 // 注意：credit_transactions.amount 字段已带符号（earn/unfreeze/refund 为正，spend/freeze 为负），
 // 因此直接 SUM(amount) 即为流水计算余额；audit.service.ts 未实现，暂用 logger.error 记录异常
 // 导出便于单元测试验证对账逻辑
-export async function reconcileCreditBalance(): Promise<number> {
-  const result = await query<{ id: string; credit_balance: number; computed_balance: number }>(
-    `SELECT u.id, u.credit_balance,
-            COALESCE(SUM(ct.amount), 0) AS computed_balance
-     FROM users u
-     LEFT JOIN credit_transactions ct ON ct.user_id = u.id
-     GROUP BY u.id, u.credit_balance
-     HAVING u.credit_balance != COALESCE(SUM(ct.amount), 0)`,
-  );
+//
+// 对账批量扫描大小：避免全表 JOIN 在 credit_transactions 持续增长后的性能退化
+// 设计原因：原实现单次 `users LEFT JOIN credit_transactions` 全表聚合，在大表场景会触发
+// 顺序扫描与大量临时元组，长时间占用 DB 连接并引发内存膨胀。改为按 users.id keyset 分批扫描，
+// 每批 500 用户做局部聚合，credit_transactions 上的 (user_id) 索引可加速局部 JOIN，
+// 既控制单次查询时长，也避免应用层一次性物化所有用户结果集
+const RECONCILE_BATCH_SIZE = 500;
 
-  // 逐条记录不一致详情，便于后续排查
-  for (const row of result.rows) {
-    const diff = Number(row.credit_balance) - Number(row.computed_balance);
+export async function reconcileCreditBalance(): Promise<number> {
+  let totalAnomaly = 0;
+  // keyset pagination 起点指针：null 表示首批无起点条件，后续批使用上一批最后一条记录的 id
+  let lastId: string | null = null;
+  let batchCount = 0;
+
+  // 无限循环 + 内部 break：扫描完成的判定条件为「本批返回行数 < 批量大小」
+  // 不使用 for 循环是因为批量大小由 SQL LIMIT 控制，循环次数在编译期未知
+  while (true) {
+    // 显式声明 Row 类型避免 TS7022：循环内 const 推断时与外层 lastId 形成间接依赖链
+    type ReconcileRow = { id: string; credit_balance: number; computed_balance: number };
+    const result: { rows: ReconcileRow[] } = await query<ReconcileRow>(
+      `SELECT u.id, u.credit_balance,
+              COALESCE(SUM(ct.amount), 0) AS computed_balance
+       FROM users u
+       LEFT JOIN credit_transactions ct ON ct.user_id = u.id
+       WHERE ($1::uuid IS NULL OR u.id > $1::uuid)
+       GROUP BY u.id, u.credit_balance
+       ORDER BY u.id ASC
+       LIMIT $2`,
+      [lastId, RECONCILE_BATCH_SIZE],
+    );
+
+    batchCount += 1;
+
+    // 应用层逐行判断是否 anomaly，避免使用 HAVING 过滤导致 LIMIT 计数失真
+    // （HAVING 过滤后 LIMIT 返回的是 anomaly 数而非用户数，无法据此判断是否扫描完成）
+    for (const row of result.rows) {
+      const creditBalance = Number(row.credit_balance);
+      const computedBalance = Number(row.computed_balance);
+      if (creditBalance !== computedBalance) {
+        const diff = creditBalance - computedBalance;
+        logger.error(
+          { userId: row.id, creditBalance, computedBalance, diff },
+          '[定时任务] 积分对账异常',
+        );
+        totalAnomaly += 1;
+      }
+      // 无论是否 anomaly 都更新 lastId，确保下一批从该 id 之后继续扫描
+      lastId = row.id;
+    }
+
+    // 返回少于 LIMIT 说明已扫描到 users 表末尾，终止循环
+    if (result.rows.length < RECONCILE_BATCH_SIZE) {
+      break;
+    }
+  }
+
+  if (totalAnomaly > 0) {
     logger.error(
-      { userId: row.id, creditBalance: row.credit_balance, computedBalance: row.computed_balance, diff },
-      '[定时任务] 积分对账异常',
+      { count: totalAnomaly, batches: batchCount },
+      '[定时任务] 积分对账完成，发现用户余额不一致',
     );
   }
 
-  if (result.rows.length > 0) {
-    logger.error({ count: result.rows.length }, '[定时任务] 积分对账完成，发现用户余额不一致');
-  }
-
-  return result.rows.length;
+  return totalAnomaly;
 }
 
 // 指标采集：调用 metrics-calculation.service 计算 5 个核心指标并写入 metrics 表

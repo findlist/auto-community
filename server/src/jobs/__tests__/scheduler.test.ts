@@ -514,6 +514,7 @@ describe('scheduler - handleAutoUnban', () => {
 
 describe('scheduler - reconcileCreditBalance', () => {
   it('无不一致时返回 0 且不记录 error', async () => {
+    // 单批扫描即完成（返回行数 < RECONCILE_BATCH_SIZE），无 anomaly
     mockQuery.mockResolvedValueOnce({ rows: [] });
 
     const result = await reconcileCreditBalance();
@@ -522,12 +523,13 @@ describe('scheduler - reconcileCreditBalance', () => {
     expect(mockLoggerError).not.toHaveBeenCalled();
   });
 
-  it('有不一致时逐条记录 error 并返回数量', async () => {
+  it('单批内不一致时逐条记录 error 并返回数量', async () => {
     // pg DECIMAL/INTEGER 解析为 string，验证 Number() 转换逻辑
+    // 两行均不一致，单批扫描完成（行数 < 批量上限）
     mockQuery.mockResolvedValueOnce({
       rows: [
         { id: 'u1', credit_balance: '100', computed_balance: '80' },
-        { id: 'u2', credit_balance: '50', computed_balance: '50' }, // 一致但被 HAVING 选中说明查询逻辑
+        { id: 'u2', credit_balance: '50', computed_balance: '30' },
       ],
     });
 
@@ -539,9 +541,58 @@ describe('scheduler - reconcileCreditBalance', () => {
       expect.objectContaining({ userId: 'u1', diff: 20 }),
       expect.stringContaining('积分对账异常'),
     );
-    // 验证汇总日志
+    // 验证汇总日志携带分批计数
     expect(mockLoggerError).toHaveBeenCalledWith(
-      expect.objectContaining({ count: 2 }),
+      expect.objectContaining({ count: 2, batches: 1 }),
+      expect.stringContaining('余额不一致'),
+    );
+  });
+
+  it('一致用户不记录 error 但仍参与分页推进', async () => {
+    // 混合一致与不一致用户，验证应用层判断正确跳过一致行
+    mockQuery.mockResolvedValueOnce({
+      rows: [
+        { id: 'u1', credit_balance: '100', computed_balance: '100' }, // 一致
+        { id: 'u2', credit_balance: '50', computed_balance: '30' },   // 不一致
+      ],
+    });
+
+    const result = await reconcileCreditBalance();
+
+    expect(result).toBe(1);
+    expect(mockLoggerError).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'u2', diff: 20 }),
+      expect.stringContaining('积分对账异常'),
+    );
+  });
+
+  it('多批扫描时累计 anomaly 并以最后一批少于 LIMIT 终止', async () => {
+    // 模拟两批扫描：第一批满 500 行（需继续），第二批不足 500 行（终止）
+    // 第一批构造 1 条不一致 anomaly
+    const firstBatchRows = Array.from({ length: 499 }, (_, i) => ({
+      id: `u-${i}`,
+      credit_balance: '100',
+      computed_balance: '100',
+    }));
+    firstBatchRows.push({ id: 'u-499', credit_balance: '100', computed_balance: '80' });
+    mockQuery.mockResolvedValueOnce({ rows: firstBatchRows });
+    // 第二批 1 条不一致，且行数 < LIMIT 触发终止
+    mockQuery.mockResolvedValueOnce({
+      rows: [{ id: 'u-500', credit_balance: '50', computed_balance: '20' }],
+    });
+
+    const result = await reconcileCreditBalance();
+
+    expect(result).toBe(2);
+    // 验证 lastId 推进：第二批查询参数第一个值应为上一批最后一条记录的 id
+    expect(mockQuery).toHaveBeenNthCalledWith(
+      2,
+      expect.any(String),
+      ['u-499', 500],
+    );
+    // 验证汇总日志携带批次计数
+    expect(mockLoggerError).toHaveBeenCalledWith(
+      expect.objectContaining({ count: 2, batches: 2 }),
       expect.stringContaining('余额不一致'),
     );
   });
