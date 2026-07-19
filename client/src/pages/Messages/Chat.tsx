@@ -311,6 +311,7 @@ export default function Chat() {
             onChange={(e) => setInputContent(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="输入消息..."
+            aria-label="输入消息"
             className="flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
           <button

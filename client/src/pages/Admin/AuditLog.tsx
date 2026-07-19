@@ -123,8 +123,9 @@ export default function AuditLogPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-neutral-500 mb-1">开始日期</label>
+            <label htmlFor="audit-start-date" className="block text-xs text-neutral-500 mb-1">开始日期</label>
             <input
+              id="audit-start-date"
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
@@ -132,8 +133,9 @@ export default function AuditLogPage() {
             />
           </div>
           <div>
-            <label className="block text-xs text-neutral-500 mb-1">结束日期</label>
+            <label htmlFor="audit-end-date" className="block text-xs text-neutral-500 mb-1">结束日期</label>
             <input
+              id="audit-end-date"
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}

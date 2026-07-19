@@ -191,6 +191,7 @@ export default function UserManagement() {
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           placeholder="按手机号/昵称搜索"
+          aria-label="按手机号或昵称搜索用户"
           className="flex-1 px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 transition-all"
         />
         <button

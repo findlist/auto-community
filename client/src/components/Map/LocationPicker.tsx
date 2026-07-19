@@ -199,6 +199,7 @@ export default function LocationPicker({
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="搜索地址..."
+              aria-label="搜索地址"
               className="flex-1 text-sm focus:outline-none"
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
