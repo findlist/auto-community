@@ -13,6 +13,9 @@ export default function Orders() {
   const [activeTab, setActiveTab] = useState<"buyer" | "seller">("buyer");
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
   const [loading, setLoading] = useState(false);
+  // 持久错误状态：首次加载失败时展示 Empty error + 重新加载按钮，避免用户只能刷新整个页面
+  // 设计原因：原实现仅 toast.error 即时提示，弱网下用户错过 toast 后无重试入口；与 Admin 列表页统一交互模式
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -38,6 +41,8 @@ export default function Orders() {
   const loadOrders = useCallback(async (reset = false) => {
     if (loading) return;
     setLoading(true);
+    // reset 时清空历史错误状态，避免上一次失败的 Empty error 残留干扰新一轮加载
+    if (reset) setError(null);
     // reset 场景记录请求标识，用于 await 后竞态守卫；加载更多场景沿用当前标识
     const requestKey = `${activeTab}|${statusFilter}`;
     if (reset) {
@@ -64,7 +69,10 @@ export default function Orders() {
     } catch (error) {
       if (reset && activeRequestKeyRef.current !== requestKey) return;
       console.error("加载失败:", error);
-      toast.error("加载订单列表失败，请稍后重试");
+      // 持久错误：首次加载失败时 Empty error 占位 + 重新加载按钮
+      setError("加载订单列表失败，请稍后重试");
+      // loadMore 失败时列表已有数据，Empty error 不展示，需 toast 提供即时反馈
+      if (!reset) toast.error("加载更多失败，请稍后重试");
     } finally {
       // 仅当当前请求标识仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
       if (activeRequestKeyRef.current === requestKey || !reset) {
@@ -280,6 +288,23 @@ export default function Orders() {
         </div>
       )}
 
+      {/* 加载失败占位：首次加载失败时展示 Empty error 与重新加载按钮，避免用户被卡在错误页只能刷新整个页面 */}
+      {/* 设计原因：与 Admin 列表页 Empty variant="error" + 重试按钮模式统一；
+          按钮色板使用 emerald-500/600，与本页订单操作按钮（确认/完成）色板一致 */}
+      {!loading && error && orders.length === 0 && (
+        <Empty
+          variant="error"
+          action={
+            <button
+              onClick={() => loadOrders(true)}
+              className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 transition-colors"
+            >
+              重新加载
+            </button>
+          }
+        />
+      )}
+
       {/* 加载更多 */}
       {hasMore && !loading && orders.length > 0 && (
         <button
@@ -291,7 +316,7 @@ export default function Orders() {
       )}
 
       {/* 空状态 */}
-      {!loading && orders.length === 0 && (
+      {!loading && !error && orders.length === 0 && (
         <Empty title="暂无订单" description="订单记录会在这里显示" />
       )}
 

@@ -489,4 +489,28 @@ describe('SharedKitchen 订单列表与状态操作', () => {
     });
     expect(vi.mocked(confirmFoodOrder).mock.calls.length).toBe(1);
   });
+
+  it('首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求', async () => {
+    // 首次加载失败触发 Empty error 占位
+    vi.mocked(getFoodOrders).mockRejectedValueOnce(new ApiError('网络错误', 500));
+
+    renderOrdersPage();
+
+    // Empty error 默认 title="加载失败"
+    await screen.findByText('加载失败');
+    expect(screen.getByRole('button', { name: '重新加载' })).toBeInTheDocument();
+
+    // 重新 mock 第二次成功返回
+    vi.mocked(getFoodOrders).mockResolvedValueOnce(buildPageResponse(mockOrders));
+
+    // 点击重新加载触发二次请求
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '重新加载' }));
+    });
+
+    // 第二次应成功渲染列表
+    await waitFor(() => {
+      expect(screen.getByText('待确认订单')).toBeInTheDocument();
+    });
+  });
 });
