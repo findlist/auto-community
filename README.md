@@ -287,7 +287,7 @@ cd client && npm ci && npm run build                     # 前端 dist/ 交由 N
 - 项目根路径：e:\work\auto-community（Monorepo 架构，所有操作仅限该目录）
 - 进度记忆路径：e:\work\auto-community\memory\，读取最近日期目录的 topics.md，写入当天日期目录
 - 单次调度总时长上限：4 小时；
-- 当前基线进度：Phase 1 与 Phase 2 已全部完成（P0/P1 共 10 项任务落地），当前处于 Phase 3 技术债清理阶段；后端测试覆盖率 95.45%；所有已完成功能不得重复开发
+- 当前基线进度：Phase 1 与 Phase 2 已全部完成（P0/P1 共 10 项任务落地），当前处于 Phase 3 技术债清理阶段；后端测试覆盖率 95.4%+，测试用例 1728+（截至 2026-07-20）；所有已完成功能不得重复开发
 - 全局优先级强制排序：项目健康故障修复 > Phase3 技术债清理 > 样式精修 > 测试补全 > 生产就绪验收
 - 阶段锁定规则：Phase 1/2 均已验收通过，当前锁定在 Phase 3，禁止启动规范任务池外的新功能开发
 
@@ -310,7 +310,7 @@ cd client && npm ci && npm run build                     # 前端 dist/ 交由 N
 1. 通读规范全文，对齐所有规则与边界
 2. 读取 docs/development-plan.md 对齐整体规划，读取历史 topics.md 承接上轮进度与遗留问题
 3. 执行前后端健康校验，优先排查修复现有问题
-4. 按优先级推进 Phase3 技术债清理：优先后端 service 层 any 类型收紧、前端 Record<string, any> 收紧、PostgreSQL 慢查询索引优化；最后做全页面移动端适配查漏补缺
+4. 按优先级推进 Phase3 技术债清理：当前重点为后端 SQL 安全防御（默认时间窗 / LIMIT 约束 / 用户可控参数 clamp）、后端 XSS 防御纵深清洗（service 入口 sanitizeXss/sanitizeObject）、前端 setState 泄漏防御（mountedRef / activeRequestKeyRef）、前端重复提交三重防御守卫、catch 块日志兜底留痕；同步滚动推进全页面移动端适配查漏补缺与样式精修
 5. 每完成 1 个最小迭代单元，强制写入一次进度文件，避免丢失
 6. 触发终止条件后，按规范模板输出精简工作摘要
 

@@ -1,6 +1,6 @@
-邻里圈（linli-circle）项目自动迭代Agent定时任务规范（v1.4）
-版本：v1.4（周评估同步版）
-更新日期：2026-07-13
+邻里圈（linli-circle）项目自动迭代Agent定时任务规范（v1.4.1）
+版本：v1.4.1（周评估同步版）
+更新日期：2026-07-20
 适用场景：TRAE Schedule 定时调度、长周期自主迭代、生产导向闭环开发
 优先级法则：定时任务指令 > 本规范 > 开发规划文档（development-plan.md）
 核心目标：以项目生产上线为唯一终极目标，自主完成自检、规划、开发、验收、复盘、进度沉淀全闭环，小步快跑迭代，逐步补齐所有功能、修复质量问题、完善工程化体系，直至满足生产上线标准
@@ -24,7 +24,7 @@
   - 后端：Express + TypeScript
   - 数据层：PostgreSQL + Redis
 - 规划基线文件：docs/development-plan.md（仅作初始任务参考，实际进度以迭代沉淀为准）
-- 当前项目基线：Phase 1 与 Phase 2 已全部验收通过（P0/P1 共 10 项任务落地），当前处于 Phase 3 技术债清理阶段；后端测试覆盖率 95.4%+，测试用例 1536+，server/src 全目录 SQL 精确列名改造（SELECT */RETURNING */JOIN SELECT t.*）已全面收尾
+- 当前项目基线：Phase 1 与 Phase 2 已全部验收通过（P0/P1 共 10 项任务落地），当前处于 Phase 3 技术债清理阶段；后端测试覆盖率 95.4%+，测试用例 1728+（截至 2026-07-20），server/src 全目录 SQL 精确列名改造（SELECT */RETURNING */JOIN SELECT t.*）已全面收尾
 2.2 进度记忆规范（全局唯一）
 - 记忆存储根目录：e:\work\auto-community\memory\
 - 读取规则：每次启动自动读取目录内最近日期文件夹的 topics.md，完整承接上轮进度、遗留问题、待办计划
@@ -203,3 +203,6 @@ v1.3
 v1.4
 2026-07-13
 周评估同步版：基线进度对齐 Phase 3（Phase1/2 已完成）、阶段锁定规则更新为 Phase 3、任务池剔除已完成 P0/P1 并补充 Phase 3 当前重点（运维轮换密钥/metrics-calculation 接入评估/迁移时间戳规范化）、Git 规范统一为「最小修改单元通过后必须 add+commit+push，禁止破坏性命令」
+v1.4.1
+2026-07-20
+周评估同步：基线测试用例数从 1536+ 更新为 1728+（截至 2026-07-20），5.3 P2 任务池标注「无剩余 P2 任务项」（剔除已完成项 metrics-calculation 接入、迁移时间戳规范化、isSqlParam prototype 链检查、reconcileCreditBalance 分批扫描、scheduler.ts 全表扫描候选评估），5.2 P1 标注 ResourceMap setTimeout onclick 清理问题已通过 useSafeTimeout + map.destroy() + 显式置 null ref 完整解决

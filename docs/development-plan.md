@@ -1,13 +1,13 @@
-邻里圈（linli-circle）开发规划文档（同步规范 v1.4）
-版本：v1.4（周评估同步版）
-更新日期：2026-07-13
-适配规范：auto-iteration-spec v1.4
+邻里圈（linli-circle）开发规划文档（同步规范 v1.4.2）
+版本：v1.4.2（周评估同步版）
+更新日期：2026-07-20
+适配规范：auto-iteration-spec v1.4.1
 优先级说明：本规划为任务基线参考，实际迭代节奏、任务排序以自动迭代规范为准
 核心目标：Phase1/2 已全部完成 → Phase3 技术债清理与生产就绪验收 → 达到生产上线标准
 
 ---
 一、项目现状总览（最新真实进度）
-当前项目整体完成度 96%+，Phase 1（应急资源地图页、CD 流水线）与 Phase 2（8 项 P1 核心功能）已全部验收通过，当前处于 Phase 3 技术债清理与生产就绪验收阶段。后端测试覆盖率 95.4%+（1536+ 用例），前端构建零错误零警告，server/src 全目录 SQL 精确列名改造（SELECT */RETURNING */JOIN SELECT t.*）已全面收尾，多轮安全加固（P0 漏洞修复、事务一致性、资源泄漏防御）已完成。
+当前项目整体完成度 96%+，Phase 1（应急资源地图页、CD 流水线）与 Phase 2（8 项 P1 核心功能）已全部验收通过，当前处于 Phase 3 技术债清理与生产就绪验收阶段。后端测试覆盖率 95.4%+（1728+ 用例，截至 2026-07-20），前端构建零错误零警告，server/src 全目录 SQL 精确列名改造（SELECT */RETURNING */JOIN SELECT t.*）已全面收尾，多轮安全加固（P0 漏洞修复、事务一致性、资源泄漏防御）已完成。
 模块
 完善度
 已完成核心能力
@@ -117,7 +117,7 @@ P1
 高德地图 Key 配置
 P1
 待运维
-配置后处理 ResourceMap setTimeout onclick 清理问题
+配置后即可启用完整地图能力（清理逻辑已通过 useSafeTimeout + map.destroy() + 显式置 null ref 完整解决，见规范 5.2 P1）
 metrics-calculation.service 接入评估
 P2
 已完成 ✅
@@ -165,9 +165,11 @@ Phase 3：质量优化与生产就绪（当前阶段）
 1. 运维侧紧急处理：轮换 DB/Redis 密码与 JWT 密钥，清理 git 历史中的泄露凭据
 2. 生产就绪人工复查：全页面移动端适配、交互体验、状态提示完整性
 3. 运维侧确认：CD 流水线 GitHub Secrets 与 GHCR 登录态配置
-4. 高德地图 Key 配置后：处理 ResourceMap setTimeout onclick 清理问题
+4. 高德地图 Key 配置后：即可启用完整地图能力（setTimeout onclick 清理问题已通过 useSafeTimeout + map.destroy() + 显式置 null ref 完整解决）
 5. 全页面样式精修、移动端适配统一（持续滚动）
-6. 滚动补全核心模块单元测试（覆盖率已达 95.4%+）
+6. 滚动补全核心模块单元测试（覆盖率已达 95.4%+，测试用例 1728+）
+7. 后端 P2 残留低风险 XSS 清洗候选（admin setSetting description / group-order cancel reason / ab-test recordEvent metadata）
+8. 前端 P2 setState 泄漏低概率场景（Auth 4 件套 / Create 表单页 navigate 跳转后 setState）
 
 ---
 四、技术债务治理计划（同步规范）
@@ -227,3 +229,6 @@ v1.4
 v1.4.1
 2026-07-20
 Phase3 表格同步对齐：metrics-calculation 接入与迁移文件时间戳规范化均已完成（见规范 5.3 P2 已剔除历史完成项），下一阶段重点移除已落地项并补充样式精修与测试补全滚动项
+v1.4.2
+2026-07-20
+周评估同步：基线测试用例数从 1536+ 更新为 1728+（截至 2026-07-20）；Phase3 表格「高德地图 Key 配置」行同步规范 5.2 P1 标注 ResourceMap setTimeout onclick 清理问题已完整解决；下一阶段重点补充后端 P2 残留低风险 XSS 候选与前端 P2 setState 泄漏低概率场景滚动项
