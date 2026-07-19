@@ -170,6 +170,28 @@ describe('UserManagement 封禁/解封弹窗', () => {
     });
   });
 
+  it('加载失败显示"重新加载"重试按钮，点击后重新触发请求', async () => {
+    // 首次失败触发 Empty error + 重试按钮
+    vi.mocked(getUsers).mockRejectedValueOnce(new ApiError('网络错误', 500));
+    // 重试成功返回数据
+    vi.mocked(getUsers).mockResolvedValueOnce(buildPageResponse());
+
+    renderUserManagement();
+
+    const retryBtn = await screen.findByRole('button', { name: '重新加载' });
+    expect(retryBtn).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(retryBtn);
+    });
+
+    // 重试后请求计数应增加，且最终渲染列表数据
+    await waitFor(() => {
+      expect(screen.getAllByText('张三').length).toBeGreaterThan(0);
+    });
+    expect(vi.mocked(getUsers).mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('空列表显示"暂无数据"', async () => {
     vi.mocked(getUsers).mockResolvedValue(buildPageResponse([]));
 

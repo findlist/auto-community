@@ -242,6 +242,21 @@ export default function UserManagement() {
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
         </div>
+      ) : error ? (
+        // 加载失败时展示错误空态与重试入口，避免用户被卡在错误页只能刷新整个页面
+        // 设计原因：上方 banner 已显示具体错误原因，此处 Empty 仅提供视觉占位与重试动作，
+        // 不传 description 避免与 banner 文本重复导致 getByText 多元素匹配错误
+        <Empty
+          variant="error"
+          action={
+            <button
+              onClick={() => loadUsers(page, search)}
+              className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 transition-colors"
+            >
+              重新加载
+            </button>
+          }
+        />
       ) : users.length === 0 ? (
         <Empty title="暂无数据" description="用户记录会在这里显示" />
       ) : (

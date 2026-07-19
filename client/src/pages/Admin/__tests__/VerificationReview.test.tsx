@@ -148,8 +148,44 @@ describe('VerificationReview 实名认证审核', () => {
     });
     await waitFor(() => {
       // 非 ApiError 时走兜底分支，显示"加载失败"
-      expect(screen.getByText('加载失败')).toBeInTheDocument();
+      // 设计原因：banner 与 Empty error 默认 title 均显示"加载失败"，使用 getAllByText 避免多元素匹配错误
+      expect(screen.getAllByText('加载失败').length).toBeGreaterThan(0);
     });
+  });
+
+  it('加载失败显示"重新加载"重试按钮，点击后重新触发请求', async () => {
+    // 首次失败触发 Empty error + 重试按钮
+    vi.mocked(getVerificationRequests).mockRejectedValueOnce(new Error('网络错误'));
+    // 重试成功返回数据
+    vi.mocked(getVerificationRequests).mockResolvedValueOnce({
+      code: 0,
+      message: 'ok',
+      data: {
+        list: mockRequests,
+        total: mockRequests.length,
+        page: 1,
+        pageSize: 20,
+        totalPages: 1,
+        hasNext: false,
+      },
+    });
+
+    await act(async () => {
+      renderVerificationReview();
+    });
+
+    const retryBtn = await screen.findByRole('button', { name: '重新加载' });
+    expect(retryBtn).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(retryBtn);
+    });
+
+    // 重试后请求计数应增加，且最终渲染列表数据
+    await waitFor(() => {
+      expect(screen.getAllByText('张三').length).toBeGreaterThan(0);
+    });
+    expect(vi.mocked(getVerificationRequests).mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
   it('空列表显示"暂无认证申请"', async () => {

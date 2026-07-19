@@ -342,6 +342,28 @@ describe('OrderManagement 强制取消订单弹窗', () => {
     });
   });
 
+  it('加载失败显示"重新加载"重试按钮，点击后重新触发请求', async () => {
+    // 首次失败触发 Empty error + 重试按钮
+    vi.mocked(getOrders).mockRejectedValueOnce(new ApiError('网络错误', 500));
+    // 重试成功返回数据
+    vi.mocked(getOrders).mockResolvedValueOnce(buildPageResponse());
+
+    renderOrderManagement();
+
+    const retryBtn = await screen.findByRole('button', { name: '重新加载' });
+    expect(retryBtn).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(retryBtn);
+    });
+
+    // 重试后请求计数应增加，且最终渲染列表数据
+    await waitFor(() => {
+      expect(screen.getAllByText('买家张三').length).toBeGreaterThan(0);
+    });
+    expect(vi.mocked(getOrders).mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('切换订单类型重新加载列表', async () => {
     renderOrderManagement();
     await waitForListLoaded();
