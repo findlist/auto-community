@@ -453,6 +453,24 @@ describe('admin.service - getReports 举报列表', () => {
     expect(mockQuery.mock.calls[0][1]).toEqual(['pending']);
   });
 
+  // 默认 90 天时间窗：reports 表只增不减，无时间窗会持续触发全表扫描 + COUNT 全表。
+  // 验证 status 不传时 SQL 仍附加 INTERVAL '90 days' 条件（防退化）。
+  it('默认附加 90 天时间窗（status 缺失时仍带时间窗避免全表扫描）', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as never)
+      .mockResolvedValueOnce({ rows: [] } as never);
+
+    await adminService.getReports(1, 20);
+
+    const countSql = mockQuery.mock.calls[0][0] as string;
+    expect(countSql).toContain("r.created_at >= NOW() - INTERVAL '90 days'");
+    // list 查询 SQL 也应包含默认时间窗
+    const listSql = mockQuery.mock.calls[1][0] as string;
+    expect(listSql).toContain("r.created_at >= NOW() - INTERVAL '90 days'");
+    // 时间窗用 SQL 字面量不加参数化，COUNT 调用参数应仍为空
+    expect(mockQuery.mock.calls[0][1]).toEqual([]);
+  });
+
   it('空结果返回空 list', async () => {
     mockQuery
       .mockResolvedValueOnce({ rows: [{ count: '0' }] } as never)

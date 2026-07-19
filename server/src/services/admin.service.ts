@@ -983,12 +983,15 @@ async function createReport(
 
 // 分页查询举报列表
 async function getReports(page: number, pageSize: number, status?: ReportStatus) {
-  const conditions: string[] = ['1=1'];
+  // conditions 默认附加 90 天时间窗：
+  // reports 表只增不减，无时间窗会持续触发全表扫描 + COUNT 全表。
+  // 管理员后台默认查询每刷新一次都打满 DB。INTERVAL 用 SQL 字面量不加参数化，参数列表稳定。
+  const conditions: string[] = ["r.created_at >= NOW() - INTERVAL '90 days'"];
   const params: SqlParam[] = [];
   let paramIndex = 1;
 
   if (status) {
-    conditions.push(`status = $${paramIndex++}`);
+    conditions.push(`r.status = $${paramIndex++}`);
     params.push(status);
   }
 
@@ -996,7 +999,8 @@ async function getReports(page: number, pageSize: number, status?: ReportStatus)
   const offset = (page - 1) * pageSize;
 
   const [countResult, listResult] = await Promise.all([
-    query(`SELECT COUNT(*) FROM reports WHERE ${whereClause}`, params),
+    // COUNT 查询用 reports r 别名与 list SQL 保持一致，避免 conditions 引用 r.created_at 时报错
+    query(`SELECT COUNT(*) FROM reports r WHERE ${whereClause}`, params),
     query(
       `SELECT r.id, r.reporter_id, r.target_type, r.target_id, r.reason, r.status,
               r.handler_id, r.handle_note, r.created_at, r.handled_at,
