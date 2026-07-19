@@ -162,7 +162,7 @@ export default function Create() {
                 key={cat}
                 onClick={() => setCategory(cat)}
                 // 分类按钮激活态使用厨房模块橙浅色变体，与列表项悬停 group-hover:text-orange-700 同色系
-                className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
                   category === cat
                     ? "bg-orange-100 text-orange-700"
                     : "bg-neutral-100 text-neutral-600 hover:bg-orange-50 hover:text-orange-700"
@@ -266,7 +266,7 @@ export default function Create() {
                           : [...prev, allergen]
                       );
                     }}
-                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
                       selectedAllergens.includes(allergen)
                         ? "bg-orange-100 text-orange-700"
                         : "bg-neutral-100 text-neutral-600 hover:bg-orange-50 hover:text-orange-700"
