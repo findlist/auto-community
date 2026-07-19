@@ -232,6 +232,10 @@ export default function ResourceMap() {
     return () => {
       map.destroy();
       markers.clear();
+      // 显式置 null 避免悬挂引用：map.destroy() 后 mapRef/infoWindowRef 仍指向已销毁实例，
+      // 若异步回调（如 marker click 事件）在卸载后触发 showInfoWindow，会通过守卫检查但操作已销毁对象
+      mapRef.current = null;
+      infoWindowRef.current = null;
     };
   }, [mapLoaded, userLocation]);
 
