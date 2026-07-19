@@ -486,9 +486,12 @@ async function respondToRequest(userId: string, requestId: string, data: { messa
   return response;
 }
 
-// 注意：本函数的并发安全（行锁 + 状态校验）尚未有自动化测试覆盖。
-// 项目当前未配置测试框架（jest/mocha/vitest），待引入后再补充
-// emergency.concurrent.test.ts，模拟并发完成同一响应以验证不会重复发积分。
+// 并发安全：completed 路径在事务内对 emergency_requests 行加 FOR UPDATE 行锁 + 状态校验，
+// 防止并发完成同一响应导致重复发放积分（arrived 路径无积分发放，无需事务包裹）。
+// 单线程路径已由 emergency.service.test.ts 覆盖，真实并发场景依赖数据库行锁保证
+// （与 admin.service forceCancelOrder 同模式）。如需新增 emergency.concurrent.test.ts
+// 验证并发不变式，参考 time-bank.concurrent.test.ts 模式，但需在 vitest.config.ts
+// exclude 列表中（依赖真实 DB 的并发测试单独运行）
 async function updateResponseStatus(
   userId: string,
   responseId: string,

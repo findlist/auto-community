@@ -387,7 +387,8 @@ export async function handleAutoUnban(): Promise<void> {
 // 积分对账：核对 users.credit_balance 与 credit_transactions 流水累计是否一致
 // 仅读不写，发现不一致时记录 error 日志，不自动修复 balance（避免误改）
 // 注意：credit_transactions.amount 字段已带符号（earn/unfreeze/refund 为正，spend/freeze 为负），
-// 因此直接 SUM(amount) 即为流水计算余额；audit.service.ts 未实现，暂用 logger.error 记录异常
+// 因此直接 SUM(amount) 即为流水计算余额。对账异常属于数据完整性事件而非用户操作审计事件，
+// 用 logger.error 落日志即可触发运维告警，不接入 audit.service（避免污染用户操作审计流）
 // 导出便于单元测试验证对账逻辑
 //
 // 对账批量扫描大小：避免全表 JOIN 在 credit_transactions 持续增长后的性能退化
