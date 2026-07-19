@@ -151,6 +151,11 @@ async function getAuditLogs(
   if (filters.startDate) {
     conditions.push(`a.created_at >= $${paramIndex++}`);
     params.push(filters.startDate);
+  } else {
+    // startDate 缺失时默认回退到 90 天前：
+    // audit_logs 表只增不减，3 个月积累数十万行很常见，无时间窗会持续触发全表扫描 + COUNT 全表，
+    // 管理员后台默认查询每刷新一次都打满 DB。INTERVAL 用 SQL 字面量不加参数化，参数列表不变。
+    conditions.push(`a.created_at >= NOW() - INTERVAL '90 days'`);
   }
   if (filters.endDate) {
     conditions.push(`a.created_at <= $${paramIndex++}`);

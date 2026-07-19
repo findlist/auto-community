@@ -190,6 +190,36 @@ describe('audit.service - getAuditLogs', () => {
     expect(countSql).toContain('a.created_at <= $2');
   });
 
+  // 默认 90 天时间窗：startDate 缺失时强制附加 INTERVAL '90 days' 条件，
+  // 避免 audit_logs 全表扫描。endDate 不附加默认值（NOW 兜底无意义且会增加 planner 负担）。
+  it('startDate 缺失时默认附加 90 天时间窗（避免全表扫描）', async () => {
+    mockedQuery
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    await auditService.getAuditLogs({});
+
+    const countSql = mockedQuery.mock.calls[0][0] as string;
+    expect(countSql).toContain("a.created_at >= NOW() - INTERVAL '90 days'");
+    // list 查询 SQL 也应包含默认时间窗
+    const listSql = mockedQuery.mock.calls[1][0] as string;
+    expect(listSql).toContain("a.created_at >= NOW() - INTERVAL '90 days'");
+    // INTERVAL 用 SQL 字面量，参数列表应仍为空（COUNT 调用无 $N 参数）
+    expect(mockedQuery.mock.calls[0][1]).toEqual([]);
+  });
+
+  it('startDate 传入时不附加默认时间窗（尊重用户显式输入）', async () => {
+    mockedQuery
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult)
+      .mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    await auditService.getAuditLogs({ startDate: '2025-01-01' });
+
+    const countSql = mockedQuery.mock.calls[0][0] as string;
+    expect(countSql).not.toContain("INTERVAL '90 days'");
+    expect(countSql).toContain('a.created_at >= $1');
+  });
+
   it('第二页分页参数：offset = (page-1) * pageSize', async () => {
     // total=50, pageSize=20, page=2 → totalPages=3, hasNext=true
     mockedQuery
