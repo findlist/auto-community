@@ -597,4 +597,111 @@ describe('DeleteAccount 卸载防御', () => {
 
     consoleErrorSpy.mockRestore();
   });
+
+  it('卸载后 handleSubmit resolve 不触发 setState（mountedRef 防御）', async () => {
+    // 场景：用户点击"确认注销"后网络请求进行中，用户切页导致组件卸载
+    // 请求 resolve 后 handleSubmit 内 setStatus/setReason/setSubmitting 应被 mountedRef 守卫阻断
+    let resolveSubmit!: (value: { code: number; message: string; data: { id: string; status: string; message: string } }) => void;
+    vi.mocked(submitDeletionRequest).mockReturnValue(
+      new Promise((resolve) => {
+        resolveSubmit = resolve;
+      }),
+    );
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = renderDeleteAccount();
+
+    // 等待表单渲染
+    await screen.findByText('账号注销');
+
+    // 打开确认弹窗
+    fireEvent.click(screen.getByRole('button', { name: /提交注销申请/ }));
+    await waitFor(() => {
+      expect(screen.getByText('确认注销账号？')).toBeInTheDocument();
+    });
+
+    // 点击"确认注销"触发 handleSubmit：进入 await submitDeletionRequest
+    fireEvent.click(screen.getByRole('button', { name: '确认注销' }));
+    await waitFor(() => {
+      expect(submitDeletionRequest).toHaveBeenCalled();
+    });
+
+    // 卸载组件：触发 useEffect cleanup，mountedRef.current 置为 false
+    unmount();
+
+    // 此时再 resolve 慢请求，handleSubmit 内 try/catch/finally 全部 setState 应被守卫阻断
+    await act(async () => {
+      resolveSubmit({
+        code: 0,
+        message: 'ok',
+        data: { id: 'del-new', status: 'pending', message: '已提交' },
+      });
+      // 让微任务队列推进，使 await 后的代码执行（包括 finally 块）
+      await Promise.resolve();
+    });
+
+    // 不变式：handleSubmit 卸载后不触发 setState
+    const reactUnmountWarnings = consoleErrorSpy.mock.calls.filter(
+      (call) =>
+        typeof call[0] === 'string' &&
+        call[0].includes('unmounted'),
+    );
+    expect(reactUnmountWarnings).toHaveLength(0);
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('卸载后 handleCancel resolve 不触发 setState（mountedRef 防御）', async () => {
+    // 场景：pending 状态下用户点击"取消注销申请"后网络请求进行中，用户切页导致组件卸载
+    // 请求 resolve 后 handleCancel 内 setStatus/setCanceling 应被 mountedRef 守卫阻断
+    let resolveCancel!: (value: { code: number; message: string; data: null }) => void;
+    vi.mocked(getDeletionRequestStatus).mockResolvedValue({
+      code: 0,
+      message: 'ok',
+      data: mockPendingStatus,
+    });
+    vi.mocked(cancelDeletionRequest).mockReturnValue(
+      new Promise((resolve) => {
+        resolveCancel = resolve;
+      }),
+    );
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = renderDeleteAccount();
+
+    // 等待 pending 状态渲染
+    await screen.findByText('注销申请审核中');
+
+    // 点击"取消注销申请"触发 handleCancel：进入 await cancelDeletionRequest
+    fireEvent.click(screen.getByRole('button', { name: /取消注销申请/ }));
+    await waitFor(() => {
+      expect(cancelDeletionRequest).toHaveBeenCalled();
+    });
+
+    // 卸载组件：触发 useEffect cleanup，mountedRef.current 置为 false
+    unmount();
+
+    // 此时再 resolve 慢请求，handleCancel 内 try/catch/finally 全部 setState 应被守卫阻断
+    await act(async () => {
+      resolveCancel({
+        code: 0,
+        message: 'ok',
+        data: null,
+      });
+      // 让微任务队列推进，使 await 后的代码执行（包括 finally 块）
+      await Promise.resolve();
+    });
+
+    // 不变式：handleCancel 卸载后不触发 setState
+    const reactUnmountWarnings = consoleErrorSpy.mock.calls.filter(
+      (call) =>
+        typeof call[0] === 'string' &&
+        call[0].includes('unmounted'),
+    );
+    expect(reactUnmountWarnings).toHaveLength(0);
+
+    consoleErrorSpy.mockRestore();
+  });
 });

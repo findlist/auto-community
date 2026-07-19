@@ -459,4 +459,62 @@ describe('Profile/Verify 卸载防御', () => {
 
     consoleErrorSpy.mockRestore();
   });
+
+  it('卸载后 handleSubmit resolve 不触发 setState（mountedRef 防御）', async () => {
+    // 用 deferred Promise 控制 submitVerification 慢请求 resolve 时机
+    // 场景：用户点击提交后网络请求进行中，用户切页导致组件卸载，请求 resolve 后不应触发 setState
+    let resolveSubmit!: (value: { code: number; message: string; data: { status: string; message: string } }) => void;
+    mockSubmitVerification.mockReturnValue(
+      new Promise((resolve) => {
+        resolveSubmit = resolve;
+      }),
+    );
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = renderVerify();
+
+    // 等待表单渲染完成
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /提交认证申请/ })).toBeInTheDocument();
+    });
+
+    // 填写有效表单通过字段校验
+    fireEvent.change(screen.getByPlaceholderText('请输入真实姓名（2-100字符）'), {
+      target: { value: '张三' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('请输入18位身份证号'), {
+      target: { value: '110101199001011234' },
+    });
+
+    // 触发 handleSubmit：进入 await submitVerification
+    fireEvent.click(screen.getByRole('button', { name: /提交认证申请/ }));
+    await waitFor(() => {
+      expect(mockSubmitVerification).toHaveBeenCalled();
+    });
+
+    // 卸载组件：触发 useEffect cleanup，mountedRef.current 置为 false
+    unmount();
+
+    // 此时再 resolve 慢请求，handleSubmit 内 await 后的 loadStatus 链式调用与 setSubmitting 应被 mountedRef 守卫阻断
+    await act(async () => {
+      resolveSubmit({
+        code: 0,
+        message: 'ok',
+        data: { status: 'pending', message: '提交成功' },
+      });
+      // 让微任务队列推进，使 await 后的代码执行（包括 finally 块）
+      await Promise.resolve();
+    });
+
+    // 不变式：handleSubmit 内 try/catch/finally 全部受 mountedRef 守卫，卸载后不触发 setState
+    const reactUnmountWarnings = consoleErrorSpy.mock.calls.filter(
+      (call) =>
+        typeof call[0] === 'string' &&
+        call[0].includes('unmounted'),
+    );
+    expect(reactUnmountWarnings).toHaveLength(0);
+
+    consoleErrorSpy.mockRestore();
+  });
 });

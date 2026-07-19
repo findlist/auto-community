@@ -90,12 +90,17 @@ export default function Verify() {
         realName: realName.trim(),
         idCard: idCard.trim(),
       });
+      // 卸载守卫：避免用户切页导致组件卸载后继续触发 loadStatus 链式 setState
+      if (!mountedRef.current) return;
       // 重新加载状态
       await loadStatus();
     } catch (err) {
+      // 卸载守卫：防止 await reject 后 setError 触发卸载组件的 setState 泄漏
+      if (!mountedRef.current) return;
       setError(err instanceof ApiError ? err.message : "提交失败");
     } finally {
-      setSubmitting(false);
+      // 仅在仍挂载时复位 submitting，避免卸载后冗余渲染
+      if (mountedRef.current) setSubmitting(false);
     }
   };
 

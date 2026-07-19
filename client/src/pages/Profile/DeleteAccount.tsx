@@ -78,6 +78,8 @@ export default function DeleteAccount() {
     setError(null);
     try {
       const res = await submitDeletionRequest({ reason: reason.trim() || undefined });
+      // 卸载守卫：避免 await resolve 后 setStatus/setReason 触发卸载组件的 setState 泄漏
+      if (!mountedRef.current) return;
       setStatus({
         id: res.data.id,
         userId: "",
@@ -91,9 +93,12 @@ export default function DeleteAccount() {
       });
       setReason("");
     } catch (err) {
+      // 卸载守卫：防止 await reject 后 setError 触发卸载组件的 setState 泄漏
+      if (!mountedRef.current) return;
       setError(err instanceof ApiError ? err.message : "提交失败");
     } finally {
-      setSubmitting(false);
+      // 仅在仍挂载时复位 submitting，避免卸载后冗余渲染
+      if (mountedRef.current) setSubmitting(false);
     }
   };
 
@@ -103,11 +108,16 @@ export default function DeleteAccount() {
     setError(null);
     try {
       await cancelDeletionRequest();
+      // 卸载守卫：避免 await resolve 后 setStatus 触发卸载组件的 setState 泄漏
+      if (!mountedRef.current) return;
       setStatus(null);
     } catch (err) {
+      // 卸载守卫：防止 await reject 后 setError 触发卸载组件的 setState 泄漏
+      if (!mountedRef.current) return;
       setError(err instanceof ApiError ? err.message : "取消失败");
     } finally {
-      setCanceling(false);
+      // 仅在仍挂载时复位 canceling，避免卸载后冗余渲染
+      if (mountedRef.current) setCanceling(false);
     }
   };
 
