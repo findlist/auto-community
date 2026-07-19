@@ -111,7 +111,9 @@ export default function TimeAccountPage() {
       <div className="mb-6 lg:mb-8">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-700 transition-colors mb-3"
+          // 仅补 py-1.5 扩大垂直触控目标至约 32px，不加 hover:bg 以保留编辑式小标签视觉风格
+          // 设计原因：同行有"—— 时间账户"模块小标签，添加 hover:bg 会让返回按钮看起来像可点击按钮破坏编辑式语言
+          className="inline-flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-700 transition-colors mb-3 py-1.5"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           返回
