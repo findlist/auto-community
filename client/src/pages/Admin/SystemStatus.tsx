@@ -139,7 +139,13 @@ export default function SystemStatus() {
   useEffect(() => {
     loadMetrics();
     const interval = setInterval(loadMetrics, 10000); // 每 10 秒刷新
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      // 卸载时递增 activeReqIdRef 让进行中的请求失效，避免卸载后 setState 泄漏
+      // 设计原因：loadMetrics 用 reqId === activeReqIdRef.current 守卫竞态，
+      // 但 cleanup 不递增 ref 时，进行中请求的 reqId 仍匹配，await 后会触发 setState
+      activeReqIdRef.current++;
+    };
   }, [loadMetrics]);
 
   // 加载中状态
