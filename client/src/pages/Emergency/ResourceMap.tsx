@@ -398,7 +398,7 @@ export default function ResourceMap() {
         <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm mb-4">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{fetchError}</span>
-          <button onClick={fetchResources} className="ml-auto text-sm underline py-1 px-2 rounded hover:bg-red-50 transition-colors">重试</button>
+          <button onClick={fetchResources} className="ml-auto text-sm px-3 py-2 rounded-lg hover:bg-red-50 transition-colors">重试</button>
         </div>
       )}
 

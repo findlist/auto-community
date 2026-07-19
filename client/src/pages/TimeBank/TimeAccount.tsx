@@ -136,8 +136,8 @@ export default function TimeAccountPage() {
               setTransactionsError(null);
               Promise.all([loadAccount(), loadTransactions(true)]);
             }}
-            // 触摸目标提升：原纯 text-xs underline 无 padding，移动端难以精准点击
-            className="ml-auto text-xs underline py-1 px-2 rounded hover:bg-red-50 transition-colors"
+            // 触摸目标提升：原 py-1 px-2 约 24px 不足 32px 标准，移动端难以精准点击
+            className="ml-auto text-xs px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
           >
             重试
           </button>

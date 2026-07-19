@@ -181,7 +181,7 @@ export default function SystemConfig() {
         <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 text-red-600 rounded-lg text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {error}
-          <button onClick={loadSettings} className="ml-auto text-sm underline py-1 px-2 rounded hover:bg-red-50 transition-colors">重试</button>
+          <button onClick={loadSettings} className="ml-auto text-sm px-3 py-2 rounded-lg hover:bg-red-50 transition-colors">重试</button>
         </div>
       )}
 
