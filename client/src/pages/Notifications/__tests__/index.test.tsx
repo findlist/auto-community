@@ -150,14 +150,41 @@ describe('Notifications 通知中心', () => {
     expect(spinner).toBeInTheDocument();
   });
 
-  it('getNotifications 失败时调用 console.error，无 UI 错误提示', async () => {
-    vi.mocked(getNotifications).mockRejectedValue(new Error('网络错误'));
+  it('首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求', async () => {
+    // 首次加载失败触发 Empty error 占位（替代原 toast.error 即时提示）
+    // 设计原因：与 SharedKitchen/SkillExchange 列表页 Empty variant="error" + 重新加载按钮模式统一
+    vi.mocked(getNotifications).mockRejectedValueOnce(new Error('网络错误'));
 
     renderNotifications();
 
-    // 等待 console.error 被调用（组件 catch 中输出）
+    // Empty error 默认 title="加载失败"
+    await screen.findByText('加载失败');
+    expect(screen.getByRole('button', { name: '重新加载' })).toBeInTheDocument();
+    // console.error 应被调用（catch 块输出日志）
     await waitFor(() => {
       expect(consoleErrorSpy).toHaveBeenCalledWith('加载通知失败:', expect.any(Error));
+    });
+
+    // 重新 mock 第二次成功返回
+    vi.mocked(getNotifications).mockResolvedValueOnce({
+      code: 0,
+      message: 'ok',
+      data: {
+        list: mockNotifications,
+        page: 1,
+        pageSize: 20,
+        total: mockNotifications.length,
+        totalPages: 1,
+        hasNext: false,
+      },
+    });
+
+    // 点击重新加载触发二次请求
+    await user.click(screen.getByRole('button', { name: '重新加载' }));
+
+    // 第二次应成功渲染列表（用第一个通知标题作为标志）
+    await waitFor(() => {
+      expect(screen.getByText('订单状态更新')).toBeInTheDocument();
     });
   });
 

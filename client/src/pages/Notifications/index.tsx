@@ -27,6 +27,10 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  // 持久错误状态：首次加载失败时展示 Empty error + 重新加载按钮，避免用户只能刷新整个页面
+  // 设计原因：原实现仅 toast.error 即时提示，弱网下用户错过 toast 后无重试入口；与 Admin 列表页 + SharedKitchen/SkillExchange 列表页统一交互模式
+  // 区分首次失败（pageNum===1，Empty error 占位）与 loadMore 失败（pageNum>1，toast 即时反馈，列表已有数据 Empty error 不展示）
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   // 标记单条已读进行中的通知 ID：用作 handleMarkRead 重复提交守卫与图标加载态指示
@@ -56,6 +60,8 @@ export default function Notifications() {
     const requestKey = `${pageNum}`;
     activeRequestKeyRef.current = requestKey;
     setLoading(true);
+    // 首次加载清空历史错误状态，避免上一次失败的 Empty error 残留干扰新一轮加载
+    if (pageNum === 1) setError(null);
     try {
       const res = await getNotifications(pageNum, 20);
       // 竞态守卫：await 期间若有更新的请求触发，跳过 setState 避免旧数据覆盖新数据
@@ -69,7 +75,13 @@ export default function Notifications() {
     } catch (err) {
       if (activeRequestKeyRef.current !== requestKey) return;
       console.error("加载通知失败:", err);
-      toast.error("加载通知失败，请稍后重试");
+      if (pageNum === 1) {
+        // 首次加载失败：Empty error 占位 + 重新加载按钮（不 toast，避免双重提示）
+        setError("加载通知列表失败，请稍后重试");
+      } else {
+        // loadMore 失败：列表已有数据，Empty error 不展示，需 toast 提供即时反馈
+        toast.error("加载更多失败，请稍后重试");
+      }
     } finally {
       // 仅当前活跃请求才清除 loading，避免旧请求 finally 误刷新请求的 loading 状态
       if (activeRequestKeyRef.current === requestKey) {
@@ -200,6 +212,21 @@ export default function Notifications() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
           </div>
+        ) : error && notifications.length === 0 ? (
+          // 加载失败占位：首次加载失败时展示 Empty error 与重新加载按钮，避免用户被卡在错误页只能刷新整个页面
+          // 设计原因：与 Admin 列表页 + SharedKitchen/SkillExchange 列表页 Empty variant="error" + 重试按钮模式统一；
+          // 按钮色板使用 emerald-500/600，与本页"全部已读/加载更多"主色一致
+          <Empty
+            variant="error"
+            action={
+              <button
+                onClick={() => loadNotifications(1)}
+                className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 transition-colors"
+              >
+                重新加载
+              </button>
+            }
+          />
         ) : notifications.length === 0 ? (
           <Empty title="暂无通知" description="新消息会在这里显示" icon={<Bell className="w-16 h-16" />} />
         ) : (
