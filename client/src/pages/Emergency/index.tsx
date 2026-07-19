@@ -818,7 +818,7 @@ function DetailView({ requestId }: { requestId: string }) {
 
   return (
     <div className="px-4 py-4 space-y-4">
-      <button onClick={() => navigate("/emergency")} className="flex items-center gap-1 text-sm text-[var(--color-text-secondary)] py-1 px-2 -ml-2 rounded hover:bg-[var(--color-neutral-100)] transition-colors">
+      <button onClick={() => navigate("/emergency")} className="flex items-center gap-1 text-sm text-[var(--color-text-secondary)] py-1.5 px-2 -ml-2 rounded hover:bg-[var(--color-neutral-100)] transition-colors">
         <ArrowLeft className="w-4 h-4" />
         返回列表
       </button>
