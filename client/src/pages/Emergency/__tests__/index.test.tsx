@@ -195,7 +195,8 @@ describe('Emergency/index 应急邻里列表页（ListView）', () => {
     });
     expect(screen.getByText('紧急求助')).toBeInTheDocument();
     await waitFor(() => {
-      expect(getRequestsMock).toHaveBeenCalledWith({ type: 'emergency' });
+      // 分页改造后参数包含 page/pageSize/type 三字段
+      expect(getRequestsMock).toHaveBeenCalledWith({ page: 1, pageSize: 20, type: 'emergency' });
     });
   });
 
@@ -209,7 +210,7 @@ describe('Emergency/index 应急邻里列表页（ListView）', () => {
     });
     expect(screen.getByText('日常互助')).toBeInTheDocument();
     await waitFor(() => {
-      expect(getRequestsMock).toHaveBeenCalledWith({ type: 'daily' });
+      expect(getRequestsMock).toHaveBeenCalledWith({ page: 1, pageSize: 20, type: 'daily' });
     });
   });
 
@@ -324,6 +325,62 @@ describe('Emergency/index 应急邻里列表页（ListView）', () => {
     await waitFor(() => {
       expect(getRequestsMock).toHaveBeenCalledTimes(2);
     });
+  });
+
+  it('点击"加载更多"按钮触发下一页请求并追加数据', async () => {
+    // 验证分页能力：首次加载 hasNext=true 显示加载更多按钮，点击后请求 page=2 并追加新数据
+    const secondPageRequest = {
+      id: 'req-3',
+      userId: 'user-3',
+      user: { id: 'user-3', nickname: '李四', phone: '13800138001', creditBalance: 300, timeBalance: 100, reputationScore: 88, role: 'user', createdAt: '2024-01-01' },
+      type: 'emergency' as const,
+      category: 'safety',
+      title: '二楼防盗门故障',
+      description: '需要协助检查',
+      urgency: 'medium' as const,
+      isAnonymous: false,
+      images: [],
+      status: 'open' as const,
+      responses: [],
+      reviews: [],
+      createdAt: '2024-03-17T10:00:00Z',
+      updatedAt: '2024-03-17T10:00:00Z',
+    };
+    // 第一次请求返回 mockRequests + hasNext=true（beforeEach 默认）
+    // 第二次请求返回 secondPageRequest + hasNext=false
+    getRequestsMock.mockResolvedValueOnce({
+      code: 0,
+      message: 'ok',
+      data: { list: mockRequests, total: 100, page: 1, pageSize: 20, hasNext: true },
+    });
+    getRequestsMock.mockResolvedValueOnce({
+      code: 0,
+      message: 'ok',
+      data: { list: [secondPageRequest], total: 100, page: 2, pageSize: 20, hasNext: false },
+    });
+
+    renderPage();
+    // 等待首屏列表渲染
+    await waitFor(() => {
+      expect(screen.getByText('老人摔倒需要帮助')).toBeInTheDocument();
+    });
+    // "加载更多"按钮显示
+    expect(screen.getByText('加载更多')).toBeInTheDocument();
+
+    // 点击"加载更多"
+    act(() => {
+      screen.getByText('加载更多').click();
+    });
+    // 第二页请求参数应为 page=2
+    await waitFor(() => {
+      expect(getRequestsMock).toHaveBeenCalledWith({ page: 2, pageSize: 20 });
+    });
+    // 第二页数据被追加到列表
+    await waitFor(() => {
+      expect(screen.getByText('二楼防盗门故障')).toBeInTheDocument();
+    });
+    // hasNext=false 后"加载更多"按钮消失
+    expect(screen.queryByText('加载更多')).not.toBeInTheDocument();
   });
 
   it('加载完成后不显示骨架屏', async () => {
