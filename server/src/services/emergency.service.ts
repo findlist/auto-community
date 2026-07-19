@@ -296,7 +296,12 @@ async function createRequest(userId: string, data: CreateRequestData) {
 }
 
 async function getRequests(params: { type?: string; status?: string; page: number; pageSize: number }) {
-  const conditions: string[] = ['er.deleted_at IS NULL'];
+  // conditions 默认附加 90 天时间窗：
+  // emergency_requests 表只增不减，无时间窗会持续触发全表 COUNT 与扫描。公开接口每刷新一次都打满 DB。
+  // 与 admin.service.getReports / data-deletion.service.getDeletionRequests 保持一致模式：
+  // INTERVAL 用 SQL 字面量不加参数化，参数列表稳定。90 天覆盖完整应急事件处理周期，
+  // 超出 90 天的紧急事件通常已结束，对当前用户价值低，可通过详情页直接访问。
+  const conditions: string[] = ['er.deleted_at IS NULL', "er.created_at >= NOW() - INTERVAL '90 days'"];
   // SQL 参数仅可能为 string/number，统一用 SqlParam 联合类型
   const values: SqlParam[] = [];
   let idx = 1;

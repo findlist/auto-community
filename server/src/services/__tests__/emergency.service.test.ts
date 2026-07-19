@@ -252,20 +252,24 @@ describe('emergency.service - getRequests', () => {
     expect(result.total).toBe(1);
     expect(result.list).toHaveLength(1);
     // COUNT SQL 应包含 type 与 status 条件
-    const countSql = mockedQuery.mock.calls[0][0];
+    const countSql = mockedQuery.mock.calls[0][0] as string;
     expect(countSql).toContain('er.type = $1');
     expect(countSql).toContain('er.status = $2');
+    // COUNT SQL 同时含默认 90 天时间窗（type/status 与时间窗并存）
+    expect(countSql).toContain("er.created_at >= NOW() - INTERVAL '90 days'");
   });
 
-  it('deleted_at IS NULL 为必备条件', async () => {
+  it('deleted_at IS NULL 与 90 天时间窗均为必备条件', async () => {
     mockedQuery
       .mockResolvedValueOnce({ rows: [{ count: '0' }] } as unknown as DbResult)
       .mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
     await emergencyService.getRequests({ type: undefined, status: undefined, page: 1, pageSize: 20 });
 
-    const countSql = mockedQuery.mock.calls[0][0];
+    const countSql = mockedQuery.mock.calls[0][0] as string;
     expect(countSql).toContain('er.deleted_at IS NULL');
+    // 验证默认附加 90 天时间窗（避免 emergency_requests 持续累积后全表 COUNT 拖垮 DB）
+    expect(countSql).toContain("er.created_at >= NOW() - INTERVAL '90 days'");
   });
 });
 
