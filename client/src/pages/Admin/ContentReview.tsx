@@ -436,7 +436,8 @@ export default function ContentReview() {
                       <button
                         onClick={() => handleOpenEdit(item)}
                         // 触摸目标提升：原无 padding 行内按钮，移动端难以精准点击
-                        className="text-xs text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+                        // 与同文件其他主操作按钮对齐 emerald 色板
+                        className="text-xs text-emerald-600 px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
                       >
                         编辑
                       </button>
@@ -495,14 +496,16 @@ export default function ContentReview() {
                   <button
                     onClick={() => handleOpenEdit(item)}
                     // 触摸目标提升：原无 padding 行内按钮，移动端难以精准点击
-                    className="text-xs text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+                    // 与同文件其他主操作按钮对齐 emerald 色板
+                    className="text-xs text-emerald-600 px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
                   >
                     编辑
                   </button>
                   <button
                     onClick={() => handleToggleStatus(item)}
                     disabled={actioningId === item.id}
-                    className={`text-xs disabled:opacity-50 py-1 px-2 rounded hover:bg-neutral-50 transition-colors ${
+                    // 与桌面端第 447 行 className 对齐：补齐遗漏的触控目标升级
+                    className={`text-xs disabled:opacity-50 px-3 py-2 rounded-lg hover:bg-neutral-50 transition-colors ${
                       item.status === "active" ? "text-red-600" : "text-emerald-600"
                     }`}
                   >

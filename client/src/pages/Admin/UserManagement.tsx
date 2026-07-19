@@ -367,7 +367,8 @@ export default function UserManagement() {
                                 action: "setAdmin",
                               })
                             }
-                            className="text-blue-600 text-xs px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+                            // 与同文件"解封"按钮对齐 emerald 色板：均为积极正向操作
+                            className="text-emerald-600 text-xs px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
                           >
                             设为管理员
                           </button>
@@ -465,7 +466,8 @@ export default function UserManagement() {
                           action: "setAdmin",
                         })
                       }
-                      className="text-blue-600 text-xs px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+                      // 与同文件"解封"按钮对齐 emerald 色板：均为积极正向操作
+                      className="text-emerald-600 text-xs px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors"
                     >
                       设为管理员
                     </button>
