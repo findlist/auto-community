@@ -240,7 +240,7 @@ export default function VerificationReview() {
                                 action: "approve",
                               })
                             }
-                            className="text-emerald-600 hover:underline text-xs flex items-center gap-1"
+                            className="text-emerald-600 text-xs px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors flex items-center gap-1"
                           >
                             <CheckCircle className="w-3 h-3" />
                             通过
@@ -254,7 +254,7 @@ export default function VerificationReview() {
                                 action: "reject",
                               })
                             }
-                            className="text-red-600 hover:underline text-xs flex items-center gap-1"
+                            className="text-red-600 text-xs px-3 py-2 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1"
                           >
                             <XCircle className="w-3 h-3" />
                             拒绝
@@ -310,7 +310,7 @@ export default function VerificationReview() {
                           action: "approve",
                         })
                       }
-                      className="text-emerald-600 hover:underline text-xs flex items-center gap-1"
+                      className="text-emerald-600 text-xs px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors flex items-center gap-1"
                     >
                       <CheckCircle className="w-3 h-3" />
                       通过
@@ -324,7 +324,7 @@ export default function VerificationReview() {
                           action: "reject",
                         })
                       }
-                      className="text-red-600 hover:underline text-xs flex items-center gap-1"
+                      className="text-red-600 text-xs px-3 py-2 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1"
                     >
                       <XCircle className="w-3 h-3" />
                       拒绝

@@ -308,7 +308,7 @@ function SettingList({ items, onEdit, onDelete, isProtected }: SettingListProps)
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onEdit(item)}
-                        className="text-emerald-600 hover:underline text-xs inline-flex items-center gap-0.5"
+                        className="text-emerald-600 text-xs px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors inline-flex items-center gap-0.5"
                       >
                         <Pencil className="w-3 h-3" />
                         编辑
@@ -316,7 +316,7 @@ function SettingList({ items, onEdit, onDelete, isProtected }: SettingListProps)
                       {!protectedKey && (
                         <button
                           onClick={() => onDelete(item)}
-                          className="text-red-600 hover:underline text-xs inline-flex items-center gap-0.5"
+                          className="text-red-600 text-xs px-3 py-2 rounded-lg hover:bg-red-50 transition-colors inline-flex items-center gap-0.5"
                         >
                           <Trash2 className="w-3 h-3" />
                           删除
@@ -345,7 +345,7 @@ function SettingList({ items, onEdit, onDelete, isProtected }: SettingListProps)
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => onEdit(item)}
-                    className="text-emerald-600 text-xs inline-flex items-center gap-0.5"
+                    className="text-emerald-600 text-xs px-3 py-2 rounded-lg hover:bg-emerald-50 transition-colors inline-flex items-center gap-0.5"
                   >
                     <Pencil className="w-3 h-3" />
                     编辑
@@ -353,7 +353,7 @@ function SettingList({ items, onEdit, onDelete, isProtected }: SettingListProps)
                   {!protectedKey && (
                     <button
                       onClick={() => onDelete(item)}
-                      className="text-red-600 text-xs inline-flex items-center gap-0.5"
+                      className="text-red-600 text-xs px-3 py-2 rounded-lg hover:bg-red-50 transition-colors inline-flex items-center gap-0.5"
                     >
                       <Trash2 className="w-3 h-3" />
                       删除
