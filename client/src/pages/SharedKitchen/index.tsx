@@ -190,10 +190,10 @@ export default function SharedKitchen() {
           </span>
         </div>
         <p className="text-sm text-neutral-500 line-clamp-1 mb-3">{order.description}</p>
-        {/* 进度条：细线，无圆角卡片 */}
-        <div className="h-1 bg-neutral-200 rounded-full overflow-hidden mb-2.5">
+        {/* 进度条：细线 + 渐变填充 + 微光，强化进度感与厨房模块橙身份 */}
+        <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden mb-2.5">
           <div
-            className="h-full bg-orange-600 transition-all duration-500"
+            className="h-full bg-gradient-to-r from-orange-500 to-orange-600 transition-all duration-500 shadow-[0_0_8px_rgba(249,115,22,0.35)]"
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -255,9 +255,9 @@ export default function SharedKitchen() {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 text-sm rounded-full whitespace-nowrap transition-colors ${
+              className={`px-3.5 py-1.5 text-sm rounded-full whitespace-nowrap transition-all active:scale-95 ${
                 selectedCategory === cat
-                  ? "bg-neutral-900 text-white"
+                  ? "bg-neutral-900 text-white shadow-sm"
                   : "bg-neutral-100 text-neutral-600 hover:bg-orange-50 hover:text-orange-700"
               }`}
             >

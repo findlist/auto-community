@@ -96,7 +96,7 @@ export default function SkillExchange() {
     <div
       key={post.id}
       onClick={() => navigate(`/skills/${post.id}`)}
-      className="group border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6 rounded-none"
+      className="group border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">

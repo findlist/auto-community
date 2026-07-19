@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Phone, ArrowRight, ArrowLeft, Send, Loader2 } from "lucide-react";
+import { Phone, ArrowRight, ArrowLeft, Send, Loader2, Check } from "lucide-react";
 import { forgotPassword } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { useSafeTimeout } from "@/hooks/useSafeTimeout";
@@ -61,8 +61,9 @@ export default function ForgotPassword() {
         />
         <div className="absolute inset-0 bg-neutral-900/55 backdrop-blur-sm" />
         <div className="relative w-full max-w-md text-center animate-fade-in-up">
-          <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mb-5">
-            <span className="text-emerald-300 text-3xl">✓</span>
+          <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mb-5 animate-fade-in-up">
+            {/* 使用 Lucide Check 图标替代字符 ✓，描边粗细与表单图标一致，避免字形渲染差异 */}
+            <Check className="w-8 h-8 text-emerald-300" strokeWidth={3} />
           </div>
           <h1 className="text-white text-2xl font-bold mb-2 text-balance">验证码已发送</h1>
           <p className="text-white/70 text-sm mb-6">

@@ -104,10 +104,10 @@ export default function Register() {
           </p>
         </div>
 
-        {/* 表单：玻璃态卡片，与登录页一致；悬停轻提、焦点环细化 */}
+        {/* 表单：玻璃态卡片，与登录页一致；悬停轻提、焦点环细化；space-y-5 与 Login/ForgotPassword 保持视觉节奏一致 */}
         <form
           onSubmit={handleSubmit}
-          className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 lg:p-8 space-y-4 animate-fade-in-up shadow-2xl transition-shadow duration-300 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]"
+          className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 lg:p-8 space-y-5 animate-fade-in-up shadow-2xl transition-shadow duration-300 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]"
           style={{ animationDelay: "120ms" }}
         >
           {/* 昵称 */}

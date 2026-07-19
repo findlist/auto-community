@@ -329,9 +329,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 页脚版权 */}
-      <footer className="py-8 px-6 text-center bg-neutral-900 text-neutral-500 text-xs">
-        © 邻里圈 · 让社区更有温度
+      {/* 页脚版权：顶部细线分隔，避免与终极 CTA 黑色块完全连成一片 */}
+      <footer className="py-10 px-6 text-center bg-neutral-900 text-neutral-500 text-xs border-t border-white/5">
+        <p className="tracking-wide">© 邻里圈 · 让社区更有温度</p>
+        <p className="mt-1.5 text-neutral-600 text-[11px] font-mono tracking-widest">NEIGHBORHOOD CIRCLE</p>
       </footer>
     </div>
   );
