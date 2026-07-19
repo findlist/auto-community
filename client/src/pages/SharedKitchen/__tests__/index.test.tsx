@@ -423,4 +423,43 @@ describe('SharedKitchen/index 共享厨房列表页', () => {
       expect(consoleErrorSpy).toHaveBeenCalled();
     });
   });
+
+  it('首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求', async () => {
+    // 首次加载失败触发 Empty error 占位
+    getFoodSharesMock.mockRejectedValueOnce(new Error('网络错误'));
+    renderPage();
+    // Empty error 默认 title="加载失败"
+    await screen.findByText('加载失败');
+    expect(screen.getByRole('button', { name: '重新加载' })).toBeInTheDocument();
+    // 重新 mock 第二次成功返回
+    getFoodSharesMock.mockResolvedValueOnce({
+      code: 0,
+      message: 'ok',
+      data: { list: mockPosts, total: 100, page: 1, pageSize: 10, hasNext: true },
+    });
+    // 点击重新加载触发二次请求
+    act(() => {
+      screen.getByRole('button', { name: '重新加载' }).click();
+    });
+    // 第二次应成功渲染列表
+    await waitFor(() => {
+      expect(screen.getByText('红烧肉')).toBeInTheDocument();
+    });
+  });
+
+  it('拼单 Tab 首次加载失败显示 Empty error 与重新加载按钮', async () => {
+    // 默认 offer Tab 加载成功
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('红烧肉')).toBeInTheDocument();
+    });
+    // 在切换 Tab 之前 mock 拼单加载失败（切换会触发 useEffect 自动调用 loadGroupOrders(true)）
+    getGroupOrdersMock.mockRejectedValueOnce(new Error('网络错误'));
+    act(() => {
+      screen.getByText('拼单买菜').click();
+    });
+    // Empty error 默认 title="加载失败"
+    await screen.findByText('加载失败');
+    expect(screen.getByRole('button', { name: '重新加载' })).toBeInTheDocument();
+  });
 });

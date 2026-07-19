@@ -27,6 +27,9 @@ export default function SharedKitchen() {
   const [posts, setPosts] = useState<KitchenPost[]>([]);
   const [groupOrders, setGroupOrders] = useState<GroupOrder[]>([]);
   const [loading, setLoading] = useState(false);
+  // 持久错误状态：首次加载失败时展示 Empty error + 重新加载按钮，避免用户只能刷新整个页面
+  // 设计原因：原实现仅 toast.error 即时提示，弱网下用户错过 toast 后无重试入口；与 Admin 列表页统一交互模式
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
@@ -39,6 +42,8 @@ export default function SharedKitchen() {
     // reset 时跳过 loading 守卫，确保切换 Tab/分类时即使上一次请求未完成也能重新加载
     if (!reset && loading) return;
     setLoading(true);
+    // reset 时清空历史错误状态，避免上一次失败的 Empty error 残留干扰新一轮加载
+    if (reset) setError(null);
     // 当前闭包捕获的请求标识，用于 await 后比对是否仍为最新请求
     const requestKey = `${activeTab}|${selectedCategory}`;
     try {
@@ -61,7 +66,10 @@ export default function SharedKitchen() {
     } catch (error) {
       if (activeRequestKeyRef.current !== requestKey) return;
       console.error("加载失败:", error);
-      toast.error("加载美食分享失败，请稍后重试");
+      // 持久错误：首次加载失败时 Empty error 占位 + 重新加载按钮
+      setError("加载美食分享失败，请稍后重试");
+      // loadMore 失败时列表已有数据，Empty error 不展示，需 toast 提供即时反馈
+      if (!reset) toast.error("加载更多失败，请稍后重试");
     } finally {
       // 仅当当前请求标识仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
       if (activeRequestKeyRef.current === requestKey) {
@@ -73,6 +81,8 @@ export default function SharedKitchen() {
   const loadGroupOrders = useCallback(async (reset = false) => {
     if (!reset && loading) return;
     setLoading(true);
+    // reset 时清空历史错误状态，避免上一次失败的 Empty error 残留干扰新一轮加载
+    if (reset) setError(null);
     // 当前闭包捕获的请求标识，用于 await 后比对是否仍为最新请求
     const requestKey = `${activeTab}|${selectedCategory}`;
     try {
@@ -90,7 +100,10 @@ export default function SharedKitchen() {
     } catch (error) {
       if (activeRequestKeyRef.current !== requestKey) return;
       console.error("加载失败:", error);
-      toast.error("加载拼单列表失败，请稍后重试");
+      // 持久错误：首次加载失败时 Empty error 占位 + 重新加载按钮
+      setError("加载拼单列表失败，请稍后重试");
+      // loadMore 失败时列表已有数据，Empty error 不展示，需 toast 提供即时反馈
+      if (!reset) toast.error("加载更多失败，请稍后重试");
     } finally {
       if (activeRequestKeyRef.current === requestKey) {
         setLoading(false);
@@ -275,6 +288,21 @@ export default function SharedKitchen() {
           ) : (
             <SkeletonCard count={3} showImage />
           )
+        ) : !loading && error && isEmpty ? (
+          // 加载失败占位：首次加载失败时展示 Empty error 与重新加载按钮，避免用户被卡在错误页只能刷新整个页面
+          // 设计原因：与 Admin 列表页 Empty variant="error" + 重试按钮模式统一；
+          // 按钮色板使用厨房模块橙（orange-500/600），与模块主色一致
+          <Empty
+            variant="error"
+            action={
+              <button
+                onClick={() => activeTab === "group" ? loadGroupOrders(true) : loadFoodShares(true)}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 transition-colors"
+              >
+                重新加载
+              </button>
+            }
+          />
         ) : (
           <>
             {activeTab === "group"
@@ -296,7 +324,7 @@ export default function SharedKitchen() {
           </LoadingButton>
         )}
 
-        {!loading && isEmpty && (
+        {!loading && !error && isEmpty && (
           <Empty title={`暂无${activeTab === "group" ? "拼单" : "美食"}`} description="发布后会在这里显示" />
         )}
       </div>
