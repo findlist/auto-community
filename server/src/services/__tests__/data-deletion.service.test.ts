@@ -234,21 +234,26 @@ describe('data-deletion.service - cancelDeletionRequest', () => {
 });
 
 describe('data-deletion.service - getDeletionRequests', () => {
-  it('不带 status 筛选时不追加 status 条件', async () => {
+  it('不带 status 筛选时附加默认 90 天时间窗', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ count: '0' }] }); // count
     mockQuery.mockResolvedValueOnce({ rows: [] }); // list
 
     await dataDeletionService.getDeletionRequests(1, 10);
 
-    // 验证 count SQL 不含 status 条件（仅 1=1）
+    // 验证 count SQL 含 90 天时间窗（避免 deletion_requests 持续累积后全表 COUNT）
     const countSql = mockQuery.mock.calls[0][0] as string;
+    expect(countSql).toContain("dr.created_at >= NOW() - INTERVAL '90 days'");
+    // 验证 count SQL 不含 status 条件
     expect(countSql).not.toContain('status =');
-    // 验证分页参数：第二参数数组仅含 pageSize 与 offset
+    // 验证 list SQL 也含 90 天时间窗（与 count SQL 保持一致）
+    const listSql = mockQuery.mock.calls[1][0] as string;
+    expect(listSql).toContain("dr.created_at >= NOW() - INTERVAL '90 days'");
+    // 验证分页参数：第二参数数组仅含 pageSize 与 offset（时间窗用 SQL 字面量不入 params）
     const listCall = mockQuery.mock.calls[1];
     expect(listCall[1]).toEqual([10, 0]);
   });
 
-  it('带 status 筛选时追加 status 条件且参数正确', async () => {
+  it('带 status 筛选时同时附加默认时间窗与 status 条件', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ count: '2' }] });
     mockQuery.mockResolvedValueOnce({ rows: [
       { id: 'r1', user_id: 'u1', user_nickname: 'A', status: 'pending', reason: null, created_at: new Date(), reviewed_at: null, reviewed_by: null, reviewer_nickname: null, completed_at: null },
@@ -259,8 +264,10 @@ describe('data-deletion.service - getDeletionRequests', () => {
 
     // 验证 SQL 含 status 条件
     const countSql = mockQuery.mock.calls[0][0] as string;
-    expect(countSql).toContain('status = $1');
-    // count 参数仅含 status
+    expect(countSql).toContain('dr.status = $1');
+    // 验证 count SQL 同时含默认 90 天时间窗（status 与时间窗并存）
+    expect(countSql).toContain("dr.created_at >= NOW() - INTERVAL '90 days'");
+    // count 参数仅含 status（时间窗用 SQL 字面量不入 params）
     expect(mockQuery.mock.calls[0][1]).toEqual(['pending']);
     // list 参数含 status + pageSize + offset
     expect(mockQuery.mock.calls[1][1]).toEqual(['pending', 5, 5]);

@@ -177,13 +177,17 @@ async function getDeletionRequests(
   pageSize: number,
   status?: DeletionRequestStatus,
 ): Promise<DeletionRequestList> {
-  const conditions: string[] = ['1=1'];
+  // conditions 默认附加 90 天时间窗：
+  // deletion_requests 表只增不减，无时间窗会持续触发全表 COUNT 与扫描。管理员后台每次刷新都打满 DB。
+  // 与 admin.service.getReports 保持一致模式：INTERVAL 用 SQL 字面量不加参数化，参数列表稳定。
+  // 90 天覆盖完整的注销申请处理周期（pending 审核期 + 完成数据保留期），超出 90 天的记录业务价值低。
+  const conditions: string[] = ["dr.created_at >= NOW() - INTERVAL '90 days'"];
   // params 承载 status/pageSize/offset 三种入参（string|number），用 SqlParam 收紧以对齐 query 函数签名
   const params: SqlParam[] = [];
   let paramIndex = 1;
 
   if (status) {
-    conditions.push(`status = $${paramIndex++}`);
+    conditions.push(`dr.status = $${paramIndex++}`);
     params.push(status);
   }
 
@@ -191,7 +195,8 @@ async function getDeletionRequests(
   const offset = (page - 1) * pageSize;
 
   const [countResult, listResult] = await Promise.all([
-    query(`SELECT COUNT(*) FROM deletion_requests WHERE ${whereClause}`, params),
+    // COUNT 查询用 dr 别名与 list SQL 保持一致，避免 conditions 引用 dr.created_at 时报错
+    query(`SELECT COUNT(*) FROM deletion_requests dr WHERE ${whereClause}`, params),
     query(
       `SELECT dr.id, dr.user_id, dr.status, dr.reason, dr.created_at,
               dr.reviewed_at, dr.reviewed_by, dr.completed_at,
