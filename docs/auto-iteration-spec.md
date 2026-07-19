@@ -117,9 +117,10 @@
 - CD 流水线 GitHub Secrets 与远程服务器 GHCR 登录态运维确认
 - 高德地图 Key 配置后处理 ResourceMap setTimeout onclick 清理问题
 5.3 P2 技术债清理（当前 Phase 3 推进重点）
-- metrics-calculation.service 接入评估：确认是否接入路由或评估删除整个文件
-- 迁移文件时间戳规范化（012/018 各有 2 个文件共享同一时间戳，需评估迁移记录一致性风险）
 - isSqlParam 对 class 实例放行的设计限制（可选改用 prototype 链检查）
+- 已剔除历史完成项：
+  - metrics-calculation.service 接入评估（已接入 scheduler.ts 每小时第 5 分钟触发 handleMetricsCollection）
+  - 迁移文件时间戳规范化（012/018 时间戳冲突已修复，012 重命名为 030，018 → 031/032 等已落地）
 5.4 P3 体验与质量补全
 - 全页面样式统一精修、移动端适配查漏补缺（持续滚动推进）
 - 核心模块单元测试补全（测试覆盖率已达 95.4%+，远超 70% 标准，按缺口滚动补全）
