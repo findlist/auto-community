@@ -9,6 +9,13 @@ import type { ReportStatus, UserRole } from '../services/admin.service';
 import { auditService } from '../services/audit.service';
 import { dataDeletionService } from '../services/data-deletion.service';
 import { success, paginated, error } from '../utils/response';
+import { getCache, setCache } from '../config/redis';
+
+// 后台统计缓存：dashboard 触发 7 张表全表 COUNT，system 触发 4 张表全表 COUNT，
+// 后台页面每次刷新都会重新触发，用 60s 缓存兜底避免管理员刷新打满 DB（容忍 60s 数据延迟）
+const DASHBOARD_CACHE_KEY = 'admin:dashboard';
+const SYSTEM_METRICS_CACHE_KEY = 'admin:dashboard:system';
+const DASHBOARD_CACHE_TTL = 60;
 
 const router = Router();
 
@@ -333,7 +340,15 @@ router.put('/orders/:type/:id/cancel', validate([
 
 // 平台概览
 router.get('/dashboard', asyncHandler(async (req: Request, res: Response) => {
+  // 缓存命中时直接返回，避免每次刷新都触发 7 张表全表 COUNT 聚合
+  const cached = await getCache(DASHBOARD_CACHE_KEY);
+  if (cached) {
+    success(res, cached);
+    return;
+  }
   const result = await adminService.getDashboard();
+  // 写缓存用 void 不阻塞响应（缓存写入失败不应影响接口可用性）
+  void setCache(DASHBOARD_CACHE_KEY, result, DASHBOARD_CACHE_TTL);
   success(res, result);
 }));
 
@@ -366,7 +381,15 @@ router.get('/dashboard/modules', asyncHandler(async (req: Request, res: Response
 
 // 系统指标
 router.get('/dashboard/system', asyncHandler(async (req: Request, res: Response) => {
+  // 缓存命中时直接返回，避免每次刷新都触发 4 张表全表 COUNT/SUM 聚合
+  const cached = await getCache(SYSTEM_METRICS_CACHE_KEY);
+  if (cached) {
+    success(res, cached);
+    return;
+  }
   const result = await adminService.getSystemMetrics();
+  // 写缓存用 void 不阻塞响应（缓存写入失败不应影响接口可用性）
+  void setCache(SYSTEM_METRICS_CACHE_KEY, result, DASHBOARD_CACHE_TTL);
   success(res, result);
 }));
 

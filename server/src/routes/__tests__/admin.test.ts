@@ -62,6 +62,9 @@ const {
   // dataDeletionService 方法
   mockGetDeletionRequests,
   mockReviewDeletionRequest,
+  // Redis 缓存 mock：dashboard/system 路由依赖 getCache/setCache 兜底 DB
+  mockGetCache,
+  mockSetCache,
 } = vi.hoisted(() => ({
   mockAuthenticate: vi.fn(),
   // requireRole 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
@@ -102,6 +105,9 @@ const {
   mockGetAuditLogs: vi.fn(),
   mockGetDeletionRequests: vi.fn(),
   mockReviewDeletionRequest: vi.fn(),
+  // Redis 缓存 mock：dashboard/system 路由依赖 getCache/setCache 兜底 DB
+  mockGetCache: vi.fn(),
+  mockSetCache: vi.fn(),
 }));
 
 vi.mock('../../middleware/auth', () => ({
@@ -158,6 +164,10 @@ vi.mock('../../services/data-deletion.service', () => ({
     reviewDeletionRequest: mockReviewDeletionRequest,
   },
 }));
+vi.mock('../../config/redis', () => ({
+  getCache: mockGetCache,
+  setCache: mockSetCache,
+}));
 
 import adminRouter from '../admin';
 import { errorHandler } from '../../middleware/errorHandler';
@@ -205,6 +215,8 @@ describe('admin 路由集成测试', () => {
       req.user = { id: 'admin-uuid-001', nickname: 'admin' };
       next();
     });
+    // 默认缓存未命中：dashboard/system 路由走 DB 路径，单测可按需覆盖为命中
+    mockGetCache.mockResolvedValue(null);
     ({ server, baseUrl } = await startServer());
   });
 
@@ -512,11 +524,30 @@ describe('admin 路由集成测试', () => {
 
   // ===================== 数据统计 =====================
   describe('数据统计', () => {
-    it('GET /dashboard 返回平台概览', async () => {
+    it('GET /dashboard 返回平台概览（缓存未命中走 service 并写缓存）', async () => {
       mockGetDashboard.mockResolvedValue({ totalUsers: 100, totalOrders: 50 });
       const res = await fetch(`${baseUrl}/dashboard`);
       expect(res.status).toBe(200);
       expect(mockGetDashboard).toHaveBeenCalled();
+      // 验证写入缓存：键 'admin:dashboard'，TTL 60s
+      expect(mockSetCache).toHaveBeenCalledWith(
+        'admin:dashboard',
+        { totalUsers: 100, totalOrders: 50 },
+        60,
+      );
+    });
+
+    it('GET /dashboard 缓存命中时直接返回，不调用 service', async () => {
+      // 缓存命中场景：后台高频刷新下避免重复打 DB
+      mockGetCache.mockResolvedValue({ totalUsers: 99, totalOrders: 11 });
+      const res = await fetch(`${baseUrl}/dashboard`);
+      expect(res.status).toBe(200);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).totalUsers).toBe(99);
+      // 缓存命中时不应调用 service
+      expect(mockGetDashboard).not.toHaveBeenCalled();
+      // 缓存命中时也不应再次写入缓存（避免无谓的 Redis 写）
+      expect(mockSetCache).not.toHaveBeenCalled();
     });
 
     it('GET /dashboard/trend type=registration 调用 getRegistrationTrend', async () => {
@@ -559,10 +590,27 @@ describe('admin 路由集成测试', () => {
       expect(res.status).toBe(200);
     });
 
-    it('GET /dashboard/system 返回系统指标', async () => {
+    it('GET /dashboard/system 返回系统指标（缓存未命中走 service 并写缓存）', async () => {
       mockGetSystemMetrics.mockResolvedValue({ cpu: 30, memory: 50 });
       const res = await fetch(`${baseUrl}/dashboard/system`);
       expect(res.status).toBe(200);
+      expect(mockGetSystemMetrics).toHaveBeenCalled();
+      // 验证写入缓存：键 'admin:dashboard:system'，TTL 60s
+      expect(mockSetCache).toHaveBeenCalledWith(
+        'admin:dashboard:system',
+        { cpu: 30, memory: 50 },
+        60,
+      );
+    });
+
+    it('GET /dashboard/system 缓存命中时直接返回，不调用 service', async () => {
+      mockGetCache.mockResolvedValue({ cpu: 88, memory: 99 });
+      const res = await fetch(`${baseUrl}/dashboard/system`);
+      expect(res.status).toBe(200);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).cpu).toBe(88);
+      expect(mockGetSystemMetrics).not.toHaveBeenCalled();
+      expect(mockSetCache).not.toHaveBeenCalled();
     });
   });
 
