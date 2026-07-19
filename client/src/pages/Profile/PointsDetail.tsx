@@ -71,6 +71,12 @@ export default function PointsDetail() {
       activePageRef.current = page;
       fetchTransactions(page);
     }
+    return () => {
+      // 卸载时重置 activePageRef 让进行中请求失效，避免卸载后 setState 泄漏
+      // 设计原因：fetchTransactions 内部用 activePageRef.current === p 守卫，
+      // 若 cleanup 不重置 ref，进行中请求的 p 仍匹配，await 后会触发 setState
+      activePageRef.current = -1;
+    };
   }, [page, isAuthenticated, fetchTransactions]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
