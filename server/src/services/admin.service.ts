@@ -1347,13 +1347,17 @@ async function buildExcelBuffer(
 // ===================== 实名认证审核 =====================
 
 // 分页查询实名认证申请列表
+// 默认附加 90 天时间窗：
+// verification_requests 表只增不减（审核后状态稳定，不会删除），无时间窗会持续触发全表 COUNT 与扫描。
+// 90 天覆盖完整审核周期（含 pending/approved/rejected 全状态流转），超出 90 天的记录通常已结束；
+// 与 admin.service.getReports、data-deletion 等保持一致模式：INTERVAL 用 SQL 字面量不加参数化，参数列表稳定。
 async function getVerificationRequests(page: number, pageSize: number, status?: string) {
-  const conditions: string[] = ['1=1'];
+  const conditions: string[] = ["vr.created_at >= NOW() - INTERVAL '90 days'"];
   const params: SqlParam[] = [];
   let paramIndex = 1;
 
   if (status) {
-    conditions.push(`status = $${paramIndex++}`);
+    conditions.push(`vr.status = $${paramIndex++}`);
     params.push(status);
   }
 
@@ -1361,7 +1365,8 @@ async function getVerificationRequests(page: number, pageSize: number, status?: 
   const offset = (page - 1) * pageSize;
 
   const [countResult, listResult] = await Promise.all([
-    query(`SELECT COUNT(*) FROM verification_requests WHERE ${whereClause}`, params),
+    // COUNT SQL 同步加 vr 别名，与 list SQL 别名一致，使 whereClause 中的 vr.* 字段引用有效
+    query(`SELECT COUNT(*) FROM verification_requests vr WHERE ${whereClause}`, params),
     query(
       `SELECT vr.id, vr.user_id, vr.real_name, vr.status, vr.reject_reason,
               vr.created_at, vr.reviewed_at, vr.reviewed_by,

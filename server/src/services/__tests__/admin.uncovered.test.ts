@@ -581,7 +581,7 @@ describe('admin.service - getVerificationRequests 认证申请列表', () => {
     expect(listSql).toContain('LEFT JOIN users reviewer');
   });
 
-  it('status 过滤时 SQL 含 status = $1', async () => {
+  it('status 过滤时同时附加默认时间窗与 status 条件', async () => {
     mockQuery
       .mockResolvedValueOnce({ rows: [{ count: '0' }] } as never)
       .mockResolvedValueOnce({ rows: [] } as never);
@@ -589,8 +589,25 @@ describe('admin.service - getVerificationRequests 认证申请列表', () => {
     await adminService.getVerificationRequests(1, 20, 'pending');
 
     const countSql = mockQuery.mock.calls[0][0] as string;
-    expect(countSql).toContain('status = $1');
+    // 默认时间窗（vr 别名）+ status 过滤（vr 别名）同时存在
+    expect(countSql).toContain("vr.created_at >= NOW() - INTERVAL '90 days'");
+    expect(countSql).toContain('vr.status = $1');
+    // COUNT SQL 应有 vr 别名，使 whereClause 中的 vr.* 字段引用有效
+    expect(countSql).toContain('FROM verification_requests vr');
     expect(mockQuery.mock.calls[0][1]).toEqual(['pending']);
+  });
+
+  it('不带 status 过滤时附加默认 90 天时间窗', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] } as never)
+      .mockResolvedValueOnce({ rows: [] } as never);
+
+    await adminService.getVerificationRequests(1, 20);
+
+    const countSql = mockQuery.mock.calls[0][0] as string;
+    expect(countSql).toContain("vr.created_at >= NOW() - INTERVAL '90 days'");
+    expect(countSql).not.toContain('vr.status');
+    expect(countSql).toContain('FROM verification_requests vr');
   });
 
   it('reject_reason 非空时透传', async () => {
