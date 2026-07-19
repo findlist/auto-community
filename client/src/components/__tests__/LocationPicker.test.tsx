@@ -332,4 +332,52 @@ describe("LocationPicker 位置选择器", () => {
       expect(onLocationChange).toHaveBeenCalled();
     });
   });
+
+  it("dragend 期间卸载组件不触发 setState 泄漏", async () => {
+    const { markerInstance } = setupAMapMock();
+    // 用 deferred Promise 控制慢请求 resolve 时机，模拟 regeo 进行中用户卸载组件
+    let resolveRegeo: ((val: { data: string }) => void) | null = null;
+    const slowRegeo = new Promise<{ data: string }>((resolve) => {
+      resolveRegeo = resolve;
+    });
+    regeoMock.mockReturnValue(slowRegeo);
+
+    const onLocationChange = vi.fn();
+    const { unmount } = render(
+      <LocationPicker
+        initialLocation={{ lng: 116.404, lat: 39.915 }}
+        onLocationChange={onLocationChange}
+      />
+    );
+
+    // 等 dragend 回调注册完成
+    await waitFor(() => {
+      expect(markerInstance._dragendCb).toBeDefined();
+    });
+
+    // 触发 dragend（不 await，让 regeo 处于 pending 状态）
+    // 用同步 act 包裹 dragendCb 的同步部分（setLocation + setLoading），避免 act 警告
+    // dragendCb 是 async 函数，同步部分在 microtask 之前执行完毕，regeo 仍处于 pending
+    const dragendCb = markerInstance._dragendCb as (...args: unknown[]) => void;
+    act(() => {
+      void dragendCb();
+    });
+
+    // 等待 setLoading(true) 与 regeo 进入 pending
+    await waitFor(() => {
+      expect(regeoMock).toHaveBeenCalled();
+    });
+
+    // 卸载组件：触发 cleanup，cancelled 置 true
+    unmount();
+
+    // resolve 慢请求：此时 cancelled 已为 true，setAddress/onLocationChange 应被守卫拦截
+    await act(async () => {
+      resolveRegeo?.({ data: "新地址" });
+      await Promise.resolve();
+    });
+
+    // 验证卸载后 onLocationChange 未被调用（卸载前也未调用，因 regeo 未 resolve）
+    expect(onLocationChange).not.toHaveBeenCalled();
+  });
 });

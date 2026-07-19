@@ -105,14 +105,19 @@ export default function LocationPicker({
       setLoading(true);
       try {
         const res = await regeo(newLocation.lng, newLocation.lat);
+        // 守卫卸载后 setState：regeo 是 HTTP 请求，await 期间用户可能卸载组件
+        // cancelled 已在 cleanup 中置 true，此处拦截避免 setAddress/onLocationChange 触发泄漏
+        if (cancelled) return;
         const newAddress = res.data || '';
         setAddress(newAddress);
         onLocationChange?.(newLocation, newAddress);
       } catch {
         // 逆地理失败时保留已有地址，避免 unhandled promise rejection
+        if (cancelled) return;
         setAddress('');
       } finally {
-        setLoading(false);
+        // finally 块同样需要守卫：try/catch 任一分支 return 后仍会执行 finally
+        if (!cancelled) setLoading(false);
       }
     });
 
@@ -135,6 +140,8 @@ export default function LocationPicker({
             // 获取地址
             try {
               const res = await regeo(newLocation.lng, newLocation.lat);
+              // 守卫卸载后 setState：regeo 是 HTTP 请求，await 期间用户可能卸载组件
+              if (cancelled) return;
               const newAddress = res.data || '';
               setAddress(newAddress);
               onLocationChange?.(newLocation, newAddress);
