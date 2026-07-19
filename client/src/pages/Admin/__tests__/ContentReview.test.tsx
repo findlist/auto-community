@@ -130,9 +130,43 @@ describe('ContentReview 批量操作', () => {
     renderContentReview();
 
     // 非 ApiError 时显示兜底文案"加载失败"
+    // 设计原因：banner 与 Empty error 默认 title 均显示"加载失败"，使用 getAllByText 避免多元素匹配错误
     await waitFor(() => {
-      expect(screen.getByText('加载失败')).toBeInTheDocument();
+      expect(screen.getAllByText('加载失败').length).toBeGreaterThan(0);
     });
+  });
+
+  it('加载失败显示"重新加载"重试按钮，点击后重新触发请求', async () => {
+    // 首次失败触发 Empty error + 重试按钮
+    vi.mocked(getContent).mockRejectedValueOnce(new Error('网络异常'));
+    // 重试成功返回数据
+    vi.mocked(getContent).mockResolvedValueOnce({
+      code: 0,
+      message: 'ok',
+      data: {
+        list: mockContents,
+        total: mockContents.length,
+        page: 1,
+        pageSize: 20,
+        totalPages: 1,
+        hasNext: false,
+      },
+    });
+
+    renderContentReview();
+
+    const retryBtn = await screen.findByRole('button', { name: '重新加载' });
+    expect(retryBtn).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(retryBtn);
+    });
+
+    // 重试后请求计数应增加，且最终渲染列表数据
+    await waitFor(() => {
+      expect(screen.getAllByText('技能帖A').length).toBeGreaterThan(0);
+    });
+    expect(vi.mocked(getContent).mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
   it('空列表显示"暂无数据"', async () => {
