@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // 设计原因：userEvent 内部用 async act 包裹所有交互，自动等待微任务队列清空，
 // 从根本上消除"异步 state 更新未被 act 包裹"警告，比 fireEvent + 同步 act 更可靠。
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import DeleteAccountPage from '../DeleteAccount';
@@ -533,5 +533,68 @@ describe('DeleteAccount 注销申请入口守卫', () => {
 
     // 不变式：submitDeletionRequest 仅被调用 1 次，第二次点击被入口守卫拦截
     expect(submitDeletionRequest).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('DeleteAccount 卸载防御', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useAuth).mockReturnValue({
+      user: mockUser,
+      isAuthenticated: true,
+      token: 'test-token',
+      login: vi.fn(),
+      logout: mockLogout,
+      setUser: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('卸载后 loadStatus resolve 不触发 setState（mountedRef 防御）', async () => {
+    // 用 deferred Promise 控制慢请求 resolve 时机，模拟弱网下用户切页导致组件卸载
+    let resolveGetStatus!: (value: { code: number; message: string; data: DeletionRequestStatus | null }) => void;
+    vi.mocked(getDeletionRequestStatus).mockReturnValue(
+      new Promise((resolve) => {
+        resolveGetStatus = resolve;
+      }),
+    );
+
+    // 监听 console.error，捕获 React 的 "Can't perform a state update on an unmounted component" 警告
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = renderDeleteAccount();
+
+    // 等待 useEffect 触发 loadStatus，进入 await getDeletionRequestStatus()
+    await waitFor(() => {
+      expect(getDeletionRequestStatus).toHaveBeenCalled();
+    });
+
+    // 卸载组件：触发 useEffect cleanup，mountedRef.current 置为 false
+    unmount();
+
+    // 此时再 resolve 慢请求，loadStatus 内 await 后的 setState 应被 mountedRef 守卫阻断
+    await act(async () => {
+      resolveGetStatus({
+        code: 0,
+        message: 'ok',
+        data: mockEmptyStatus,
+      });
+      // 让微任务队列推进，使 await 后的代码执行
+      await Promise.resolve();
+    });
+
+    // 不变式：mountedRef 防御下，卸载后不触发 setState，无 React 警告
+    // 设计原因：React 内部对卸载后 setState 会打印 "Can't perform a state update on an unmounted component" 警告
+    const reactUnmountWarnings = consoleErrorSpy.mock.calls.filter(
+      (call) =>
+        typeof call[0] === 'string' &&
+        call[0].includes('unmounted'),
+    );
+    expect(reactUnmountWarnings).toHaveLength(0);
+
+    consoleErrorSpy.mockRestore();
   });
 });

@@ -8,7 +8,7 @@
  *           mock @/hooks/useAuth 的 isAuthenticated、mock useNavigate 捕获跳转
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import Verify from '../Verify';
@@ -401,5 +401,62 @@ describe('Profile/Verify 实名认证入口守卫', () => {
 
     // 不变式：submitVerification 仅被调用 1 次，第二次点击被入口守卫拦截
     expect(mockSubmitVerification).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Profile/Verify 卸载防御', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsAuthenticated.mockReturnValue(true);
+    mockGetVerificationStatus.mockResolvedValue({
+      code: 0,
+      message: 'ok',
+      data: notVerifiedStatus,
+    });
+  });
+
+  it('卸载后 loadStatus resolve 不触发 setState（mountedRef 防御）', async () => {
+    // 用 deferred Promise 控制慢请求 resolve 时机，模拟弱网下用户切页导致组件卸载
+    let resolveGetStatus!: (value: { code: number; message: string; data: VerificationStatus }) => void;
+    mockGetVerificationStatus.mockReturnValue(
+      new Promise((resolve) => {
+        resolveGetStatus = resolve;
+      }),
+    );
+
+    // 监听 console.error，捕获 React 的 "Can't perform a state update on an unmounted component" 警告
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = renderVerify();
+
+    // 等待 useEffect 触发 loadStatus，进入 await getVerificationStatus()
+    await waitFor(() => {
+      expect(mockGetVerificationStatus).toHaveBeenCalled();
+    });
+
+    // 卸载组件：触发 useEffect cleanup，mountedRef.current 置为 false
+    unmount();
+
+    // 此时再 resolve 慢请求，loadStatus 内 await 后的 setState 应被 mountedRef 守卫阻断
+    await act(async () => {
+      resolveGetStatus({
+        code: 0,
+        message: 'ok',
+        data: notVerifiedStatus,
+      });
+      // 让微任务队列推进，使 await 后的代码执行
+      await Promise.resolve();
+    });
+
+    // 不变式：mountedRef 防御下，卸载后不触发 setState，无 React 警告
+    // 设计原因：React 内部对卸载后 setState 会打印 "Can't perform a state update on an unmounted component" 警告
+    const reactUnmountWarnings = consoleErrorSpy.mock.calls.filter(
+      (call) =>
+        typeof call[0] === 'string' &&
+        call[0].includes('unmounted'),
+    );
+    expect(reactUnmountWarnings).toHaveLength(0);
+
+    consoleErrorSpy.mockRestore();
   });
 });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Trash2,
@@ -34,17 +34,24 @@ export default function DeleteAccount() {
   // 表单状态
   const [reason, setReason] = useState("");
 
+  // 卸载标记：防止异步路径在组件卸载后触发 setState 泄漏（如 handleSubmit 内 await submitDeletionRequest 后再 setStatus）
+  const mountedRef = useRef(true);
+
   // 加载注销申请状态：useCallback 稳定引用，满足 useEffect exhaustive-deps
   const loadStatus = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await getDeletionRequestStatus();
+      // 卸载后跳过 setState，避免 React 警告 "Can't perform a state update on an unmounted component"
+      if (!mountedRef.current) return;
       setStatus(res.data);
     } catch (err) {
+      if (!mountedRef.current) return;
       setError(err instanceof ApiError ? err.message : "加载注销状态失败");
     } finally {
-      setLoading(false);
+      // 仅在仍挂载时更新 loading 状态，避免卸载后冗余渲染
+      if (mountedRef.current) setLoading(false);
     }
   }, []);
 
@@ -54,7 +61,12 @@ export default function DeleteAccount() {
       navigate("/login");
       return;
     }
+    // 重置标记：因 StrictMode 会挂载-卸载-再挂载，cleanup 置 false 后需重置为 true
+    mountedRef.current = true;
     loadStatus();
+    return () => {
+      mountedRef.current = false;
+    };
   }, [isAuthenticated, navigate, loadStatus]);
 
   // 提交注销申请
