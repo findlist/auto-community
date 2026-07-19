@@ -65,19 +65,30 @@ export default function Metrics() {
   // 重试触发器：递增后作为 useEffect 依赖触发仪表盘重新加载
   const [retryKey, setRetryKey] = useState(0);
 
+  // mountedRef 守卫：防御组件卸载后 setState 泄漏与 retryKey 切换时旧请求覆盖新数据
+  // 设计原因：loadDashboard 在 await 后调用多个 setState，若用户切换页面或重试触发 cleanup，
+  // 旧请求 resolve 仍会触发 setState，引发 React 警告与潜在脏数据写入
+  const mountedRef = useRef(true);
+
   // 加载仪表盘数据
   const loadDashboard = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await getMetricsDashboard();
+      // 卸载或重试触发 cleanup 后跳过 setState，避免泄漏与脏数据覆盖
+      if (!mountedRef.current) return;
       setDashboardData(response.data || []);
     } catch (err) {
+      if (!mountedRef.current) return;
       // 保存错误信息到 state，渲染层展示错误 UI 与重试按钮，不再仅 toast
       setError(err instanceof ApiError ? err.message : "加载仪表盘数据失败");
       console.error("加载仪表盘数据失败:", err);
     } finally {
-      setLoading(false);
+      // 仅当组件仍挂载时才更新 loading，避免卸载后 setState 警告
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -113,7 +124,13 @@ export default function Metrics() {
   }, []);
 
   useEffect(() => {
+    // 每次依赖变化时重置 mountedRef 为 true（含首次挂载与 retryKey 变化触发的重新加载）
+    mountedRef.current = true;
     loadDashboard();
+    return () => {
+      // cleanup 置 false 让进行中的旧请求失效，避免卸载或重试切换后 setState 泄漏
+      mountedRef.current = false;
+    };
   }, [loadDashboard, retryKey]);
 
   // 重试：递增 retryKey 触发上方 useEffect 重新执行加载
