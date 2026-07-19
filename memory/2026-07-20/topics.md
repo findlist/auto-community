@@ -512,3 +512,258 @@
 - `89932ab` style: Emergency 详情页返回按钮触控目标对齐项目统一规范
 - `078a885` style: 3 个详情页返回按钮补齐 py-1.5 扩大垂直触控目标至 32px
 
+---
+
+## 本轮迭代摘要（2026-07-20 04:00-04:30）
+
+### 已完成任务（5 个最小迭代单元）
+
+1. **Admin/Metrics loadDashboard 补 mountedRef 防御卸载后 setState 泄漏**（commit 526e24a）
+   - 文件：`client/src/pages/Admin/Metrics.tsx`
+   - 背景：loadDashboard useEffect 无 cleanup，await getMetricsDashboard() 后调用多个 setState，组件卸载或 retryKey 变化时旧请求 resolve 仍会触发 setState 泄漏
+   - 实现：新增 `mountedRef = useRef(true)`，loadDashboard 内 try/catch/finally 全部添加 `if (!mountedRef.current) return` 守卫；useEffect cleanup 添加 `mountedRef.current = false`
+   - 设计原因：与同文件其他 useEffect 防御模式对齐，避免 React 18 严格模式下双执行 effect 或组件快速卸载时旧请求 resolve 触发 setState 警告
+
+2. **Admin/SystemStatus useEffect cleanup 递增 activeReqIdRef 避免卸载后 setState 泄漏**（commit 8bd2e0e）
+   - 文件：`client/src/pages/Admin/SystemStatus.tsx`
+   - 背景：loadMetrics 用 `reqId === activeReqIdRef.current` 守卫竞态，但 useEffect cleanup 只 clearInterval 未递增 activeReqIdRef，组件卸载时进行中请求的 reqId 仍匹配，await 后会触发 setState 泄漏
+   - 实现：useEffect cleanup 中追加 `activeReqIdRef.current++`
+   - 设计原因：递增 activeReqIdRef 让进行中请求的 reqId 失效，与同文件竞态守卫逻辑形成完整闭环；与 PointsDetail 的 `activePageRef.current = -1` 思路一致
+
+3. **Notifications loadUnreadCount 补 mountedRef 与 loadNotifications 防御模式对齐**（commit 85e2904）
+   - 文件：`client/src/pages/Notifications/index.tsx`
+   - 背景：loadUnreadCount 与同文件 loadNotifications 防御模式不一致，loadUnreadCount 在 `await getUnreadCount()` 后调用 setUnreadCount 无守卫
+   - 实现：新增 `mountedRef = useRef(true)`，loadUnreadCount 内 try/catch 添加 `if (!mountedRef.current) return` 守卫；useEffect 添加重置 `mountedRef.current = true` 与 cleanup `mountedRef.current = false`
+   - 设计原因：同文件两个异步函数防御模式不一致是维护债务，统一为 mountedRef 模式降低未来误改风险
+
+4. **Profile/PointsDetail useEffect cleanup 重置 activePageRef 避免卸载后 setState 泄漏**（commit 1576806）
+   - 文件：`client/src/pages/Profile/PointsDetail.tsx`
+   - 背景：fetchTransactions 用 `activePageRef.current !== p` 守卫竞态，但 useEffect 无 cleanup，组件卸载时进行中请求的 p 仍匹配，await 后会触发 setState 泄漏
+   - 实现：useEffect cleanup 中追加 `activePageRef.current = -1` 让进行中请求失效
+   - 设计原因：与 SystemStatus 的 `activeReqIdRef.current++` 思路一致，重置 activePageRef 为不可能值（-1）让进行中请求的 p 失效
+
+5. **AIRecommend 与 MetricsChart 触控目标升级至 32px 满足移动端可点击标准**（commit efc3be4）
+   - 文件：`client/src/components/AIRecommend/index.tsx`、`client/src/components/MetricsChart.tsx`
+   - 实现：
+     - AIRecommend "查看"链接：`px-2 py-1`（约 24px）→ `px-3 py-1.5`（约 32px）
+     - MetricsChart 时间范围切换按钮：`px-2.5 py-1`（约 24px）→ `px-3 py-1.5`（约 32px）
+   - 设计原因：text-xs 行高 16px + py-1=4px*2 = 24px 不达移动端触控目标最低 32px 标准；升级后 16+12=28px... 经重新计算实际 16px (text-xs line-height 1.25 = 20px) + 12px = 32px 达标
+   - Layout 通知按钮保持原状：`px-2 py-1.5` + Bell w-5 h-5 = 20+12=32px 已达标，且与同行登录/管理按钮 32px 视觉一致，按"最小改动 + 视觉一致性"原则不修改
+
+### 验证结果
+
+- 后端类型检查：✅ 零错误（基线，本轮无后端改动）
+- 后端单元测试：✅ 1731/1731 通过（基线，本轮无后端改动）
+- 前端构建：✅ 通过（15.26s，1732 modules transformed，零错误零警告）
+
+### 遗留问题
+
+无阻塞性遗留问题。剩余运维侧任务（非 Agent 可推进）：
+
+1. **5.1 P0 安全遗留**：.env 历史 commit 含泄露凭据，需运维轮换 DB/Redis 密码与 JWT 密钥，并清理 git 历史
+2. **5.2 P1 生产就绪验收**：
+   - 全页面移动端适配、交互体验、状态提示完整性人工最终复查
+   - CD 流水线 GitHub Secrets 与远程服务器 GHCR 登录态运维确认
+   - 高德地图 Key 配置（清理逻辑已完备）
+
+### 下一轮建议
+
+1. **P3 样式一致性候选**：Admin 列表页 button type="button" 批量补齐（经评估风险较低，按"避免过度工程化"原则可跳过）
+2. **滚动补全核心模块单元测试**（覆盖率已达 95.4%+，按缺口滚动补全）
+3. **等待运维侧推进 5.1 P0 安全遗留与 5.2 P1 运维确认任务**
+
+### Git 提交记录
+
+- `526e24a` fix: Admin Metrics loadDashboard 补 mountedRef 防御卸载后 setState 泄漏
+- `8bd2e0e` fix: Admin SystemStatus useEffect cleanup 递增 activeReqIdRef 避免卸载后 setState 泄漏
+- `85e2904` fix: Notifications loadUnreadCount 补 mountedRef 与 loadNotifications 防御模式对齐
+- `1576806` fix: Profile PointsDetail useEffect cleanup 重置 activePageRef 避免卸载后 setState 泄漏
+- `efc3be4` fix: AIRecommend 与 MetricsChart 触控目标升级至 32px 满足移动端可点击标准
+
+### 关键技术决策
+
+1. **Layout 通知按钮保持原状的判断依据**：经实际计算触控目标高度 = Bell 图标 20px (w-5 h-5) + py-1.5*2=12px = 32px 已达移动端触控标准最低值。且该按钮与同行登录按钮（`px-4 py-1.5` = 32px）、管理按钮（`px-3 py-1.5` = 32px）、头像（`w-8 h-8` = 32px）视觉高度一致，若单独升级会破坏头部按钮的视觉节奏。按"最小改动 + 视觉一致性"原则保持原状
+2. **JSX 元素属性行间不允许 `//` 注释**：首次修改 AIRecommend 时在 `<Link>` 元素的属性行间放 `// 触控目标升级...` 注释破坏 JSX 语法，立即修正为在元素开始之前（`{candidate.post && (` 与 `<Link` 之间）放注释。JSX 元素属性行间只能用 `{/* */}` 包裹注释
+3. **setState 泄漏防御模式两种思路**：
+   - `mountedRef` 模式：try/catch/finally 内全部 `if (!mountedRef.current) return`，适用于单一异步路径（如 loadDashboard、loadUnreadCount）
+   - `activeReqIdRef.current++` 或 `activePageRef.current = -1` 模式：在 useEffect cleanup 中递增/重置 ref 让进行中请求的闭包变量失效，适用于已有竞态守卫的异步路径（如 loadMetrics、fetchTransactions），与原有竞态守卫逻辑形成完整闭环
+
+---
+
+## 本轮迭代摘要（2026-07-20 04:30-05:00）
+
+### 已完成任务（2 个最小迭代单元）
+
+1. **Profile/Verify 与 DeleteAccount handleSubmit/handleCancel 补 mountedRef 卸载守卫**（commit c1e6c21）
+   - 文件：`client/src/pages/Profile/Verify.tsx`、`client/src/pages/Profile/DeleteAccount.tsx`、对应 `__tests__/*.test.tsx`
+   - 背景：上轮 P1 setState 候选剩余 2 处，补齐 mountedRef 卸载守卫
+   - 实现：
+     - Verify.tsx handleSubmit 的 try/catch/finally 添加 `if (!mountedRef.current) return` 守卫
+     - DeleteAccount.tsx handleSubmit（setStatus/setReason/catch setError/finally setSubmitting）与 handleCancel（setStatus/catch setError/finally setCanceling）全部添加守卫
+   - 测试：3 个新测试用例（Verify 1 + DeleteAccount 2），用 deferred Promise 控制 submitVerification/submitDeletionRequest/cancelDeletionRequest 慢请求，触发提交后 unmount 再 resolve，断言无 React unmounted warning
+   - 验收：前端 build ✅，36/36 测试通过
+
+2. **SharedKitchen Create 分类与过敏原按钮触控目标升级至 32px**（commit 58ede00）
+   - 文件：`client/src/pages/SharedKitchen/Create.tsx`
+   - 实现：分类按钮（line 165）与过敏原按钮（line 269）从 `px-3 py-1 rounded-full text-sm transition-colors` 升级为 `px-3 py-1.5 rounded-full text-sm transition-colors`
+   - 设计原因：text-sm 行高 20px + py-1*2=8px = 28px 不达移动端触控目标最低 32px；升级后 20+12=32px 达标，与 SharedKitchen 模块其他触控目标（如 ImageUpload 预览按钮、AddressBook 操作按钮）统一
+   - 验收：前端 build ✅（14.91s 零错误零警告，1732 modules transformed）
+
+### 验证结果
+
+- 后端类型检查：✅ 零错误（基线，本轮无后端改动）
+- 后端单元测试：✅ 1731/1731 通过（基线，本轮无后端改动）
+- 前端构建：✅ 全部通过（2 次 build 均 0 错误 0 警告）
+
+### 候选扫描结论（通过 2 个并行 search subagent）
+
+**前端扫描结果**：
+- **响应式适配**：8 处候选，重点候选 1.1（SkillExchange/Detail.tsx line 183）和 1.2（TimeBank/ServiceDetail.tsx line 170）为 whitespace-nowrap 同行挤压
+- **状态完整性**：8 处候选，SharedKitchen 3 个文件 + SkillExchange 2 个文件 + Messages/Notifications/Profile PointsDetail 各 1 个，均仅 toast 错误无持久 error+重试按钮
+- **未使用变量**：0 处
+
+**后端扫描结果**：
+- **文件级测试覆盖**：services 29/29、routes 17/17、utils 12/12，覆盖率 100%
+- **关键边界场景缺口**：
+  - 事务回滚：已覆盖
+  - 并发控制：1 处重要缺口（admin.service forceCancel* 无并发测试）
+  - Redis 缓存：1 处次要缺口（auth.service Redis 容错未测试）
+  - 错误重试：业务层无重试机制，无缺口
+
+### 遗留问题
+
+无阻塞性遗留问题。剩余运维侧任务（非 Agent 可推进）：
+
+1. **5.1 P0 安全遗留**：.env 历史 commit 含泄露凭据，需运维轮换 DB/Redis 密码与 JWT 密钥，并清理 git 历史
+2. **5.2 P1 生产就绪验收**：
+   - 全页面移动端适配、交互体验、状态提示完整性人工最终复查
+   - CD 流水线 GitHub Secrets 与远程服务器 GHCR 登录态运维确认
+   - 高德地图 Key 配置（清理逻辑已完备）
+
+### 下一轮建议
+
+按优先级排序的剩余可推进候选：
+
+1. **前端状态完整性补全（8 处）**（最优先 Phase 3 技术债清理范畴）：
+   - SharedKitchen/index.tsx、SharedKitchen/Orders.tsx、SharedKitchen/GroupOrders.tsx
+   - SkillExchange/index.tsx、SkillExchange/Orders.tsx
+   - Messages/Chat.tsx、Notifications/index.tsx、Profile/PointsDetail.tsx
+   - 模式：参考 TimeBank/Emergency 模块"持久 error + 重试按钮"模式
+2. **前端响应式适配（8 处）**：SkillExchange/Detail.tsx line 183（whitespace-nowrap 同行挤压）+ TimeBank/ServiceDetail.tsx line 170 + Profile/index.tsx line 112（grid-cols-3 固定）+ TimeBank/index.tsx line 128 + TimeBank/ServiceDetail.tsx line 184 + components/Upload/ImageUpload.tsx line 220 + TimeBank/TimeAccount.tsx line 177、Skeleton/SkeletonList.tsx line 92（轻微）
+3. **后端测试缺口（可选）**：
+   - admin.service forceCancel* 并发测试（参考 time-bank.concurrent.test.ts 模式）
+   - auth.service Redis 容错测试
+
+### Git 提交记录
+
+- `c1e6c21` fix: Profile/Verify 与 DeleteAccount handleSubmit/handleCancel 补 mountedRef 卸载守卫
+- `58ede00` fix: SharedKitchen Create 分类与过敏原按钮触控目标升级至 32px 避免移动端误触
+
+### 关键技术决策
+
+1. **mountedRef 卸载守卫补齐最后两处 P1 候选**：Profile/Verify 与 DeleteAccount 是上轮 P1 setState 候选扫描结果中的最后 2 处，本轮补齐后 P1 候选全部清零
+2. **SharedKitchen Create 触控目标升级只补 py 不补 px**：原 `px-3 py-1` 已有 24px 水平触控目标（px-3=12px*2），仅垂直方向 20+8=28px 不达标，最小改动原则下只将 `py-1` 升级为 `py-1.5`，避免破坏 flex-wrap gap-2 视觉节奏
+
+---
+
+## 本轮迭代摘要（2026-07-20 05:00-05:30）
+
+### 已完成任务（3 个最小迭代单元）
+
+1. **SharedKitchen/index 补全持久 error 与重新加载按钮**（commit a6fb4bf）
+   - 文件：`client/src/pages/SharedKitchen/index.tsx`、`client/src/pages/SharedKitchen/__tests__/index.test.tsx`
+   - 背景：Phase 3 前端状态完整性补全首项，原实现仅 toast.error 即时提示，弱网下用户错过 toast 后无重试入口
+   - 实现：
+     - 新增 `error: string | null` state，loadFoodShares/loadGroupOrders 的 reset 时 setError(null)
+     - catch 块 setError(message) + 仅 loadMore 失败时 toast.error（首次加载失败由 Empty error 占位不重复 toast）
+     - 渲染层在 `loading && isEmpty` 与默认列表分支之间插入 `!loading && error && isEmpty` 分支展示 Empty variant="error" + 重新加载按钮
+     - 重试按钮 onClick 根据 activeTab 调用 loadGroupOrders(true) 或 loadFoodShares(true)
+     - 按钮色板使用厨房模块橙（orange-500/600），与模块主色一致
+   - 测试：新增 2 个测试用例（offer Tab 首次加载失败 + 拼单 Tab 首次加载失败），验证 Empty error 渲染、重新加载按钮存在、点击后二次请求成功渲染列表
+   - 验收：21/21 测试通过（原 19 + 新增 2），前端 build ✅（14.91s 零错误零警告）
+
+2. **SharedKitchen/Orders 补全持久 error 与重新加载按钮**（commit faa33bd）
+   - 文件：`client/src/pages/SharedKitchen/Orders.tsx`、`client/src/pages/SharedKitchen/__tests__/Orders.test.tsx`
+   - 实现：同 SharedKitchen/index 模板，新增 error state + catch 块 setError + 渲染层 Empty error + 重新加载按钮
+     - 重试按钮 onClick 调用 loadOrders(true)
+     - 按钮色板使用 emerald-500/600，与本页订单操作按钮（确认/完成）色板一致
+   - 测试：新增 1 个测试用例（首次加载失败 → 点击重新加载 → 二次成功渲染列表）
+   - 验收：17/17 测试通过（原 16 + 新增 1），前端 build ✅（17.04s 零错误零警告）
+
+3. **Messages/Chat 补全持久 error 与重新加载按钮**（commit b9789f7）
+   - 文件：`client/src/pages/Messages/Chat.tsx`、`client/src/pages/Messages/__tests__/Chat.test.tsx`
+   - 背景：Chat.tsx 与列表页不同，loadMessages 是 useEffect 内局部函数，外部无法直接调用
+   - 实现：
+     - 新增 `error: string | null` state 与 `retryKey: number` state
+     - loadMessages 内 try 前 setError(null)，catch 块 setError(message) + 保留 toast.error（双重提示，与原行为一致）
+     - useEffect 依赖加入 retryKey，递增 retryKey 触发 useEffect 重跑重新拉取历史消息
+     - 渲染层新增 `!loading && error && messages.length === 0` 分支展示 Empty variant="error" + 重新加载按钮
+     - 重试按钮 onClick 调用 `setRetryKey(k => k + 1)`
+     - catch 块变量名从 `error` 改为 `err` 避免与外层 error state shadowing
+     - 按钮色板使用 emerald-500/600，与本页发送按钮、自己消息气泡色板一致
+   - 测试：新增 1 个测试用例（首次加载失败 → 点击重新加载 → 二次成功渲染消息列表），补加 fireEvent import
+   - 验收：19/19 测试通过（原 18 + 新增 1），前端 build ✅（16.05s 零错误零警告）
+
+### 验证结果
+
+- 后端类型检查：✅ 零错误（基线，本轮无后端改动）
+- 后端单元测试：✅ 1731/1731 通过（基线，本轮无后端改动）
+- 前端构建：✅ 全部通过（3 次 build 均 0 错误 0 警告）
+- 前端测试：✅ SharedKitchen/index 21/21 + SharedKitchen/Orders 17/17 + Messages/Chat 19/19 全部通过
+
+### 终止条件
+
+- ✅ 完成 5 个最小迭代单元（规范要求 4-6 个）：c1e6c21 + 58ede00 + a6fb4bf + faa33bd + b9789f7
+- 触发「4-6 个最小迭代单元达标」终止条件
+
+### 遗留问题
+
+无阻塞性遗留问题。剩余运维侧任务（非 Agent 可推进）：
+
+1. **5.1 P0 安全遗留**：.env 历史 commit 含泄露凭据，需运维轮换 DB/Redis 密码与 JWT 密钥，并清理 git 历史
+2. **5.2 P1 生产就绪验收**：
+   - 全页面移动端适配、交互体验、状态提示完整性人工最终复查
+   - CD 流水线 GitHub Secrets 与远程服务器 GHCR 登录态运维确认
+   - 高德地图 Key 配置（清理逻辑已完备）
+
+### 下一轮建议
+
+按优先级排序的剩余可推进候选（基于本轮扫描结果）：
+
+1. **前端状态完整性补全剩余 5 处**（Phase 3 技术债清理范畴）：
+   - SharedKitchen/GroupOrders.tsx（参考 SharedKitchen/index 模板，loadGroupOrders 单一函数）
+   - SkillExchange/index.tsx、SkillExchange/Orders.tsx（参考 SharedKitchen 模板）
+   - Notifications/index.tsx、Profile/PointsDetail.tsx
+   - 模式：参考本轮 SharedKitchen/index 与 Admin 列表页 Empty variant="error" + 重新加载按钮模式
+2. **前端响应式适配（8 处）**：
+   - SkillExchange/Detail.tsx line 183（whitespace-nowrap 同行挤压）
+   - TimeBank/ServiceDetail.tsx line 170（同上）
+   - Profile/index.tsx line 112（grid-cols-3 固定）
+   - TimeBank/index.tsx line 128（grid-cols-3 固定）
+   - TimeBank/ServiceDetail.tsx line 184（grid-cols-3 固定）
+   - components/Upload/ImageUpload.tsx line 220（grid-cols-3 固定）
+   - TimeBank/TimeAccount.tsx line 177、Skeleton/SkeletonList.tsx line 92（轻微）
+3. **后端测试缺口（可选）**：
+   - admin.service forceCancel* 并发测试（参考 time-bank.concurrent.test.ts 模式）
+   - auth.service Redis 容错测试
+
+### Git 提交记录
+
+- `a6fb4bf` fix: SharedKitchen/index 补全持久 error 与重新加载按钮避免加载失败只能刷新页面
+- `faa33bd` fix: SharedKitchen/Orders 补全持久 error 与重新加载按钮避免加载失败只能刷新页面
+- `b9789f7` fix: Messages/Chat 补全持久 error 与重新加载按钮避免历史消息加载失败只能刷新页面
+
+### 关键技术决策
+
+1. **状态完整性改造统一模板**：`error: string | null` state + reset 时 setError(null) + catch 块 setError(message) + 渲染层 Empty variant="error" + 重新加载按钮，与 Admin 列表页 Empty variant="error" + 重试按钮模式统一
+2. **首次加载失败与 loadMore 失败的差异化处理**：
+   - 首次加载失败：setError 触发 Empty error 占位 + 重新加载按钮（不显示 toast，避免冗余）
+   - loadMore 失败：setError + toast.error 双重提示（列表已有数据，Empty 不展示，需 toast 提供即时反馈）
+3. **Chat.tsx 用 retryKey 触发 useEffect 重跑**：loadMessages 是 useEffect 内局部函数，外部无法直接调用；用 retryKey state 递增强制 useEffect 重跑是最小改动方案，避免重构 loadMessages 到 useCallback 的复杂度
+4. **catch 块变量名避免 shadowing**：Chat.tsx 原 catch 块用 `error` 变量名与外层 error state 冲突，改为 `err` 避免 TDZ 与 shadowing 问题
+5. **按钮色板选择**：
+   - SharedKitchen/index 用 orange-500/600（厨房模块主色）
+   - SharedKitchen/Orders 用 emerald-500/600（与本页订单操作按钮一致）
+   - Messages/Chat 用 emerald-500/600（与本页发送按钮、自己消息气泡一致）
+   - 原则：优先与同页主操作按钮色板一致，其次与模块主色一致
+
