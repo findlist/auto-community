@@ -578,16 +578,55 @@ describe('admin 路由集成测试', () => {
       expect(mockGetOrderTrend).toHaveBeenLastCalledWith(365);
     });
 
-    it('GET /dashboard/reputation 返回信誉分分布', async () => {
+    it('GET /dashboard/reputation 返回信誉分分布（缓存未命中走 service 并写缓存）', async () => {
       mockGetReputationDistribution.mockResolvedValue({ '5.0': 10, '4.5': 20 });
       const res = await fetch(`${baseUrl}/dashboard/reputation`);
       expect(res.status).toBe(200);
+      expect(mockGetReputationDistribution).toHaveBeenCalled();
+      // 验证写入缓存：键 'admin:dashboard:reputation'，TTL 300s（5 分钟）
+      // reputation_score 字段变化频率低，5 分钟缓存兜底避免 users 表全表 GROUP BY 聚合打满 DB
+      expect(mockSetCache).toHaveBeenCalledWith(
+        'admin:dashboard:reputation',
+        { '5.0': 10, '4.5': 20 },
+        300,
+      );
     });
 
-    it('GET /dashboard/modules 返回模块对比', async () => {
+    it('GET /dashboard/reputation 缓存命中时直接返回，不调用 service', async () => {
+      // 缓存命中场景：后台高频刷新下避免重复打 DB
+      mockGetCache.mockResolvedValue({ '5.0': 99, '4.5': 11 });
+      const res = await fetch(`${baseUrl}/dashboard/reputation`);
+      expect(res.status).toBe(200);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>)['5.0']).toBe(99);
+      // 缓存命中时不应调用 service
+      expect(mockGetReputationDistribution).not.toHaveBeenCalled();
+      // 缓存命中时也不应再次写入缓存（避免无谓的 Redis 写）
+      expect(mockSetCache).not.toHaveBeenCalled();
+    });
+
+    it('GET /dashboard/modules 返回模块对比（缓存未命中走 service 并写缓存）', async () => {
       mockGetModuleActivity.mockResolvedValue({ skill: 10, kitchen: 20 });
       const res = await fetch(`${baseUrl}/dashboard/modules`);
       expect(res.status).toBe(200);
+      expect(mockGetModuleActivity).toHaveBeenCalled();
+      // 验证写入缓存：键 'admin:dashboard:modules'，TTL 300s（与 reputation 保持一致）
+      expect(mockSetCache).toHaveBeenCalledWith(
+        'admin:dashboard:modules',
+        { skill: 10, kitchen: 20 },
+        300,
+      );
+    });
+
+    it('GET /dashboard/modules 缓存命中时直接返回，不调用 service', async () => {
+      // 缓存命中场景：模块活跃度日级别粒度，5 分钟延迟不可感知
+      mockGetCache.mockResolvedValue({ skill: 88, kitchen: 99 });
+      const res = await fetch(`${baseUrl}/dashboard/modules`);
+      expect(res.status).toBe(200);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect((data.data as Record<string, unknown>).skill).toBe(88);
+      expect(mockGetModuleActivity).not.toHaveBeenCalled();
+      expect(mockSetCache).not.toHaveBeenCalled();
     });
 
     it('GET /dashboard/system 返回系统指标（缓存未命中走 service 并写缓存）', async () => {

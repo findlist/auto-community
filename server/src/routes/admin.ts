@@ -16,6 +16,13 @@ import { getCache, setCache } from '../config/redis';
 const DASHBOARD_CACHE_KEY = 'admin:dashboard';
 const SYSTEM_METRICS_CACHE_KEY = 'admin:dashboard:system';
 const DASHBOARD_CACHE_TTL = 60;
+// 信誉分分布触发 users 表全表 GROUP BY 聚合：reputation_score 字段非高频变化（订单完成后由 reputation.service 异步更新），
+// 用 5 分钟缓存兜底避免后台每次刷新都打满 DB（5 分钟延迟对统计图表可接受）
+const REPUTATION_CACHE_KEY = 'admin:dashboard:reputation';
+const REPUTATION_CACHE_TTL = 300;
+// 模块活跃度触发 7 张表全表 COUNT：30 天时间窗已限制单表扫描范围，但 7 次串行 COUNT 仍有 DB 压力，
+// 用 5 分钟缓存兜底与 reputation 保持一致 TTL（模块活跃度日级别粒度，5 分钟延迟不可感知）
+const MODULE_ACTIVITY_CACHE_KEY = 'admin:dashboard:modules';
 
 const router = Router();
 
@@ -369,13 +376,31 @@ router.get('/dashboard/trend', asyncHandler(async (req: Request, res: Response) 
 
 // 信誉分分布
 router.get('/dashboard/reputation', asyncHandler(async (req: Request, res: Response) => {
+  // 缓存命中时直接返回，避免每次刷新都触发 users 表全表 GROUP BY 聚合
+  // reputation_score 字段变化频率低（订单完成后由 reputation.service 异步更新），5 分钟缓存可接受
+  const cached = await getCache(REPUTATION_CACHE_KEY);
+  if (cached) {
+    success(res, cached);
+    return;
+  }
   const result = await adminService.getReputationDistribution();
+  // 写缓存用 void 不阻塞响应（缓存写入失败不应影响接口可用性）
+  void setCache(REPUTATION_CACHE_KEY, result, REPUTATION_CACHE_TTL);
   success(res, result);
 }));
 
 // 模块对比
 router.get('/dashboard/modules', asyncHandler(async (req: Request, res: Response) => {
+  // 缓存命中时直接返回，避免每次刷新都触发 7 张表 30 天 COUNT 串行查询
+  // 30 天时间窗已限制单表扫描范围，但 7 次串行 COUNT 仍有 DB 压力，5 分钟缓存兜底
+  const cached = await getCache(MODULE_ACTIVITY_CACHE_KEY);
+  if (cached) {
+    success(res, cached);
+    return;
+  }
   const result = await adminService.getModuleActivity();
+  // 写缓存用 void 不阻塞响应（与 reputation/dashboard 保持一致模式）
+  void setCache(MODULE_ACTIVITY_CACHE_KEY, result, REPUTATION_CACHE_TTL);
   success(res, result);
 }));
 
