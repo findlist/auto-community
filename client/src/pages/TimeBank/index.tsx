@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Clock, ClipboardList, Users } from "lucide-react";
+import { Plus, Clock, ClipboardList, Users, Loader2 } from "lucide-react";
 import Empty from "@/components/Empty";
 import { getServices } from "@/api/timeBank";
 import type { TimeService } from "@/types";
 import ServiceCard from "./ServiceCard";
 import { SkeletonCompactList } from "@/components/Skeleton";
+import { LoadingButton } from "@/components/Button";
 
 const tabs = [
   { key: "provide", label: "提供服务" },
@@ -25,25 +26,62 @@ export default function TimeBank() {
   const [services, setServices] = useState<TimeService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // 分页状态：page 跟踪当前页（从 1 起），hasMore 控制加载更多按钮显示
+  // 设计原因：原实现一次性拉取全部数据，服务量增长后首屏慢且无法触达旧服务，对齐 SkillExchange/Emergency 范式
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  useEffect(() => {
-    // 竞态守卫：快速切换 Tab 时，旧请求返回不再覆盖新数据
-    // 设计原因：Promise 链在 await 期间若 activeTab 已变化，setServices 旧列表会覆盖新列表，
-    // 导致显示内容与 Tab 不一致；cancelled 标志在 cleanup 时置 true，跳过过期 setState
-    let cancelled = false;
+  // 竞态守卫：跟踪当前活跃的 activeTab，快速切换 Tab 时旧请求返回不再覆盖新数据
+  // 设计原因：loadServices 依赖 activeTab，切换 Tab 会重新创建并触发新请求，
+  // 但旧请求的 await 仍在进行中，完成后会 setServices 旧列表覆盖新列表
+  const activeTabRef = useRef(activeTab);
+
+  const loadServices = useCallback(async (reset = false) => {
+    // reset 时跳过 loading 守卫，确保切换 Tab 时即使上一次请求未完成也能重新加载
+    if (!reset && loading) return;
     setLoading(true);
-    setError("");
-    getServices({ type: activeTab as "provide" | "request" })
-      .then(res => {
-        if (!cancelled) setServices(res.data.list);
-      })
-      .catch(() => {
-        if (!cancelled) setError("加载失败，请稍后重试");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+    if (reset) setError("");
+    // 当前闭包捕获的请求标识，用于 await 后比对是否仍为最新请求
+    const requestTab = activeTab;
+    try {
+      const newPage = reset ? 1 : page;
+      const res = await getServices({
+        type: activeTab as "provide" | "request",
+        page: newPage,
+        pageSize: 20,
       });
-    return () => { cancelled = true; };
+      // 竞态守卫：await 期间若 activeTab 已变化，跳过 setState 避免旧列表覆盖新列表
+      if (activeTabRef.current !== requestTab) return;
+      const { list, hasNext } = res.data;
+      if (reset) {
+        setServices(list);
+      } else {
+        setServices(prev => [...prev, ...list]);
+      }
+      setHasMore(hasNext);
+      setPage(newPage + 1);
+    } catch (err) {
+      if (activeTabRef.current !== requestTab) return;
+      console.error("加载服务列表失败:", err);
+      // 错误信息保存到 state，渲染层展示错误 UI
+      setError("加载失败，请稍后重试");
+    } finally {
+      // 仅当当前 activeTab 仍为活跃时才更新 loading，避免旧请求的 finally 覆盖新请求的 loading 状态
+      if (activeTabRef.current === requestTab) {
+        setLoading(false);
+      }
+    }
+  }, [activeTab, page, loading]);
+
+  // 同步活跃 activeTab 并触发请求：依赖 activeTab 变化时重置分页状态并重新拉取
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+    setPage(1);
+    setHasMore(true);
+    setServices([]);
+    loadServices(true);
+    // 仅在 activeTab 变化时重新加载；loadServices 依赖 page/loading，纳入会导致分页后无限重载
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   return (
@@ -92,7 +130,7 @@ export default function TimeBank() {
           <button
             key={path}
             onClick={() => navigate(path)}
-            className="bg-white rounded-xl p-3 lg:p-4 border border-neutral-100 shadow-sm hover:shadow-md hover:border-violet-200 hover:-translate-y-0.5 transition-all duration-200 text-left group"
+            className="bg-white rounded-xl p-3 lg:p-4 border border-neutral-100 shadow-sm hover:shadow-md hover:border-violet-200 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 text-left group"
           >
             <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center mb-2 group-hover:bg-violet-100 group-hover:scale-105 transition-all">
               <Icon className="w-4 h-4 text-violet-600" />
@@ -104,9 +142,9 @@ export default function TimeBank() {
       </div>
 
       {/* 列表区 */}
-      {loading ? (
+      {loading && services.length === 0 ? (
         <SkeletonCompactList count={3} />
-      ) : error ? (
+      ) : error && services.length === 0 ? (
         <div className="text-center py-20 text-neutral-400">
           <p className="text-sm">{error}</p>
         </div>
@@ -123,6 +161,21 @@ export default function TimeBank() {
             />
           ))}
         </div>
+      )}
+
+      {/* 已有列表时的加载中间态：避免骨架屏闪烁覆盖现有内容 */}
+      {loading && services.length > 0 && (
+        <div className="text-center py-6 text-neutral-500 text-sm">
+          <Loader2 className="w-4 h-4 animate-spin text-neutral-400 inline-block mr-2 align-middle" />
+          加载中...
+        </div>
+      )}
+
+      {/* 加载更多按钮：仅在还有更多数据且当前未在加载时显示 */}
+      {hasMore && !loading && services.length > 0 && (
+        <LoadingButton onClick={() => loadServices()} variant="outline" fullWidth className="mt-6">
+          加载更多
+        </LoadingButton>
       )}
     </div>
   );

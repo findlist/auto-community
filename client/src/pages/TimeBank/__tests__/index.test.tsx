@@ -90,6 +90,27 @@ vi.mock('@/components/Skeleton', () => ({
   },
 }));
 
+// mock LoadingButton 为简单 button，隔离分页按钮测试与真实按钮实现
+vi.mock('@/components/Button', () => ({
+  LoadingButton: function MockLoadingButton({
+    children,
+    onClick,
+    disabled,
+    loading,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    disabled?: boolean;
+    loading?: boolean;
+  }) {
+    return (
+      <button onClick={onClick} disabled={disabled || loading}>
+        {children}
+      </button>
+    );
+  },
+}));
+
 // mock ServiceCard 为可点击占位组件：暴露 service.id 与 title 便于断言，触发 onClick 模拟跳转
 // 设计原因：ServiceCard 内部渲染逻辑由其自身测试覆盖，列表页测试只需验证 service 传递与点击回调
 vi.mock('../ServiceCard', () => ({
@@ -265,6 +286,59 @@ describe('TimeBank/index 时间银行列表页', () => {
       // 第2次调用应传 type=request
       expect(getServicesMock).toHaveBeenNthCalledWith(2, expect.objectContaining({ type: 'request' }));
     });
+  });
+
+  it('点击"加载更多"按钮触发下一页请求并追加数据', async () => {
+    // 验证分页能力：首次加载 hasNext=true 显示加载更多按钮，点击后请求 page=2 并追加新数据
+    const secondPageService = {
+      id: 'service-3',
+      userId: 'user-3',
+      user: { id: 'user-3', nickname: '王师傅', reputationScore: 90, phone: '13700137000', creditBalance: 200, timeBalance: 80, role: 'user', createdAt: '2024-01-03' },
+      type: 'provide' as const,
+      title: '管道疏通',
+      description: '专业管道疏通服务',
+      category: '维修',
+      durationMinutes: 45,
+      location: '7号楼3单元',
+      status: 'active' as const,
+      createdAt: '2024-03-17T10:00:00Z',
+      updatedAt: '2024-03-17T10:00:00Z',
+    };
+    // 第一次请求返回 mockServices + hasNext=true（beforeEach 默认）
+    // 第二次请求返回 secondPageService + hasNext=false
+    getServicesMock.mockResolvedValueOnce({
+      code: 0,
+      message: 'ok',
+      data: { list: mockServices, total: 100, page: 1, pageSize: 20, hasNext: true },
+    });
+    getServicesMock.mockResolvedValueOnce({
+      code: 0,
+      message: 'ok',
+      data: { list: [secondPageService], total: 100, page: 2, pageSize: 20, hasNext: false },
+    });
+
+    renderPage();
+    // 等待首屏列表渲染
+    await waitFor(() => {
+      expect(screen.getByTestId('service-card-service-1')).toBeInTheDocument();
+    });
+    // "加载更多"按钮显示
+    expect(screen.getByText('加载更多')).toBeInTheDocument();
+
+    // 点击"加载更多"
+    act(() => {
+      screen.getByText('加载更多').click();
+    });
+    // 第二页请求参数应为 page=2 + type=provide
+    await waitFor(() => {
+      expect(getServicesMock).toHaveBeenCalledWith({ type: 'provide', page: 2, pageSize: 20 });
+    });
+    // 第二页数据被追加到列表
+    await waitFor(() => {
+      expect(screen.getByTestId('service-card-service-3')).toHaveTextContent('管道疏通');
+    });
+    // hasNext=false 后"加载更多"按钮消失
+    expect(screen.queryByText('加载更多')).not.toBeInTheDocument();
   });
 
   it('加载中不渲染服务列表', () => {
