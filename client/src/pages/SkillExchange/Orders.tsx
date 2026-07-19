@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Empty from "@/components/Empty";
@@ -49,21 +49,32 @@ export default function SkillExchangeOrders() {
   // 设计原因：updateOrderStatus 非幂等（订单状态机严格递进），弱网下用户连点会触发多次状态变更，
   // 可能跳过中间状态（如 pending → accepted 后再次点击变成 in_progress，绕过 accepted 阶段）
   const [actioningId, setActioningId] = useState<string | null>(null);
+  // 挂载标志：useEffect cleanup 时置为 false，loadOrders/handleUpdateStatus await 后检查避免卸载后 setState 泄漏
+  // 设计原因：loadOrders 由 useEffect 触发，handleUpdateStatus 由用户事件触发，两路异步在卸载后 resolve 都会触发 setState 泄漏
+  const mountedRef = useRef(true);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getOrders({ page: 1, pageSize: 20 });
+      // 卸载后不再 setState，避免 React 警告与内存泄漏
+      if (!mountedRef.current) return;
       setOrders(res.data.list);
     } catch (error) {
+      if (!mountedRef.current) return;
       toast.error(getErrorMessage(error, "加载订单失败"));
     } finally {
-      setLoading(false);
+      // 仅挂载中才更新 loading，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // 重置挂载标志：组件重新挂载时恢复为 true
+    mountedRef.current = true;
     loadOrders();
+    // cleanup：组件卸载时置为 false，使进行中的 loadOrders 失效
+    return () => { mountedRef.current = false; };
   }, [loadOrders]);
 
   const handleUpdateStatus = async (orderId: string, status: string) => {
@@ -72,12 +83,15 @@ export default function SkillExchangeOrders() {
     setActioningId(orderId);
     try {
       await updateOrderStatus(orderId, status);
+      if (!mountedRef.current) return;
       toast.success("操作成功");
       loadOrders();
     } catch (error) {
+      if (!mountedRef.current) return;
       toast.error(getErrorMessage(error, "操作失败"));
     } finally {
-      setActioningId(null);
+      // 仅挂载中才更新 actioningId，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setActioningId(null);
     }
   };
 

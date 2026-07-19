@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Gift, Heart, TrendingUp, TrendingDown, Clock, AlertCircle, Loader2 } from "lucide-react";
 import Empty from "@/components/Empty";
@@ -34,13 +34,19 @@ export default function TimeAccountPage() {
   const [transactionsError, setTransactionsError] = useState<string | null>(null);
   // 合并错误：账户错误优先于交易记录错误展示（账户信息更关键）
   const error = accountError ?? transactionsError;
+  // 挂载标志：useEffect cleanup 时置为 false，loadAccount/loadTransactions await 后检查避免卸载后 setState 泄漏
+  // 设计原因：loadAccount/loadTransactions 由 useEffect 通过 Promise.all 触发，两路异步在卸载后 resolve 都会触发 setState 泄漏
+  const mountedRef = useRef(true);
 
   const loadAccount = useCallback(async () => {
     try {
       const res = await getAccount();
+      // 卸载后不再 setState，避免 React 警告与内存泄漏
+      if (!mountedRef.current) return;
       setAccount(res.data);
       setAccountError(null);
     } catch {
+      if (!mountedRef.current) return;
       setAccountError("加载账户信息失败");
     }
   }, []);
@@ -50,24 +56,33 @@ export default function TimeAccountPage() {
       // 游标分页：reset 时从第一页开始（cursor 为空）
       const currentCursor = reset ? undefined : cursor;
       const res = await getTransactions(currentCursor, 20);
+      if (!mountedRef.current) return;
       const { list, nextCursor, hasMore } = res.data;
       setTransactions(prev => reset ? list : [...prev, ...list]);
       setCursor(nextCursor ?? undefined);
       setHasMore(hasMore);
       setTransactionsError(null);
     } catch {
+      if (!mountedRef.current) return;
       setTransactionsError("加载交易记录失败");
     }
   }, [cursor]);
 
   useEffect(() => {
+    // 重置挂载标志：组件重新挂载时恢复为 true
+    mountedRef.current = true;
     if (!isAuthenticated) {
       navigate("/login");
       return;
     }
-    Promise.all([loadAccount(), loadTransactions(true)]).finally(() => setLoading(false));
+    Promise.all([loadAccount(), loadTransactions(true)]).finally(() => {
+      // 仅挂载中才更新 loading，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setLoading(false);
+    });
+    // cleanup：组件卸载时置为 false，使进行中的 loadAccount/loadTransactions 失效
     // navigate 稳定、loadAccount 无依赖（均引用稳定）安全纳入
     // loadTransactions 依赖 cursor，纳入会导致游标分页后无限重载，故显式排除
+    return () => { mountedRef.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, navigate, loadAccount]);
 

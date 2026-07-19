@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import Empty from "@/components/Empty";
@@ -29,6 +29,9 @@ export default function GroupOrders() {
   const [maxParticipants, setMaxParticipants] = useState(10);
   const [address, setAddress] = useState("");
   const [deadline, setDeadline] = useState("");
+  // 挂载标志：useEffect cleanup 时置为 false，loadOrders/handleCreate/handleJoin await 后检查避免卸载后 setState 泄漏
+  // 设计原因：loadOrders 由 useEffect 触发，handleCreate/handleJoin 由用户事件触发，多路异步在卸载后 resolve 都会触发 setState 泄漏
+  const mountedRef = useRef(true);
 
   // 加载拼单
   const loadOrders = useCallback(async (reset = false) => {
@@ -37,6 +40,8 @@ export default function GroupOrders() {
     try {
       const newPage = reset ? 1 : page;
       const res = await getGroupOrders({ page: newPage, pageSize: 10 });
+      // 卸载后不再 setState，避免 React 警告与内存泄漏
+      if (!mountedRef.current) return;
       if (reset) {
         setOrders(res.data.list);
       } else {
@@ -45,18 +50,24 @@ export default function GroupOrders() {
       setHasMore(res.data.hasNext);
       setPage(newPage + 1);
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error("加载失败:", error);
       toast.error("加载拼单列表失败，请稍后重试");
     } finally {
-      setLoading(false);
+      // 仅挂载中才更新 loading，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setLoading(false);
     }
   }, [page, loading]);
 
   useEffect(() => {
+    // 重置挂载标志：组件重新挂载时恢复为 true
+    mountedRef.current = true;
     setPage(1);
     setHasMore(true);
     loadOrders(true);
+    // cleanup：组件卸载时置为 false，使进行中的 loadOrders 失效
     // 仅挂载时初始化；loadOrders 依赖 page/loading，纳入会导致分页后无限重载，故显式排除
+    return () => { mountedRef.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -78,6 +89,7 @@ export default function GroupOrders() {
         address,
         deadline: new Date(deadline).toISOString(),
       });
+      if (!mountedRef.current) return;
       toast.success("创建成功");
       setShowCreateModal(false);
       loadOrders(true);
@@ -90,9 +102,11 @@ export default function GroupOrders() {
       setMinParticipants(3);
       setMaxParticipants(10);
     } catch (error) {
+      if (!mountedRef.current) return;
       toast.error(getErrorMessage(error, "创建失败"));
     } finally {
-      setCreating(false);
+      // 仅挂载中才更新 creating，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setCreating(false);
     }
   };
 
@@ -103,13 +117,16 @@ export default function GroupOrders() {
     setJoining(true);
     try {
       await joinGroupOrder(showJoinModal.id, joinAmount);
+      if (!mountedRef.current) return;
       toast.success("参与成功");
       setShowJoinModal(null);
       loadOrders(true);
     } catch (error) {
+      if (!mountedRef.current) return;
       toast.error(getErrorMessage(error, "参与失败"));
     } finally {
-      setJoining(false);
+      // 仅挂载中才更新 joining，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setJoining(false);
     }
   };
 

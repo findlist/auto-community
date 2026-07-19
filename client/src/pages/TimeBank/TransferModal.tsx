@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Send, Loader2, AlertCircle } from "lucide-react";
 import { transferTime } from "@/api/timeBank";
 import { ApiError } from "@/api/client";
@@ -37,6 +37,15 @@ export default function TransferModal({ open, onClose, onSuccess, currentBalance
   // 标记用户是否尝试过提交：仅在此后显示渲染期校验错误，避免用户刚输入第一字符就出现红色提示
   // 设计原因：原实现 error=validate() 在渲染期同步计算并直接展示，用户开始输入即触发校验，UX 不友好
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  // 挂载标志：useEffect cleanup 时置为 false，handleSubmit await 后检查避免父组件卸载后 setState 泄漏
+  // 设计原因：弹窗常驻渲染（open=false 时 return null），但父组件（TimeAccount）卸载会一并卸载弹窗，
+  // 此时 await transferTime 仍在进行，resolve 后 setFormError/setSubmitting 会触发 setState 泄漏
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    // 父组件卸载时 cleanup 置为 false，使进行中的 handleSubmit 失效
+    return () => { mountedRef.current = false; };
+  }, []);
 
   if (!open) return null;
 
@@ -61,6 +70,8 @@ export default function TransferModal({ open, onClose, onSuccess, currentBalance
     setFormError(null);
     try {
       await transferTime(toUserId.trim(), Number(amount), remark.trim() || undefined);
+      // 卸载后不再 setState（父组件卸载场景）
+      if (!mountedRef.current) return;
       // 成功后清空表单、通知父组件刷新、关闭弹窗、提示用户
       setToUserId("");
       setAmount("");
@@ -70,11 +81,13 @@ export default function TransferModal({ open, onClose, onSuccess, currentBalance
       onSuccess();
       onClose();
     } catch (err: unknown) {
+      if (!mountedRef.current) return;
       // 区分 API 业务错误（余额不足、用户不存在等）与未知异常，给出精准提示
       const message = err instanceof ApiError ? err.message : "转赠失败，请重试";
       setFormError(message);
     } finally {
-      setSubmitting(false);
+      // 仅挂载中才更新 submitting，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setSubmitting(false);
     }
   };
 

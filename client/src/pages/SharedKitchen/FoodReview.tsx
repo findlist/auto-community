@@ -209,6 +209,15 @@ export function ReviewSubmitModal({ orderId, visible, onClose, onSuccess }: Revi
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // 挂载标志：useEffect cleanup 时置为 false，handleSubmit await 后检查避免父组件卸载后 setState 泄漏
+  // 设计原因：弹窗常驻渲染（visible=false 时 return null），但父组件（SharedKitchen/Orders）卸载会一并卸载弹窗，
+  // 此时 await completeFoodOrder 仍在进行，resolve 后 setError/setSubmitting 会触发 setState 泄漏
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    // 父组件卸载时 cleanup 置为 false，使进行中的 handleSubmit 失效
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const handleSubmit = async () => {
     // 入口守卫：与 disabled + 文案变化形成三重防御，避免 React 批处理延迟导致弱网下连点产生多个评价
@@ -225,15 +234,19 @@ export function ReviewSubmitModal({ orderId, visible, onClose, onSuccess }: Revi
         rating,
         content: content.trim() || undefined,
       });
+      // 卸载后不再 setState（父组件卸载场景）
+      if (!mountedRef.current) return;
       onSuccess();
       onClose();
       // 重置表单
       setRating(5);
       setContent("");
     } catch (err) {
+      if (!mountedRef.current) return;
       setError(err instanceof ApiError ? err.message : "评价失败");
     } finally {
-      setSubmitting(false);
+      // 仅挂载中才更新 submitting，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setSubmitting(false);
     }
   };
 

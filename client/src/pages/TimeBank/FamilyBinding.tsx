@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -78,28 +78,39 @@ export default function FamilyBindingPage() {
   const [parentPhone, setParentPhone] = useState("");
   const [relationship, setRelationship] = useState("father");
   const [formError, setFormError] = useState<string | null>(null);
+  // 挂载标志：useEffect cleanup 时置为 false，loadBindings/handle* await 后检查避免卸载后 setState 泄漏
+  // 设计原因：loadBindings 由 useEffect 触发，handle* 由用户事件触发，多路异步在卸载后 resolve 都会触发 setState 泄漏
+  const mountedRef = useRef(true);
 
   const loadBindings = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await getFamilyBindings();
+      // 卸载后不再 setState，避免 React 警告与内存泄漏
+      if (!mountedRef.current) return;
       setBindings(res.data);
     } catch (err: unknown) {
+      if (!mountedRef.current) return;
       // 加载失败展示错误状态，供用户重试，而不是静默失败
       const message = err instanceof Error ? err.message : "加载绑定列表失败";
       setError(message);
     } finally {
-      setLoading(false);
+      // 仅挂载中才更新 loading，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // 重置挂载标志：组件重新挂载时恢复为 true
+    mountedRef.current = true;
     if (!isAuthenticated) {
       navigate("/login");
       return;
     }
     loadBindings();
+    // cleanup：组件卸载时置为 false，使进行中的 loadBindings 失效
+    return () => { mountedRef.current = false; };
   }, [isAuthenticated, navigate, loadBindings]);
 
   // 客户端筛选：减少后端请求，列表数据量小可一次拉全
@@ -144,6 +155,7 @@ export default function FamilyBindingPage() {
     setSubmitting(true);
     try {
       await createFamilyBinding(trimmedPhone, relationship);
+      if (!mountedRef.current) return;
       toast.success("绑定申请已发起");
       setParentPhone("");
       await loadBindings();
@@ -151,7 +163,8 @@ export default function FamilyBindingPage() {
       const message = err instanceof Error ? err.message : "发起绑定失败，请重试";
       toast.error(message);
     } finally {
-      setSubmitting(false);
+      // 仅挂载中才更新 submitting，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setSubmitting(false);
     }
   };
 
@@ -161,13 +174,14 @@ export default function FamilyBindingPage() {
     setConfirmingId(id);
     try {
       await confirmFamilyBinding(id);
+      if (!mountedRef.current) return;
       toast.success("已确认绑定");
       await loadBindings();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "操作失败，请重试";
       toast.error(message);
     } finally {
-      setConfirmingId(null);
+      if (mountedRef.current) setConfirmingId(null);
     }
   };
 
@@ -177,13 +191,14 @@ export default function FamilyBindingPage() {
     setRejectingId(id);
     try {
       await rejectFamilyBinding(id);
+      if (!mountedRef.current) return;
       toast.success("已拒绝绑定");
       await loadBindings();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "操作失败，请重试";
       toast.error(message);
     } finally {
-      setRejectingId(null);
+      if (mountedRef.current) setRejectingId(null);
     }
   };
 
@@ -195,6 +210,7 @@ export default function FamilyBindingPage() {
     setUnbinding(true);
     try {
       await unbindFamilyBinding(unbindingId);
+      if (!mountedRef.current) return;
       toast.success("已解除绑定");
       setUnbindingId(null);
       await loadBindings();
@@ -202,7 +218,7 @@ export default function FamilyBindingPage() {
       const message = err instanceof Error ? err.message : "解绑失败，请重试";
       toast.error(message);
     } finally {
-      setUnbinding(false);
+      if (mountedRef.current) setUnbinding(false);
     }
   };
 
