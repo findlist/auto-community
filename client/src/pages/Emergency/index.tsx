@@ -122,7 +122,10 @@ function useModalTransition() {
   const safeSetTimeout = useSafeTimeout();
 
   useEffect(() => {
-    requestAnimationFrame(() => setIsVisible(true));
+    // 保存 rAF ID 供 cleanup 取消：组件快速卸载时（如用户连续切换）rAF 回调可能仍未触发，
+    // 不取消会导致对已卸载组件 setState 造成内存泄漏
+    const rafId = requestAnimationFrame(() => setIsVisible(true));
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   return {
