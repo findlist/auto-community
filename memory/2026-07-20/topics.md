@@ -767,3 +767,170 @@
    - Messages/Chat 用 emerald-500/600（与本页发送按钮、自己消息气泡一致）
    - 原则：优先与同页主操作按钮色板一致，其次与模块主色一致
 
+---
+
+## 本轮迭代摘要（2026-07-20 05:30-06:00）
+
+### 已完成任务（3 个最小迭代单元）
+
+1. **SkillExchange/Orders 补全持久 error 与重新加载按钮**（commit 279f3f6）
+   - 文件：`client/src/pages/SkillExchange/Orders.tsx`、`client/src/pages/SkillExchange/__tests__/Orders.test.tsx`
+   - 背景：本页为单一加载场景（无 loadMore 分页），原实现仅 toast.error 即时提示，弱网下用户错过 toast 后无重试入口
+   - 实现：
+     - 新增 `error: string | null` state，loadOrders 开始时 setError(null)
+     - catch 块从 `error` 改为 `err` 避免 shadowing，调用 setError + 不再 toast.error（Empty error 已提供视觉反馈，避免双重提示）
+     - 渲染层在 `!loading && filteredOrders.length === 0` 之前插入 `!loading && error && orders.length === 0` 分支展示 Empty variant="error" + 重新加载按钮
+     - 重试按钮 onClick 调用 loadOrders（无参数，单一加载场景）
+     - 按钮色板使用 emerald-500/600，与本页订单操作按钮（接受/开始服务/完成）主色一致
+   - 测试：原"加载失败显示 toast.error 错误提示"用例改造为"加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求"
+   - 验收：17/17 测试通过，前端 build ✅（15.67s 零错误零警告）
+
+2. **Notifications/index 补全持久 error 与重新加载按钮**（commit fb81939）
+   - 文件：`client/src/pages/Notifications/index.tsx`、`client/src/pages/Notifications/__tests__/index.test.tsx`
+   - 背景：本页为分页加载场景（loadMore 追加），与 SharedKitchen/index 模板完全一致，需区分首次失败 vs loadMore 失败
+   - 实现：
+     - 新增 `error: string | null` state
+     - loadNotifications 开始时若 pageNum === 1 则 setError(null)
+     - catch 块区分 pageNum === 1（首次失败 → setError + 不 toast，Empty error 占位）与 pageNum > 1（loadMore 失败 → toast.error 即时反馈，列表已有数据 Empty 不展示）
+     - 渲染层在 loading 与 notifications.length === 0 之间插入 error 分支展示 Empty variant="error" + 重新加载按钮
+     - 重试按钮 onClick 调用 loadNotifications(1)（重置到第一页）
+     - 按钮色板使用 emerald-500/600，与本页"全部已读/加载更多"主色一致
+   - 测试：原"getNotifications 失败时调用 console.error，无 UI 错误提示"用例改造为"首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求"
+   - 验收：20/20 测试通过，前端 build ✅（15.72s 零错误零警告）
+
+3. **Profile/PointsDetail 补全持久 error 与重新加载按钮**（commit f573790）
+   - 文件：`client/src/pages/Profile/PointsDetail.tsx`、`client/src/pages/Profile/__tests__/PointsDetail.test.tsx`
+   - 背景：本页为 page 切换场景（每次切换 page 重新加载当前页 transactions），原实现仅 toast.error 即时提示
+   - 实现：
+     - 新增 `error: string | null` state，fetchTransactions 开始时 setError(null)
+     - catch 块 setError(message) + 删除 toast.error 与 getErrorMessage import（Empty error 已提供视觉反馈，避免双重提示）
+     - 渲染层在 loading 与 transactions.length === 0 之间插入 error 分支展示 Empty variant="error" + 重新加载按钮
+     - 重试按钮 onClick 调用 fetchTransactions(page)（重新加载当前页，而非重置到第一页）
+     - 按钮色板使用 emerald-500/600，与本页积分余额卡片主色一致
+   - 测试：新增"加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求"用例
+   - **关键修复**：Edit 工具修改 PointsDetail.tsx 时把 UTF-16 LE 编码文件转成 UTF-8 编码，导致 line 185 `<div className={`w-9 h-9 rounded-full ${style.bg} flex items-center justify-center flex-shrink-0`}>` 末尾的反引号与 `}` 丢失（hex 末尾 `flex-shrink-0"` 缺少 `` `} ``），esbuild 报错 line 186:36 Expected "}" but found "w"。用 Edit 工具显式替换该行补回 `` `} `` 修复
+   - 验收：19/19 测试通过（原 18 + 新增 1），前端 build ✅（1m 14s 零错误零警告）
+
+### 验证结果
+
+- 后端类型检查：✅ 零错误（基线，本轮无后端改动）
+- 后端单元测试：✅ 1731/1731 通过（基线，本轮无后端改动）
+- 前端构建：✅ 全部通过（3 次 build 均 0 错误 0 警告）
+- 前端测试：✅ SkillExchange/Orders 17/17 + Notifications/index 20/20 + Profile/PointsDetail 19/19 全部通过
+
+### 终止条件
+
+- ✅ 累计完成 5 个最小迭代单元（规范要求 4-6 个）：前一轮 140bf8d + a908601 + 本轮 279f3f6 + fb81939 + f573790
+- ✅ 前端状态完整性补全 5 处候选全部清零（SharedKitchen/GroupOrders + SkillExchange/index + SkillExchange/Orders + Notifications/index + Profile/PointsDetail）
+- 触发「4-6 个最小迭代单元达标」+ 「候选清单清零」双重终止条件
+
+### 遗留问题
+
+无阻塞性遗留问题。剩余运维侧任务（非 Agent 可推进）：
+
+1. **5.1 P0 安全遗留**：.env 历史 commit 含泄露凭据，需运维轮换 DB/Redis 密码与 JWT 密钥，并清理 git 历史
+2. **5.2 P1 生产就绪验收**：
+   - 全页面移动端适配、交互体验、状态提示完整性人工最终复查
+   - CD 流水线 GitHub Secrets 与远程服务器 GHCR 登录态运维确认
+   - 高德地图 Key 配置（清理逻辑已完备）
+
+### 下一轮建议
+
+按优先级排序的剩余可推进候选：
+
+1. **前端响应式适配（8 处）**（Phase 3 技术债清理范畴）：
+   - SkillExchange/Detail.tsx line 183（whitespace-nowrap 同行挤压）
+   - TimeBank/ServiceDetail.tsx line 170（同上）
+   - Profile/index.tsx line 112（grid-cols-3 固定）
+   - TimeBank/index.tsx line 128（grid-cols-3 固定）
+   - TimeBank/ServiceDetail.tsx line 184（grid-cols-3 固定）
+   - components/Upload/ImageUpload.tsx line 220（grid-cols-3 固定）
+   - TimeBank/TimeAccount.tsx line 177、Skeleton/SkeletonList.tsx line 92（轻微）
+2. **后端测试缺口（可选）**：
+   - admin.service forceCancel* 并发测试（参考 time-bank.concurrent.test.ts 模式）
+   - auth.service Redis 容错测试
+3. **滚动补全核心模块单元测试**（覆盖率已达 95.4%+，按缺口滚动补全）
+4. **等待运维侧推进**：
+   - 5.1 P0 安全遗留（.env 历史 commit 凭据清理）
+   - 5.2 P1 运维确认（CD 流水线 GitHub Secrets、高德地图 Key 配置）
+   - 5.2 P1 全页面移动端适配人工最终复查
+
+### Git 提交记录
+
+- `279f3f6` fix: SkillExchange/Orders 加载失败补全持久 error 状态与重新加载按钮
+- `fb81939` fix: Notifications/index 加载失败补全持久 error 状态与重新加载按钮
+- `f573790` fix: Profile/PointsDetail 加载失败补全持久 error 状态与重新加载按钮
+
+### 关键技术决策
+
+1. **单一加载场景 vs 分页加载场景的差异化处理**：
+   - 单一加载场景（SkillExchange/Orders、Profile/PointsDetail）：catch 块仅 setError 不 toast，Empty error 占位即可
+   - 分页加载场景（Notifications/index）：首次失败（pageNum === 1）setError 不 toast，loadMore 失败（pageNum > 1）toast.error 即时反馈
+2. **Profile/PointsDetail 重试按钮 onClick 调用 fetchTransactions(page) 而非 fetchTransactions(1)**：本页为 page 切换场景，用户可能在 page=2 时遇到加载失败，重试应重新加载当前页而非重置到第一页，保留用户翻页位置
+3. **UTF-16 文件 Edit 工具破坏修复**：Edit 工具修改 UTF-16 LE 编码文件时会转为 UTF-8，过程中可能丢失模板字符串的反引号与 `}`。修复方法：用 Edit 工具显式替换受影响行，补回缺失字符。建议后续修改文件前先用 hex 检查编码，UTF-16 文件需特别处理
+4. **catch 块变量名统一改为 err**：避免与外层 error state shadowing，与 SharedKitchen/index、SkillExchange/index、Messages/Chat 改造模板一致
+
+
+---
+
+## 本轮迭代摘要（2026-07-20 04:30-05:30）
+
+### 已完成任务（4 个最小迭代单元）
+
+1. **LocationPicker 卸载守卫补全 + 新增 dragend 卸载测试**（commit 28c2529）
+   - 文件：`client/src/components/Map/LocationPicker.tsx`、`client/src/components/__tests__/LocationPicker.test.tsx`
+   - 实现：marker.on('dragend') 回调与 geolocation.getCurrentPosition 回调的 await regeo 之后补 `if (cancelled) return;`，finally 块用 `if (!cancelled) setLoading(false)`；测试用 deferred Promise 控制慢请求 resolve 时机，act() 包裹同步部分
+   - 验收：前端 build 通过，LocationPicker 测试全通过
+
+2. **scheduler 与 emergency.service 过期注释修正**（commit 2b0ff1d）
+   - 文件：`server/src/jobs/scheduler.ts`、`server/src/services/emergency.service.ts`
+   - 实现：scheduler 第 387-392 行注释改为说明"对账异常属于数据完整性事件而非用户操作审计事件"；emergency.service 第 489-494 行注释改为说明"completed 路径在事务内对 emergency_requests 行加 FOR UPDATE 行锁 + 状态校验"
+   - 设计原因：原注释称"audit.service.ts 未实现"与"项目当前未配置测试框架"与现状不符，规范要求注释说明设计原因而非仅描述内容
+   - 验收：后端 tsc 零错误，vitest 1731/1731 通过
+
+3. **14 处图标按钮补全 aria-label 无障碍标签**（commit 3ad759d）
+   - 文件：`client/src/components/Map/LocationPicker.tsx`、`client/src/components/Upload/ImageUpload.tsx`、`client/src/pages/Emergency/index.tsx`、`client/src/pages/Admin/SystemConfig.tsx`、`client/src/pages/Admin/ContentReview.tsx`、`client/src/pages/Admin/AuditLog.tsx`、`client/src/pages/Admin/OrderManagement.tsx`
+   - 实现：清除搜索/删除图片/弹窗关闭/分页上下页等 14 处图标按钮补 `aria-label="具体用途"`
+   - 设计原因：图标按钮无文字内容，屏幕阅读器无法识别用途，aria-label 提供可读名称让辅助技术能正确播报
+   - 验收：前端 build 16.14s 0 错误
+
+4. **5 处无 label 关联的 input 补全无障碍标签**（commit 14c7d8e）
+   - 文件：`client/src/components/Map/LocationPicker.tsx`、`client/src/pages/Messages/Chat.tsx`、`client/src/pages/Admin/UserManagement.tsx`、`client/src/pages/Admin/AuditLog.tsx`
+   - 实现：
+     - LocationPicker 搜索框、Chat 消息输入框、UserManagement 用户搜索框：补 `aria-label`（无可见 label 场景）
+     - AuditLog 开始/结束日期：用 `htmlFor/id` 关联 label 与 input（已有 label 文本的"假 label"场景，WCAG 标准做法）
+   - 设计原因：纯 placeholder input 在用户输入后失明；「假 label」（视觉同级但无 htmlFor 关联）点击文字无法聚焦 input
+   - 验收：前端 build 16.31s 0 错误
+
+### 验证结果
+
+- 后端类型检查：✅ 零错误
+- 后端单元测试：✅ 1731/1731 通过
+- 前端构建：✅ 通过（16.14s + 16.31s 两次验证 0 错误）
+
+### 遗留问题
+
+无阻塞性遗留问题。下列无障碍候选项已识别但本轮未推进（已达到 4-6 个最小迭代单元上限）：
+
+1. **「假 label」型违规 30+ 处**：扫描发现 Emergency/index、SharedKitchen/Create、TimeBank/CreateService、DonateModal、TransferModal、Profile/Verify 等多文件存在 `<label>` 与 `<input>` 视觉同级但无 `htmlFor/id` 关联的问题，下轮可批量用 htmlFor/id 关联修复
+2. **ContentReview 复用组件 TextInput/NumberInput 未透传 aria-label**：基础组件签名缺 aria-label/id 参数，导致所有调用点全部失配，需重构组件签名并透传 props
+3. **isSqlParam 对 class 实例放行的设计限制**（上轮遗留 P2 候选）
+
+### 下一轮建议
+
+1. 批量修复「假 label」型 30+ 处违规，重点文件：Emergency/index、SharedKitchen/Create、TimeBank/CreateService
+2. 重构 ContentReview 的 TextInput/NumberInput 组件签名，强制要求传入 aria-label 或 id
+3. 评估 isSqlParam prototype 链检查方案
+
+### Git 提交记录
+
+- `28c2529` fix: LocationPicker 补卸载守卫并新增 dragend 卸载测试
+- `2b0ff1d` docs: 修正 scheduler 与 emergency.service 过期注释
+- `3ad759d` fix: 为 14 处图标按钮补全 aria-label 无障碍标签
+- `14c7d8e` fix: 为 5 处无 label 关联的 input 补全无障碍标签
+
+### 关键技术决策
+
+1. **aria-label vs htmlFor/id 选择**：纯 placeholder input（无可见 label 文本）用 aria-label；已有 `<label>` 文本但无关联的「假 label」场景用 htmlFor/id（WCAG 标准做法，点击文字能聚焦 input）
+2. **图标按钮无障碍优先级**：图标按钮无文字 fallback，屏幕阅读器完全无法识别，是无障碍合规的最高优先级
+3. **小步重构边界**：本轮只修复 5 处纯 placeholder + 假 label 最高优先级 input，30+ 处假 label 违规留待下轮批量处理，避免单轮改动过大
