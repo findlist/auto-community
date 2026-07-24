@@ -3,6 +3,7 @@ import { query } from '../config/database';
 import { getCache, setCache } from '../config/redis';
 import { NotFoundError, BadRequestError } from '../utils/errors';
 import { logger } from '../utils/logger';
+import { sanitizeStringValues } from '../utils/sanitize';
 
 const CACHE_TTL = 300;
 const CACHE_PREFIX = 'ab_test:';
@@ -98,10 +99,16 @@ export async function recordEvent(
     throw new BadRequestError(`不支持的 eventType：${eventType}`);
   }
 
+  // metadata XSS 清洗：metadata 来自 req.body，键名动态且可能嵌套对象/数组，
+  // 用 sanitizeStringValues 递归清洗所有字符串值，防止存储型 XSS
+  // 设计原因：metadata 入库后会被 getTestResults 读取并可能下传到后台聚合页渲染，
+  //          在源头清洗避免脏字符串下传。null/undefined 透传保持 SQL 参数一致性
+  const safeMetadata = metadata ? sanitizeStringValues(metadata) : metadata;
+
   await query(
     `INSERT INTO ab_test_results (test_name, user_id, variant, event_type, metadata)
      VALUES ($1, $2, $3, $4, $5)`,
-    [testName, userId, variant, eventType, metadata ? JSON.stringify(metadata) : null],
+    [testName, userId, variant, eventType, safeMetadata ? JSON.stringify(safeMetadata) : null],
   );
 
   logger.debug({ testName, userId, variant, eventType }, '[AB Test] 事件已记录');

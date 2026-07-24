@@ -551,6 +551,12 @@ async function setSetting(
       : (() => { throw new BadRequestError(`配置类型非法，仅允许：${ALLOWED_VALUE_TYPES.join('/')}`); })()
     : null;
 
+  // description XSS 清洗：管理员可写入富文本说明，统一在 service 入库前清洗
+  // 设计原因：仅管理员可写入攻击门槛高，且 React 默认转义插值，但配置说明可能被后台/前端多端复用，
+  //          在源头清洗避免脏数据下传到缓存层与下游渲染方
+  // null/undefined 透传：与 SQL 的 COALESCE($4, site_settings.description) 配合保留原值
+  const safeDescription = typeof description === 'string' ? sanitizeXss(description) : description;
+
   await query(
     `INSERT INTO site_settings (key, value, value_type, description, updated_by, updated_at)
      VALUES ($1, $2, COALESCE($3, 'string'), $4, $5, NOW())
@@ -560,7 +566,7 @@ async function setSetting(
        description = COALESCE($4, site_settings.description),
        updated_by = $5,
        updated_at = NOW()`,
-    [key, value, resolvedValueType, description ?? null, adminId],
+    [key, value, resolvedValueType, safeDescription ?? null, adminId],
   );
 
   logger.info({ adminId, key, valueType: resolvedValueType }, '管理员更新系统配置');
@@ -568,7 +574,8 @@ async function setSetting(
   // 返回值 valueType：显式传入时用传入值，缺省时用 DEFAULT_VALUE_TYPE 兜底
   // 设计原因：编辑场景缺省时实际写入的是原值，但前端编辑时始终显式传入（从 listSettings 获取），
   // 不会走到缺省分支；新增场景缺省时 DB 写入 'string'，返回 'string' 与 DB 一致
-  return { key, value, valueType: resolvedValueType ?? DEFAULT_VALUE_TYPE, description: description ?? null, updatedBy: adminId };
+  // 返回值 description 使用清洗后的 safeDescription，保证返回值与 DB 实际值一致
+  return { key, value, valueType: resolvedValueType ?? DEFAULT_VALUE_TYPE, description: safeDescription ?? null, updatedBy: adminId };
 }
 
 // 删除配置项，受保护键禁止删除，避免误删核心配置导致功能异常

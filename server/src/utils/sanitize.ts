@@ -3,6 +3,7 @@
  *
  * - sanitizeXss：对用户输入的富文本字段进行 XSS 清洗，剥离 <script>、事件处理器等危险节点
  * - sanitizeObject：批量清洗对象中指定字段，便于 service 入库前统一处理
+ * - sanitizeStringValues：递归清洗任意值中的所有字符串，适用于键名动态的对象（如 metadata、webhook payload）
  * - validateImageUrl / validateImageUrls：校验图片 URL，支持本地上传相对路径与 HTTPS 白名单外链
  */
 import xss from 'xss';
@@ -46,6 +47,60 @@ export function sanitizeObject<T extends object>(
     }
   }
   return result as T;
+}
+
+/**
+ * 递归清洗任意值中的所有字符串
+ *
+ * 设计原因：与 sanitizeObject 互补——sanitizeObject 适用于字段名固定的具名接口（如 CreateRequestData），
+ * 而 sanitizeStringValues 适用于键名动态的对象（如 ab-test metadata、webhook payload 等），
+ * 通过递归遍历对象/数组，对所有字符串值调用 sanitizeXss，避免脏字符串下传入库或下游渲染。
+ *
+ * 行为约定：
+ * - 字符串：调用 sanitizeXss 清洗
+ * - 数组：递归清洗每个元素，返回新数组（不修改入参）
+ * - 普通对象（含 Record、plain object）：递归清洗每个属性值，返回新对象（不修改入参）
+ * - 其他类型（数字、布尔、null、undefined、Date、RegExp 等）：原样返回
+ *
+ * 不修改入参：所有对象/数组都返回新副本，避免污染调用方持有的引用
+ */
+export function sanitizeStringValues<T>(value: T): T {
+  // 字符串：清洗后返回。as unknown as T 让 TS 接受 string→T 的窄化（运行时安全）
+  if (typeof value === 'string') {
+    return sanitizeXss(value) as unknown as T;
+  }
+  // 数组：递归清洗每个元素，返回新数组（不修改入参）
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeStringValues(item)) as unknown as T;
+  }
+  // 普通对象：递归清洗每个属性值，返回新对象（不修改入参）
+  // 排除 null（typeof null === 'object'）与非 plain object（如 Date、Buffer、RegExp 等）
+  // 设计原因：plain object 由字面量 {} 或 new Object() 创建，是用户可控的 JSON 反序列化结果；
+  //          Date/Buffer 等内置类型不会包含用户输入字符串，递归无意义且可能破坏类型
+  if (value !== null && typeof value === 'object' && isPlainObject(value)) {
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value)) {
+      result[key] = sanitizeStringValues(val);
+    }
+    return result as unknown as T;
+  }
+  // 其他类型（数字、布尔、null、undefined、Date、RegExp 等）原样返回
+  return value;
+}
+
+/**
+ * 判断对象是否为 plain object（由 {} 或 new Object() 创建）
+ *
+ * 设计原因：sanitizeStringValues 需要区分用户可控的 JSON 反序列化对象（plain object）
+ * 与内置类型实例（Date、Buffer、RegExp、Map、Set 等）。前者需要递归清洗字符串，
+ * 后者不会包含用户输入字符串，递归无意义且可能破坏类型。
+ *
+ * 实现说明：通过原型链判断——plain object 的原型为 Object.prototype 或 null（Object.create(null)）。
+ *           不使用 instanceof Object，因为 Date/RegExp 等也 instanceof Object。
+ */
+function isPlainObject(value: object): boolean {
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
 }
 
 /**

@@ -211,6 +211,100 @@ describe('ab-test.service recordEvent', () => {
     // 抛错时不应触发 DB 写入
     expect(mockQuery).not.toHaveBeenCalled();
   });
+
+  // ==================== metadata XSS 清洗测试 ====================
+
+  it('metadata 字符串值含 <script> 时被递归清洗', async () => {
+    // 设计原因：metadata 来自 req.body 用户可控，入库后会被 getTestResults 读取下传到后台聚合页渲染，
+    //          在源头清洗避免存储型 XSS
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const metadata = { source: '<script>alert(1)</script>button', count: 10 };
+    await abTestService.recordEvent('homepage_test', 'user-1', 'control', 'conversion', metadata);
+
+    const callArgs = mockQuery.mock.calls[0];
+    const inserted = JSON.parse(callArgs[1][4] as string);
+    expect(inserted.source).not.toContain('<script>');
+    expect(inserted.source).toContain('button');
+    expect(inserted.count).toBe(10);
+  });
+
+  it('metadata 嵌套对象的字符串值被递归清洗', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const metadata = {
+      outer: '正常',
+      nested: { inner: '<script>恶意</script>内容', valid: true },
+    };
+    await abTestService.recordEvent('homepage_test', 'user-1', 'control', 'conversion', metadata);
+
+    const callArgs = mockQuery.mock.calls[0];
+    const inserted = JSON.parse(callArgs[1][4] as string);
+    expect(inserted.outer).toBe('正常');
+    expect(inserted.nested.inner).not.toContain('<script>');
+    expect(inserted.nested.inner).toContain('内容');
+    expect(inserted.nested.valid).toBe(true);
+  });
+
+  it('metadata 数组元素中的字符串被递归清洗', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const metadata = { tags: ['<script>tag1</script>正常', '普通'] };
+    await abTestService.recordEvent('homepage_test', 'user-1', 'control', 'conversion', metadata);
+
+    const callArgs = mockQuery.mock.calls[0];
+    const inserted = JSON.parse(callArgs[1][4] as string);
+    expect(inserted.tags[0]).not.toContain('<script>');
+    expect(inserted.tags[0]).toContain('正常');
+    expect(inserted.tags[1]).toBe('普通');
+  });
+
+  it('metadata 含事件处理器（onerror）时被剥离', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const metadata = { html: '<img src="x" onerror="alert(1)">内容' };
+    await abTestService.recordEvent('homepage_test', 'user-1', 'control', 'conversion', metadata);
+
+    const callArgs = mockQuery.mock.calls[0];
+    const inserted = JSON.parse(callArgs[1][4] as string);
+    expect(inserted.html).not.toContain('onerror');
+    expect(inserted.html).not.toContain('alert(1)');
+    expect(inserted.html).toContain('内容');
+  });
+
+  it('metadata 纯文本字符串不被改变', async () => {
+    // 设计原因：xss 库默认保留无标签文本，避免误伤合法输入
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const metadata = { source: 'button', label: '按钮' };
+    await abTestService.recordEvent('homepage_test', 'user-1', 'control', 'conversion', metadata);
+
+    const callArgs = mockQuery.mock.calls[0];
+    const inserted = JSON.parse(callArgs[1][4] as string);
+    expect(inserted.source).toBe('button');
+    expect(inserted.label).toBe('按钮');
+  });
+
+  it('metadata 为 undefined 时落 null（不触发清洗）', async () => {
+    // 设计原因：metadata 缺省时落 null，与原逻辑一致，sanitizeStringValues 不被调用
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    await abTestService.recordEvent('homepage_test', 'user-1', 'control', 'impression');
+
+    const callArgs = mockQuery.mock.calls[0];
+    expect(callArgs[1][4]).toBeNull();
+  });
+
+  it('metadata 入参对象不被修改（sanitizeStringValues 返回新对象）', async () => {
+    // 设计原因：sanitizeStringValues 设计为不修改入参，避免污染调用方持有的引用
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const metadata = { source: '<script>alert(1)</script>button' };
+    await abTestService.recordEvent('homepage_test', 'user-1', 'control', 'conversion', metadata);
+
+    // 入参对象的 source 仍为原值（未被修改）
+    expect(metadata.source).toBe('<script>alert(1)</script>button');
+  });
 });
 
 describe('ab-test.service getTestResults', () => {

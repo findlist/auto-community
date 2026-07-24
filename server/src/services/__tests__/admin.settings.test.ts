@@ -225,6 +225,76 @@ describe('admin.service - 系统配置 setSetting', () => {
       adminService.setSetting('valid_key', longValue, undefined, 'admin-1'),
     ).rejects.toBeInstanceOf(BadRequestError);
   });
+
+  it('description 含 <script> 时被 XSS 清洗（剥离危险标签，保留文本内容）', async () => {
+    // 设计原因：管理员可写入富文本说明，配置说明可能下传到后台/前端多端渲染，
+    //          在 service 入库前清洗避免存储型 XSS
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    const xssDescription = '<script>alert(1)</script>订单自动过期小时数';
+    await adminService.setSetting('order_auto_expire_hours', '24', xssDescription, 'admin-1');
+
+    const params = mockedQuery.mock.calls[0][1] as unknown[];
+    // 第 4 个参数（description）应被清洗：剥离 <script>，保留文本内容
+    expect(params[3]).not.toContain('<script>');
+    expect(params[3]).toContain('订单自动过期小时数');
+    expect(params[3]).toContain('alert');
+  });
+
+  it('description 含事件处理器（onerror）时被剥离', async () => {
+    // 设计原因：xss 库默认移除所有事件处理器属性，避免恶意脚本通过事件触发
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    const xssDescription = '<img src="x" onerror="alert(1)">说明';
+    await adminService.setSetting('test_key', 'value', xssDescription, 'admin-1');
+
+    const params = mockedQuery.mock.calls[0][1] as unknown[];
+    expect(params[3]).not.toContain('onerror');
+    expect(params[3]).not.toContain('alert(1)');
+    expect(params[3]).toContain('说明');
+  });
+
+  it('description 纯文本不被改变（xss 库保留无标签文本）', async () => {
+    // 设计原因：xss 库默认行为是保留普通文本，仅剥离危险标签与属性，避免误伤合法输入
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    const plainDescription = '订单自动过期小时数';
+    await adminService.setSetting('order_auto_expire_hours', '24', plainDescription, 'admin-1');
+
+    const params = mockedQuery.mock.calls[0][1] as unknown[];
+    expect(params[3]).toBe('订单自动过期小时数');
+  });
+
+  it('description 为 null 时透传 null（保留原值，不触发清洗）', async () => {
+    // 设计原因：null 表示显式清空或编辑场景缺省，由 SQL COALESCE 处理，service 层不清洗
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    await adminService.setSetting('test_key', 'value', null, 'admin-1');
+
+    const params = mockedQuery.mock.calls[0][1] as unknown[];
+    expect(params[3]).toBeNull();
+  });
+
+  it('description 为 undefined 时透传 null（保留原值，不触发清洗）', async () => {
+    // 设计原因：undefined 转 null 后让 SQL COALESCE 保留原值，与原逻辑一致
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    await adminService.setSetting('test_key', 'value', undefined, 'admin-1');
+
+    const params = mockedQuery.mock.calls[0][1] as unknown[];
+    expect(params[3]).toBeNull();
+  });
+
+  it('返回值 description 使用清洗后的值（与 DB 实际值一致）', async () => {
+    // 设计原因：返回值与 DB 实际值保持一致，避免调用方拿到未清洗的原值
+    mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
+
+    const xssDescription = '<script>alert(1)</script>说明';
+    const result = await adminService.setSetting('test_key', 'value', xssDescription, 'admin-1');
+
+    expect(result.description).not.toContain('<script>');
+    expect(result.description).toContain('说明');
+  });
 });
 
 describe('admin.service - 系统配置 deleteSetting', () => {

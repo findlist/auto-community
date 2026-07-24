@@ -4,6 +4,7 @@
  * 测试目标：
  * - sanitizeXss：字符串剥离 <script> 等危险节点、非字符串原样返回（避免误伤数字/布尔等类型）
  * - sanitizeObject：批量清洗指定字段、不修改入参、字段不存在或 undefined 时跳过、非字符串字段保留
+ * - sanitizeStringValues：递归清洗任意值中的所有字符串、不修改入参、内置类型实例原样返回
  * - validateImageUrl：/uploads/ 前缀放行、路径遍历拦截、HTTPS+白名单校验、协议/域名/格式不合法抛错
  * - validateImageUrls：非数组/空数组直接通过、含非字符串抛错、含无效 URL 抛错、全部合法通过
  *
@@ -29,6 +30,7 @@ vi.mock('../../config/env', () => ({ env: mockEnv }));
 import {
   sanitizeXss,
   sanitizeObject,
+  sanitizeStringValues,
   validateImageUrl,
   validateImageUrls,
 } from '../sanitize';
@@ -164,6 +166,190 @@ describe('utils/sanitize sanitizeObject - 批量清洗', () => {
     // 不清洗任何字段，但仍返回新对象
     expect(result).toEqual(data);
     expect(result).not.toBe(data);
+  });
+});
+
+// ==================== sanitizeStringValues 测试 ====================
+
+describe('utils/sanitize sanitizeStringValues - 标量入参', () => {
+  it('字符串入参被清洗（剥离 <script>）', () => {
+    const input = '<script>alert(1)</script>正常文本';
+    const result = sanitizeStringValues(input);
+    expect(result).not.toContain('<script>');
+    expect(result).toContain('正常文本');
+  });
+
+  it('普通文本字符串原样返回（xss 库不改变无标签文本）', () => {
+    expect(sanitizeStringValues('普通文本')).toBe('普通文本');
+  });
+
+  it('数字原样返回', () => {
+    expect(sanitizeStringValues(42)).toBe(42);
+    expect(sanitizeStringValues(0)).toBe(0);
+    expect(sanitizeStringValues(-1.5)).toBe(-1.5);
+  });
+
+  it('布尔值原样返回', () => {
+    expect(sanitizeStringValues(true)).toBe(true);
+    expect(sanitizeStringValues(false)).toBe(false);
+  });
+
+  it('null 原样返回', () => {
+    expect(sanitizeStringValues(null)).toBeNull();
+  });
+
+  it('undefined 原样返回', () => {
+    expect(sanitizeStringValues(undefined)).toBeUndefined();
+  });
+});
+
+describe('utils/sanitize sanitizeStringValues - 数组入参', () => {
+  it('字符串数组每个元素被清洗', () => {
+    const input = ['<script>1</script>正常', '<img src=x onerror=alert(1)>恶意', '普通'];
+    const result = sanitizeStringValues(input);
+    expect(result[0]).not.toContain('<script>');
+    expect(result[0]).toContain('正常');
+    expect(result[1]).not.toContain('onerror');
+    expect(result[2]).toBe('普通');
+  });
+
+  it('混合类型数组：字符串清洗、非字符串保留', () => {
+    const input = ['<script>x</script>', 42, true, null];
+    const result = sanitizeStringValues(input);
+    expect(result[0]).not.toContain('<script>');
+    expect(result[1]).toBe(42);
+    expect(result[2]).toBe(true);
+    expect(result[3]).toBeNull();
+  });
+
+  it('不修改入参数组（返回新数组）', () => {
+    const input = ['<script>alert(1)</script>'];
+    const result = sanitizeStringValues(input);
+    expect(input[0]).toBe('<script>alert(1)</script>');
+    expect(result[0]).not.toContain('<script>');
+    expect(result).not.toBe(input);
+  });
+
+  it('空数组返回新空数组', () => {
+    const input: unknown[] = [];
+    const result = sanitizeStringValues(input);
+    expect(result).toEqual([]);
+    expect(result).not.toBe(input);
+  });
+
+  it('嵌套数组递归清洗', () => {
+    const input = [['<script>inner</script>外层'], ['普通']];
+    const result = sanitizeStringValues(input);
+    expect(result[0][0]).not.toContain('<script>');
+    expect(result[0][0]).toContain('外层');
+    expect(result[1][0]).toBe('普通');
+  });
+});
+
+describe('utils/sanitize sanitizeStringValues - 对象入参', () => {
+  it('对象内所有字符串字段被清洗', () => {
+    const input = {
+      source: '<script>x</script>button',
+      count: 10,
+      valid: true,
+    };
+    const result = sanitizeStringValues(input);
+    expect(result.source).not.toContain('<script>');
+    expect(result.source).toContain('button');
+    expect(result.count).toBe(10);
+    expect(result.valid).toBe(true);
+  });
+
+  it('不修改入参对象（返回新对象）', () => {
+    const input = { key: '<script>alert(1)</script>' };
+    const result = sanitizeStringValues(input);
+    expect(input.key).toBe('<script>alert(1)</script>');
+    expect(result.key).not.toContain('<script>');
+    expect(result).not.toBe(input);
+  });
+
+  it('嵌套对象递归清洗', () => {
+    const input = {
+      outer: '正常',
+      nested: {
+        inner: '<script>恶意</script>内容',
+        count: 5,
+      },
+    };
+    const result = sanitizeStringValues(input);
+    expect(result.outer).toBe('正常');
+    expect(result.nested.inner).not.toContain('<script>');
+    expect(result.nested.inner).toContain('内容');
+    expect(result.nested.count).toBe(5);
+    // 嵌套对象也返回新引用（不修改入参）
+    expect(result.nested).not.toBe(input.nested);
+  });
+
+  it('对象内数组字段递归清洗', () => {
+    const input = {
+      tags: ['<script>tag1</script>正常', '普通'],
+      meta: { source: '<img src=x onerror=alert(1)>' },
+    };
+    const result = sanitizeStringValues(input);
+    expect(result.tags[0]).not.toContain('<script>');
+    expect(result.tags[0]).toContain('正常');
+    expect(result.tags[1]).toBe('普通');
+    expect(result.meta.source).not.toContain('onerror');
+  });
+
+  it('空对象返回新空对象', () => {
+    const input = {};
+    const result = sanitizeStringValues(input);
+    expect(result).toEqual({});
+    expect(result).not.toBe(input);
+  });
+
+  it('Object.create(null) 创建的对象也被递归清洗', () => {
+    // 设计原因：sanitizeStringValues 通过原型链判断 plain object，
+    // Object.create(null) 的原型为 null，应被识别为 plain object 并递归清洗
+    const input = Object.create(null);
+    input.key = '<script>x</script>正常';
+    const result = sanitizeStringValues(input);
+    expect(result.key).not.toContain('<script>');
+    expect(result.key).toContain('正常');
+  });
+
+  it('Date 实例原样返回（不递归清洗）', () => {
+    // 设计原因：Date 是内置类型，属性不包含用户输入字符串，递归无意义
+    const input = new Date('2026-07-25');
+    const result = sanitizeStringValues(input);
+    expect(result).toBe(input);
+    expect(result).toBeInstanceOf(Date);
+  });
+
+  it('RegExp 实例原样返回（不递归清洗）', () => {
+    const input = /<script>.*<\/script>/;
+    const result = sanitizeStringValues(input);
+    expect(result).toBe(input);
+    expect(result).toBeInstanceOf(RegExp);
+  });
+
+  it('Map 实例原样返回（不递归清洗）', () => {
+    const input = new Map([['key', '<script>x</script>']]);
+    const result = sanitizeStringValues(input);
+    expect(result).toBe(input);
+    expect(result).toBeInstanceOf(Map);
+  });
+
+  it('Set 实例原样返回（不递归清洗）', () => {
+    const input = new Set(['<script>x</script>']);
+    const result = sanitizeStringValues(input);
+    expect(result).toBe(input);
+    expect(result).toBeInstanceOf(Set);
+  });
+
+  it('深层嵌套对象递归清洗（3 层）', () => {
+    const input = {
+      l1: { l2: { l3: '<script>深层</script>正常' } },
+    };
+    const result = sanitizeStringValues(input);
+    expect(result.l1.l2.l3).not.toContain('<script>');
+    expect(result.l1.l2.l3).toContain('正常');
   });
 });
 

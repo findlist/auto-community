@@ -5,7 +5,7 @@ import { logger } from '../utils/logger';
 import { safeNotify } from '../utils/safeNotify';
 import { notificationService } from './notification.service';
 import { prefixColumns } from '../utils/sql';
-import { sanitizeObject } from '../utils/sanitize';
+import { sanitizeObject, sanitizeXss } from '../utils/sanitize';
 
 // 成团后(ongoing)退出的部分退款比例：退还参与者 90%，10% 作为已发生成本补偿给发起人
 const ONGOING_REFUND_RATE = 0.9;
@@ -537,11 +537,14 @@ async function cancel(groupOrderId: string, userId: string, reason?: string): Pr
     }
 
     // 5. 更新拼单状态为 cancelled，记录取消原因与时间
+    // reason XSS 清洗：取消原因由发起人输入，会展示给其他参与者与后台，统一在入库前清洗
+    // 设计原因：routes/kitchen.ts 已做长度校验，这里仅做内容清洗，防止存储型 XSS
+    const safeReason = typeof reason === 'string' ? sanitizeXss(reason) : reason;
     await client.query(
       `UPDATE group_orders
        SET status = 'cancelled', cancel_reason = $1, cancelled_at = NOW(), updated_at = NOW()
        WHERE id = $2`,
-      [reason || null, groupOrderId],
+      [safeReason || null, groupOrderId],
     );
 
     // 6. 通知所有已付款参与者：拼单已取消（批量通知，单个失败不影响整体）

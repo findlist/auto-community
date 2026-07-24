@@ -402,6 +402,57 @@ describe('group-order.service - cancel 取消拼单退款', () => {
     // client.query 应仅被调用 4 次（lock order + select participants + batch update + update order status）
     expect(mockClient.query).toHaveBeenCalledTimes(4);
   });
+
+  // ==================== cancel reason XSS 清洗测试 ====================
+
+  it('cancel reason 含 <script> 时被 XSS 清洗（剥离危险标签，保留文本）', async () => {
+    // 设计原因：取消原因会展示给其他参与者与后台，统一在入库前清洗防止存储型 XSS
+    setupCancelMock();
+
+    const xssReason = '<script>alert(1)</script>测试取消';
+    await groupOrderService.cancel('group-order-1', 'initiator-1', xssReason);
+
+    // 第 4 次 client.query 是 UPDATE group_orders SET cancel_reason = $1
+    const cancelUpdateCall = mockClient.query.mock.calls[3];
+    const params = cancelUpdateCall[1] as unknown[];
+    expect(params[0]).not.toContain('<script>');
+    expect(params[0]).toContain('测试取消');
+    expect(params[0]).toContain('alert');
+  });
+
+  it('cancel reason 含事件处理器（onerror）时被剥离', async () => {
+    setupCancelMock();
+
+    const xssReason = '<img src="x" onerror="alert(1)">取消原因';
+    await groupOrderService.cancel('group-order-1', 'initiator-1', xssReason);
+
+    const cancelUpdateCall = mockClient.query.mock.calls[3];
+    const params = cancelUpdateCall[1] as unknown[];
+    expect(params[0]).not.toContain('onerror');
+    expect(params[0]).not.toContain('alert(1)');
+    expect(params[0]).toContain('取消原因');
+  });
+
+  it('cancel reason 纯文本不被改变', async () => {
+    setupCancelMock();
+
+    await groupOrderService.cancel('group-order-1', 'initiator-1', '测试取消');
+
+    const cancelUpdateCall = mockClient.query.mock.calls[3];
+    const params = cancelUpdateCall[1] as unknown[];
+    expect(params[0]).toBe('测试取消');
+  });
+
+  it('cancel reason 为 undefined 时落 null（不触发清洗）', async () => {
+    // 设计原因：reason 缺省时落 null，DB 列允许 null，与原逻辑一致
+    setupCancelMock();
+
+    await groupOrderService.cancel('group-order-1', 'initiator-1');
+
+    const cancelUpdateCall = mockClient.query.mock.calls[3];
+    const params = cancelUpdateCall[1] as unknown[];
+    expect(params[0]).toBeNull();
+  });
 });
 
 // ==================== complete 测试 ====================
