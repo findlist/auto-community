@@ -113,12 +113,15 @@ export default function CreateService() {
 
       <div className="bg-white rounded-lg p-4 shadow-sm space-y-4">
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">服务类型</label>
-          <div className="flex gap-3">
+          {/* 自定义单选控件：label 无法关联多个 button，改用 span + role=radiogroup + aria-labelledby 暴露语义组 */}
+          <span id="time-bank-create-type-label" className="block text-sm font-medium text-neutral-700 mb-2">服务类型</span>
+          <div role="radiogroup" aria-labelledby="time-bank-create-type-label" className="flex gap-3">
             {([["provide", "提供服务"], ["request", "需求服务"]] as const).map(([val, label]) => (
               <button
                 key={val}
                 onClick={() => updateField("type", val)}
+                aria-checked={form.type === val}
+                role="radio"
                 // 类型切换激活态使用时间银行模块紫，与列表页 Tab 下划线 bg-violet-600 一致
                 className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   form.type === val
@@ -133,8 +136,9 @@ export default function CreateService() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">分类 *</label>
+          <label htmlFor="time-bank-create-category" className="block text-sm font-medium text-neutral-700 mb-1">分类 *</label>
           <input
+            id="time-bank-create-category"
             type="text"
             value={form.category}
             onChange={e => updateField("category", e.target.value)}
@@ -147,8 +151,9 @@ export default function CreateService() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">标题 *</label>
+          <label htmlFor="time-bank-create-title" className="block text-sm font-medium text-neutral-700 mb-1">标题 *</label>
           <input
+            id="time-bank-create-title"
             type="text"
             value={form.title}
             onChange={e => updateField("title", e.target.value)}
@@ -160,8 +165,9 @@ export default function CreateService() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">描述</label>
+          <label htmlFor="time-bank-create-description" className="block text-sm font-medium text-neutral-700 mb-1">描述</label>
           <textarea
+            id="time-bank-create-description"
             value={form.description}
             onChange={e => updateField("description", e.target.value)}
             onBlur={() => setTouched("description")}
@@ -173,12 +179,13 @@ export default function CreateService() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
+          <label htmlFor="time-bank-create-duration" className="block text-sm font-medium text-neutral-700 mb-1">
             预计时长（分钟）*
           </label>
           <div className="relative">
             <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
             <input
+              id="time-bank-create-duration"
               type="number"
               value={form.durationMinutes}
               onChange={e => updateField("durationMinutes", e.target.value)}
@@ -192,8 +199,9 @@ export default function CreateService() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">服务地址</label>
+          <label htmlFor="time-bank-create-location" className="block text-sm font-medium text-neutral-700 mb-1">服务地址</label>
           <input
+            id="time-bank-create-location"
             type="text"
             value={form.location}
             onChange={e => updateField("location", e.target.value)}
@@ -203,8 +211,10 @@ export default function CreateService() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">服务配图</label>
+          {/* ImageUpload 内部隐藏 input 接收 id，label 通过 htmlFor 关联，点击 label 即触发文件选择 */}
+          <label htmlFor="time-bank-create-images" className="block text-sm font-medium text-neutral-700 mb-1">服务配图</label>
           <ImageUpload
+            id="time-bank-create-images"
             value={images}
             onChange={setImages}
             maxCount={5}

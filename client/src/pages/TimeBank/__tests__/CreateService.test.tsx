@@ -127,9 +127,9 @@ describe('TimeBank/CreateService 发布服务表单', () => {
 
   it('默认服务类型为"提供服务"，点击切换为"需求服务"', () => {
     renderCreateServicePage();
-    // 默认 provide 高亮（violet 背景白字，时间银行模块紫），点击 request 切换
-    const provideBtn = screen.getByRole('button', { name: '提供服务' });
-    const requestBtn = screen.getByRole('button', { name: '需求服务' });
+    // 服务类型按钮 role=radio（radiogroup 内单选语义），故用 radio 角色查询
+    const provideBtn = screen.getByRole('radio', { name: '提供服务' });
+    const requestBtn = screen.getByRole('radio', { name: '需求服务' });
     // 通过 class 判断当前激活状态（provide 激活时含 bg-violet-600）
     expect(provideBtn.className).toContain('bg-violet-600');
     act(() => { fireEvent.click(requestBtn); });
