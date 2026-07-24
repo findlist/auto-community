@@ -122,10 +122,11 @@ export default function Create() {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label htmlFor="skill-create-title" className="block text-sm font-medium text-neutral-700 mb-1">
               标题 <span className="text-red-500">*</span>
             </label>
             <input
+              id="skill-create-title"
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
@@ -138,8 +139,9 @@ export default function Create() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">详细描述</label>
+            <label htmlFor="skill-create-description" className="block text-sm font-medium text-neutral-700 mb-1">详细描述</label>
             <textarea
+              id="skill-create-description"
               value={description}
               onChange={e => setDescription(e.target.value)}
               onBlur={() => setTouched("description")}
@@ -151,14 +153,17 @@ export default function Create() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            {/* 自定义单选控件：label 无法关联多个 button，改用 span + role=radiogroup + aria-labelledby 暴露语义组 */}
+            <span id="skill-create-category-label" className="block text-sm font-medium text-neutral-700 mb-1">
               分类 <span className="text-red-500">*</span>
-            </label>
-            <div className="flex flex-wrap gap-2">
+            </span>
+            <div role="radiogroup" aria-labelledby="skill-create-category-label" className="flex flex-wrap gap-2">
               {categories.map(cat => (
                 <button
                   key={cat}
                   onClick={() => { setCategory(cat); setTouched("category"); }}
+                  aria-checked={category === cat}
+                  role="radio"
                   // 分类按钮激活态使用技能模块蓝浅色变体，与列表项悬停 group-hover:text-blue-700 同色系
                   className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
                     category === cat
@@ -175,10 +180,11 @@ export default function Create() {
 
           {type === "offer" && (
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">
+              <label htmlFor="skill-create-price" className="block text-sm font-medium text-neutral-700 mb-1">
                 积分价格 <span className="text-red-500">*</span>
               </label>
               <input
+                id="skill-create-price"
                 type="number"
                 value={creditPrice}
                 onChange={e => setCreditPrice(e.target.value)}
@@ -192,8 +198,9 @@ export default function Create() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">服务地址</label>
+            <label htmlFor="skill-create-location" className="block text-sm font-medium text-neutral-700 mb-1">服务地址</label>
             <input
+              id="skill-create-location"
               type="text"
               value={location}
               onChange={e => setLocation(e.target.value)}
@@ -203,8 +210,9 @@ export default function Create() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">图片（选填）</label>
-            <ImageUpload value={images} onChange={setImages} maxCount={5} />
+            {/* ImageUpload 内部隐藏 input 接收 id，label 通过 htmlFor 关联，点击 label 即触发文件选择 */}
+            <label htmlFor="skill-create-images" className="block text-sm font-medium text-neutral-700 mb-1">图片（选填）</label>
+            <ImageUpload id="skill-create-images" value={images} onChange={setImages} maxCount={5} />
           </div>
         </div>
       </div>

@@ -58,7 +58,7 @@ function fillValidOfferForm() {
   fireEvent.blur(screen.getByPlaceholderText('例如：擅长电脑维修、系统安装'));
   fireEvent.change(screen.getByPlaceholderText('详细描述你的技能或需求...'), { target: { value: '提供专业电脑维修、系统安装、数据恢复服务' } });
   // 分类按钮：点击"电脑维修"
-  fireEvent.click(screen.getByRole('button', { name: '电脑维修' }));
+  fireEvent.click(screen.getByRole('radio', { name: '电脑维修' }));
   fireEvent.change(screen.getByPlaceholderText('设置每次服务的积分价格'), { target: { value: '50' } });
   fireEvent.blur(screen.getByPlaceholderText('设置每次服务的积分价格'));
   fireEvent.change(screen.getByPlaceholderText('如：3号楼1单元（选填）'), { target: { value: '3号楼1单元' } });
@@ -102,7 +102,7 @@ describe('SkillExchange/Create 发布技能表单', () => {
     fireEvent.change(screen.getByPlaceholderText('例如：想学英语、需要家教'), { target: { value: '想学英语口语' } });
     fireEvent.blur(screen.getByPlaceholderText('例如：想学英语、需要家教'));
     fireEvent.change(screen.getByPlaceholderText('详细描述你的技能或需求...'), { target: { value: '希望找一位英语口语老师，每周两次课' } });
-    fireEvent.click(screen.getByRole('button', { name: '电脑维修' }));
+    fireEvent.click(screen.getByRole('radio', { name: '电脑维修' }));
     fireEvent.change(screen.getByPlaceholderText('如：3号楼1单元（选填）'), { target: { value: '3号楼' } });
     // request 类型无积分价格校验，应能提交
     fireEvent.click(screen.getByRole('button', { name: '立即发布' }));
@@ -148,7 +148,7 @@ describe('SkillExchange/Create 发布技能表单', () => {
     renderCreatePage();
     // 填充其他必填字段，仅积分价格为空
     fireEvent.change(screen.getByPlaceholderText('例如：擅长电脑维修、系统安装'), { target: { value: '专业电脑维修' } });
-    fireEvent.click(screen.getByRole('button', { name: '电脑维修' }));
+    fireEvent.click(screen.getByRole('radio', { name: '电脑维修' }));
     // 积分价格留空，点击提交触发校验
     act(() => { fireEvent.click(screen.getByRole('button', { name: '立即发布' })); });
     expect(screen.getByText('请填写积分价格')).toBeInTheDocument();
@@ -250,7 +250,7 @@ describe('SkillExchange/Create 发布技能表单', () => {
 
   it('点击分类按钮选中并高亮显示', () => {
     renderCreatePage();
-    const categoryBtn = screen.getByRole('button', { name: '电脑维修' });
+    const categoryBtn = screen.getByRole('radio', { name: '电脑维修' });
     // 未选中时为中性色背景
     expect(categoryBtn.className).toContain('bg-neutral-100');
     act(() => { fireEvent.click(categoryBtn); });
