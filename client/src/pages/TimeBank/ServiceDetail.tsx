@@ -150,7 +150,8 @@ export default function ServiceDetail() {
       </div>
 
       <div className="p-4">
-        <div className="flex items-start justify-between mb-4">
+        {/* 移动端 flex-col 避免时长 whitespace-nowrap 挤压标题，桌面端保持 flex-row 左右布局 */}
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               {/* 类型徽章：提供=翡翠绿（积极给出），需求=时间银行模块紫，与 ServiceCard 竖条配色一致 */}
@@ -167,7 +168,8 @@ export default function ServiceDetail() {
             </div>
             <h2 className="text-xl font-bold text-neutral-900 mb-1">{service.title}</h2>
           </div>
-          <div className="text-lg font-bold text-violet-600 whitespace-nowrap ml-4">
+          {/* self-end：移动端单独一行时右对齐；lg:self-auto：桌面端恢复父级 items-start 对齐 */}
+          <div className="text-lg font-bold text-violet-600 whitespace-nowrap lg:ml-4 self-end lg:self-auto">
             {formatTime(service.durationMinutes)}
           </div>
         </div>
@@ -181,7 +183,8 @@ export default function ServiceDetail() {
         {service.images && service.images.length > 0 && (
           <div className="mb-4">
             <h3 className="text-sm font-medium text-neutral-700 mb-2">服务配图</h3>
-            <div className="grid grid-cols-3 gap-2">
+            {/* 移动端 2 列避免图片过小，sm 以上恢复 3 列 */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {service.images.map((img, idx) => (
                 <img
                   key={idx}
