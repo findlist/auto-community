@@ -168,7 +168,8 @@ export default function Detail() {
       </div>
 
       <div className="px-4 lg:px-0">
-        <div className="flex items-start justify-between mb-6">
+        {/* 移动端 flex-col 避免积分价格 whitespace-nowrap 挤压标题，桌面端保持 flex-row 左右布局 */}
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between mb-6">
           <div className="flex-1 min-w-0">
             <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full font-medium mb-2">
               {post.category}
@@ -180,7 +181,8 @@ export default function Detail() {
               {post.type === "offer" ? "提供技能" : "需求技能"}
             </p>
           </div>
-          <div className="text-2xl lg:text-3xl font-bold text-blue-700 whitespace-nowrap ml-4 tabular-nums">
+          {/* self-end：移动端单独一行时右对齐；lg:self-auto：桌面端恢复父级 items-start 对齐 */}
+          <div className="text-2xl lg:text-3xl font-bold text-blue-700 whitespace-nowrap lg:ml-4 tabular-nums self-end lg:self-auto">
             {post.creditPrice}
             <span className="text-xs text-neutral-400 ml-0.5 font-normal">积分</span>
           </div>
