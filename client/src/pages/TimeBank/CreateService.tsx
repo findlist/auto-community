@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Clock, AlertCircle, Loader2 } from "lucide-react";
 import { createService } from "@/api/timeBank";
@@ -30,6 +30,16 @@ export default function CreateService() {
   useEffect(() => {
     if (!isAuthenticated) navigate("/login");
   }, [isAuthenticated, navigate]);
+
+  // 卸载标记：防止弱网下 await createService 期间用户点返回导致组件卸载后仍触发 setState
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    // 重置标记：因 StrictMode 会挂载-卸载-再挂载，cleanup 置 false 后需重置为 true
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // 所有 Hooks 必须在 early return 之前调用，否则 Hooks 调用顺序在条件分支间不一致，触发 React 运行时崩溃
   const fieldConfigs = useMemo(() => ({
@@ -84,13 +94,18 @@ export default function CreateService() {
         // 仅在有图片时传 images，避免发送空数组
         images: images.length > 0 ? images : undefined,
       });
+      // 卸载守卫：用户可能在 await 期间点返回，此时不应再触发 setState
+      if (!mountedRef.current) return;
       toast.success("服务发布成功");
       navigate("/time-bank");
     } catch (err) {
+      // 卸载守卫：防止 await reject 后 setFormError 触发卸载组件的 setState 泄漏
+      if (!mountedRef.current) return;
       // ApiError 精准提取后端错误消息，兜底通用提示
       setFormError(err instanceof ApiError ? err.message : "发布失败，请重试");
     } finally {
-      setSubmitting(false);
+      // 仅在仍挂载时复位 submitting，避免卸载后冗余渲染
+      if (mountedRef.current) setSubmitting(false);
     }
   };
 

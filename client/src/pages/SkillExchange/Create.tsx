@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { createPost } from "@/api/skills";
@@ -24,6 +24,16 @@ export default function Create() {
   // 图片列表：由 ImageUpload 组件管理上传，提交时一并传给后端
   const [images, setImages] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // 卸载标记：防止弱网下 await createPost 期间用户点返回导致组件卸载后仍触发 setState
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    // 重置标记：因 StrictMode 会挂载-卸载-再挂载，cleanup 置 false 后需重置为 true
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const fieldConfigs = useMemo(() => ({
     title: {
@@ -75,12 +85,17 @@ export default function Create() {
         // 仅在有图片时传 images，避免发送空数组
         images: images.length > 0 ? images : undefined,
       });
+      // 卸载守卫：用户可能在 await 期间点返回，此时不应再触发 setState
+      if (!mountedRef.current) return;
       toast.success("发布成功");
       navigate("/skills");
     } catch (error) {
+      // 卸载守卫：防止 await reject 后 toast.error 触发卸载组件的 setState 泄漏
+      if (!mountedRef.current) return;
       toast.error(getErrorMessage(error, "发布失败"));
     } finally {
-      setSubmitting(false);
+      // 仅在仍挂载时复位 submitting，避免卸载后冗余渲染
+      if (mountedRef.current) setSubmitting(false);
     }
   };
 
