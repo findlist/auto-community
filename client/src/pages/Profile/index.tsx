@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { User, CreditCard, Clock, Star, FileText, ShoppingBag, LogOut, ShieldCheck, Trash2, Shield, MapPin, Camera, Loader2, AlertCircle, X, ChevronRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -25,6 +25,15 @@ export default function Profile() {
   const [tempAvatar, setTempAvatar] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  // 挂载标志：useEffect cleanup 时置为 false，handleSaveAvatar 异步 await 后检查避免卸载后 setState 泄漏
+  // 设计原因：用户在保存头像过程中切换路由会让组件卸载，setUser/setAvatarError/setSaving 仍会触发并产生 React 警告
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    // 重置挂载标志：组件重新挂载（路由回到本页）时恢复为 true
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -56,14 +65,18 @@ export default function Profile() {
     setAvatarError(null);
     try {
       const res = await updateProfile({ avatar });
+      // 卸载守卫：await 期间用户可能切换路由让组件卸载，跳过后续 setState 避免泄漏
+      if (!mountedRef.current) return;
       // 同步更新 useAuth 中的 user 状态，避免刷新页面
       setUser(res.data);
       toast.success("头像更新成功");
       setEditingAvatar(false);
     } catch (err) {
+      if (!mountedRef.current) return;
       setAvatarError(err instanceof ApiError ? err.message : "头像更新失败");
     } finally {
-      setSaving(false);
+      // 仅挂载中才更新 saving，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setSaving(false);
     }
   };
 

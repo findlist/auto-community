@@ -132,13 +132,17 @@ export default function SystemConfig() {
       // 编辑时 description 传空字符串会清空原值，传 undefined 保留原值；这里允许清空故传空串
       // valueType 透传后端，新增/编辑均显式传入，确保类型元数据持久化
       await setSetting(key, value, description, valueType);
+      // 卸载守卫：await 期间用户可能离开页面让组件卸载，跳过后续 setState 与 loadSettings 避免泄漏
+      if (!mountedRef.current) return;
       toast.success(editTarget?.setting ? "配置已更新" : "配置已新增");
       setEditTarget(null);
       loadSettings();
     } catch (err) {
+      if (!mountedRef.current) return;
       toast.error(err instanceof ApiError ? err.message : "保存失败");
     } finally {
-      setSubmitting(false);
+      // 仅挂载中才更新 submitting，避免卸载后 finally 触发 setState
+      if (mountedRef.current) setSubmitting(false);
     }
   };
 
@@ -148,13 +152,16 @@ export default function SystemConfig() {
     setSubmitting(true);
     try {
       await deleteSetting(deleteTarget.key);
+      // 卸载守卫：同 handleSave，避免 await 期间组件卸载后 setState 泄漏
+      if (!mountedRef.current) return;
       toast.success("配置已删除");
       setDeleteTarget(null);
       loadSettings();
     } catch (err) {
+      if (!mountedRef.current) return;
       toast.error(err instanceof ApiError ? err.message : "删除失败");
     } finally {
-      setSubmitting(false);
+      if (mountedRef.current) setSubmitting(false);
     }
   };
 
