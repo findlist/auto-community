@@ -351,8 +351,9 @@ export default function ReportManagement() {
                 已驳回
               </button>
             </div>
-            <label className="block text-sm text-neutral-600 mb-1">处理备注</label>
+            <label htmlFor="handle-note" className="block text-sm text-neutral-600 mb-1">处理备注</label>
             <textarea
+              id="handle-note"
               value={handleNote}
               onChange={(e) => setHandleNote(e.target.value)}
               placeholder="请输入处理备注"

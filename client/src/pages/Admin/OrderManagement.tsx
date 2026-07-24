@@ -375,8 +375,9 @@ export default function OrderManagement() {
             <p className="text-sm text-neutral-500 mb-2">
               订单 ID: <span className="font-mono">{cancelTarget.id}</span>
             </p>
-            <label className="block text-sm text-neutral-600 mb-1">取消原因</label>
+            <label htmlFor="cancel-reason" className="block text-sm text-neutral-600 mb-1">取消原因</label>
             <textarea
+              id="cancel-reason"
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               placeholder="请输入取消原因"

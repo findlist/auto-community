@@ -403,10 +403,11 @@ export default function VerificationReview() {
             </p>
             {review.action === "reject" && (
               <div className="mb-4">
-                <label className="block text-sm text-neutral-600 mb-1">
+                <label htmlFor="reject-reason" className="block text-sm text-neutral-600 mb-1">
                   拒绝原因 *
                 </label>
                 <textarea
+                  id="reject-reason"
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   placeholder="请填写拒绝原因（2-200字符）"

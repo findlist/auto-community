@@ -132,8 +132,9 @@ export default function HomepageImage() {
 
         {/* URL 输入 */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">图片 URL</label>
+          <label htmlFor="homepage-image-url" className="block text-sm font-medium text-neutral-700 mb-1">图片 URL</label>
           <input
+            id="homepage-image-url"
             type="text"
             value={url}
             onChange={(e) => {

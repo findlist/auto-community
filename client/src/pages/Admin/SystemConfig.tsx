@@ -454,8 +454,9 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">配置键</label>
+            <label htmlFor="config-key" className="block text-sm font-medium text-neutral-700 mb-1">配置键</label>
             <input
+              id="config-key"
               type="text"
               value={key}
               onChange={e => setKey(e.target.value)}
@@ -471,7 +472,7 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label htmlFor="config-value" className="block text-sm font-medium text-neutral-700 mb-1">
               配置值 <span className="text-xs text-neutral-400">（{value.length}/{VALUE_MAX_LENGTH}）</span>
             </label>
             {isNumericValue ? (
@@ -479,6 +480,7 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
                 {/* 数值类配置：数字输入 + 滑块双向绑定，积分规则等数值配置可视化调节 */}
                 <div className="flex items-center gap-3">
                   <input
+                    id="config-value"
                     type="number"
                     value={value}
                     onChange={e => setValue(e.target.value)}
@@ -501,6 +503,7 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
               </div>
             ) : (
               <textarea
+                id="config-value"
                 value={value}
                 onChange={e => setValue(e.target.value)}
                 placeholder="配置值，统一以字符串存储"
@@ -539,8 +542,9 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">配置说明（选填）</label>
+            <label htmlFor="config-description" className="block text-sm font-medium text-neutral-700 mb-1">配置说明（选填）</label>
             <input
+              id="config-description"
               type="text"
               value={description}
               onChange={e => setDescription(e.target.value)}

@@ -98,8 +98,9 @@ export default function AuditLogPage() {
       <div className="bg-white rounded-xl border border-neutral-100 p-4 mb-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
-            <label className="block text-xs text-neutral-500 mb-1">操作类型</label>
+            <label htmlFor="audit-action" className="block text-xs text-neutral-500 mb-1">操作类型</label>
             <select
+              id="audit-action"
               value={action}
               onChange={(e) => setAction(e.target.value)}
               className="w-full px-2 py-1.5 border border-neutral-300 rounded-lg text-sm"
@@ -111,8 +112,9 @@ export default function AuditLogPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-neutral-500 mb-1">状态</label>
+            <label htmlFor="audit-status" className="block text-xs text-neutral-500 mb-1">状态</label>
             <select
+              id="audit-status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               className="w-full px-2 py-1.5 border border-neutral-300 rounded-lg text-sm"
