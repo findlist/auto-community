@@ -266,13 +266,16 @@ export function ReviewSubmitModal({ orderId, visible, onClose, onSuccess }: Revi
             </div>
           )}
 
-          {/* 星级选择 */}
+          {/* 星级选择：自定义单选 button 组，label 改 span+aria-labelledby 关联 radiogroup，星按钮加 role=radio+aria-checked+aria-label */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">评分</label>
-            <div className="flex items-center gap-1">
+            <span id="food-review-rating" className="block text-sm font-medium text-gray-700 mb-2">评分</span>
+            <div className="flex items-center gap-1" role="radiogroup" aria-labelledby="food-review-rating">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
                   key={n}
+                  role="radio"
+                  aria-checked={rating === n}
+                  aria-label={`${n} 星`}
                   onClick={() => setRating(n)}
                   className="p-1"
                 >
@@ -288,12 +291,13 @@ export function ReviewSubmitModal({ orderId, visible, onClose, onSuccess }: Revi
             </div>
           </div>
 
-          {/* 评价内容 */}
+          {/* 评价内容：标准 textarea，用 htmlFor/id 关联 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="food-review-content" className="block text-sm font-medium text-gray-700 mb-1">
               评价内容（选填）
             </label>
             <textarea
+              id="food-review-content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={3}

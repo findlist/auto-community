@@ -236,7 +236,8 @@ describe("ReviewSubmitModal 评价提交弹窗", () => {
       </MemoryRouter>
     );
     // 默认 rating=5，点击第 3 颗星改为 3 分
-    const starButtons = screen.getAllByRole("button").filter((btn) => btn.querySelector("svg.lucide-star"));
+    // 源码已加 role="radio"（APG radiogroup 模式），过滤含 lucide-star svg 的 radio 按钮
+    const starButtons = screen.getAllByRole("radio").filter((btn) => btn.querySelector("svg.lucide-star"));
     // noUncheckedIndexedAccess 下数组索引返回 T | undefined，需非空断言
     const thirdStar = starButtons[2]!;
     await act(async () => {
