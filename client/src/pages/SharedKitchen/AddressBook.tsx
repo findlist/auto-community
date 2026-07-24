@@ -286,8 +286,9 @@ export default function AddressBook() {
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">收件人</label>
+                <label htmlFor="address-recipient" className="block text-sm font-medium text-gray-700 mb-1">收件人</label>
                 <input
+                  id="address-recipient"
                   type="text"
                   value={form.recipient}
                   onChange={(e) => setForm({ ...form, recipient: e.target.value })}
@@ -301,8 +302,9 @@ export default function AddressBook() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">手机号</label>
+                <label htmlFor="address-phone" className="block text-sm font-medium text-gray-700 mb-1">手机号</label>
                 <input
+                  id="address-phone"
                   type="tel"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -316,8 +318,9 @@ export default function AddressBook() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">详细地址</label>
+                <label htmlFor="address-detail" className="block text-sm font-medium text-gray-700 mb-1">详细地址</label>
                 <textarea
+                  id="address-detail"
                   value={form.address}
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
                   rows={2}
