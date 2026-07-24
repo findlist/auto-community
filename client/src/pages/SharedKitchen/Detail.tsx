@@ -249,19 +249,21 @@ export default function Detail() {
           <div className="bg-white w-full rounded-t-2xl p-6 animate-modal-enter pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
             <h3 className="text-lg font-semibold text-neutral-900 mb-4">预约领取</h3>
 
-            {/* 份数 */}
+            {/* 份数：自定义计数器控件，label 改 span+aria-labelledby 关联分组，屏幕阅读器可识别"领取份数"组标题 */}
             <div className="mb-4">
-              <label className="block text-sm text-neutral-600 mb-2">领取份数</label>
-              <div className="flex items-center gap-4">
+              <span id="kitchen-detail-quantity" className="block text-sm text-neutral-600 mb-2">领取份数</span>
+              <div className="flex items-center gap-4" role="group" aria-labelledby="kitchen-detail-quantity">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  aria-label="减少份数"
                   className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-lg hover:bg-neutral-200 active:scale-95 transition-all"
                 >
                   -
                 </button>
-                <span className="text-xl font-medium w-8 text-center tabular-nums">{quantity}</span>
+                <span className="text-xl font-medium w-8 text-center tabular-nums" aria-live="polite">{quantity}</span>
                 <button
                   onClick={() => setQuantity(Math.min(post.remaining, quantity + 1))}
+                  aria-label="增加份数"
                   className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-lg hover:bg-neutral-200 active:scale-95 transition-all"
                 >
                   +
@@ -272,12 +274,14 @@ export default function Detail() {
               </div>
             </div>
 
-            {/* 领取方式 */}
+            {/* 领取方式：自定义单选 button 组，label 改 span+aria-labelledby 关联 radiogroup，按钮加 role="radio"+aria-checked */}
             {post.pickupType === "delivery" && (
               <div className="mb-4">
-                <label className="block text-sm text-neutral-600 mb-2">领取方式</label>
-                <div className="flex gap-2">
+                <span id="kitchen-detail-pickup-type" className="block text-sm text-neutral-600 mb-2">领取方式</span>
+                <div className="flex gap-2" role="radiogroup" aria-labelledby="kitchen-detail-pickup-type">
                   <button
+                    role="radio"
+                    aria-checked={pickupType === "self_pickup"}
                     onClick={() => setPickupType("self_pickup")}
                     className={`flex-1 py-2 rounded-lg border text-sm transition-all ${
                       pickupType === "self_pickup" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-neutral-200 text-neutral-600"
@@ -286,6 +290,8 @@ export default function Detail() {
                     自取
                   </button>
                   <button
+                    role="radio"
+                    aria-checked={pickupType === "delivery"}
                     onClick={() => setPickupType("delivery")}
                     className={`flex-1 py-2 rounded-lg border text-sm transition-all ${
                       pickupType === "delivery" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-neutral-200 text-neutral-600"
@@ -297,10 +303,11 @@ export default function Detail() {
               </div>
             )}
 
-            {/* 备注 */}
+            {/* 备注：标准 textarea，用 htmlFor/id 关联 */}
             <div className="mb-6">
-              <label className="block text-sm text-neutral-600 mb-2">备注（选填）</label>
+              <label htmlFor="kitchen-detail-remark" className="block text-sm text-neutral-600 mb-2">备注（选填）</label>
               <textarea
+                id="kitchen-detail-remark"
                 value={remark}
                 onChange={e => setRemark(e.target.value)}
                 placeholder="有什么需要特别说明的吗？"

@@ -339,10 +339,10 @@ describe('SharedKitchen/Detail 美食详情', () => {
     await screen.findByText('可配送的饺子');
     await user.click(screen.getByRole('button', { name: '立即预约' }));
 
-    // 应显示"自取"和"配送"切换按钮
+    // 应显示"自取"和"配送"切换按钮（源码已加 role="radio"，APG radiogroup 模式）
     expect(screen.getByText('领取方式')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '自取' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '配送' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '自取' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '配送' })).toBeInTheDocument();
   });
 
   it('self_pickup 类型不显示"自取/配送"切换', async () => {
@@ -353,8 +353,8 @@ describe('SharedKitchen/Detail 美食详情', () => {
 
     // 不应渲染领取方式区域
     expect(screen.queryByText('领取方式')).toBeNull();
-    expect(screen.queryByRole('button', { name: '自取' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '配送' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: '自取' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: '配送' })).toBeNull();
   });
 
   it('点击"自取/配送"切换 pickupType', async () => {
@@ -366,13 +366,13 @@ describe('SharedKitchen/Detail 美食详情', () => {
     await user.click(screen.getByRole('button', { name: '立即预约' }));
 
     // 默认 self_pickup，"自取"按钮应有 orange 边框样式（与美食模块主色一致）
-    const selfPickupBtn = screen.getByRole('button', { name: '自取' });
+    const selfPickupBtn = screen.getByRole('radio', { name: '自取' });
     expect(selfPickupBtn.className).toContain('border-orange-500');
 
     // 切换到 delivery
-    await user.click(screen.getByRole('button', { name: '配送' }));
+    await user.click(screen.getByRole('radio', { name: '配送' }));
     expect(selfPickupBtn.className).not.toContain('border-orange-500');
-    expect(screen.getByRole('button', { name: '配送' }).className).toContain('border-orange-500');
+    expect(screen.getByRole('radio', { name: '配送' }).className).toContain('border-orange-500');
   });
 
   it('备注 textarea 输入文本', async () => {
