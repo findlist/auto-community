@@ -188,8 +188,8 @@ export default function Dashboard() {
 
   return (
     <div>
-      {/* 顶部欢迎区 */}
-      <div className="flex items-center justify-between mb-5">
+      {/* 顶部欢迎区：fade-in-up 与下方统计卡片的 stagger-item 形成连贯入场节奏 */}
+      <div className="flex items-center justify-between mb-5 animate-fade-in-up">
         <div>
           <h2 className="text-xl font-bold text-neutral-900 flex items-center gap-2 text-balance">
             <Activity className="w-5 h-5 text-emerald-500" />
@@ -296,25 +296,25 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <ul className="space-y-3 text-sm">
-                  <li className="flex items-center justify-between py-2 px-3 bg-red-50 rounded-lg transition-all duration-200 hover:translate-x-1 hover:shadow-sm">
+                  <li className="stagger-item flex items-center justify-between py-2 px-3 bg-red-50 rounded-lg transition-all duration-200 hover:translate-x-1 hover:shadow-sm">
                     <span className="text-neutral-900">待处理举报</span>
                     <span className="text-base font-bold text-red-600 tabular-nums">
                       {systemData.pendingReports}
                     </span>
                   </li>
-                  <li className="flex items-center justify-between py-2 px-3 bg-yellow-50 rounded-lg transition-all duration-200 hover:translate-x-1 hover:shadow-sm">
+                  <li className="stagger-item flex items-center justify-between py-2 px-3 bg-yellow-50 rounded-lg transition-all duration-200 hover:translate-x-1 hover:shadow-sm">
                     <span className="text-neutral-900">互助总数</span>
                     <span className="text-base font-bold text-amber-600 tabular-nums">
                       {systemData.totalMutualAids}
                     </span>
                   </li>
-                  <li className="flex items-center justify-between py-2 px-3 bg-emerald-50 rounded-lg transition-all duration-200 hover:translate-x-1 hover:shadow-sm">
+                  <li className="stagger-item flex items-center justify-between py-2 px-3 bg-emerald-50 rounded-lg transition-all duration-200 hover:translate-x-1 hover:shadow-sm">
                     <span className="text-neutral-900">今日活跃用户</span>
                     <span className="text-base font-bold text-emerald-600 tabular-nums">
                       {systemData.todayActiveUsers}
                     </span>
                   </li>
-                  <li className="flex items-center justify-between py-2 px-3 bg-blue-50 rounded-lg transition-all duration-200 hover:translate-x-1 hover:shadow-sm">
+                  <li className="stagger-item flex items-center justify-between py-2 px-3 bg-blue-50 rounded-lg transition-all duration-200 hover:translate-x-1 hover:shadow-sm">
                     <span className="text-neutral-900">本月新增用户</span>
                     <span className="text-base font-bold text-blue-600 tabular-nums">
                       {systemData.monthNewUsers}

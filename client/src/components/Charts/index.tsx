@@ -614,7 +614,7 @@ export interface ChartCardProps {
 
 export function ChartCard({ title, subtitle, children, action }: ChartCardProps) {
   return (
-    <div className="bg-white rounded-2xl p-5 border border-[var(--color-border)] shadow-sm">
+    <div className="bg-white rounded-2xl p-5 border border-[var(--color-border)] shadow-sm transition-shadow duration-300 hover:shadow-md">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">{title}</h3>
