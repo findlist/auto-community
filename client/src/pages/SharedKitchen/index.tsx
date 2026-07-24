@@ -156,11 +156,11 @@ export default function SharedKitchen() {
       {/* 文本：标题 + 描述 + 元信息 */}
       <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
         <div>
-          <div className="flex items-baseline gap-2.5 mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2.5 gap-1 mb-1">
             <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-orange-700 group-hover:translate-x-1 transition-all duration-200">
               {post.title}
             </h3>
-            <span className="text-orange-700 font-semibold whitespace-nowrap text-sm tabular-nums">
+            <span className="text-orange-700 font-semibold whitespace-nowrap text-sm tabular-nums self-end sm:self-auto">
               {post.price === 0 ? "免费" : `${post.price}积分`}
             </span>
           </div>

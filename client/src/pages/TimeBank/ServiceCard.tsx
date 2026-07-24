@@ -33,6 +33,7 @@ export default function ServiceCard({ service, onClick }: ServiceCardProps) {
 
       {/* 中间：标题 + 描述 + 元信息 */}
       <div className="flex-1 min-w-0">
+        {/* 标题行：类型标签 + 标题。时长移至 meta 行避免 whitespace-nowrap 挤压标题 */}
         <div className="flex items-baseline gap-2.5 mb-1.5">
           <span
             className={`text-xs font-mono tracking-wider uppercase ${
@@ -44,13 +45,15 @@ export default function ServiceCard({ service, onClick }: ServiceCardProps) {
           <h3 className={`text-base lg:text-lg font-semibold text-neutral-900 truncate transition-colors ${typeTextHover}`}>
             {service.title}
           </h3>
-          <span className="text-xs text-neutral-400 tabular-nums whitespace-nowrap">
-            {formatTime(service.durationMinutes)}
-          </span>
         </div>
         <p className="text-sm text-neutral-500 line-clamp-1 mb-2">{service.description}</p>
         <div className="flex items-center gap-3 text-xs text-neutral-400">
           <span className={typeTextColor}>{service.category}</span>
+          {/* 时长从标题行移至 meta 行，Clock 图标语义对齐"服务时长" */}
+          <span className="flex items-center gap-0.5 tabular-nums whitespace-nowrap">
+            <Clock className="w-3 h-3" />
+            {formatTime(service.durationMinutes)}
+          </span>
           {(service.location || service.address) && (
             <span className="flex items-center gap-0.5">
               <MapPin className="w-3 h-3" />
@@ -58,7 +61,6 @@ export default function ServiceCard({ service, onClick }: ServiceCardProps) {
             </span>
           )}
           <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
             <span className="text-neutral-600">{service.user?.nickname}</span>
             {service.user?.reputationScore != null && (
               <span className="flex items-center gap-0.5 text-amber-500">

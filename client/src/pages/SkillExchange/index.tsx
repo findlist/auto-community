@@ -108,12 +108,12 @@ export default function SkillExchange() {
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          {/* 标题行：标题 + 价格 */}
-          <div className="flex items-baseline gap-3 mb-1.5">
+          {/* 标题行：标题 + 价格。移动端纵向堆叠避免 whitespace-nowrap 积分价格挤压标题 */}
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-3 gap-1 mb-1.5">
             <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-blue-700 group-hover:translate-x-1 transition-all duration-200">
               {post.title}
             </h3>
-            <span className="text-blue-700 font-semibold whitespace-nowrap text-sm tabular-nums">
+            <span className="text-blue-700 font-semibold whitespace-nowrap text-sm tabular-nums self-end sm:self-auto">
               {post.creditPrice}<span className="text-xs text-neutral-400 ml-0.5">积分</span>
             </span>
           </div>
