@@ -265,12 +265,15 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
 
         <div className="space-y-3">
           <div>
-            <label className="text-sm text-[var(--color-text-secondary)] mb-1 block">类别</label>
-            <div className="flex gap-2 flex-wrap">
+            {/* 自定义单选控件：label 无法关联多个 button，改用 span + role=radiogroup + aria-labelledby 暴露语义组，便于读屏软件识别分类组 */}
+            <span id="emergency-create-category-label" className="text-sm text-[var(--color-text-secondary)] mb-1 block">类别</span>
+            <div role="radiogroup" aria-labelledby="emergency-create-category-label" className="flex gap-2 flex-wrap">
               {CATEGORIES.map(({ value, label }) => (
                 <button
                   key={value}
                   onClick={() => setCategory(value)}
+                  aria-checked={category === value}
+                  role="radio"
                   className={`px-3 py-2 text-sm rounded-full border transition-colors ${category === value ? "bg-emerald-500 text-white border-emerald-500" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
                 >
                   {label}
@@ -280,8 +283,9 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
           </div>
 
           <div>
-            <label className="text-sm text-[var(--color-text-secondary)] mb-1 block">标题</label>
+            <label htmlFor="emergency-create-title" className="text-sm text-[var(--color-text-secondary)] mb-1 block">标题</label>
             <input
+              id="emergency-create-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onBlur={() => setTouched("title")}
@@ -292,8 +296,9 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
           </div>
 
           <div>
-            <label className="text-sm text-[var(--color-text-secondary)] mb-1 block">详细描述</label>
+            <label htmlFor="emergency-create-description" className="text-sm text-[var(--color-text-secondary)] mb-1 block">详细描述</label>
             <textarea
+              id="emergency-create-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               onBlur={() => setTouched("description")}
@@ -305,9 +310,10 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
           </div>
 
           <div>
-            <label className="text-sm text-[var(--color-text-secondary)] mb-1 block">地址</label>
+            <label htmlFor="emergency-create-address" className="text-sm text-[var(--color-text-secondary)] mb-1 block">地址</label>
             <div className="flex gap-2">
               <input
+                id="emergency-create-address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="事发地址（选填）"
@@ -334,8 +340,9 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
           </div>
 
           <div>
-            <label className="text-sm text-[var(--color-text-secondary)] mb-1 block">联系电话</label>
+            <label htmlFor="emergency-create-phone" className="text-sm text-[var(--color-text-secondary)] mb-1 block">联系电话</label>
             <input
+              id="emergency-create-phone"
               value={contactPhone}
               onChange={(e) => setContactPhone(e.target.value)}
               onBlur={() => setTouched("contactPhone")}
