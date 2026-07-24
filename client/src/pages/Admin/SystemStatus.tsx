@@ -144,6 +144,7 @@ export default function SystemStatus() {
       // 卸载时递增 activeReqIdRef 让进行中的请求失效，避免卸载后 setState 泄漏
       // 设计原因：loadMetrics 用 reqId === activeReqIdRef.current 守卫竞态，
       // 但 cleanup 不递增 ref 时，进行中请求的 reqId 仍匹配，await 后会触发 setState
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- ref.current 在 cleanup 中递增是设计意图（让进行中请求的 reqId 失效），ref 对象本身稳定无需进入依赖；规则对此场景的"ref 可能已变"警告不适用
       activeReqIdRef.current++;
     };
   }, [loadMetrics]);

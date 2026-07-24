@@ -414,6 +414,7 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     fetchResources();
     // cleanup：组件卸载时自增 reqKey，使所有进行中的请求失效，避免卸载后 setState 泄漏
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ref.current 在 cleanup 中递增是设计意图（让进行中请求的 reqKey 失效），ref 对象本身稳定无需进入依赖；规则对此场景的"ref 可能已变"警告不适用
     return () => { fetchResourcesReqKeyRef.current++; };
   }, [fetchResources]);
 
