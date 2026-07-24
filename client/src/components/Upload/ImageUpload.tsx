@@ -218,9 +218,9 @@ export default function ImageUpload({
 
   return (
     <div className="w-full">
-      {/* 图片预览网格 */}
+      {/* 图片预览网格：移动端 2 列避免预览图片过小，sm 以上恢复 3 列；组件被多页面复用，一处修改全局生效 */}
       {previews.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 mb-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
           {previews.map(preview => (
             <div
               key={preview.id}
