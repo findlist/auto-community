@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Phone, Lock, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import { login } from "@/api/auth";
@@ -15,6 +15,16 @@ export default function Login() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // 卸载标记：防止弱网下 await login 期间用户跳转 /register 或 /forgot-password 导致组件卸载后仍触发 setState
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    // 重置标记：因 StrictMode 会挂载-卸载-再挂载，cleanup 置 false 后需重置为 true
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const validate = () => {
     const errors: Record<string, string> = {};
@@ -37,6 +47,8 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await login({ phone, password });
+      // 卸载守卫：用户可能在 await 期间跳转到 /register 或 /forgot-password，此时不应再触发 setState
+      if (!mountedRef.current) return;
       // setAuth 内部通过 zustand persist 自动同步到 localStorage["auth-storage"]
       // 设计原因：原实现同时手动 localStorage.setItem("token", ...) 形成双存储，
       // 两处独立写入非原子，存在不一致风险；统一由 store 作为唯一写入入口
@@ -44,6 +56,8 @@ export default function Login() {
       toast.success("欢迎回来！");
       navigate("/");
     } catch (err) {
+      // 卸载守卫：防止 await reject 后 setError/setFieldErrors 触发卸载组件的 setState 泄漏
+      if (!mountedRef.current) return;
       if (err instanceof ApiError && err.fieldErrors) {
         const map: Record<string, string> = {};
         for (const fe of err.fieldErrors) {
@@ -56,7 +70,8 @@ export default function Login() {
         toast.error(msg);
       }
     } finally {
-      setLoading(false);
+      // 仅在仍挂载时复位 loading，避免卸载后冗余渲染
+      if (mountedRef.current) setLoading(false);
     }
   };
 

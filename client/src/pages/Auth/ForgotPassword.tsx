@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Phone, ArrowRight, ArrowLeft, Send, Loader2, Check } from "lucide-react";
 import { forgotPassword } from "@/api/auth";
@@ -18,6 +18,16 @@ export default function ForgotPassword() {
   // 安全定时器：组件卸载时自动清理，避免 navigate 作用于已卸载组件
   const safeSetTimeout = useSafeTimeout();
 
+  // 卸载标记：防止弱网下 await forgotPassword 期间用户跳转 /login 导致组件卸载后仍触发 setState
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    // 重置标记：因 StrictMode 会挂载-卸载-再挂载，cleanup 置 false 后需重置为 true
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const validate = () => {
     const errors: Record<string, string> = {};
     if (!/^1[3-9]\d{9}$/.test(phone)) {
@@ -36,15 +46,20 @@ export default function ForgotPassword() {
       // 调用 forgotPassword 触发后端生成验证码：开发环境验证码输出到 server 日志，
       // 生产环境接入短信服务后由短信通道下发；此处不区分环境，逻辑一致
       await forgotPassword({ phone });
+      // 卸载守卫：用户可能在 await 期间跳转 /login，此时不应再触发 setState
+      if (!mountedRef.current) return;
       setSuccess(true);
       // 2秒后带 phone 参数跳转到重置密码页，免去用户重复输入
       safeSetTimeout(() => {
         navigate(`/reset-password?phone=${encodeURIComponent(phone)}`);
       }, 2000);
     } catch (err) {
+      // 卸载守卫：防止 await reject 后 setError 触发卸载组件的 setState 泄漏
+      if (!mountedRef.current) return;
       setError(err instanceof ApiError ? err.message : "验证码发送失败");
     } finally {
-      setLoading(false);
+      // 仅在仍挂载时复位 loading，避免卸载后冗余渲染
+      if (mountedRef.current) setLoading(false);
     }
   };
 
