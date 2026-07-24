@@ -269,8 +269,9 @@ export default function FamilyBindingPage() {
         </h2>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs text-neutral-500 mb-1">家长手机号</label>
+            <label htmlFor="parent-phone" className="block text-xs text-neutral-500 mb-1">家长手机号</label>
             <input
+              id="parent-phone"
               type="tel"
               inputMode="numeric"
               maxLength={11}
@@ -285,8 +286,9 @@ export default function FamilyBindingPage() {
             />
           </div>
           <div>
-            <label className="block text-xs text-neutral-500 mb-1">关系</label>
+            <label htmlFor="relationship" className="block text-xs text-neutral-500 mb-1">关系</label>
             <select
+              id="relationship"
               value={relationship}
               onChange={e => setRelationship(e.target.value)}
               className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent cursor-pointer"

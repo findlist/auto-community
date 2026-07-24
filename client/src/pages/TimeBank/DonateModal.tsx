@@ -115,8 +115,9 @@ export default function DonateModal({ open, onClose, onSuccess, currentBalance }
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">受赠用户ID</label>
+            <label htmlFor="donate-to-user-id" className="block text-sm font-medium text-gray-700 mb-1">受赠用户ID</label>
             <input
+              id="donate-to-user-id"
               type="text"
               value={toUserId}
               onChange={e => setToUserId(e.target.value)}
@@ -126,8 +127,9 @@ export default function DonateModal({ open, onClose, onSuccess, currentBalance }
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">捐赠金额（分钟）</label>
+            <label htmlFor="donate-amount" className="block text-sm font-medium text-gray-700 mb-1">捐赠金额（分钟）</label>
             <input
+              id="donate-amount"
               type="number"
               value={amount}
               onChange={e => setAmount(e.target.value)}
@@ -138,8 +140,9 @@ export default function DonateModal({ open, onClose, onSuccess, currentBalance }
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">备注</label>
+            <label htmlFor="donate-remark" className="block text-sm font-medium text-gray-700 mb-1">备注</label>
             <input
+              id="donate-remark"
               type="text"
               value={remark}
               onChange={e => setRemark(e.target.value)}
