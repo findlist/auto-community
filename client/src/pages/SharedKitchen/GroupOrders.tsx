@@ -244,8 +244,9 @@ export default function GroupOrders() {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">标题 *</label>
+                <label htmlFor="group-order-create-title" className="block text-sm text-gray-600 mb-1">标题 *</label>
                 <input
+                  id="group-order-create-title"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   placeholder="如：拼单买海鲜"
@@ -254,8 +255,9 @@ export default function GroupOrders() {
               </div>
 
               <div>
-                <label className="block text-sm text-gray-600 mb-1">描述</label>
+                <label htmlFor="group-order-create-description" className="block text-sm text-gray-600 mb-1">描述</label>
                 <textarea
+                  id="group-order-create-description"
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   placeholder="描述一下..."
@@ -268,8 +270,9 @@ export default function GroupOrders() {
                   设计原因：原 flex gap-4 在 <360px 窄屏三列 input 严重挤压，label 与 input 易错位 */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm text-gray-600 mb-1">目标金额 *</label>
+                  <label htmlFor="group-order-create-target" className="block text-sm text-gray-600 mb-1">目标金额 *</label>
                   <input
+                    id="group-order-create-target"
                     type="number"
                     value={targetAmount}
                     onChange={e => setTargetAmount(Number(e.target.value))}
@@ -277,8 +280,9 @@ export default function GroupOrders() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 mb-1">最小人数</label>
+                  <label htmlFor="group-order-create-min" className="block text-sm text-gray-600 mb-1">最小人数</label>
                   <input
+                    id="group-order-create-min"
                     type="number"
                     value={minParticipants}
                     onChange={e => setMinParticipants(Number(e.target.value))}
@@ -286,8 +290,9 @@ export default function GroupOrders() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 mb-1">最大人数</label>
+                  <label htmlFor="group-order-create-max" className="block text-sm text-gray-600 mb-1">最大人数</label>
                   <input
+                    id="group-order-create-max"
                     type="number"
                     value={maxParticipants}
                     onChange={e => setMaxParticipants(Number(e.target.value))}
@@ -297,8 +302,9 @@ export default function GroupOrders() {
               </div>
 
               <div>
-                <label className="block text-sm text-gray-600 mb-1">集合地点 *</label>
+                <label htmlFor="group-order-create-address" className="block text-sm text-gray-600 mb-1">集合地点 *</label>
                 <input
+                  id="group-order-create-address"
                   value={address}
                   onChange={e => setAddress(e.target.value)}
                   placeholder="如：小区南门"
@@ -307,8 +313,9 @@ export default function GroupOrders() {
               </div>
 
               <div>
-                <label className="block text-sm text-gray-600 mb-1">截止时间 *</label>
+                <label htmlFor="group-order-create-deadline" className="block text-sm text-gray-600 mb-1">截止时间 *</label>
                 <input
+                  id="group-order-create-deadline"
                   type="datetime-local"
                   value={deadline}
                   onChange={e => setDeadline(e.target.value)}
@@ -344,8 +351,9 @@ export default function GroupOrders() {
             <p className="text-sm text-gray-600 mb-4">{showJoinModal.title}</p>
             
             <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-1">分摊金额</label>
+              <label htmlFor="group-order-join-amount" className="block text-sm text-gray-600 mb-1">分摊金额</label>
               <input
+                id="group-order-join-amount"
                 type="number"
                 value={joinAmount}
                 onChange={e => setJoinAmount(Number(e.target.value))}

@@ -95,7 +95,7 @@ const renderGroupOrders = () => {
   );
 };
 
-// 定位截止时间输入框：源码 label 未关联 htmlFor，描述 textarea 与 datetime-local 同时为空值
+// 定位截止时间输入框：源码 label 已关联 htmlFor，但描述 textarea 与 datetime-local 同时为空值
 // getByDisplayValue("") 会多元素匹配，改用 type 选择器精准定位 datetime-local input
 const getDeadlineInput = () => {
   const input = document.querySelector('input[type="datetime-local"]');
