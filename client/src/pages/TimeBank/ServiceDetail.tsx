@@ -337,12 +337,15 @@ function EditServiceModal({ service, saving, onClose, onSave }: EditServiceModal
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">服务类型</label>
-            <div className="flex gap-3">
+            {/* 自定义单选控件：label 无法关联多个 button，改用 span + role=radiogroup + aria-labelledby 暴露语义组 */}
+            <span id="time-bank-edit-type-label" className="block text-sm font-medium text-neutral-700 mb-2">服务类型</span>
+            <div role="radiogroup" aria-labelledby="time-bank-edit-type-label" className="flex gap-3">
               {([["provide", "提供服务"], ["request", "需求服务"]] as const).map(([val, label]) => (
                 <button
                   key={val}
                   onClick={() => setType(val)}
+                  aria-checked={type === val}
+                  role="radio"
                   // 编辑弹窗内类型切换同样使用时间银行模块紫，与 CreateService 保持一致
                   className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     type === val ? "bg-violet-600 text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
@@ -355,8 +358,9 @@ function EditServiceModal({ service, saving, onClose, onSave }: EditServiceModal
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">分类 *</label>
+            <label htmlFor="time-bank-edit-category" className="block text-sm font-medium text-neutral-700 mb-1">分类 *</label>
             <input
+              id="time-bank-edit-category"
               type="text"
               value={category}
               onChange={e => setCategory(e.target.value)}
@@ -366,8 +370,9 @@ function EditServiceModal({ service, saving, onClose, onSave }: EditServiceModal
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">标题 *</label>
+            <label htmlFor="time-bank-edit-title" className="block text-sm font-medium text-neutral-700 mb-1">标题 *</label>
             <input
+              id="time-bank-edit-title"
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
@@ -377,8 +382,9 @@ function EditServiceModal({ service, saving, onClose, onSave }: EditServiceModal
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">描述</label>
+            <label htmlFor="time-bank-edit-description" className="block text-sm font-medium text-neutral-700 mb-1">描述</label>
             <textarea
+              id="time-bank-edit-description"
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="详细描述服务内容"
@@ -388,10 +394,11 @@ function EditServiceModal({ service, saving, onClose, onSave }: EditServiceModal
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">预计时长（分钟）*</label>
+            <label htmlFor="time-bank-edit-duration" className="block text-sm font-medium text-neutral-700 mb-1">预计时长（分钟）*</label>
             <div className="relative">
               <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
               <input
+                id="time-bank-edit-duration"
                 type="number"
                 value={durationMinutes}
                 onChange={e => setDurationMinutes(e.target.value)}
@@ -402,8 +409,9 @@ function EditServiceModal({ service, saving, onClose, onSave }: EditServiceModal
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">服务地址</label>
+            <label htmlFor="time-bank-edit-location" className="block text-sm font-medium text-neutral-700 mb-1">服务地址</label>
             <input
+              id="time-bank-edit-location"
               type="text"
               value={address}
               onChange={e => setAddress(e.target.value)}
@@ -413,8 +421,10 @@ function EditServiceModal({ service, saving, onClose, onSave }: EditServiceModal
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">服务配图</label>
+            {/* ImageUpload 内部隐藏 input 接收 id，label 通过 htmlFor 关联，点击 label 即触发文件选择 */}
+            <label htmlFor="time-bank-edit-images" className="block text-sm font-medium text-neutral-700 mb-1">服务配图</label>
             <ImageUpload
+              id="time-bank-edit-images"
               value={images}
               onChange={setImages}
               maxCount={5}
