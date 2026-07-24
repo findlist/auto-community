@@ -406,6 +406,7 @@ export async function reconcileCreditBalance(): Promise<number> {
 
   // 无限循环 + 内部 break：扫描完成的判定条件为「本批返回行数 < 批量大小」
   // 不使用 for 循环是因为批量大小由 SQL LIMIT 控制，循环次数在编译期未知
+  // eslint-disable-next-line no-constant-condition -- keyset pagination 模式，循环次数编译期未知，需 while(true)+break 控制
   while (true) {
     // 显式声明 Row 类型避免 TS7022：循环内 const 推断时与外层 lastId 形成间接依赖链
     type ReconcileRow = { id: string; credit_balance: number; computed_balance: number };
