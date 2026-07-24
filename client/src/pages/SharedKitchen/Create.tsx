@@ -122,10 +122,11 @@ export default function Create() {
       <div className="space-y-4">
         {/* 标题 */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
+          <label htmlFor="kitchen-create-title" className="block text-sm font-medium text-neutral-700 mb-1">
             标题 <span className="text-red-500">*</span>
           </label>
           <input
+            id="kitchen-create-title"
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
@@ -139,8 +140,9 @@ export default function Create() {
 
         {/* 描述 */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">详细描述</label>
+          <label htmlFor="kitchen-create-description" className="block text-sm font-medium text-neutral-700 mb-1">详细描述</label>
           <textarea
+            id="kitchen-create-description"
             value={description}
             onChange={e => setDescription(e.target.value)}
             onBlur={() => setTouched("description")}
@@ -153,10 +155,10 @@ export default function Create() {
 
         {/* 类别 */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
+          <span id="kitchen-create-category-label" className="block text-sm font-medium text-neutral-700 mb-1">
             类别 <span className="text-red-500">*</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
+          </span>
+          <div role="radiogroup" aria-labelledby="kitchen-create-category-label" className="flex flex-wrap gap-2">
             {categories.map(cat => (
               <button
                 key={cat}
@@ -177,8 +179,9 @@ export default function Create() {
         {/* 价格和份数 */}
         <div className="flex gap-4">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-neutral-700 mb-1">价格（积分）</label>
+            <label htmlFor="kitchen-create-price" className="block text-sm font-medium text-neutral-700 mb-1">价格（积分）</label>
             <input
+              id="kitchen-create-price"
               type="number"
               value={price}
               onChange={e => setPrice(Number(e.target.value))}
@@ -190,8 +193,9 @@ export default function Create() {
           </div>
           {type === "offer" && (
             <div className="flex-1">
-              <label className="block text-sm font-medium text-neutral-700 mb-1">分享份数</label>
+              <label htmlFor="kitchen-create-quantity" className="block text-sm font-medium text-neutral-700 mb-1">分享份数</label>
               <input
+                id="kitchen-create-quantity"
                 type="number"
                 value={quantity}
                 onChange={e => setQuantity(Number(e.target.value))}
@@ -206,8 +210,9 @@ export default function Create() {
         {type === "offer" && (
           <>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">领取地点</label>
+              <label htmlFor="kitchen-create-pickup-location" className="block text-sm font-medium text-neutral-700 mb-1">领取地点</label>
               <input
+                id="kitchen-create-pickup-location"
                 type="text"
                 value={pickupLocation}
                 onChange={e => setPickupLocation(e.target.value)}
@@ -219,8 +224,9 @@ export default function Create() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">领取时间</label>
+              <label htmlFor="kitchen-create-pickup-time" className="block text-sm font-medium text-neutral-700 mb-1">领取时间</label>
               <input
+                id="kitchen-create-pickup-time"
                 type="text"
                 value={pickupTime}
                 onChange={e => setPickupTime(e.target.value)}
@@ -230,10 +236,13 @@ export default function Create() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">领取方式</label>
-              <div className="flex gap-2">
+              {/* 自定义单选控件：label 无法关联多个 button，改用 span + role=radiogroup + aria-labelledby 暴露语义组 */}
+              <span id="kitchen-create-pickup-type-label" className="block text-sm font-medium text-neutral-700 mb-2">领取方式</span>
+              <div role="radiogroup" aria-labelledby="kitchen-create-pickup-type-label" className="flex gap-2">
                 <button
                   onClick={() => setPickupType("self_pickup")}
+                  aria-checked={pickupType === "self_pickup"}
+                  role="radio"
                   // 领取方式选中态使用厨房模块橙边框 + 浅橙背景，与列表项 hover 橙色语言一致
                   className={`flex-1 py-2 rounded-lg border transition-colors ${
                     pickupType === "self_pickup" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
@@ -243,6 +252,8 @@ export default function Create() {
                 </button>
                 <button
                   onClick={() => setPickupType("delivery")}
+                  aria-checked={pickupType === "delivery"}
+                  role="radio"
                   className={`flex-1 py-2 rounded-lg border transition-colors ${
                     pickupType === "delivery" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
                   }`}
@@ -254,8 +265,9 @@ export default function Create() {
 
             {/* 过敏原 */}
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">过敏原标注（可选）</label>
-              <div className="flex flex-wrap gap-2">
+              {/* 自定义多选控件：label 无法关联多个 button，改用 span + role=group + aria-labelledby 暴露语义组 */}
+              <span id="kitchen-create-allergens-label" className="block text-sm font-medium text-neutral-700 mb-2">过敏原标注（可选）</span>
+              <div role="group" aria-labelledby="kitchen-create-allergens-label" className="flex flex-wrap gap-2">
                 {allergenOptions.map(allergen => (
                   <button
                     key={allergen}
@@ -266,6 +278,7 @@ export default function Create() {
                           : [...prev, allergen]
                       );
                     }}
+                    aria-pressed={selectedAllergens.includes(allergen)}
                     className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
                       selectedAllergens.includes(allergen)
                         ? "bg-orange-100 text-orange-700"
@@ -282,8 +295,9 @@ export default function Create() {
 
         {/* 图片上传：offer 和 need 类型均可上传 */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">图片（选填）</label>
-          <ImageUpload value={images} onChange={setImages} maxCount={5} />
+          {/* ImageUpload 内部隐藏 input 接收 id，label 通过 htmlFor 关联，点击 label 即触发文件选择 */}
+          <label htmlFor="kitchen-create-images" className="block text-sm font-medium text-neutral-700 mb-1">图片（选填）</label>
+          <ImageUpload id="kitchen-create-images" value={images} onChange={setImages} maxCount={5} />
         </div>
       </div>
 

@@ -20,6 +20,8 @@ interface ImageUploadProps {
   disabled?: boolean;
   // 上传失败回调
   onError?: (error: string) => void;
+  // 透传到内部 input 的 id，供外部 label htmlFor 关联使用（无障碍标签关联）
+  id?: string;
 }
 
 interface PreviewImage {
@@ -35,7 +37,8 @@ export default function ImageUpload({
   onChange,
   maxCount = MAX_COUNT,
   disabled = false,
-  onError
+  onError,
+  id
 }: ImageUploadProps) {
   const [previews, setPreviews] = useState<PreviewImage[]>(() =>
     value.map((url, index) => ({
@@ -287,6 +290,7 @@ export default function ImageUpload({
       {/* 隐藏的文件输入 */}
       <input
         ref={fileInputRef}
+        id={id}
         type="file"
         accept="image/jpeg,image/png,image/gif"
         multiple

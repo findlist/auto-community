@@ -210,8 +210,9 @@ describe('SharedKitchen/Create 发布美食表单', () => {
 
   it('点击领取方式"可配送"切换 pickupType 为 delivery', () => {
     renderCreatePage();
-    const selfBtn = screen.getByRole('button', { name: '自取' });
-    const deliveryBtn = screen.getByRole('button', { name: '可配送' });
+    // 领取方式按钮 role=radio（radiogroup 内单选语义），故用 radio 角色查询
+    const selfBtn = screen.getByRole('radio', { name: '自取' });
+    const deliveryBtn = screen.getByRole('radio', { name: '可配送' });
     // 默认 self_pickup
     expect(selfBtn.className).toContain('border-orange-500');
     expect(selfBtn.className).toContain('bg-orange-50');
