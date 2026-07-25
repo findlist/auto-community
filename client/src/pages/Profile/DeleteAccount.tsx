@@ -276,9 +276,9 @@ export default function DeleteAccount() {
     <div className="min-h-[calc(100vh-8rem)] flex flex-col px-4 py-6">
       <button
         onClick={() => navigate("/profile")}
-        // 触摸目标提升：原无 padding 仅文字大小，移动端难以点击
-        // py-1 px-2 + -ml-2 抵消父容器 px-4，保持视觉对齐同时扩大点击区域
-        className="flex items-center gap-1 text-gray-600 mb-4 py-1 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors"
+        // 与同文件 pending/rejected 状态返回按钮（py-1.5）保持一致，避免同文件三处返回按钮触控目标不一致
+        // py-1.5 px-2 + -ml-2 抵消父容器 px-4，保持视觉对齐同时触控目标达 32px 满足移动端可点击标准
+        className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         返回
