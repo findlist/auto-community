@@ -517,16 +517,16 @@ function EditModal({ target, submitting, onClose, onSave }: EditModalProps) {
             <label className="block text-sm font-medium text-neutral-700 mb-1">
               值类型 <span className="text-xs text-neutral-400">（决定滑块步长精度）</span>
             </label>
-            {/* 分段选择器：string/int/float 三选一，选中态用 emerald 高亮 */}
+            {/* 分段选择器：string/int/float 三选一，选中态用 emerald 高亮 + shadow-sm 抬升 + active 反馈 */}
             <div className="flex gap-2">
               {(['string', 'int', 'float'] as const).map(vt => (
                 <button
                   key={vt}
                   type="button"
                   onClick={() => setValueType(vt)}
-                  className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                  className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-all active:scale-95 ${
                     valueType === vt
-                      ? 'bg-emerald-500 text-white border-emerald-500'
+                      ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
                       : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:bg-neutral-100'
                   }`}
                 >

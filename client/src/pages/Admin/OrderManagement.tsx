@@ -190,15 +190,15 @@ export default function OrderManagement() {
         ))}
       </div>
 
-      {/* 状态筛选 */}
+      {/* 状态筛选：选中态 shadow-sm 抬升，未选中态 active 反馈（与 SharedKitchen 分类筛选 07-20 范式对齐） */}
       <div className="flex gap-2 mb-4 flex-wrap">
         {statusTabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setStatus(tab.key)}
-            className={`px-3 py-1.5 text-sm rounded-lg ${
+            className={`px-3 py-1.5 text-sm rounded-lg transition-all active:scale-95 ${
               status === tab.key
-                ? "bg-emerald-500 text-white"
+                ? "bg-emerald-500 text-white shadow-sm"
                 : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
             }`}
           >

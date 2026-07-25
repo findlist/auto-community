@@ -148,7 +148,7 @@ export default function AuditLogPage() {
         <div className="mt-3 flex justify-end">
           <button
             onClick={() => loadLogs(1)}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600"
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 active:scale-95 transition-all"
           >
             <Search className="w-4 h-4" />
             查询

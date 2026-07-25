@@ -142,9 +142,9 @@ export default function VerificationReview() {
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => handleStatusChange("")}
-          className={`px-3 py-1.5 rounded-lg text-sm ${
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all active:scale-95 ${
             statusFilter === ""
-              ? "bg-emerald-500 text-white"
+              ? "bg-emerald-500 text-white shadow-sm"
               : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
           }`}
         >
@@ -152,9 +152,9 @@ export default function VerificationReview() {
         </button>
         <button
           onClick={() => handleStatusChange("pending")}
-          className={`px-3 py-1.5 rounded-lg text-sm ${
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all active:scale-95 ${
             statusFilter === "pending"
-              ? "bg-emerald-500 text-white"
+              ? "bg-emerald-500 text-white shadow-sm"
               : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
           }`}
         >
@@ -162,9 +162,9 @@ export default function VerificationReview() {
         </button>
         <button
           onClick={() => handleStatusChange("approved")}
-          className={`px-3 py-1.5 rounded-lg text-sm ${
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all active:scale-95 ${
             statusFilter === "approved"
-              ? "bg-emerald-500 text-white"
+              ? "bg-emerald-500 text-white shadow-sm"
               : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
           }`}
         >
@@ -172,9 +172,9 @@ export default function VerificationReview() {
         </button>
         <button
           onClick={() => handleStatusChange("rejected")}
-          className={`px-3 py-1.5 rounded-lg text-sm ${
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all active:scale-95 ${
             statusFilter === "rejected"
-              ? "bg-emerald-500 text-white"
+              ? "bg-emerald-500 text-white shadow-sm"
               : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
           }`}
         >
