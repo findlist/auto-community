@@ -5,7 +5,7 @@ import { authenticate, optionalAuth } from '../middleware/auth';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
 import { success, paginated, created, updated, cursorPaginated } from '../utils/response';
-import { getPagination, validate } from '../middleware/validator';
+import { getPagination, validate, uuidParam } from '../middleware/validator';
 import { timeBankService } from '../services/time-bank.service';
 import { aiService, processPostPipeline } from '../services/ai.service';
 import { logger } from '../utils/logger';
@@ -152,8 +152,10 @@ router.get('/services', optionalAuth, asyncHandler(async (req, res) => {
   paginated(res, result.list, result.total, result.page, result.pageSize);
 }));
 
+// GET /api/time-bank/services/:id - 获取时间服务详情
+// uuidParam 前置校验：与 users/address/emergency/kitchen/skills 路由范式对齐，非法 id 在路由层 422 拦截
 // 未登录可查看服务详情，但 service 层会隐藏 address/location/certification 等敏感信息
-router.get('/services/:id', optionalAuth, asyncHandler(async (req, res) => {
+router.get('/services/:id', optionalAuth, validate([uuidParam()]), asyncHandler(async (req, res) => {
   const result = await timeBankService.getServiceById(req.params.id, req.user?.id);
   success(res, result);
 }));
@@ -186,7 +188,20 @@ router.post('/services', authenticate, createPostLimiter, auditMiddleware('CREAT
   );
 }));
 
-router.put('/services/:id', authenticate, auditMiddleware('UPDATE_TIME_SERVICE', {
+// PUT /api/time-bank/services/:id - 更新时间服务
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
+// 设计原因：原实现无 validate 中间件，req.body 直接透传 service 层；
+// 校验失败时不进入 auditMiddleware，避免记录「未到达 handler 的失败请求」污染审计日志
+router.put('/services/:id', authenticate, validate([
+  uuidParam(),
+  // 更新场景字段全部 optional，仅校验传入字段格式
+  body('type').optional().notEmpty().withMessage('服务类型不能为空'),
+  body('category').optional().notEmpty().withMessage('服务分类不能为空'),
+  body('title').optional().isLength({ min: 1, max: 50 }).withMessage('标题长度为1-50字符'),
+  body('duration_minutes').optional().isInt({ min: 1 }).withMessage('服务时长必须为正整数'),
+  body('description').optional().isLength({ max: 2000 }).withMessage('描述不能超过2000字符'),
+  body('address').optional().isLength({ max: 200 }).withMessage('地址不能超过200字符'),
+]), auditMiddleware('UPDATE_TIME_SERVICE', {
   resourceType: 'time_service',
   getResourceId: (req) => req.params.id,
 }), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateTimeServiceBody>, res: Response) => {
@@ -211,7 +226,17 @@ router.get('/orders', authenticate, asyncHandler(async (req, res) => {
 }));
 
 // 更新订单状态接入审计：状态变更涉及时间账本结算（complete）/ 退款（cancel），需留痕并按 action 区分具体操作
-router.put('/orders/:id/status', authenticate, auditMiddleware('UPDATE_TIME_ORDER_STATUS', {
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
+router.put('/orders/:id/status', authenticate, validate([
+  uuidParam(),
+  // action 必填且必须为合法枚举值，防止非法 action 透传 service 层
+  body('action').isIn(['accept', 'start', 'cancel', 'complete']).withMessage('action 必须为 accept/start/cancel/complete'),
+  // actual_duration 仅 complete 时使用，若提供则必须为正整数
+  body('actual_duration').optional().isInt({ min: 1 }).withMessage('实际服务时长必须为正整数'),
+  // rating 仅 complete 时使用，若提供则必须为 1-5 整数
+  body('rating').optional().isInt({ min: 1, max: 5 }).withMessage('评分必须为1-5的整数'),
+  body('review').optional().isLength({ max: 500 }).withMessage('评价内容不能超过500字符'),
+]), auditMiddleware('UPDATE_TIME_ORDER_STATUS', {
   resourceType: 'time_order',
   getResourceId: (req) => req.params.id,
   // 根据请求体中的 action 动态生成 action 名称，区分 accept/start/cancel/complete 四类操作
@@ -397,7 +422,9 @@ router.post('/family', authenticate, auditMiddleware('FAMILY_BIND', { resourceTy
   created(res, result);
 }));
 
-router.put('/family/:id/confirm', authenticate, auditMiddleware('FAMILY_CONFIRM', {
+// PUT /api/time-bank/family/:id/confirm - 确认亲情绑定
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
+router.put('/family/:id/confirm', authenticate, validate([uuidParam()]), auditMiddleware('FAMILY_CONFIRM', {
   resourceType: 'family',
   getResourceId: (req) => req.params.id,
 }), asyncHandler(async (req, res) => {
@@ -405,7 +432,9 @@ router.put('/family/:id/confirm', authenticate, auditMiddleware('FAMILY_CONFIRM'
   success(res, result);
 }));
 
-router.put('/family/:id/reject', authenticate, auditMiddleware('FAMILY_REJECT', {
+// PUT /api/time-bank/family/:id/reject - 拒绝亲情绑定
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
+router.put('/family/:id/reject', authenticate, validate([uuidParam()]), auditMiddleware('FAMILY_REJECT', {
   resourceType: 'family',
   getResourceId: (req) => req.params.id,
 }), asyncHandler(async (req, res) => {
@@ -414,7 +443,8 @@ router.put('/family/:id/reject', authenticate, auditMiddleware('FAMILY_REJECT', 
 }));
 
 // 解绑亲情绑定：仅已确认的绑定可解绑，双方均可发起
-router.put('/family/:id/unbind', authenticate, auditMiddleware('FAMILY_UNBIND', {
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
+router.put('/family/:id/unbind', authenticate, validate([uuidParam()]), auditMiddleware('FAMILY_UNBIND', {
   resourceType: 'family',
   getResourceId: (req) => req.params.id,
 }), asyncHandler(async (req, res) => {

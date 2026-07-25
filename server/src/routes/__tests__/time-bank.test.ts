@@ -132,6 +132,15 @@ vi.mock('../../services/time-bank.service', () => ({
 import timeBankRouter from '../time-bank';
 import { errorHandler } from '../../middleware/errorHandler';
 
+// 测试 fixture UUID：路由层加 uuidParam 前置校验后，路径参数必须用合法 UUID
+// 设计原因：原 'svc-1'/'order-1'/'fb-1' 等非 UUID fixture 会被路由层 422 拦截，无法进入 service mock 验证路径
+// 按业务实体分别命名避免跨用例混淆，与 emergency/kitchen/skills/users/address/admin.test.ts 风格对齐
+const SERVICE_UUID = '550e8400-e29b-41d4-a716-446655440030';
+const ORDER_UUID = '550e8400-e29b-41d4-a716-446655440031';
+const FAMILY_UUID = '550e8400-e29b-41d4-a716-446655440032';
+// 非法 id fixture：用于验证 uuidParam 前置校验在路由层 422 拦截，不进入 service 层
+const INVALID_ID = 'not-a-uuid';
+
 /**
  * 启动临时 Express 服务器到随机端口
  * 设计原因：listen(0) 让操作系统分配可用端口，避免端口冲突；
@@ -234,11 +243,18 @@ describe('time-bank 路由集成测试', () => {
   // ===================== GET /services/:id =====================
   describe('GET /services/:id', () => {
     it('返回服务详情', async () => {
-      mockGetServiceById.mockResolvedValue({ id: 'svc-1', title: '陪诊' });
-      const res = await fetch(`${baseUrl}/services/svc-1`);
+      mockGetServiceById.mockResolvedValue({ id: SERVICE_UUID, title: '陪诊' });
+      const res = await fetch(`${baseUrl}/services/${SERVICE_UUID}`);
       expect(res.status).toBe(200);
       // optionalAuth 默认放行不设置 req.user，验证 userId 为 undefined
-      expect(mockGetServiceById).toHaveBeenCalledWith('svc-1', undefined);
+      expect(mockGetServiceById).toHaveBeenCalledWith(SERVICE_UUID, undefined);
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 守护路由层 uuidParam 前置校验：非法 id 应在路由层 422 拦截，避免穿透到 service 层
+      const res = await fetch(`${baseUrl}/services/${INVALID_ID}`);
+      expect(res.status).toBe(422);
+      expect(mockGetServiceById).not.toHaveBeenCalled();
     });
   });
 
@@ -288,14 +304,24 @@ describe('time-bank 路由集成测试', () => {
   // ===================== PUT /services/:id =====================
   describe('PUT /services/:id', () => {
     it('更新成功', async () => {
-      mockUpdateService.mockResolvedValue({ id: 'svc-1', title: '新标题' });
-      const res = await fetch(`${baseUrl}/services/svc-1`, {
+      mockUpdateService.mockResolvedValue({ id: SERVICE_UUID, title: '新标题' });
+      const res = await fetch(`${baseUrl}/services/${SERVICE_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ title: '新标题' }),
       });
       expect(res.status).toBe(200);
-      expect(mockUpdateService).toHaveBeenCalledWith('svc-1', 'user-uuid-001', { title: '新标题' });
+      expect(mockUpdateService).toHaveBeenCalledWith(SERVICE_UUID, 'user-uuid-001', { title: '新标题' });
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/services/${INVALID_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ title: '新标题' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockUpdateService).not.toHaveBeenCalled();
     });
   });
 
@@ -339,20 +365,20 @@ describe('time-bank 路由集成测试', () => {
   // ===================== PUT /orders/:id/status =====================
   describe('PUT /orders/:id/status', () => {
     it('complete action 成功（带 actual_duration）', async () => {
-      mockCompleteOrder.mockResolvedValue({ id: 'order-1', status: 'completed' });
-      const res = await fetch(`${baseUrl}/orders/order-1/status`, {
+      mockCompleteOrder.mockResolvedValue({ id: ORDER_UUID, status: 'completed' });
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ action: 'complete', actual_duration: 90, rating: 5, review: '很棒' }),
       });
       expect(res.status).toBe(200);
-      expect(mockCompleteOrder).toHaveBeenCalledWith('order-1', 'user-uuid-001', 90, 5, '很棒');
+      expect(mockCompleteOrder).toHaveBeenCalledWith(ORDER_UUID, 'user-uuid-001', 90, 5, '很棒');
       // complete 路径不应调用 updateOrderStatus
       expect(mockUpdateOrderStatus).not.toHaveBeenCalled();
     });
 
     it('complete action 缺 actual_duration 抛 BadRequestError 400', async () => {
-      const res = await fetch(`${baseUrl}/orders/order-1/status`, {
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ action: 'complete' }),
@@ -364,15 +390,25 @@ describe('time-bank 路由集成测试', () => {
     });
 
     it('其他 action 走 updateOrderStatus', async () => {
-      mockUpdateOrderStatus.mockResolvedValue({ id: 'order-1', status: 'accepted' });
-      const res = await fetch(`${baseUrl}/orders/order-1/status`, {
+      mockUpdateOrderStatus.mockResolvedValue({ id: ORDER_UUID, status: 'accepted' });
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ action: 'accept' }),
       });
       expect(res.status).toBe(200);
-      expect(mockUpdateOrderStatus).toHaveBeenCalledWith('order-1', 'user-uuid-001', 'accept');
+      expect(mockUpdateOrderStatus).toHaveBeenCalledWith(ORDER_UUID, 'user-uuid-001', 'accept');
       expect(mockCompleteOrder).not.toHaveBeenCalled();
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/orders/${INVALID_ID}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ action: 'accept' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockUpdateOrderStatus).not.toHaveBeenCalled();
     });
 
     it('接入审计中间件并以 orderId 作为 resourceId，按 action 动态生成 action 名称', async () => {
@@ -489,30 +525,48 @@ describe('time-bank 路由集成测试', () => {
   // ===================== PUT /family/:id/confirm =====================
   describe('PUT /family/:id/confirm', () => {
     it('确认绑定成功', async () => {
-      mockConfirmFamilyBinding.mockResolvedValue({ id: 'fb-1', status: 'confirmed' });
-      const res = await fetch(`${baseUrl}/family/fb-1/confirm`, { method: 'PUT', headers: authHeader });
+      mockConfirmFamilyBinding.mockResolvedValue({ id: FAMILY_UUID, status: 'confirmed' });
+      const res = await fetch(`${baseUrl}/family/${FAMILY_UUID}/confirm`, { method: 'PUT', headers: authHeader });
       expect(res.status).toBe(200);
-      expect(mockConfirmFamilyBinding).toHaveBeenCalledWith('fb-1', 'user-uuid-001');
+      expect(mockConfirmFamilyBinding).toHaveBeenCalledWith(FAMILY_UUID, 'user-uuid-001');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/family/${INVALID_ID}/confirm`, { method: 'PUT', headers: authHeader });
+      expect(res.status).toBe(422);
+      expect(mockConfirmFamilyBinding).not.toHaveBeenCalled();
     });
   });
 
   // ===================== PUT /family/:id/reject =====================
   describe('PUT /family/:id/reject', () => {
     it('拒绝绑定成功', async () => {
-      mockRejectFamilyBinding.mockResolvedValue({ id: 'fb-1', status: 'rejected' });
-      const res = await fetch(`${baseUrl}/family/fb-1/reject`, { method: 'PUT', headers: authHeader });
+      mockRejectFamilyBinding.mockResolvedValue({ id: FAMILY_UUID, status: 'rejected' });
+      const res = await fetch(`${baseUrl}/family/${FAMILY_UUID}/reject`, { method: 'PUT', headers: authHeader });
       expect(res.status).toBe(200);
-      expect(mockRejectFamilyBinding).toHaveBeenCalledWith('fb-1', 'user-uuid-001');
+      expect(mockRejectFamilyBinding).toHaveBeenCalledWith(FAMILY_UUID, 'user-uuid-001');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/family/${INVALID_ID}/reject`, { method: 'PUT', headers: authHeader });
+      expect(res.status).toBe(422);
+      expect(mockRejectFamilyBinding).not.toHaveBeenCalled();
     });
   });
 
   // ===================== PUT /family/:id/unbind =====================
   describe('PUT /family/:id/unbind', () => {
     it('解绑成功', async () => {
-      mockUnbindFamilyBinding.mockResolvedValue({ id: 'fb-1', status: 'unbound' });
-      const res = await fetch(`${baseUrl}/family/fb-1/unbind`, { method: 'PUT', headers: authHeader });
+      mockUnbindFamilyBinding.mockResolvedValue({ id: FAMILY_UUID, status: 'unbound' });
+      const res = await fetch(`${baseUrl}/family/${FAMILY_UUID}/unbind`, { method: 'PUT', headers: authHeader });
       expect(res.status).toBe(200);
-      expect(mockUnbindFamilyBinding).toHaveBeenCalledWith('fb-1', 'user-uuid-001');
+      expect(mockUnbindFamilyBinding).toHaveBeenCalledWith(FAMILY_UUID, 'user-uuid-001');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/family/${INVALID_ID}/unbind`, { method: 'PUT', headers: authHeader });
+      expect(res.status).toBe(422);
+      expect(mockUnbindFamilyBinding).not.toHaveBeenCalled();
     });
   });
 
