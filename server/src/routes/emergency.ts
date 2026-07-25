@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { body } from 'express-validator';
 import { authenticate, optionalAuth, requireRole } from '../middleware/auth';
 import { createPostLimiter } from '../middleware/rateLimiter';
-import { validate, getPagination } from '../middleware/validator';
+import { validate, getPagination, uuidParam } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
 // 审计中间件：覆盖应急场景全部敏感操作（响应求助/状态变更/举报与审核/资源 CRUD）的审计追踪
 import { auditMiddleware } from '../middleware/auditLog';
@@ -121,7 +121,8 @@ router.get('/requests', optionalAuth, asyncHandler(async (req: Request, res: Res
   paginated(res, result.list, result.total, result.page, result.pageSize);
 }));
 
-router.get('/requests/:id', optionalAuth, asyncHandler(async (req: Request, res: Response) => {
+// uuidParam 前置校验：与 users/address/admin 路由范式对齐，非法 id 在路由层 422 拦截
+router.get('/requests/:id', optionalAuth, validate([uuidParam()]), asyncHandler(async (req: Request, res: Response) => {
   const result = await emergencyService.getRequestById(req.params.id, req.user?.id);
   success(res, result);
 }));
@@ -184,24 +185,29 @@ router.post('/requests', authenticate, createPostLimiter, validate([
 }));
 
 // 响应求助属敏感操作（响应者承诺参与应急事件），接入审计追踪便于事后回溯责任链
-router.post('/requests/:id/respond', authenticate, auditMiddleware('RESPOND_EMERGENCY_REQUEST', {
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
+// 设计原因：validate 失败时不进入 auditMiddleware，避免记录「未到达 handler 的失败请求」污染审计日志
+router.post('/requests/:id/respond', authenticate, validate([
+  uuidParam(),
+  body('message').notEmpty().withMessage('请输入响应留言'),
+]), auditMiddleware('RESPOND_EMERGENCY_REQUEST', {
   resourceType: 'emergency_request',
   getResourceId: (req) => req.params.id,
-}), validate([
-  body('message').notEmpty().withMessage('请输入响应留言'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, RespondRequestBody>, res: Response) => {
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, RespondRequestBody>, res: Response) => {
   const { message, eta } = req.body;
   const result = await emergencyService.respondToRequest(req.user!.id, req.params.id, { message, eta });
   success(res, result, '响应成功');
 }));
 
 // 响应状态变更（含服务完成评价）接入审计：状态变更影响应急事件责任链，评价影响响应者信用，需留痕
-router.put('/responses/:id/status', authenticate, auditMiddleware('UPDATE_EMERGENCY_RESPONSE_STATUS', {
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler（与 /requests/:id/respond 一致）
+router.put('/responses/:id/status', authenticate, validate([
+  uuidParam(),
+  body('status').isIn(['arrived', 'completed']).withMessage('无效的状态值'),
+]), auditMiddleware('UPDATE_EMERGENCY_RESPONSE_STATUS', {
   resourceType: 'emergency_response',
   getResourceId: (req) => req.params.id,
-}), validate([
-  body('status').isIn(['arrived', 'completed']).withMessage('无效的状态值'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateResponseStatusBody>, res: Response) => {
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateResponseStatusBody>, res: Response) => {
   const { status, rating, review } = req.body;
   // 服务完成时同时提供 rating 与 review 才构建评价数据，避免 review 为 undefined 传入 service 层
   const reviewData = status === 'completed' && rating && review ? { rating, review } : undefined;
@@ -226,13 +232,15 @@ router.post('/false-reports', authenticate, createPostLimiter, auditMiddleware('
 
 // 管理员审核虚假举报：根据处罚类型对求助者执行相应处罚
 // 接入审计追踪：处罚涉及用户封禁（7d/30d/permanent），是高风险管理操作，必须留痕便于申诉复核
-router.put('/false-reports/:id/resolve', authenticate, requireRole('admin'), auditMiddleware('RESOLVE_FALSE_REPORT', {
-  resourceType: 'false_report',
-  getResourceId: (req) => req.params.id,
-}), validate([
+// 中间件顺序：authenticate → requireRole → validate → auditMiddleware → asyncHandler
+router.put('/false-reports/:id/resolve', authenticate, requireRole('admin'), validate([
+  uuidParam(),
   body('penalty').isIn(['warning', 'ban_7d', 'ban_30d', 'permanent']).withMessage('无效的处罚类型'),
   body('resolution').isLength({ min: 2, max: 500 }).withMessage('处理意见需在2-500字符之间'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResolveFalseReportBody>, res: Response) => {
+]), auditMiddleware('RESOLVE_FALSE_REPORT', {
+  resourceType: 'false_report',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, ResolveFalseReportBody>, res: Response) => {
   const { penalty, resolution } = req.body;
   const result = await emergencyService.resolveFalseReport(req.params.id, req.user!.id, penalty, resolution);
   success(res, result, '举报已处理');
@@ -252,7 +260,8 @@ router.get('/resources', optionalAuth, asyncHandler(async (req: Request, res: Re
 }));
 
 // 应急资源详情：未登录可查看（资源信息为公开应急信息）
-router.get('/resources/:id', optionalAuth, asyncHandler(async (req: Request, res: Response) => {
+// uuidParam 前置校验：与 /requests/:id 一致，非法 id 在路由层 422 拦截
+router.get('/resources/:id', optionalAuth, validate([uuidParam()]), asyncHandler(async (req: Request, res: Response) => {
   const result = await emergencyResourceService.getResourceById(req.params.id);
   success(res, result);
 }));
@@ -270,19 +279,22 @@ router.post('/resources', authenticate, requireRole('admin'), auditMiddleware('C
 }));
 
 // 管理员更新应急资源
-router.put('/resources/:id', authenticate, requireRole('admin'), auditMiddleware('UPDATE_EMERGENCY_RESOURCE', {
-  resourceType: 'emergency_resource',
-  getResourceId: (req) => req.params.id,
-}), validate([
+// 中间件顺序：authenticate → requireRole → validate → auditMiddleware → asyncHandler（与 /false-reports/:id/resolve 一致）
+router.put('/resources/:id', authenticate, requireRole('admin'), validate([
+  uuidParam(),
   body('type').optional().notEmpty().withMessage('资源类型不能为空'),
   body('name').optional().notEmpty().withMessage('资源名称不能为空').isLength({ max: 100 }).withMessage('名称不超过100字'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResourceMutationBody>, res: Response) => {
+]), auditMiddleware('UPDATE_EMERGENCY_RESOURCE', {
+  resourceType: 'emergency_resource',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, ResourceMutationBody>, res: Response) => {
   const result = await emergencyResourceService.update(req.params.id, req.body);
   success(res, result, '更新成功');
 }));
 
 // 管理员删除应急资源（软删除）
-router.delete('/resources/:id', authenticate, requireRole('admin'), auditMiddleware('DELETE_EMERGENCY_RESOURCE', {
+// 中间件顺序：authenticate → requireRole → validate → auditMiddleware → asyncHandler
+router.delete('/resources/:id', authenticate, requireRole('admin'), validate([uuidParam()]), auditMiddleware('DELETE_EMERGENCY_RESOURCE', {
   resourceType: 'emergency_resource',
   getResourceId: (req) => req.params.id,
 }), asyncHandler(async (req: Request, res: Response) => {

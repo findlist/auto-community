@@ -113,6 +113,16 @@ import emergencyRouter from '../emergency';
 import { errorHandler } from '../../middleware/errorHandler';
 import { UnauthorizedError, ForbiddenError } from '../../utils/errors';
 
+// 测试 fixture UUID：路由层加 uuidParam 前置校验后，路径参数必须用合法 UUID
+// 设计原因：原 'req-1'/'resp-1' 等非 UUID fixture 会被路由层 422 拦截，无法进入 service mock 验证路径
+// 按业务实体分别命名避免跨用例混淆，与 users.test.ts/address.test.ts/admin.test.ts 风格对齐
+const REQUEST_UUID = '550e8400-e29b-41d4-a716-446655440001';
+const RESPONSE_UUID = '550e8400-e29b-41d4-a716-446655440002';
+const REPORT_UUID = '550e8400-e29b-41d4-a716-446655440003';
+const RESOURCE_UUID = '550e8400-e29b-41d4-a716-446655440004';
+// 非法 id fixture：用于验证 uuidParam 前置校验在路由层 422 拦截，不进入 service 层
+const INVALID_ID = 'not-a-uuid';
+
 /**
  * 启动临时 Express 服务器到随机端口
  * 设计原因：listen(0) 让操作系统分配可用端口，避免端口冲突；
@@ -194,11 +204,18 @@ describe('emergency 路由集成测试', () => {
 
   describe('GET /requests/:id', () => {
     it('返回求助详情并透传 userId', async () => {
-      mockGetRequestById.mockResolvedValue({ id: 'req-1', title: '求助1' });
-      const res = await fetch(`${baseUrl}/requests/req-1`);
+      mockGetRequestById.mockResolvedValue({ id: REQUEST_UUID, title: '求助1' });
+      const res = await fetch(`${baseUrl}/requests/${REQUEST_UUID}`);
       expect(res.status).toBe(200);
       // optionalAuth 通过时透传 req.user.id
-      expect(mockGetRequestById).toHaveBeenCalledWith('req-1', 'user-001');
+      expect(mockGetRequestById).toHaveBeenCalledWith(REQUEST_UUID, 'user-001');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 守护路由层 uuidParam 前置校验：非法 id 应在路由层 422 拦截，避免穿透到 service 层
+      const res = await fetch(`${baseUrl}/requests/${INVALID_ID}`);
+      expect(res.status).toBe(422);
+      expect(mockGetRequestById).not.toHaveBeenCalled();
     });
   });
 
@@ -244,22 +261,33 @@ describe('emergency 路由集成测试', () => {
   describe('POST /requests/:id/respond', () => {
     it('创建响应成功并透传 eta', async () => {
       mockRespondToRequest.mockResolvedValue({ id: 'resp-1' });
-      const res = await fetch(`${baseUrl}/requests/req-1/respond`, {
+      const res = await fetch(`${baseUrl}/requests/${REQUEST_UUID}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ message: '我来帮忙', eta: 10 }),
       });
       expect(res.status).toBe(200);
-      expect(mockRespondToRequest).toHaveBeenCalledWith('user-001', 'req-1', { message: '我来帮忙', eta: 10 });
+      expect(mockRespondToRequest).toHaveBeenCalledWith('user-001', REQUEST_UUID, { message: '我来帮忙', eta: 10 });
     });
 
     it('缺少 message 校验失败返回 422', async () => {
-      const res = await fetch(`${baseUrl}/requests/req-1/respond`, {
+      const res = await fetch(`${baseUrl}/requests/${REQUEST_UUID}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ eta: 10 }),
       });
       expect(res.status).toBe(422);
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 守护路由层 uuidParam 前置校验：非法 id 应在路由层 422 拦截，避免穿透到 service 层
+      const res = await fetch(`${baseUrl}/requests/${INVALID_ID}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ message: '我来帮忙' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockRespondToRequest).not.toHaveBeenCalled();
     });
 
     it('接入审计中间件并以 requestId 作为 resourceId', async () => {
@@ -284,29 +312,40 @@ describe('emergency 路由集成测试', () => {
   describe('PUT /responses/:id/status', () => {
     it('arrived 状态更新成功', async () => {
       mockUpdateResponseStatus.mockResolvedValue({ id: 'resp-1', status: 'arrived' });
-      const res = await fetch(`${baseUrl}/responses/resp-1/status`, {
+      const res = await fetch(`${baseUrl}/responses/${RESPONSE_UUID}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ status: 'arrived' }),
       });
       expect(res.status).toBe(200);
       // arrived 状态不带 rating/review，reviewData 应为 undefined
-      expect(mockUpdateResponseStatus).toHaveBeenCalledWith('user-001', 'resp-1', 'arrived', undefined);
+      expect(mockUpdateResponseStatus).toHaveBeenCalledWith('user-001', RESPONSE_UUID, 'arrived', undefined);
     });
 
     it('completed 状态带 rating/review 构建评价数据', async () => {
       mockUpdateResponseStatus.mockResolvedValue({ id: 'resp-1', status: 'completed' });
-      const res = await fetch(`${baseUrl}/responses/resp-1/status`, {
+      const res = await fetch(`${baseUrl}/responses/${RESPONSE_UUID}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ status: 'completed', rating: 5, review: '很满意' }),
       });
       expect(res.status).toBe(200);
       // completed 且同时提供 rating 与 review 时构建 reviewData 对象
-      expect(mockUpdateResponseStatus).toHaveBeenCalledWith('user-001', 'resp-1', 'completed', {
+      expect(mockUpdateResponseStatus).toHaveBeenCalledWith('user-001', RESPONSE_UUID, 'completed', {
         rating: 5,
         review: '很满意',
       });
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 守护路由层 uuidParam 前置校验：非法 id 应在路由层 422 拦截，避免穿透到 service 层
+      const res = await fetch(`${baseUrl}/responses/${INVALID_ID}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ status: 'arrived' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockUpdateResponseStatus).not.toHaveBeenCalled();
     });
   });
 
@@ -335,13 +374,13 @@ describe('emergency 路由集成测试', () => {
   describe('PUT /false-reports/:id/resolve', () => {
     it('管理员处理举报成功', async () => {
       mockResolveFalseReport.mockResolvedValue({ id: 'report-1', status: 'resolved' });
-      const res = await fetch(`${baseUrl}/false-reports/report-1/resolve`, {
+      const res = await fetch(`${baseUrl}/false-reports/${REPORT_UUID}/resolve`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ penalty: 'warning', resolution: '警告处理' }),
       });
       expect(res.status).toBe(200);
-      expect(mockResolveFalseReport).toHaveBeenCalledWith('report-1', 'user-001', 'warning', '警告处理');
+      expect(mockResolveFalseReport).toHaveBeenCalledWith(REPORT_UUID, 'user-001', 'warning', '警告处理');
     });
 
     it('非管理员返回 403', async () => {
@@ -349,12 +388,24 @@ describe('emergency 路由集成测试', () => {
       mockRequireRoleMiddleware.mockImplementation((_req: Request, _res: Response, next: NextFunction) => {
         next(new ForbiddenError('权限不足'));
       });
-      const res = await fetch(`${baseUrl}/false-reports/report-1/resolve`, {
+      const res = await fetch(`${baseUrl}/false-reports/${REPORT_UUID}/resolve`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ penalty: 'warning', resolution: '警告处理' }),
       });
       expect(res.status).toBe(403);
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 守护路由层 uuidParam 前置校验：非法 id 应在路由层 422 拦截，避免穿透到 service 层
+      // 注意：requireRole 在 validate 之前，但默认 mock 为通过，所以仍能到达 validate 拦截
+      const res = await fetch(`${baseUrl}/false-reports/${INVALID_ID}/resolve`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ penalty: 'warning', resolution: '警告处理' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockResolveFalseReport).not.toHaveBeenCalled();
     });
 
     it('接入审计中间件并以 reportId 作为 resourceId', async () => {
@@ -395,9 +446,16 @@ describe('emergency 路由集成测试', () => {
   describe('GET /resources/:id', () => {
     it('返回资源详情', async () => {
       mockGetResourceById.mockResolvedValue({ id: 'res-1', name: '应急物资' });
-      const res = await fetch(`${baseUrl}/resources/res-1`);
+      const res = await fetch(`${baseUrl}/resources/${RESOURCE_UUID}`);
       expect(res.status).toBe(200);
-      expect(mockGetResourceById).toHaveBeenCalledWith('res-1');
+      expect(mockGetResourceById).toHaveBeenCalledWith(RESOURCE_UUID);
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 守护路由层 uuidParam 前置校验：非法 id 应在路由层 422 拦截，避免穿透到 service 层
+      const res = await fetch(`${baseUrl}/resources/${INVALID_ID}`);
+      expect(res.status).toBe(422);
+      expect(mockGetResourceById).not.toHaveBeenCalled();
     });
   });
 
@@ -429,22 +487,40 @@ describe('emergency 路由集成测试', () => {
   describe('PUT /resources/:id', () => {
     it('管理员更新资源成功', async () => {
       mockResourceUpdate.mockResolvedValue({ id: 'res-1', name: '新名称' });
-      const res = await fetch(`${baseUrl}/resources/res-1`, {
+      const res = await fetch(`${baseUrl}/resources/${RESOURCE_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ name: '新名称' }),
       });
       expect(res.status).toBe(200);
-      expect(mockResourceUpdate).toHaveBeenCalledWith('res-1', { name: '新名称' });
+      expect(mockResourceUpdate).toHaveBeenCalledWith(RESOURCE_UUID, { name: '新名称' });
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 守护路由层 uuidParam 前置校验：非法 id 应在路由层 422 拦截，避免穿透到 service 层
+      const res = await fetch(`${baseUrl}/resources/${INVALID_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ name: '新名称' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockResourceUpdate).not.toHaveBeenCalled();
     });
   });
 
   describe('DELETE /resources/:id', () => {
     it('管理员删除资源成功', async () => {
       mockResourceRemove.mockResolvedValue(undefined);
-      const res = await fetch(`${baseUrl}/resources/res-1`, { method: 'DELETE' });
+      const res = await fetch(`${baseUrl}/resources/${RESOURCE_UUID}`, { method: 'DELETE' });
       expect(res.status).toBe(200);
-      expect(mockResourceRemove).toHaveBeenCalledWith('res-1');
+      expect(mockResourceRemove).toHaveBeenCalledWith(RESOURCE_UUID);
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 守护路由层 uuidParam 前置校验：非法 id 应在路由层 422 拦截，避免穿透到 service 层
+      const res = await fetch(`${baseUrl}/resources/${INVALID_ID}`, { method: 'DELETE' });
+      expect(res.status).toBe(422);
+      expect(mockResourceRemove).not.toHaveBeenCalled();
     });
   });
 
