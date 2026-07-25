@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
-import { getPagination } from '../middleware/validator';
+import { getPagination, validate, uuidParam } from '../middleware/validator';
 import { auditMiddleware } from '../middleware/auditLog';
 import { success, paginated } from '../utils/response';
 import { notificationService } from '../services/notification.service';
@@ -144,7 +144,10 @@ router.get('/unread-count', authenticate, asyncHandler(async (req: Request, res:
  *       401:
  *         description: 未授权
  */
-router.post('/:id/read', authenticate, auditMiddleware('MARK_NOTIFICATION_READ', {
+// POST /api/notifications/:id/read - 标记单条通知已读
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
+// uuidParam 前置校验：非法 id 在路由层 422 拦截，避免穿透到 service 层
+router.post('/:id/read', authenticate, validate([uuidParam()]), auditMiddleware('MARK_NOTIFICATION_READ', {
   resourceType: 'notification',
   getResourceId: (req) => req.params.id,
 }), asyncHandler(async (req: Request, res: Response) => {

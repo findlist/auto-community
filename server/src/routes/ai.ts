@@ -6,6 +6,7 @@ import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 import { auditMiddleware } from '../middleware/auditLog';
+import { validate, uuidParam } from '../middleware/validator';
 import { success, error } from '../utils/response';
 import { aiService } from '../services/ai.service';
 import { logger } from '../utils/logger';
@@ -33,9 +34,11 @@ interface ClassifyBody {
  *     responses:
  *       200: { description: 推荐列表 }
  */
+// GET /api/ai/match/skills/:postId - 获取技能帖子 AI 智能推荐
+// uuidParam 前置校验：postId 必须为合法 UUID，非法值在路由层 422 拦截，避免穿透到 AI 服务层
 // asyncHandler 兜底未捕获异常：handler 内 try/catch 已全覆盖已知错误并返回 user-friendly 文案，
 // asyncHandler 作为防御层，若未来修改引入未预期 throw，将由 centralized errorHandler 接管
-router.get('/match/skills/:postId', authenticate, asyncHandler(async (req, res) => {
+router.get('/match/skills/:postId', authenticate, validate([uuidParam('postId')]), asyncHandler(async (req, res) => {
   try {
     const candidates = await aiService.matchSkill(req.params.postId);
     // success/error 为辅助函数，直接传入 res 并内部调用 res.json，不应再包裹
@@ -55,7 +58,9 @@ router.get('/match/skills/:postId', authenticate, asyncHandler(async (req, res) 
  *     tags: [AI]
  *     security: [{ bearerAuth: [] }]
  */
-router.get('/match/time-bank/:serviceId', authenticate, asyncHandler(async (req, res) => {
+// GET /api/ai/match/time-bank/:serviceId - 获取时间银行服务 AI 智能推荐
+// uuidParam 前置校验：serviceId 必须为合法 UUID，非法值在路由层 422 拦截
+router.get('/match/time-bank/:serviceId', authenticate, validate([uuidParam('serviceId')]), asyncHandler(async (req, res) => {
   try {
     const candidates = await aiService.matchTimeService(req.params.serviceId);
     success(res, candidates);

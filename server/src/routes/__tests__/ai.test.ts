@@ -50,16 +50,25 @@ vi.mock('../../middleware/auditLog', () => ({ auditMiddleware: mockAuditMiddlewa
 
 // 必须在 vi.mock 之后 import 被测模块，确保 mock 生效
 import aiRouter from '../ai';
+import { errorHandler } from '../../middleware/errorHandler';
+
+// 测试 fixture UUID：路由层加 uuidParam 前置校验后，路径参数必须用合法 UUID
+// 设计原因：原 'post-001'/'svc-001' 等非 UUID fixture 会被路由层 422 拦截，无法进入 service mock 验证路径
+const POST_UUID = '550e8400-e29b-41d4-a716-446655440040';
+const SERVICE_UUID = '550e8400-e29b-41d4-a716-446655440041';
+// 非法 id fixture：用于验证 uuidParam 前置校验在路由层 422 拦截，不进入 service 层
+const INVALID_ID = 'not-a-uuid';
 
 /**
  * 启动临时 Express 服务器到随机端口
  * 设计原因：listen(0) 让操作系统分配可用端口，避免端口冲突
- * 注：ai.ts 用 try/catch 手动处理错误，不走 errorHandler，故不挂载 errorHandler
+ * 挂载 errorHandler 捕获 validate 转发的 AppError（422），以及 handler 内未捕获的异常
  */
 async function startServer(): Promise<{ server: http.Server; baseUrl: string }> {
   const app = express();
   app.use(express.json());
   app.use(aiRouter);
+  app.use(errorHandler);
   const server = http.createServer(app);
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const port = (server.address() as AddressInfo).port;
@@ -96,30 +105,29 @@ describe('ai 路由集成测试', () => {
       mockMatchSkill.mockResolvedValue([
         { postId: 'post-002', score: 0.95, reason: '技能匹配度高' },
       ]);
-      const res = await fetch(`${baseUrl}/match/skills/post-001`, {
+      const res = await fetch(`${baseUrl}/match/skills/${POST_UUID}`, {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       expect(data.data).toHaveLength(1);
-      expect(mockMatchSkill).toHaveBeenCalledWith('post-001');
+      expect(mockMatchSkill).toHaveBeenCalledWith(POST_UUID);
     });
 
-    it('未认证时返回 401', async () => {
+    it('未认证时返回 500（authenticate 转发 generic Error 由 errorHandler 处理）', async () => {
       mockAuthenticate.mockImplementation((_req: Request, _res: Response, next: NextFunction) => {
         next(new Error('未授权'));
       });
-      const res = await fetch(`${baseUrl}/match/skills/post-001`);
-      // authenticate 通过 next(err) 转发错误，Express 默认错误处理返回 500
-      // 注：ai.ts 未挂载 errorHandler，故走 Express 内置错误处理
+      const res = await fetch(`${baseUrl}/match/skills/${POST_UUID}`);
+      // generic Error 经 errorHandler 兜底为 500 INTERNAL_SERVER_ERROR
       expect(res.status).toBe(500);
       expect(mockMatchSkill).not.toHaveBeenCalled();
     });
 
     it('matchSkill 抛错时返回 INTERNAL_ERROR', async () => {
       mockMatchSkill.mockRejectedValue(new Error('AI 服务不可用'));
-      const res = await fetch(`${baseUrl}/match/skills/post-001`, {
+      const res = await fetch(`${baseUrl}/match/skills/${POST_UUID}`, {
         headers: { Authorization: 'Bearer valid-token' },
       });
       // httpStatusFromCode('INTERNAL_ERROR') 兜底返回 400（未在 errorCodeToStatus 映射表）
@@ -130,6 +138,14 @@ describe('ai 路由集成测试', () => {
       // 验证 logger.error 被调用记录错误
       expect(mockLogger.error).toHaveBeenCalled();
     });
+
+    it('非 UUID 格式的 postId 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/match/skills/${INVALID_ID}`, {
+        headers: { Authorization: 'Bearer valid-token' },
+      });
+      expect(res.status).toBe(422);
+      expect(mockMatchSkill).not.toHaveBeenCalled();
+    });
   });
 
   describe('GET /match/time-bank/:serviceId', () => {
@@ -137,24 +153,32 @@ describe('ai 路由集成测试', () => {
       mockMatchTimeService.mockResolvedValue([
         { serviceId: 'svc-002', score: 0.88, reason: '地理位置近' },
       ]);
-      const res = await fetch(`${baseUrl}/match/time-bank/svc-001`, {
+      const res = await fetch(`${baseUrl}/match/time-bank/${SERVICE_UUID}`, {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
-      expect(mockMatchTimeService).toHaveBeenCalledWith('svc-001');
+      expect(mockMatchTimeService).toHaveBeenCalledWith(SERVICE_UUID);
     });
 
     it('matchTimeService 抛错时返回 INTERNAL_ERROR', async () => {
       mockMatchTimeService.mockRejectedValue(new Error('AI 服务超时'));
-      const res = await fetch(`${baseUrl}/match/time-bank/svc-001`, {
+      const res = await fetch(`${baseUrl}/match/time-bank/${SERVICE_UUID}`, {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(400);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('INTERNAL_ERROR');
       expect(data.message).toBe('推荐服务暂不可用');
+    });
+
+    it('非 UUID 格式的 serviceId 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/match/time-bank/${INVALID_ID}`, {
+        headers: { Authorization: 'Bearer valid-token' },
+      });
+      expect(res.status).toBe(422);
+      expect(mockMatchTimeService).not.toHaveBeenCalled();
     });
   });
 

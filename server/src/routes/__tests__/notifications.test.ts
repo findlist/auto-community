@@ -54,6 +54,11 @@ import notificationsRouter from '../notifications';
 import { errorHandler } from '../../middleware/errorHandler';
 import { UnauthorizedError } from '../../utils/errors';
 
+// 测试 fixture UUID：路由层加 uuidParam 前置校验后，路径参数必须用合法 UUID
+// 设计原因：原 'notif-uuid-001'/'non-existent-id' 等非 UUID fixture 会被路由层 422 拦截，无法进入 service mock 验证路径
+const NOTIF_UUID = '550e8400-e29b-41d4-a716-446655440050';
+const INVALID_ID = 'not-a-uuid';
+
 /**
  * 启动临时 Express 服务器到随机端口
  * 设计原因：listen(0) 让操作系统分配可用端口，避免端口冲突；
@@ -187,7 +192,7 @@ describe('notifications 路由集成测试', () => {
 
   describe('POST /:id/read', () => {
     it('标记成功返回 200', async () => {
-      const res = await fetch(`${baseUrl}/notif-uuid-001/read`, {
+      const res = await fetch(`${baseUrl}/${NOTIF_UUID}/read`, {
         method: 'POST',
         headers: { Authorization: 'Bearer valid-token' },
       });
@@ -196,12 +201,13 @@ describe('notifications 路由集成测试', () => {
       expect(data.code).toBe('SUCCESS');
       expect(data.message).toBe('标记已读成功');
       // 验证 markAsRead 收到正确的 userId 与 notificationId
-      expect(mockMarkAsRead).toHaveBeenCalledWith('user-uuid-001', 'notif-uuid-001');
+      expect(mockMarkAsRead).toHaveBeenCalledWith('user-uuid-001', NOTIF_UUID);
     });
 
     it('通知不存在或已读时 markAsRead 返回 false 抛 NotFoundError 返回 404', async () => {
       mockMarkAsRead.mockResolvedValue(false);
-      const res = await fetch(`${baseUrl}/non-existent-id/read`, {
+      // 使用合法 UUID：uuidParam 前置校验放行后，markAsRead 返回 false 由 handler 抛 NotFoundError
+      const res = await fetch(`${baseUrl}/${NOTIF_UUID}/read`, {
         method: 'POST',
         headers: { Authorization: 'Bearer valid-token' },
       });
@@ -212,11 +218,20 @@ describe('notifications 路由集成测试', () => {
       expect(data.message).toContain('通知');
     });
 
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/${INVALID_ID}/read`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer valid-token' },
+      });
+      expect(res.status).toBe(422);
+      expect(mockMarkAsRead).not.toHaveBeenCalled();
+    });
+
     it('未认证时返回 401', async () => {
       mockAuthenticate.mockImplementation((_req: Request, _res: Response, next: NextFunction) => {
         next(new UnauthorizedError('未提供认证令牌'));
       });
-      const res = await fetch(`${baseUrl}/notif-uuid-001/read`, { method: 'POST' });
+      const res = await fetch(`${baseUrl}/${NOTIF_UUID}/read`, { method: 'POST' });
       expect(res.status).toBe(401);
       expect(mockMarkAsRead).not.toHaveBeenCalled();
     });
