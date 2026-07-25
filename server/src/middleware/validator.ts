@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { validationResult, param, type ValidationChain } from 'express-validator';
+import { validationResult, param, query, type ValidationChain } from 'express-validator';
 import { AppError, FieldError } from '../utils/errors';
 import { CommonErrorCode } from '../utils/errorCodes';
 
@@ -104,4 +104,46 @@ export function uuidParam(paramName: string = 'id'): ValidationChain {
   return param(paramName)
     .isUUID('all')
     .withMessage(`${paramName} 必须是合法 UUID`);
+}
+
+/**
+ * 生成枚举型路径参数校验链。
+ *
+ * 设计原因：路径参数 :type 在 admin 路由中存在封闭枚举语义（如 skill/kitchen/time_bank），
+ * 原代码用 `as` 类型断言直接收窄，未做运行时校验。非法值（如 'foo'）会进入 service 层
+ * 走完整个调用链才返回空列表或 500，错误语义错位（应为 422 参数错误）。前置白名单校验
+ * 可在路由层提前拦截，避免无效请求穿透到 service 层，同时让错误响应语义对齐 422 规范。
+ *
+ * 默认 required：路径参数若未在路由定义中出现，根本不会进入此 handler，
+ * 仅当路由定义为可选（如 :type?）时才需传 optional=true。
+ *
+ * @param paramName 路径参数名
+ * @param allowed 允许的枚举值列表
+ * @param optional 是否可选（默认 false，路径参数通常必填）
+ */
+export function enumParam(paramName: string, allowed: readonly string[], optional = false): ValidationChain {
+  const chain = param(paramName).isIn(allowed as string[]);
+  if (optional) chain.optional();
+  return chain.withMessage(`${paramName} 必须是以下值之一: ${allowed.join(', ')}`);
+}
+
+/**
+ * 生成枚举型查询参数校验链。
+ *
+ * 设计原因：查询参数 status/type 在多个 admin 列表接口存在封闭枚举语义
+ * （如 reports.status ∈ [pending, resolved, rejected]），原代码用 `as` 类型断言直接收窄，
+ * 非法值会进入 service 层走参数化查询返回空列表，错误语义错位（前端难以辨别是「无数据」
+ * 还是「参数非法」）。前置白名单校验让非法参数在路由层就被 422 拦截，错误响应语义清晰。
+ *
+ * 默认 optional：查询参数天然可选，未传时由 service 层按 undefined 处理（返回全量数据）。
+ * 仅当业务上必填时才传 optional=false。
+ *
+ * @param queryName 查询参数名
+ * @param allowed 允许的枚举值列表
+ * @param optional 是否可选（默认 true，查询参数通常可选）
+ */
+export function enumQuery(queryName: string, allowed: readonly string[], optional = true): ValidationChain {
+  const chain = query(queryName).isIn(allowed as string[]);
+  if (optional) chain.optional();
+  return chain.withMessage(`${queryName} 必须是以下值之一: ${allowed.join(', ')}`);
 }

@@ -353,6 +353,14 @@ describe('admin 路由集成测试', () => {
       expect(mockGetContent).toHaveBeenCalledWith('kitchen', 'active', 1, 20);
     });
 
+    it('GET /content type 非枚举值 422（前置白名单校验拦截，不进入 service）', async () => {
+      // 防御性测试：type 必须是 skill/kitchen/time_bank/emergency 之一，非法值直接 422
+      // 设计原因：原依赖 service 层 BadRequestError 兜底，错误码为 400 不符合 REST 422 语义
+      const res = await fetch(`${baseUrl}/content?type=invalid-module`);
+      expect(res.status).toBe(422);
+      expect(mockGetContent).not.toHaveBeenCalled();
+    });
+
     it('PUT /content/:type/:id/status 合法状态更新成功', async () => {
       mockUpdateContentStatus.mockResolvedValue({ id: 'c1', status: 'inactive' });
       const res = await fetch(`${baseUrl}/content/skill/c1/status`, {
@@ -501,6 +509,15 @@ describe('admin 路由集成测试', () => {
       expect(mockGetOrders).toHaveBeenCalledWith('kitchen', 'completed', 1, 20);
     });
 
+    it('GET /orders/:type 路径参数非枚举值 422（前置白名单校验拦截，不进入 service）', async () => {
+      // 防御性测试：路径参数 :type 必须是 skill/kitchen/time_bank 之一
+      // 设计原因：原 service 层 ORDER_CONFIG[type] 返回 undefined 时抛 BadRequestError(400)，
+      // 加白名单后路由层前置拦截，错误码对齐 422，避免无效请求穿透到 service 层
+      const res = await fetch(`${baseUrl}/orders/invalid-type`);
+      expect(res.status).toBe(422);
+      expect(mockGetOrders).not.toHaveBeenCalled();
+    });
+
     it('PUT /orders/:type/:id/cancel 合法原因取消成功', async () => {
       mockForceCancelOrder.mockResolvedValue({ id: 'o1', status: 'cancelled' });
       const res = await fetch(`${baseUrl}/orders/skill/o1/cancel`, {
@@ -563,6 +580,16 @@ describe('admin 路由集成测试', () => {
       expect(res.status).toBe(200);
       // 默认 days=7
       expect(mockGetOrderTrend).toHaveBeenCalledWith(7);
+    });
+
+    it('GET /dashboard/trend type 非枚举值 422（前置白名单校验拦截，不进入 service）', async () => {
+      // 防御性测试：type 必须是 registration 或 order，非法值 422 拦截
+      // 设计原因：原代码 if/else 默认走 registration 分支，type=invalid 会静默返回 registration 数据，
+      // 前端难以辨别是「接口默认行为」还是「参数错误」，加白名单后错误响应语义清晰
+      const res = await fetch(`${baseUrl}/dashboard/trend?type=invalid`);
+      expect(res.status).toBe(422);
+      expect(mockGetRegistrationTrend).not.toHaveBeenCalled();
+      expect(mockGetOrderTrend).not.toHaveBeenCalled();
     });
 
     it('GET /dashboard/trend days 超出 [1,365] 时 clamp 到边界值，避免全表扫描与反向序列', async () => {
@@ -669,6 +696,15 @@ describe('admin 路由集成测试', () => {
       expect(mockGetReports).toHaveBeenCalledWith(1, 20, 'pending');
     });
 
+    it('GET /reports status 非枚举值 422（前置白名单校验拦截，不进入 service）', async () => {
+      // 防御性测试：status 必须是 pending/resolved/rejected 之一（ReportStatus 联合类型）
+      // 设计原因：原 `as ReportStatus` 断言仅 TS 编译期收窄，运行时非法值穿透到 service 层
+      // 走参数化查询返回空列表，前端难以辨别「无数据」与「参数非法」，加白名单后语义清晰
+      const res = await fetch(`${baseUrl}/reports?status=invalid`);
+      expect(res.status).toBe(422);
+      expect(mockGetReports).not.toHaveBeenCalled();
+    });
+
     it('PUT /reports/:id 合法处理成功', async () => {
       mockHandleReport.mockResolvedValue({ id: 'r1', status: 'resolved' });
       const res = await fetch(`${baseUrl}/reports/r1`, {
@@ -749,6 +785,14 @@ describe('admin 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/deletion-requests?page=1&pageSize=10`);
       expect(res.status).toBe(200);
       expect(mockGetDeletionRequests).toHaveBeenCalledWith(1, 10, undefined);
+    });
+
+    it('GET /deletion-requests status 非枚举值 422（前置白名单校验拦截，不进入 service）', async () => {
+      // 防御性测试：status 必须是 pending/approved/rejected/completed 之一
+      // 设计原因：原 `as` 断言仅 TS 编译期收窄，运行时非法值穿透到 service 层参数化查询返回空列表
+      const res = await fetch(`${baseUrl}/deletion-requests?status=invalid`);
+      expect(res.status).toBe(422);
+      expect(mockGetDeletionRequests).not.toHaveBeenCalled();
     });
 
     it('PUT /deletion-requests/:id approve 通过注销', async () => {

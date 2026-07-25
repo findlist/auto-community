@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { body } from 'express-validator';
 import { authenticate, requireRole } from '../middleware/auth';
-import { validate, getPagination } from '../middleware/validator';
+import { validate, getPagination, enumParam, enumQuery } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
 import { auditMiddleware } from '../middleware/auditLog';
 import { adminService } from '../services/admin.service';
@@ -23,6 +23,19 @@ const REPUTATION_CACHE_TTL = 300;
 // 模块活跃度触发 7 张表全表 COUNT：30 天时间窗已限制单表扫描范围，但 7 次串行 COUNT 仍有 DB 压力，
 // 用 5 分钟缓存兜底与 reputation 保持一致 TTL（模块活跃度日级别粒度，5 分钟延迟不可感知）
 const MODULE_ACTIVITY_CACHE_KEY = 'admin:dashboard:modules';
+
+// 内容模块类型白名单：与 adminService.getContent/getOrders 的内部 switch 分支对齐，
+// 用于 GET /content 查询参数与 GET /orders/:type 路径参数前置校验，避免非法值穿透到 service 层
+const CONTENT_TYPES = ['skill', 'kitchen', 'time_bank', 'emergency'] as const;
+// 订单类型白名单：与 adminService.getOrders 内部 switch 分支对齐，
+// 比 CONTENT_TYPES 少 'emergency'（应急模块无订单概念），单独定义避免误用
+const ORDER_TYPES = ['skill', 'kitchen', 'time_bank'] as const;
+// 7 日趋势图类型白名单：与 dashboard/trend 的 if/else 分支对齐（registration | order）
+const DASHBOARD_TREND_TYPES = ['registration', 'order'] as const;
+// 举报状态白名单：与 ReportStatus 联合类型对齐（pending | resolved | rejected）
+const REPORT_STATUSES: readonly string[] = ['pending', 'resolved', 'rejected'];
+// 注销申请状态白名单：与 dataDeletionService.getDeletionRequests 的 status 参数收窄类型对齐
+const DELETION_REQUEST_STATUSES = ['pending', 'approved', 'rejected', 'completed'] as const;
 
 const router = Router();
 
@@ -195,7 +208,12 @@ router.post('/users/batch-unban', validate([
 // ===================== 内容审核 =====================
 
 // 内容列表
-router.get('/content', asyncHandler(async (req: Request, res: Response) => {
+router.get('/content', validate([
+  // type 走封闭枚举白名单（service 层 switch 仅有 4 分支），非法值直接 422 拦截避免穿透
+  // status 为自由字符串（各模块状态字段语义不同），保留 service 层参数化查询兜底，不过度收紧
+  // type 标记 optional：未传 type 时仍走 service 层 BadRequestError 兜底（保持原行为，避免破坏 ContentType 必填约束）
+  enumQuery('type', CONTENT_TYPES),
+]), asyncHandler(async (req: Request, res: Response) => {
   const { page, pageSize } = getPagination(req);
   const type = req.query.type as 'skill' | 'kitchen' | 'time_bank' | 'emergency';
   const status = req.query.status as string | undefined;
@@ -321,7 +339,11 @@ router.get('/audit-logs', asyncHandler(async (req: Request, res: Response) => {
 // ===================== 订单管理 =====================
 
 // 订单列表
-router.get('/orders/:type', asyncHandler(async (req: Request, res: Response) => {
+router.get('/orders/:type', validate([
+  // :type 路径参数必填（路由定义无 ?），用 required 模式（enumParam 默认 optional=false）
+  // 非法 type 直接 422 拦截，避免穿透到 service 层抛 BadRequestError（400 → 422 错误语义对齐）
+  enumParam('type', ORDER_TYPES),
+]), asyncHandler(async (req: Request, res: Response) => {
   const { page, pageSize } = getPagination(req);
   const { type } = req.params;
   const status = req.query.status as string | undefined;
@@ -360,7 +382,11 @@ router.get('/dashboard', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // 7日趋势图
-router.get('/dashboard/trend', asyncHandler(async (req: Request, res: Response) => {
+router.get('/dashboard/trend', validate([
+  // type 可选：未传时默认走 registration 分支（service 层 if/else 兜底）
+  // 加白名单后非法值（如 'invalid'）会被 422 拦截，避免被原 if/else 默认走到 registration 分支造成静默错误
+  enumQuery('type', DASHBOARD_TREND_TYPES),
+]), asyncHandler(async (req: Request, res: Response) => {
   const type = req.query.type as 'registration' | 'order';
   // days 白名单 clamp 到 [1, 365]：
   // - 负数会让 generate_series 反向生成空集
@@ -421,7 +447,12 @@ router.get('/dashboard/system', asyncHandler(async (req: Request, res: Response)
 // ===================== 举报处理 =====================
 
 // 举报列表
-router.get('/reports', asyncHandler(async (req: Request, res: Response) => {
+router.get('/reports', validate([
+  // status 走 ReportStatus 白名单（pending | resolved | rejected），非法值 422 拦截
+  // 与原 `as ReportStatus` 断言配合：原依赖 service 层参数化查询安全，但错误响应语义错位
+  // （非法值返回空列表而非 422），加白名单后错误语义对齐
+  enumQuery('status', REPORT_STATUSES),
+]), asyncHandler(async (req: Request, res: Response) => {
   const { page, pageSize } = getPagination(req);
   // 查询参数 status 收窄为 ReportStatus 联合类型，运行时由 getReports 内部参数化查询保证安全
   const status = req.query.status as ReportStatus | undefined;
@@ -470,7 +501,10 @@ router.put('/verifications/:id', validate([
 // ===================== 注销申请审核 =====================
 
 // 注销申请列表
-router.get('/deletion-requests', asyncHandler(async (req: Request, res: Response) => {
+router.get('/deletion-requests', validate([
+  // status 走 4 状态白名单，非法值 422 拦截，避免穿透到 service 层参数化查询返回空列表
+  enumQuery('status', DELETION_REQUEST_STATUSES),
+]), asyncHandler(async (req: Request, res: Response) => {
   const { page, pageSize } = getPagination(req);
   const status = req.query.status as 'pending' | 'approved' | 'rejected' | 'completed' | undefined;
   const result = await dataDeletionService.getDeletionRequests(page, pageSize, status);
