@@ -328,26 +328,28 @@ export default function OrderManagement() {
             ))}
           </div>
 
-          {/* 分页控件 */}
-          <div className="flex items-center justify-between mt-4 text-sm text-neutral-600">
-            <span>共 {total} 条</span>
+          {/* 分页控件：当前页以胶囊高亮，前后按钮加 active 反馈（与 UserManagement 07-20 优化范式对齐） */}
+          <div className="flex items-center justify-between mt-6 text-sm text-neutral-600">
+            <span className="text-neutral-500">共 <span className="font-semibold text-neutral-800 tabular-nums">{total}</span> 条</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => loadOrders(type, status, page - 1)}
                 disabled={page <= 1}
                 aria-label="上一页"
-                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
+                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <span>
-                {page} / {totalPages || 1}
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neutral-100 tabular-nums">
+                <span className="font-semibold text-neutral-900">{page}</span>
+                <span className="text-neutral-400">/</span>
+                <span className="text-neutral-500">{totalPages || 1}</span>
               </span>
               <button
                 onClick={() => loadOrders(type, status, page + 1)}
                 disabled={page >= totalPages}
                 aria-label="下一页"
-                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
+                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
