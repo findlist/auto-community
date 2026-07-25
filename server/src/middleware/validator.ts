@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { validationResult, type ValidationChain } from 'express-validator';
+import { validationResult, param, type ValidationChain } from 'express-validator';
 import { AppError, FieldError } from '../utils/errors';
 import { CommonErrorCode } from '../utils/errorCodes';
 
@@ -85,4 +85,23 @@ export function getSortParams(req: Request, allowedFields: string[]): { field: s
   const order = sortOrder === 'DESC' ? 'DESC' : 'ASC';
 
   return { field, order };
+}
+
+/**
+ * 生成 UUID 路径参数校验链。
+ *
+ * 设计原因：原 routes 层 /:id 路径参数未做格式校验，依赖 service 层 query 返回空时抛 NotFoundError 兜底。
+ * 这会导致非法 id（如 'abc'、'../../etc'）也走完整个 service 调用链才返回 404，既浪费 DB 查询，
+ * 又让 service 层承担了本应在路由层完成的输入校验职责。前置 UUID 校验可在路由层提前返回 422，
+ * 降低 service 防御压力并改善错误响应语义（参数格式错误应 422 而非 404）。
+ *
+ * 选择 isUUID('all') 而非 'v4'：项目数据库 uuid 字段使用 pg 默认 gen_random_uuid()（v4），
+ * 但保留 'all' 版本兼容性以应对历史数据或其他生成源（如 v1 时间戳 UUID），避免过度收紧。
+ *
+ * @param paramName 路径参数名，默认 'id'，支持 'userId'/'orderId' 等自定义命名
+ */
+export function uuidParam(paramName: string = 'id'): ValidationChain {
+  return param(paramName)
+    .isUUID('all')
+    .withMessage(`${paramName} 必须是合法 UUID`);
 }

@@ -8,13 +8,39 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 
+// 使用 vi.hoisted 提升 mock 对象：vi.mock 工厂与 beforeEach 都需要引用同一个 chain 实例
+// 设计原因：beforeEach 中 vi.resetAllMocks() 会清空 param 的 mockReturnValue，导致 param() 返回 undefined
+// 提升 chain 到模块作用域后，可在 beforeEach 中重新调用 mockReturnValue(chain) 恢复链式行为
+//
+// 注意：链式方法不能用 mockReturnThis()，因为 vitest mock 函数的 this 在严格模式/独立调用时为 undefined
+// 改用闭包引用 chain 自身：mockReturnValue(chain) 让 isUUID/withMessage 都返回同一个 chain 对象
+const { mockChain, mockParam } = vi.hoisted(() => {
+  // 先声明对象再设置 mockReturnValue，避免 TDZ（chain 在自身字面量内部不可引用）
+  const chain: {
+    isUUID: ReturnType<typeof vi.fn>;
+    withMessage: ReturnType<typeof vi.fn>;
+  } = {
+    isUUID: vi.fn(),
+    withMessage: vi.fn(),
+  };
+  chain.isUUID.mockReturnValue(chain);
+  chain.withMessage.mockReturnValue(chain);
+  return {
+    mockChain: chain,
+    mockParam: vi.fn().mockReturnValue(chain),
+  };
+});
+
 // mock express-validator：仅替换 validationResult，ValidationChain 为类型在运行时擦除
+// param 也需 mock：uuidParam 工厂内部调用 param(name).isUUID().withMessage() 链式构造 ValidationChain
+// 链式方法均返回 this（chain 对象），故用同一个 mockChain 串联
 vi.mock('express-validator', () => ({
   validationResult: vi.fn(),
+  param: mockParam,
 }));
 
-import { validate, rules, getPagination, getSortParams } from '../validator';
-import { validationResult } from 'express-validator';
+import { validate, rules, getPagination, getSortParams, uuidParam } from '../validator';
+import { validationResult, param } from 'express-validator';
 import { AppError } from '../../utils/errors';
 import { CommonErrorCode } from '../../utils/errorCodes';
 
@@ -38,7 +64,11 @@ function createMockReqRes(query: Record<string, unknown> = {}, params: Record<st
 }
 
 beforeEach(() => {
-  vi.resetAllMocks();
+  // 使用 clearAllMocks 而非 resetAllMocks：仅清除调用记录，保留 mockReturnValue/mockImplementation
+  // 设计原因：vi.mock('express-validator') 工厂在模块初始化时仅执行一次，param 的 mockReturnValue(mockChain)
+  // 与 mockChain 内部方法的 mockReturnValue(chain) 若被 resetAllMocks 清空，会导致后续测试 param() 返回 undefined。
+  // mockReturnValueOnce 设置的实现通过 mock.results 跟踪，每个测试自行设置自己的 mockReturnValueOnce
+  vi.clearAllMocks();
 });
 
 describe('validate - 校验中间件', () => {
@@ -201,5 +231,31 @@ describe('getSortParams - 排序参数解析', () => {
   it('sortOrder 大小写不敏感（desc → DESC）', () => {
     const { req } = createMockReqRes({ sortBy: 'name', sortOrder: 'desc' });
     expect(getSortParams(req, ['name']).order).toBe('DESC');
+  });
+});
+
+describe('uuidParam - UUID 路径参数校验工厂', () => {
+  // express-validator 的 param 被 mock 为 mockParam，链式调用均返回同一个 mockChain 对象
+  // 此处验证 uuidParam 工厂按预期调用 param(name).isUUID('all').withMessage(...)
+  // 真实的 UUID 格式校验由 express-validator 在运行时执行，集成测试已覆盖
+
+  it('默认参数名应为 "id"，并调用 isUUID("all")', () => {
+    uuidParam();
+    expect(param).toHaveBeenCalledWith('id');
+    expect(mockChain.isUUID).toHaveBeenCalledWith('all');
+  });
+
+  it('自定义参数名应透传（如 "userId"）', () => {
+    uuidParam('userId');
+    expect(param).toHaveBeenCalledWith('userId');
+  });
+
+  it('应设置 withMessage 含参数名的中文提示', () => {
+    uuidParam('orderId');
+    // withMessage 第一参数应包含参数名 'orderId'，便于前端识别是哪个路径参数格式错误
+    expect(mockChain.withMessage).toHaveBeenCalled();
+    const messageArg = mockChain.withMessage.mock.calls[0][0] as string;
+    expect(messageArg).toContain('orderId');
+    expect(messageArg).toContain('UUID');
   });
 });
