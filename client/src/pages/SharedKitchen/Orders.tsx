@@ -260,16 +260,17 @@ export default function Orders() {
         </button>
       </div>
 
-      {/* 状态筛选 */}
+      {/* 状态筛选：选中态 shadow-sm 抬升 + emerald 实色高对比，未选中态 active 反馈（与 Admin 范式对齐） */}
+      {/* 设计原因：原 emerald-100 浅底选中态对比度不足，弱光下用户难以辨别当前筛选；改用 emerald-500 实色 + 白字提升识别度 */}
       <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
         {statusOptions.map(opt => (
           <button
             key={opt.value}
             onClick={() => setStatusFilter(opt.value)}
-            className={`px-3 py-1.5 text-sm rounded-full whitespace-nowrap ${
+            className={`px-3 py-1.5 text-sm rounded-full whitespace-nowrap transition-all active:scale-95 ${
               statusFilter === opt.value
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-gray-100 text-gray-600"
+                ? "bg-emerald-500 text-white shadow-sm"
+                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
             }`}
           >
             {opt.label}
