@@ -376,15 +376,15 @@ export default function ResourceMap() {
         </div>
       </div>
 
-      {/* 类型筛选 */}
+      {/* 类型筛选：选中态 shadow-sm 抬升 + active 按压反馈（与 Admin/SharedKitchen 范式对齐） */}
       <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
         {TYPE_FILTERS.map(({ value, label }) => (
           <button
             key={value}
             onClick={() => setTypeFilter(value)}
-            className={`px-3 py-2 text-sm rounded-full whitespace-nowrap border transition-colors ${
+            className={`px-3 py-2 text-sm rounded-full whitespace-nowrap border transition-all active:scale-95 ${
               typeFilter === value
-                ? "bg-emerald-500 text-white border-emerald-500"
+                ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
                 : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-emerald-300"
             }`}
           >

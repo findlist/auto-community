@@ -542,19 +542,20 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
           <button onClick={() => handleClose(onClose)} aria-label="关闭应急资源弹窗"><X className="w-5 h-5 text-[var(--color-text-tertiary)]" /></button>
         </div>
 
+        {/* 类型筛选：选中态 shadow-sm 抬升 + active 按压反馈（与 Admin/SharedKitchen 范式对齐） */}
         <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
           {RESOURCE_TYPES.map(({ value, label }) => (
             <button
               key={value}
               onClick={() => setTypeFilter(value)}
-              className={`px-3 py-2 text-sm rounded-full whitespace-nowrap border transition-colors ${typeFilter === value ? "bg-emerald-500 text-white border-emerald-500" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
+              className={`px-3 py-2 text-sm rounded-full whitespace-nowrap border transition-all active:scale-95 ${typeFilter === value ? "bg-emerald-500 text-white border-emerald-500 shadow-sm" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
             >
               {label}
             </button>
           ))}
           <button
             onClick={() => setShowMap(!showMap)}
-            className={`px-3 py-2 text-sm rounded-full whitespace-nowrap border transition-colors ${showMap ? "bg-blue-500 text-white border-blue-500" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
+            className={`px-3 py-2 text-sm rounded-full whitespace-nowrap border transition-all active:scale-95 ${showMap ? "bg-blue-500 text-white border-blue-500 shadow-sm" : "border-[var(--color-border)] text-[var(--color-text-secondary)]"}`}
           >
             <Navigation className="w-3 h-3 inline mr-1" />
             地图
