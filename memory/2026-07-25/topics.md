@@ -471,3 +471,132 @@
 1. **扫描剩余 routes 模块**：emergency.ts 资源路由 :id、orders.ts/skill.ts 订单 :id、kitchen.ts 菜品 :id、time-bank.ts 交易 :id 是否已全量补 UUID 校验
 2. **service 层兜底校验复核**：确认所有 service 层对 :id 的 NotFoundError 兜底是否仍保留（路由层校验不应替代 service 层防御）
 3. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）
+
+---
+
+## 六轮迭代摘要（2026-07-25 续五）—— routes 层 UUID 校验收尾 + 枚举查询参数白名单补全
+
+承接五轮「admin 路由 :id/:type 前置校验补全」，本轮完成 routes 层 :id UUID 校验补全的**最后两站**（ai + notifications），并启动 Phase3 技术债清理的下一站：**routes 层枚举型查询参数白名单校验扫描与补全**。
+
+### 已完成任务（2 个最小迭代单元）
+
+14. **ai 与 notifications 路由补 UUID 前置校验并修正测试 fixture**（待提交，用户跳过 commit）
+    - 文件：`server/src/routes/ai.ts`、`server/src/routes/notifications.ts`、`server/src/routes/__tests__/ai.test.ts`、`server/src/routes/__tests__/notifications.test.ts`
+    - 改动点（3 处路由）：
+      - `ai.ts GET /match/skills/:postId`：加 `validate([uuidParam('postId')])`，非法 postId 在路由层 422 拦截，避免穿透到 AI 服务层
+      - `ai.ts GET /match/time-bank/:serviceId`：加 `validate([uuidParam('serviceId')])`，非法 serviceId 在路由层 422 拦截
+      - `notifications.ts POST /:id/read`：加 `validate([uuidParam()])`，与 users/emergency/kitchen 等路由范式对齐
+    - 测试同步更新：
+      - `ai.test.ts`：新增 `POST_UUID`/`SERVICE_UUID`/`INVALID_ID` 常量，原 'post-001'/'svc-001' fixture 全部替换为合法 UUID，新增 2 个「非 UUID 格式 422」防御用例
+      - `notifications.test.ts`：新增 `NOTIF_UUID`/`INVALID_ID` 常量，原 'notif-uuid-001'/'non-existent-id' fixture 全部替换为合法 UUID，新增 1 个「非 UUID 格式 422」防御用例
+      - 404 测试用例（markAsRead 返回 false 抛 NotFoundError）改用合法 UUID，确保前置校验放行后进入 handler 验证 404 路径
+    - 验收：
+      - 后端 tsc --noEmit ✅ 通过
+      - 后端 ai.test.ts + notifications.test.ts 单文件 ✅ 26 测试全通过
+      - 后端全量 vitest run ✅ 81 文件 1829 测试全通过（duration 20.26s）
+      - 前端 build ✅ 通过（vite v6.4.3 building for production 完成，dist 全部资源输出，末尾 TRAE Sandbox Error 为 PowerShell CryptnetUrlCache 沙箱拦截，不影响构建产物）
+
+15. **routes 层枚举型查询参数白名单校验扫描与补全**（待提交，用户跳过 commit）
+    - 文件：`server/src/routes/admin.ts`、`server/src/routes/time-bank.ts`、`server/src/routes/__tests__/admin.test.ts`、`server/src/routes/__tests__/time-bank.test.ts`
+    - 扫描范围：17 个 routes 文件中所有 `req.query.*` 用法，识别枚举型查询参数
+    - 改动点（3 处查询参数补 enumQuery 白名单）：
+      - `admin.ts GET /orders/:type` 的 `status`：新增 `ORDER_STATUSES` 联合白名单（pending/accepted/confirmed/in_progress/completed/cancelled/disputed），跨三类订单状态集合
+      - `admin.ts GET /verifications` 的 `status`：新增 `VERIFICATION_STATUSES` 白名单（pending/approved/rejected），与 verification_requests.status 字段 CHECK 约束对齐
+      - `time-bank.ts GET /services` 的 `type`：新增 `TIME_SERVICE_TYPES` 白名单（provide/request），与 time_bank_services.type 字段语义对齐
+    - 设计原因：
+      - 原代码 status/type 直接 `as string` 透传到 service 层 SQL WHERE，虽参数化防注入，但非法值静默返回空列表
+      - 前端无法区分「无数据」与「参数非法」，前置 422 拦截让错误语义清晰
+      - 与 admin.ts 已有的 enumQuery 接入（reports.status、deletion-requests.status、dashboard/trend.type、content/export.format）形成完整闭环
+    - 测试同步更新：
+      - `admin.test.ts`：新增 2 个「status 非枚举值 422」防御用例（orders + verifications）
+      - `time-bank.test.ts`：原 fixture `type=offer`（误用 skill/kitchen 模块枚举）修正为 `type=provide`，新增 1 个「非枚举 type 422」防御用例
+    - 扫描结论（无需改动的项）：
+      - `messages.ts order_type`：已有路由内 `parseOrderType` 业务层校验抛 400 BadRequestError，语义等价且有测试覆盖（测 BAD_REQUEST 错误码），不主动改契约
+      - `time-bank.ts GET /services category`：自由文本字段（用户填写分类名），不做白名单
+      - `admin.ts search/days/format/userId/cursor/limit` 等非枚举参数：保持原样
+    - 验收：
+      - 后端 tsc --noEmit ✅ 通过
+      - 后端 admin.test.ts + time-bank.test.ts 单文件 ✅ 119 测试全通过（含新增 3 个 422 防御用例）
+      - 后端全量 vitest run ✅ 81 文件 1832 测试全通过（duration 19.82s，比上轮 1829 增加 3 个）
+
+### 六轮总结
+
+本轮共完成 2 个迭代单元（待提交），属于 Phase3 技术债清理的 routes 层校验补全收尾线。
+
+**线条一：routes 层 :id UUID 校验补全清零**（单元 14）
+- ai.ts 2 处 + notifications.ts 1 处 = 3 处路由
+- 累计已清零：users/address/emergency/kitchen/skills/time-bank/admin/ai/notifications 全部 routes 模块 :id 路径参数 UUID 校验
+- 全项目 routes 层 :id 路径参数校验闭环完成
+
+**线条二：routes 层枚举型查询参数白名单补全**（单元 15）
+- admin.ts 2 处 + time-bank.ts 1 处 = 3 处查询参数
+- 累计已清零：admin.ts 全部枚举查询参数（content.type/orders.type/dashboard.trend.type/reports.status/deletion-requests.status/orders.status/verifications.status/export.format）+ time-bank.ts services.type
+- 与既有 enumQuery/enumParam 接入形成完整闭环
+
+| 路由 | 改动类型 | 文件 |
+| --- | --- | --- |
+| ai.ts GET /match/skills/:postId | 加 uuidParam 前置校验 | ai.ts + ai.test.ts |
+| ai.ts GET /match/time-bank/:serviceId | 加 uuidParam 前置校验 | ai.ts + ai.test.ts |
+| notifications.ts POST /:id/read | 加 uuidParam 前置校验 | notifications.ts + notifications.test.ts |
+| admin.ts GET /orders/:type | 补 enumQuery('status', ORDER_STATUSES) | admin.ts + admin.test.ts |
+| admin.ts GET /verifications | 补 enumQuery('status', VERIFICATION_STATUSES) | admin.ts + admin.test.ts |
+| time-bank.ts GET /services | 补 enumQuery('type', TIME_SERVICE_TYPES) | time-bank.ts + time-bank.test.ts |
+
+### 验证结果
+
+- 后端类型检查：✅ tsc --noEmit 通过
+- 后端单元测试：✅ 81 文件 1832 测试全通过（duration 19.82s）
+- 前端构建：本轮无前端改动，基线保持（前端 build 在单元 14 验收时已确认通过）
+
+### 关键技术决策
+
+1. **测试 fixture 必须同步切换为合法 UUID**：
+   - 原 ai.test.ts 用 'post-001'/'svc-001'、notifications.test.ts 用 'notif-uuid-001'/'non-existent-id' 作为 id fixture
+   - 加 uuidParam 前置校验后这些 fixture 在路由层就会被 422 拦截，无法进入 service mock 验证路径
+   - 修复方案：在测试文件顶部定义 UUID v4 常量（POST_UUID/SERVICE_UUID/NOTIF_UUID），全局替换路径参数中的非 UUID 字符串
+2. **404 测试用例改用合法 UUID 而非非法字符串**：
+   - 原 notifications.test.ts 「通知不存在或已读时 markAsRead 返回 false 抛 NotFoundError 返回 404」用 'non-existent-id' 作为 id
+   - 加前置校验后 'non-existent-id' 会被 422 拦截，无法验证 404 路径
+   - 修复方案：改用合法 UUID（NOTIF_UUID），让前置校验放行后由 handler 内 markAsRead 返回 false 抛 NotFoundError 走 404 路径
+3. **time-bank type 枚举与 skill/kitchen 不同**：
+   - time_bank_services.type 字段用 `provide`/`request`（提供服务/请求服务）
+   - skill_posts.type 与 kitchen_posts.type 用 `offer`/`need`（提供/需要）
+   - 原 time-bank.test.ts fixture 误用 'offer'，加 enumQuery 后会被 422 拦截，修正为 'provide'
+4. **messages.ts order_type 不主动改契约**：
+   - 已有路由内 `parseOrderType` 业务层校验，非法值抛 400 BadRequestError
+   - 测试明确验证了 `order_type 非法值时抛 BadRequestError 返回 400` 的契约
+   - 改用 enumQuery 会变成 422 VALIDATION_ERROR，破坏现有测试契约
+   - 决策：保持原 parseOrderType 业务层校验，语义等价（都是路由层前置拦截），仅错误码不同（400 vs 422），不主动改
+5. **ORDER_STATUSES 用联合白名单而非按 type 分组**：
+   - getOrders 跨 skill/kitchen/time_bank 三表查询，status 字段在不同表枚举不同
+   - skill/time_bank: pending/accepted/in_progress/completed/cancelled/disputed
+   - kitchen: pending/confirmed/completed/cancelled
+   - 联合白名单取并集，避免按 type 动态切换白名单的复杂度
+   - 副作用：admin 端传 `?type=kitchen&status=accepted` 不会被 422 拦截（kitchen 无 accepted 状态），但 service 层 SQL WHERE 仍会返回空列表
+   - 权衡：白名单主要拦截「明显非法值」（如 'foo'、'invalid-status'），跨 type 的细粒度枚举校验由 service 层兜底
+6. **VERIFICATION_STATUSES 与字段 CHECK 约束对齐**：
+   - verification_requests.status 字段注释明确为 `pending/approved/rejected`
+   - 白名单与 DB 约束对齐，避免路由层放行后 DB 层 CHECK 报错
+
+### Git 提交记录（六轮）
+
+- 待提交：fix: 为 ai 与 notifications 路由补 UUID 前置校验并修正测试 fixture（用户跳过 commit，8 个文件 staged + unstaged 混合状态保留）
+- 待提交：feat: routes 层枚举型查询参数白名单校验补全（admin orders/verifications status + time-bank services type）
+
+> **注**：本轮 2 个最小迭代单元的修改已通过全部验收（tsc + 全量 vitest + 前端 build），但因用户在工具调用层跳过了 `git commit`，改动尚未进入 git 历史。下次会话可由用户自行决定是否一次性提交全部 8 个文件改动。
+
+### 遗留问题
+
+无阻塞性遗留问题。剩余技术债清理项：
+
+1. **map 路由参数校验**：经纬度范围（lat ∈ [-90, 90]、lng ∈ [-180, 180]）与必填校验，未做白名单
+2. **service 层兜底校验复核**：确认所有 service 层对 :id 的 NotFoundError 兜底是否仍保留（路由层校验不应替代 service 层防御）
+3. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）：见上轮遗留问题
+
+### 下一轮建议
+
+继续推进 Phase3 技术债清理：
+
+1. **map 路由经纬度参数校验**：扫描 server/src/routes 中 map 相关接口（如 emergency/resources/nearby 等），补 lat/lng 范围与必填校验
+2. **service 层兜底校验复核**：抽查关键 service（如 user.service/skill.service）的 getById 等方法是否仍保留 NotFoundError 兜底
+3. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）
