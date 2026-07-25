@@ -81,7 +81,7 @@ async function stopServer(server: http.Server): Promise<void> {
 /** 构造一个固定结构的地址对象，供多测试用例复用 */
 function buildAddress(overrides: Partial<Record<string, unknown>> = {}) {
   return {
-    id: 'addr-uuid-001',
+    id: '550e8400-e29b-41d4-a716-446655440000',
     userId: 'user-uuid-001',
     recipient: '张三',
     phone: '13800138000',
@@ -113,7 +113,7 @@ describe('address 路由集成测试', () => {
 
   describe('GET /', () => {
     it('认证通过返回地址列表', async () => {
-      mockListByUser.mockResolvedValue([buildAddress(), buildAddress({ id: 'addr-uuid-002', isDefault: true })]);
+      mockListByUser.mockResolvedValue([buildAddress(), buildAddress({ id: '550e8400-e29b-41d4-a716-446655440001', isDefault: true })]);
       const res = await fetch(`${baseUrl}/`, { headers: { Authorization: 'Bearer valid-token' } });
       expect(res.status).toBe(200);
       // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
@@ -168,7 +168,7 @@ describe('address 路由集成测试', () => {
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       expect(data.message).toBe('地址已添加');
-      expect((data.data as Record<string, unknown>).id).toBe('addr-uuid-001');
+      expect((data.data as Record<string, unknown>).id).toBe('550e8400-e29b-41d4-a716-446655440000');
       // 验证 create 收到正确的 userId 与 body
       expect(mockCreate).toHaveBeenCalledWith('user-uuid-001', body);
     });
@@ -243,7 +243,7 @@ describe('address 路由集成测试', () => {
     it('合法请求体更新地址成功返回 200', async () => {
       mockUpdate.mockResolvedValue(buildAddress({ recipient: '李四' }));
       const body = { recipient: '李四', phone: '13900139000' };
-      const res = await fetch(`${baseUrl}/addr-uuid-001`, {
+      const res = await fetch(`${baseUrl}/550e8400-e29b-41d4-a716-446655440000`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid-token' },
         body: JSON.stringify(body),
@@ -252,14 +252,14 @@ describe('address 路由集成测试', () => {
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.message).toBe('地址已更新');
       // 验证 update 收到正确的 id、userId 与 body
-      expect(mockUpdate).toHaveBeenCalledWith('addr-uuid-001', 'user-uuid-001', body);
+      expect(mockUpdate).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000', 'user-uuid-001', body);
     });
 
     it('未认证时返回 401', async () => {
       mockAuthenticate.mockImplementation((_req: Request, _res: Response, next: NextFunction) => {
         next(new UnauthorizedError('未提供认证令牌'));
       });
-      const res = await fetch(`${baseUrl}/addr-uuid-001`, {
+      const res = await fetch(`${baseUrl}/550e8400-e29b-41d4-a716-446655440000`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipient: '李四' }),
@@ -270,7 +270,7 @@ describe('address 路由集成测试', () => {
 
     it('phone 格式错误时 validate 返回 422（可选字段仍需校验格式）', async () => {
       const body = { phone: 'invalid' };
-      const res = await fetch(`${baseUrl}/addr-uuid-001`, {
+      const res = await fetch(`${baseUrl}/550e8400-e29b-41d4-a716-446655440000`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid-token' },
         body: JSON.stringify(body),
@@ -283,7 +283,7 @@ describe('address 路由集成测试', () => {
     it('update 抛 NotFoundError 时由 errorHandler 标准化为 404', async () => {
       // addressService.update 在地址不存在或非本人时抛 NotFoundError
       mockUpdate.mockRejectedValue(new NotFoundError('地址'));
-      const res = await fetch(`${baseUrl}/addr-uuid-001`, {
+      const res = await fetch(`${baseUrl}/550e8400-e29b-41d4-a716-446655440000`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid-token' },
         body: JSON.stringify({ recipient: '李四' }),
@@ -292,33 +292,48 @@ describe('address 路由集成测试', () => {
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
     });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 'addr-123' 含字母+数字但非 UUID 格式，express-validator isUUID('all') 应拒绝
+      // 设计原因：与 users 路由 GET /:id 的前置校验测试保持一致，验证 routes 层 UUID 守门生效
+      const res = await fetch(`${baseUrl}/addr-123`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid-token' },
+        body: JSON.stringify({ recipient: '李四' }),
+      });
+      expect(res.status).toBe(422);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect(data.code).toBe('VALIDATION_ERROR');
+      // service 不应被调用，验证前置校验拦截生效
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
   });
 
   describe('DELETE /:id', () => {
     it('正常删除返回 200', async () => {
       mockRemove.mockResolvedValue(undefined);
-      const res = await fetch(`${baseUrl}/addr-uuid-001`, {
+      const res = await fetch(`${baseUrl}/550e8400-e29b-41d4-a716-446655440000`, {
         method: 'DELETE',
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.message).toBe('地址已删除');
-      expect(mockRemove).toHaveBeenCalledWith('addr-uuid-001', 'user-uuid-001');
+      expect(mockRemove).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000', 'user-uuid-001');
     });
 
     it('未认证时返回 401', async () => {
       mockAuthenticate.mockImplementation((_req: Request, _res: Response, next: NextFunction) => {
         next(new UnauthorizedError('未提供认证令牌'));
       });
-      const res = await fetch(`${baseUrl}/addr-uuid-001`, { method: 'DELETE' });
+      const res = await fetch(`${baseUrl}/550e8400-e29b-41d4-a716-446655440000`, { method: 'DELETE' });
       expect(res.status).toBe(401);
       expect(mockRemove).not.toHaveBeenCalled();
     });
 
     it('remove 抛 NotFoundError 时返回 404', async () => {
       mockRemove.mockRejectedValue(new NotFoundError('地址'));
-      const res = await fetch(`${baseUrl}/addr-uuid-001`, {
+      const res = await fetch(`${baseUrl}/550e8400-e29b-41d4-a716-446655440000`, {
         method: 'DELETE',
         headers: { Authorization: 'Bearer valid-token' },
       });
@@ -326,39 +341,63 @@ describe('address 路由集成测试', () => {
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
     });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 设计原因：与 PUT /:id 前置校验测试保持一致，验证 DELETE 路由同样守门
+      const res = await fetch(`${baseUrl}/addr-456`, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer valid-token' },
+      });
+      expect(res.status).toBe(422);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect(data.code).toBe('VALIDATION_ERROR');
+      expect(mockRemove).not.toHaveBeenCalled();
+    });
   });
 
   describe('PUT /:id/default', () => {
     it('正常设为默认返回 200', async () => {
       mockSetDefault.mockResolvedValue(undefined);
-      const res = await fetch(`${baseUrl}/addr-uuid-001/default`, {
+      const res = await fetch(`${baseUrl}/550e8400-e29b-41d4-a716-446655440000/default`, {
         method: 'PUT',
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.message).toBe('已设为默认地址');
-      expect(mockSetDefault).toHaveBeenCalledWith('addr-uuid-001', 'user-uuid-001');
+      expect(mockSetDefault).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000', 'user-uuid-001');
     });
 
     it('未认证时返回 401', async () => {
       mockAuthenticate.mockImplementation((_req: Request, _res: Response, next: NextFunction) => {
         next(new UnauthorizedError('未提供认证令牌'));
       });
-      const res = await fetch(`${baseUrl}/addr-uuid-001/default`, { method: 'PUT' });
+      const res = await fetch(`${baseUrl}/550e8400-e29b-41d4-a716-446655440000/default`, { method: 'PUT' });
       expect(res.status).toBe(401);
       expect(mockSetDefault).not.toHaveBeenCalled();
     });
 
     it('setDefault 抛 NotFoundError 时返回 404', async () => {
       mockSetDefault.mockRejectedValue(new NotFoundError('地址'));
-      const res = await fetch(`${baseUrl}/addr-uuid-001/default`, {
+      const res = await fetch(`${baseUrl}/550e8400-e29b-41d4-a716-446655440000/default`, {
         method: 'PUT',
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(404);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 设计原因：与 PUT/DELETE /:id 前置校验测试保持一致，验证 default 子路由同样守门
+      const res = await fetch(`${baseUrl}/addr-789/default`, {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer valid-token' },
+      });
+      expect(res.status).toBe(422);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect(data.code).toBe('VALIDATION_ERROR');
+      expect(mockSetDefault).not.toHaveBeenCalled();
     });
   });
 

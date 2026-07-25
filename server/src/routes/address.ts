@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { body } from 'express-validator';
 import { authenticate } from '../middleware/auth';
-import { validate } from '../middleware/validator';
+import { validate, uuidParam } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
 import { auditMiddleware } from '../middleware/auditLog';
 import { success } from '../utils/response';
@@ -47,7 +47,9 @@ router.post('/', validate([
 }));
 
 // 更新地址
+// 前置 UUID 校验：非法 id 直接 422，避免进入 service 层后走完 query 才返回 404（bug-check P2 技术债清理）
 router.put('/:id', validate([
+  uuidParam(),
   body('recipient').optional().isString().isLength({ min: 1, max: 32 }),
   body('phone').optional().matches(/^1[3-9]\d{9}$/),
   body('address').optional().isString().isLength({ min: 1 }),
@@ -61,7 +63,8 @@ router.put('/:id', validate([
 }));
 
 // 删除地址
-router.delete('/:id', auditMiddleware('DELETE_ADDRESS', {
+// 前置 UUID 校验：非法 id 直接 422，与 PUT /:id 行为保持一致（bug-check P2 技术债清理）
+router.delete('/:id', validate([uuidParam()]), auditMiddleware('DELETE_ADDRESS', {
   resourceType: 'address',
   getResourceId: (req) => req.params.id,
 }), asyncHandler(async (req: Request, res: Response) => {
@@ -71,7 +74,8 @@ router.delete('/:id', auditMiddleware('DELETE_ADDRESS', {
 
 // 设为默认地址
 // 审计接入：默认地址会影响下单/发货链路，记录变更便于事后追溯异常订单来源
-router.put('/:id/default', auditMiddleware('SET_DEFAULT_ADDRESS', {
+// 前置 UUID 校验：非法 id 直接 422，与 PUT/DELETE /:id 行为保持一致（bug-check P2 技术债清理）
+router.put('/:id/default', validate([uuidParam()]), auditMiddleware('SET_DEFAULT_ADDRESS', {
   resourceType: 'address',
   getResourceId: (req) => req.params.id,
 }), asyncHandler(async (req: Request, res: Response) => {
