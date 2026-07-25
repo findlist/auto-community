@@ -92,7 +92,10 @@ export async function regeo(lng: number, lat: number): Promise<string | null> {
     return null;
   }
 
-  if (!lng || !lat) {
+  // 修复原 bug：!lng || !lat 在 lng=0（本初子午线）或 lat=0（赤道）时误判为缺失
+  // 改用 Number.isFinite 显式校验 NaN/undefined，与 emergency.ts /map/regeo 路由层校验逻辑一致
+  // 设计原因：0 是合法经纬度值（赤道/本初子午线），不应被 falsy 判断误判为缺失
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
     return null;
   }
 

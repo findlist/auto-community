@@ -540,6 +540,14 @@ describe('emergency 路由集成测试', () => {
       // 缺 address 时短路返回，不调用 mapService
       expect(mockGeocode).not.toHaveBeenCalled();
     });
+
+    it('address 超长（>200 字符）返回 422，不调用 mapService', async () => {
+      // 防御性测试：超长地址在路由层 422 拦截，避免穿透到高德 API 导致 URL 过长或请求超时
+      const longAddress = 'a'.repeat(201);
+      const res = await fetch(`${baseUrl}/map/geocode?address=${longAddress}`);
+      expect(res.status).toBe(422);
+      expect(mockGeocode).not.toHaveBeenCalled();
+    });
   });
 
   describe('GET /map/regeo', () => {

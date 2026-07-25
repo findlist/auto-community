@@ -132,13 +132,36 @@ describe('map.service', () => {
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
-    it('经度或纬度为 0 时返回 null', async () => {
-      // 设计原因：源码用 !lng || !lat 判断，0 会被视为 falsy 而降级
-      // 这是已知的边界行为，测试锁定以防止回归
-      const result = await regeo(0, 39.990989);
+    it('经度或纬度为 NaN 时返回 null', async () => {
+      // 设计原因：Number.isFinite(NaN) 为 false，NaN 是非法经纬度值应降级
+      // 与 emergency.ts /map/regeo 路由层 Number.isFinite 校验逻辑一致
+      const result = await regeo(NaN, 39.990989);
 
       expect(result).toBeNull();
       expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('经度为 0（本初子午线）时为合法值不被拦截', async () => {
+      // 设计原因：0 是合法经度值（本初子午线），不应被 falsy 判断误判为缺失
+      // 修复原 bug：!lng || !lat 在 lng=0 时误判为缺失返回 null，改用 Number.isFinite 后 0 不被拦截
+      mockFetch.mockResolvedValueOnce({
+        json: async () => ({
+          status: '1',
+          info: 'OK',
+          infocode: '10000',
+          regeocode: {
+            formatted_address: '本初子午线附近',
+            addressComponent: {
+              province: '', city: '', district: '', township: '', street: '', streetNumber: '',
+            },
+          },
+        }),
+      });
+
+      const result = await regeo(0, 39.990989);
+
+      expect(result).toBe('本初子午线附近');
+      expect(mockFetch).toHaveBeenCalled();
     });
 
     it('成功时返回格式化地址字符串', async () => {
