@@ -245,9 +245,15 @@ describe('Profile/PointsDetail 积分明细页', () => {
     });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('1 / 3')).toBeInTheDocument();
-      expect(screen.getByText('上一页')).toBeInTheDocument();
-      expect(screen.getByText('下一页')).toBeInTheDocument();
+      // 分页按钮通过 aria-label 暴露 accessible name（图标按钮无文字，必须用 getByRole name 查询）
+      const prevBtn = screen.getByRole('button', { name: '上一页' });
+      const nextBtn = screen.getByRole('button', { name: '下一页' });
+      // 当前页码胶囊：page=1 / totalPages=3，用容器 toHaveTextContent 避免与交易金额数字误匹配
+      const pagination = prevBtn.parentElement!;
+      expect(pagination).toHaveTextContent('1');
+      expect(pagination).toHaveTextContent('3');
+      expect(prevBtn).toBeInTheDocument();
+      expect(nextBtn).toBeInTheDocument();
     });
   });
 
@@ -258,7 +264,9 @@ describe('Profile/PointsDetail 积分明细页', () => {
     });
     renderPage();
     await waitFor(() => {
-      const prevBtn = screen.getByText('上一页').closest('button')!;
+      // 图标按钮改用 getByRole name（aria-label）查询
+      // 类型断言为 HTMLButtonElement：getByRole 默认返回 HTMLElement，访问 disabled 需精确类型
+      const prevBtn = screen.getByRole('button', { name: '上一页' }) as HTMLButtonElement;
       expect(prevBtn.disabled).toBe(true);
     });
   });
@@ -277,8 +285,8 @@ describe('Profile/PointsDetail 积分明细页', () => {
     await waitFor(() => {
       expect(screen.getByText('第一页记录')).toBeInTheDocument();
     });
-    // 点击下一页：用 act 包裹同步事件避免 state 更新未包裹警告
-    const nextBtn = screen.getByText('下一页').closest('button')!;
+    // 点击下一页：图标按钮改用 getByRole name 查询
+    const nextBtn = screen.getByRole('button', { name: '下一页' });
     act(() => { nextBtn.click(); });
     await waitFor(() => {
       // 第二页加载后应显示第二页记录，且 getCreditHistory 第二次调用传 page=2

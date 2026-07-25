@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
-import { CreditCard, ArrowUpRight, ArrowDownRight, Snowflake, RotateCcw, Clock, TrendingUp, ArrowLeft, Loader2 } from "lucide-react";
+import { CreditCard, ArrowUpRight, ArrowDownRight, Snowflake, RotateCcw, Clock, TrendingUp, ArrowLeft, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import Empty from "@/components/Empty";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -203,25 +203,31 @@ export default function PointsDetail() {
         )}
       </div>
 
-      {/* 分页 */}
+      {/* 分页：对齐 Admin/UserManagement 范式，保留居中对齐（顶部已显示总条数无需左侧重复） */}
+      {/* 设计原因：当前页胶囊高亮 + 三级文字层级（neutral-900/400/500）+ tabular-nums 数字等宽，与 Admin 列表页分页控件视觉语言一致 */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="px-3 py-1.5 rounded-lg bg-white text-gray-600 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            // p-2.5 + border + hover + active:scale-95 与 Admin 范式一致，触控目标达 40px
+            className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
+            aria-label="上一页"
           >
-            上一页
+            <ChevronLeft className="w-5 h-5" />
           </button>
-          <span className="text-sm text-gray-500">
-            {page} / {totalPages}
+          <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neutral-100 tabular-nums">
+            <span className="font-semibold text-neutral-900">{page}</span>
+            <span className="text-neutral-400">/</span>
+            <span className="text-neutral-500">{totalPages}</span>
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="px-3 py-1.5 rounded-lg bg-white text-gray-600 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
+            aria-label="下一页"
           >
-            下一页
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       )}
