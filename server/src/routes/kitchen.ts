@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
-import { validate } from '../middleware/validator';
-import { getPagination } from '../middleware/validator';
+import { validate, getPagination, uuidParam } from '../middleware/validator';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
 import { kitchenService } from '../services/kitchen.service';
@@ -192,7 +191,9 @@ router.get('/posts',
 );
 
 // GET /api/kitchen/posts/:id - 获取美食详情
+// uuidParam 前置校验：与 emergency/users/address/admin 范式对齐，非法 id 在路由层 422 拦截
 router.get('/posts/:id',
+  validate([uuidParam()]),
   asyncHandler(async (req: Request, res: Response) => {
     const result = await kitchenService.getById(req.params.id);
     success(res, result);
@@ -200,12 +201,14 @@ router.get('/posts/:id',
 );
 
 // PUT /api/kitchen/posts/:id - 更新美食
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
 router.put('/posts/:id',
   authenticate,
   // 更新场景字段全部 optional（PATCH 语义），仅校验传入字段的格式合法性
   // 设计原因：原实现无 validate 中间件，req.body 直接透传 service 层，
   // 非法值（负数 quantity、超长 title）依赖 service 层兜底校验或导致 500
   validate([
+    uuidParam(),
     body('title').optional().isLength({ min: 1, max: 100 }).withMessage('标题长度为1-100字符'),
     body('category').optional().isLength({ min: 1, max: 50 }).withMessage('类别长度为1-50字符'),
     body('quantity').optional().isInt({ min: 1 }).withMessage('份数必须大于0'),
@@ -222,8 +225,10 @@ router.put('/posts/:id',
 );
 
 // DELETE /api/kitchen/posts/:id - 删除美食
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
 router.delete('/posts/:id',
   authenticate,
+  validate([uuidParam()]),
   auditMiddleware('DELETE_KITCHEN_POST', { resourceType: 'kitchen_post', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request, res: Response) => {
     await kitchenService.remove(req.params.id, req.user!.id);
@@ -322,8 +327,10 @@ router.get('/orders',
 
 // PUT /api/kitchen/orders/:id/confirm - 确认订单
 // 审计接入：确认订单触发交易状态流转，影响买家积分冻结与卖家履约责任
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
 router.put('/orders/:id/confirm',
   authenticate,
+  validate([uuidParam()]),
   auditMiddleware('CONFIRM_KITCHEN_ORDER', { resourceType: 'kitchen_order', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request, res: Response) => {
     const result = await kitchenOrderService.confirm(req.params.id, req.user!.id);
@@ -332,9 +339,11 @@ router.put('/orders/:id/confirm',
 );
 
 // PUT /api/kitchen/orders/:id/complete - 完成订单
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
 router.put('/orders/:id/complete',
   authenticate,
   validate([
+    uuidParam(),
     body('rating').isInt({ min: 1, max: 5 }).withMessage('评分必须为1-5'),
     body('content').optional().isLength({ max: 500 }).withMessage('评价内容不超过500字符'),
   ]),
@@ -347,8 +356,10 @@ router.put('/orders/:id/complete',
 
 // PUT /api/kitchen/orders/:id/cancel - 取消订单
 // 审计接入：取消订单触发积分退还，可能影响双方信誉分，需留痕便于纠纷处理
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
 router.put('/orders/:id/cancel',
   authenticate,
+  validate([uuidParam()]),
   auditMiddleware('CANCEL_KITCHEN_ORDER', { resourceType: 'kitchen_order', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request, res: Response) => {
     const result = await kitchenOrderService.cancel(req.params.id, req.user!.id);
@@ -396,7 +407,9 @@ router.get('/group-orders',
 );
 
 // GET /api/kitchen/group-orders/:id - 获取拼单详情
+// uuidParam 前置校验：与其他 :id 路由一致，非法 id 在路由层 422 拦截
 router.get('/group-orders/:id',
+  validate([uuidParam()]),
   asyncHandler(async (req: Request, res: Response) => {
     const result = await groupOrderService.getById(req.params.id);
     success(res, result);
@@ -405,13 +418,15 @@ router.get('/group-orders/:id',
 
 // POST /api/kitchen/group-orders/:id/join - 参与拼单
 // 审计接入：参与拼单触发积分冻结，需记录参与者便于退款与责任追溯
+// 中间件顺序：authenticate → rateLimiter → validate → auditMiddleware → asyncHandler
 router.post('/group-orders/:id/join',
   authenticate,
   orderLimiter,
-  auditMiddleware('JOIN_GROUP_ORDER', { resourceType: 'group_order', getResourceId: (req) => req.params.id }),
   validate([
+    uuidParam(),
     body('amount').isInt({ min: 0 }).withMessage('分摊金额必须为非负整数'),
   ]),
+  auditMiddleware('JOIN_GROUP_ORDER', { resourceType: 'group_order', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request<Record<string, string>, unknown, JoinGroupOrderBody>, res: Response) => {
     const result = await groupOrderService.join(req.params.id, req.user!.id, req.body.amount);
     success(res, result, '参与成功');
@@ -420,12 +435,14 @@ router.post('/group-orders/:id/join',
 
 // POST /api/kitchen/group-orders/:id/cancel - 取消拼单（仅发起人）
 // 审计接入：取消拼单触发全员退款，影响所有参与者权益，必须留痕
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
 router.post('/group-orders/:id/cancel',
   authenticate,
-  auditMiddleware('CANCEL_GROUP_ORDER', { resourceType: 'group_order', getResourceId: (req) => req.params.id }),
   validate([
+    uuidParam(),
     body('reason').optional().isLength({ max: 255 }).withMessage('取消原因不超过255字符'),
   ]),
+  auditMiddleware('CANCEL_GROUP_ORDER', { resourceType: 'group_order', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request<Record<string, string>, unknown, CancelGroupOrderBody>, res: Response) => {
     await groupOrderService.cancel(req.params.id, req.user!.id, req.body.reason);
     success(res, null, '拼单已取消');
@@ -434,8 +451,10 @@ router.post('/group-orders/:id/cancel',
 
 // POST /api/kitchen/group-orders/:id/complete - 完成拼单结算（仅发起人）
 // 审计接入：完成拼单触发资金结算与积分转移，不可逆操作必须留痕
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
 router.post('/group-orders/:id/complete',
   authenticate,
+  validate([uuidParam()]),
   auditMiddleware('COMPLETE_GROUP_ORDER', { resourceType: 'group_order', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request, res: Response) => {
     await groupOrderService.complete(req.params.id, req.user!.id);
@@ -445,8 +464,10 @@ router.post('/group-orders/:id/complete',
 
 // POST /api/kitchen/group-orders/:id/exit - 退出拼单（参与者主动退出并退款）
 // 审计接入：退出拼单触发退款，影响发起人资金到位状态，需留痕便于对账
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
 router.post('/group-orders/:id/exit',
   authenticate,
+  validate([uuidParam()]),
   auditMiddleware('EXIT_GROUP_ORDER', { resourceType: 'group_order', getResourceId: (req) => req.params.id }),
   asyncHandler(async (req: Request, res: Response) => {
     await groupOrderService.exit(req.params.id, req.user!.id);

@@ -130,6 +130,15 @@ import kitchenRouter from '../kitchen';
 import { errorHandler } from '../../middleware/errorHandler';
 import { NotFoundError } from '../../utils/errors';
 
+// 测试 fixture UUID：路由层加 uuidParam 前置校验后，路径参数必须用合法 UUID
+// 设计原因：原 'post-1'/'order-1'/'group-1' 等非 UUID fixture 会被路由层 422 拦截，无法进入 service mock 验证路径
+// 按业务实体分别命名避免跨用例混淆，与 emergency.test.ts/users.test.ts/address.test.ts/admin.test.ts 风格对齐
+const POST_UUID = '550e8400-e29b-41d4-a716-446655440010';
+const ORDER_UUID = '550e8400-e29b-41d4-a716-446655440011';
+const GROUP_UUID = '550e8400-e29b-41d4-a716-446655440012';
+// 非法 id fixture：用于验证 uuidParam 前置校验在路由层 422 拦截，不进入 service 层
+const INVALID_ID = 'not-a-uuid';
+
 /**
  * 启动临时 Express 服务器到随机端口
  * 设计原因：listen(0) 让操作系统分配可用端口，避免端口冲突；
@@ -290,18 +299,26 @@ describe('kitchen 路由集成测试', () => {
   // ===================== GET /posts/:id =====================
   describe('GET /posts/:id', () => {
     it('返回美食详情', async () => {
-      mockKitchenGetById.mockResolvedValue({ id: 'post-1', title: '蛋糕' });
-      const res = await fetch(`${baseUrl}/posts/post-1`);
+      mockKitchenGetById.mockResolvedValue({ id: POST_UUID, title: '蛋糕' });
+      const res = await fetch(`${baseUrl}/posts/${POST_UUID}`);
       expect(res.status).toBe(200);
-      expect(mockKitchenGetById).toHaveBeenCalledWith('post-1');
+      expect(mockKitchenGetById).toHaveBeenCalledWith(POST_UUID);
     });
 
     it('不存在时 NotFoundError 标准化为 404', async () => {
+      // 路径参数必须用合法 UUID，否则会被 uuidParam 前置校验 422 拦截而非进入 service 层抛 NotFoundError
       mockKitchenGetById.mockRejectedValue(new NotFoundError('美食不存在'));
-      const res = await fetch(`${baseUrl}/posts/non-existent`);
+      const res = await fetch(`${baseUrl}/posts/${POST_UUID}`);
       expect(res.status).toBe(404);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 守护路由层 uuidParam 前置校验：非法 id 应在路由层 422 拦截，避免穿透到 service 层
+      const res = await fetch(`${baseUrl}/posts/${INVALID_ID}`);
+      expect(res.status).toBe(422);
+      expect(mockKitchenGetById).not.toHaveBeenCalled();
     });
   });
 
@@ -309,13 +326,23 @@ describe('kitchen 路由集成测试', () => {
   describe('PUT /posts/:id', () => {
     it('更新成功', async () => {
       mockKitchenUpdate.mockResolvedValue({ id: 'post-1', title: '新标题' });
-      const res = await fetch(`${baseUrl}/posts/post-1`, {
+      const res = await fetch(`${baseUrl}/posts/${POST_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ title: '新标题' }),
       });
       expect(res.status).toBe(200);
-      expect(mockKitchenUpdate).toHaveBeenCalledWith('post-1', 'user-uuid-001', { title: '新标题' });
+      expect(mockKitchenUpdate).toHaveBeenCalledWith(POST_UUID, 'user-uuid-001', { title: '新标题' });
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/posts/${INVALID_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ title: '新标题' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockKitchenUpdate).not.toHaveBeenCalled();
     });
   });
 
@@ -323,9 +350,15 @@ describe('kitchen 路由集成测试', () => {
   describe('DELETE /posts/:id', () => {
     it('删除成功', async () => {
       mockKitchenRemove.mockResolvedValue(undefined);
-      const res = await fetch(`${baseUrl}/posts/post-1`, { method: 'DELETE', headers: authHeader });
+      const res = await fetch(`${baseUrl}/posts/${POST_UUID}`, { method: 'DELETE', headers: authHeader });
       expect(res.status).toBe(200);
-      expect(mockKitchenRemove).toHaveBeenCalledWith('post-1', 'user-uuid-001');
+      expect(mockKitchenRemove).toHaveBeenCalledWith(POST_UUID, 'user-uuid-001');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/posts/${INVALID_ID}`, { method: 'DELETE', headers: authHeader });
+      expect(res.status).toBe(422);
+      expect(mockKitchenRemove).not.toHaveBeenCalled();
     });
   });
 
@@ -404,9 +437,15 @@ describe('kitchen 路由集成测试', () => {
   describe('PUT /orders/:id/confirm', () => {
     it('确认订单成功', async () => {
       mockOrderConfirm.mockResolvedValue({ id: 'order-1', status: 'confirmed' });
-      const res = await fetch(`${baseUrl}/orders/order-1/confirm`, { method: 'PUT', headers: authHeader });
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/confirm`, { method: 'PUT', headers: authHeader });
       expect(res.status).toBe(200);
-      expect(mockOrderConfirm).toHaveBeenCalledWith('order-1', 'user-uuid-001');
+      expect(mockOrderConfirm).toHaveBeenCalledWith(ORDER_UUID, 'user-uuid-001');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/orders/${INVALID_ID}/confirm`, { method: 'PUT', headers: authHeader });
+      expect(res.status).toBe(422);
+      expect(mockOrderConfirm).not.toHaveBeenCalled();
     });
   });
 
@@ -414,17 +453,17 @@ describe('kitchen 路由集成测试', () => {
   describe('PUT /orders/:id/complete', () => {
     it('完成订单成功', async () => {
       mockOrderComplete.mockResolvedValue({ id: 'order-1', status: 'completed' });
-      const res = await fetch(`${baseUrl}/orders/order-1/complete`, {
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/complete`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ rating: 5, content: '很棒' }),
       });
       expect(res.status).toBe(200);
-      expect(mockOrderComplete).toHaveBeenCalledWith('order-1', 'user-uuid-001', { rating: 5, content: '很棒' });
+      expect(mockOrderComplete).toHaveBeenCalledWith(ORDER_UUID, 'user-uuid-001', { rating: 5, content: '很棒' });
     });
 
     it('rating 小于 1 校验失败 422', async () => {
-      const res = await fetch(`${baseUrl}/orders/order-1/complete`, {
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/complete`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ rating: 0 }),
@@ -434,12 +473,22 @@ describe('kitchen 路由集成测试', () => {
     });
 
     it('rating 大于 5 校验失败 422', async () => {
-      const res = await fetch(`${baseUrl}/orders/order-1/complete`, {
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/complete`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ rating: 6 }),
       });
       expect(res.status).toBe(422);
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/orders/${INVALID_ID}/complete`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ rating: 5 }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockOrderComplete).not.toHaveBeenCalled();
     });
   });
 
@@ -447,9 +496,15 @@ describe('kitchen 路由集成测试', () => {
   describe('PUT /orders/:id/cancel', () => {
     it('取消订单成功', async () => {
       mockOrderCancel.mockResolvedValue({ id: 'order-1', status: 'cancelled' });
-      const res = await fetch(`${baseUrl}/orders/order-1/cancel`, { method: 'PUT', headers: authHeader });
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/cancel`, { method: 'PUT', headers: authHeader });
       expect(res.status).toBe(200);
-      expect(mockOrderCancel).toHaveBeenCalledWith('order-1', 'user-uuid-001');
+      expect(mockOrderCancel).toHaveBeenCalledWith(ORDER_UUID, 'user-uuid-001');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/orders/${INVALID_ID}/cancel`, { method: 'PUT', headers: authHeader });
+      expect(res.status).toBe(422);
+      expect(mockOrderCancel).not.toHaveBeenCalled();
     });
   });
 
@@ -509,9 +564,15 @@ describe('kitchen 路由集成测试', () => {
   describe('GET /group-orders/:id', () => {
     it('返回拼单详情', async () => {
       mockGroupGetById.mockResolvedValue({ id: 'group-1', title: '拼单' });
-      const res = await fetch(`${baseUrl}/group-orders/group-1`);
+      const res = await fetch(`${baseUrl}/group-orders/${GROUP_UUID}`);
       expect(res.status).toBe(200);
-      expect(mockGroupGetById).toHaveBeenCalledWith('group-1');
+      expect(mockGroupGetById).toHaveBeenCalledWith(GROUP_UUID);
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/group-orders/${INVALID_ID}`);
+      expect(res.status).toBe(422);
+      expect(mockGroupGetById).not.toHaveBeenCalled();
     });
   });
 
@@ -519,20 +580,30 @@ describe('kitchen 路由集成测试', () => {
   describe('POST /group-orders/:id/join', () => {
     it('参与拼单成功', async () => {
       mockGroupJoin.mockResolvedValue({ id: 'group-1', participants: 3 });
-      const res = await fetch(`${baseUrl}/group-orders/group-1/join`, {
+      const res = await fetch(`${baseUrl}/group-orders/${GROUP_UUID}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ amount: 50 }),
       });
       expect(res.status).toBe(200);
-      expect(mockGroupJoin).toHaveBeenCalledWith('group-1', 'user-uuid-001', 50);
+      expect(mockGroupJoin).toHaveBeenCalledWith(GROUP_UUID, 'user-uuid-001', 50);
     });
 
     it('amount 缺失校验失败 422', async () => {
-      const res = await fetch(`${baseUrl}/group-orders/group-1/join`, {
+      const res = await fetch(`${baseUrl}/group-orders/${GROUP_UUID}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(422);
+      expect(mockGroupJoin).not.toHaveBeenCalled();
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/group-orders/${INVALID_ID}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ amount: 50 }),
       });
       expect(res.status).toBe(422);
       expect(mockGroupJoin).not.toHaveBeenCalled();
@@ -543,13 +614,23 @@ describe('kitchen 路由集成测试', () => {
   describe('POST /group-orders/:id/cancel', () => {
     it('取消拼单成功', async () => {
       mockGroupCancel.mockResolvedValue(undefined);
-      const res = await fetch(`${baseUrl}/group-orders/group-1/cancel`, {
+      const res = await fetch(`${baseUrl}/group-orders/${GROUP_UUID}/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ reason: '人数不足' }),
       });
       expect(res.status).toBe(200);
-      expect(mockGroupCancel).toHaveBeenCalledWith('group-1', 'user-uuid-001', '人数不足');
+      expect(mockGroupCancel).toHaveBeenCalledWith(GROUP_UUID, 'user-uuid-001', '人数不足');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/group-orders/${INVALID_ID}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ reason: '人数不足' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockGroupCancel).not.toHaveBeenCalled();
     });
   });
 
@@ -557,12 +638,21 @@ describe('kitchen 路由集成测试', () => {
   describe('POST /group-orders/:id/complete', () => {
     it('完成拼单成功', async () => {
       mockGroupComplete.mockResolvedValue(undefined);
-      const res = await fetch(`${baseUrl}/group-orders/group-1/complete`, {
+      const res = await fetch(`${baseUrl}/group-orders/${GROUP_UUID}/complete`, {
         method: 'POST',
         headers: authHeader,
       });
       expect(res.status).toBe(200);
-      expect(mockGroupComplete).toHaveBeenCalledWith('group-1', 'user-uuid-001');
+      expect(mockGroupComplete).toHaveBeenCalledWith(GROUP_UUID, 'user-uuid-001');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/group-orders/${INVALID_ID}/complete`, {
+        method: 'POST',
+        headers: authHeader,
+      });
+      expect(res.status).toBe(422);
+      expect(mockGroupComplete).not.toHaveBeenCalled();
     });
   });
 
@@ -570,12 +660,21 @@ describe('kitchen 路由集成测试', () => {
   describe('POST /group-orders/:id/exit', () => {
     it('退出拼单成功', async () => {
       mockGroupExit.mockResolvedValue(undefined);
-      const res = await fetch(`${baseUrl}/group-orders/group-1/exit`, {
+      const res = await fetch(`${baseUrl}/group-orders/${GROUP_UUID}/exit`, {
         method: 'POST',
         headers: authHeader,
       });
       expect(res.status).toBe(200);
-      expect(mockGroupExit).toHaveBeenCalledWith('group-1', 'user-uuid-001');
+      expect(mockGroupExit).toHaveBeenCalledWith(GROUP_UUID, 'user-uuid-001');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/group-orders/${INVALID_ID}/exit`, {
+        method: 'POST',
+        headers: authHeader,
+      });
+      expect(res.status).toBe(422);
+      expect(mockGroupExit).not.toHaveBeenCalled();
     });
   });
 
