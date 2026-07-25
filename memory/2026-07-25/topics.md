@@ -293,3 +293,84 @@
 1. **样式精修扩展**：扫描非 Admin 模块（TimeBank/SharedKitchen/SkillMarket 等）是否有分页控件/状态筛选按钮交互反馈不一致问题
 2. **测试补全**：未覆盖的关键路径补全测试用例
 3. **运维侧 P0/P1 遗留**（非 Agent 可推进，需用户介入）：见上方「遗留问题」
+
+---
+
+## 四轮迭代摘要（2026-07-25 续三）—— Phase3 技术债清理启动
+
+承接上轮样式精修收尾，本轮切换至 **Phase3 技术债清理** 线：bug-check P2 遗留的「routes 层 :id 参数 UUID 格式校验补全」继续推进。前序已完成 users.ts GET /:id 的前置校验与 uuidParam 工具函数（server/src/middleware/validator.ts），本轮向 address 路由扩展。
+
+### 已完成任务（1 个最小迭代单元）
+
+12. **address 路由 PUT/DELETE /:id 与 PUT /:id/default 添加 UUID 参数前置校验**（commit 408d359）
+    - 文件：`server/src/routes/address.ts`、`server/src/routes/__tests__/address.test.ts`
+    - 改动点（3 处路由）：
+      - `PUT /:id`：在原 body 校验链前插入 `uuidParam()`，非法 id 直接 422 拦截
+      - `DELETE /:id`：新增 `validate([uuidParam()])` 中间件，与 PUT /:id 行为对齐
+      - `PUT /:id/default`：新增 `validate([uuidParam()])` 中间件，子路由同样守门
+    - 设计原因（与 users.ts 一致）：
+      - 原 /:id 路径参数未做格式校验，依赖 service 层 query 返回空时抛 NotFoundError 兜底
+      - 非法 id（如 'abc'、'addr-123'）会走完整个 service 调用链才返回 404，既浪费 DB 查询，又让错误响应语义错位（参数格式错误应 422 而非 404）
+      - 路由层前置 UUID 校验可降低 service 防御压力并改善错误响应语义
+    - 测试同步更新：
+      - 将测试 fixture 中所有 'addr-uuid-001'/'addr-uuid-002' 改为合法 UUID `550e8400-e29b-41d4-a716-446655440000` / `...440001`，避免被前置校验拦截
+      - PUT /:id、DELETE /:id、PUT /:id/default 三个测试组各新增 1 个「非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）」用例，验证 mockUpdate/mockRemove/mockSetDefault 均未被调用
+    - 验收：后端 tsc --noEmit ✅ 通过；后端 vitest run --no-coverage ✅ 81 文件 1777 测试全通过（其中 address.test.ts 24 个用例，含新增 3 个）
+
+### 四轮总结
+
+本轮共完成 1 个迭代单元（commit 408d359），属于 Phase3 技术债清理的 routes 层 UUID 校验补全线。
+
+| 路由 | 改动类型 | commit |
+| --- | --- | --- |
+| address.ts PUT /:id | 加 uuidParam 前置校验 | 408d359 |
+| address.ts DELETE /:id | 新增 validate([uuidParam()]) | 408d359 |
+| address.ts PUT /:id/default | 新增 validate([uuidParam()]) | 408d359 |
+
+### 验证结果
+
+- 后端类型检查：✅ tsc --noEmit 通过（直接调用 node ../node_modules/typescript/bin/tsc，绕开 npx 触发的 CryptnetUrlCache 沙箱拦截）
+- 后端单元测试：✅ 81 文件 1777 测试全通过（duration 19.92s，使用 --no-coverage 规避 coverage v8 插桩并发问题）
+- 前端构建：本轮无前端改动，基线保持
+
+### 关键技术决策
+
+1. **测试 fixture 必须同步切换为合法 UUID**：
+   - 原 address.test.ts 使用 'addr-uuid-001' 等非 UUID 字符串作为 id fixture
+   - 添加前置 UUID 校验后，这些 fixture 在路由层就会被 422 拦截，无法进入 service mock 验证路径
+   - 修复方案：全局替换为 v4 合法 UUID `550e8400-e29b-41d4-a716-446655440000` / `...440001`，与 users.test.ts 的 fixture 风格对齐
+2. **三个 /:id 路由统一前置校验**：
+   - PUT /:id、DELETE /:id、PUT /:id/default 同样接受 :id 参数，必须统一加 UUID 校验，避免行为碎片化
+   - 否则用户传入非法 id 时，PUT 返回 422 但 DELETE 返回 404，错误响应语义不一致
+3. **保留 auditMiddleware 在 validate 之后**：
+   - 中间件执行顺序：`authenticate → validate → auditMiddleware → asyncHandler(handler)`
+   - 校验失败时不进入 auditMiddleware，避免记录「未到达 handler 的失败请求」污染审计日志
+   - 与 users.ts 路由的中间件链顺序一致
+
+### 环境注意事项
+
+- **npx tsc 沙箱拦截**：直接 `npx tsc --noEmit` 会触发 PowerShell 预加载访问 `C:\Users\Lenovo\AppData\LocalLow\Microsoft\CryptnetUrlCache\MetaData\...` 被沙箱拒绝
+  - 解决方案：直接 `node ../node_modules/typescript/bin/tsc --noEmit`（项目为 npm workspaces，typescript 安装在根目录 node_modules）
+  - 同理 vitest 用 `node ../node_modules/vitest/vitest.mjs run --no-coverage`
+- **vitest --no-coverage 必需**：coverage v8 插桩存在并发问题，全量测试会触发 `TypeError: Cannot read properties of undefined (reading 'config')`，需加 `--no-coverage` 规避（已知问题，前序会话已确认）
+
+### Git 提交记录（四轮）
+
+- `408d359` feat: address 路由 PUT/DELETE /:id 与 PUT /:id/default 添加 UUID 参数前置校验
+- `52149ea` docs: 沉淀 2026-07-25 续轮/续二轮/三轮迭代进度（样式精修扩展至非 Admin 模块）
+
+### 遗留问题
+
+无阻塞性遗留问题。剩余技术债清理项：
+
+1. **routes 层枚举型查询参数白名单校验**：如 status、type 等查询参数未做白名单校验，非法值会进入 service 层
+2. **map 路由参数缺失返回 400 与经纬度范围校验**：map 路由的经纬度参数缺失或越界时未返回 400
+3. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）：见上轮遗留问题
+
+### 下一轮建议
+
+继续推进 Phase3 技术债清理：
+
+1. **routes 层枚举型查询参数白名单校验**：扫描所有 routes 中 `req.query.status`/`req.query.type` 等参数，加 express-validator `isIn()` 白名单校验
+2. **map 路由参数校验**：经纬度范围（lat ∈ [-90, 90]、lng ∈ [-180, 180]）与必填校验
+3. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）
