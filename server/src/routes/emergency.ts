@@ -12,6 +12,7 @@ import { emergencyResourceService } from '../services/emergency-resource.service
 import type { ResourceMutationData } from '../services/emergency-resource.service';
 import { mapService } from '../services/map.service';
 import { success, paginated } from '../utils/response';
+import { BadRequestError } from '../utils/errors';
 
 const router = Router();
 
@@ -306,8 +307,16 @@ router.get('/map/regeo', authenticate, asyncHandler(async (req: Request, res: Re
   const { lng, lat } = req.query as Record<string, string | undefined>;
   const lngNum = parseFloat(lng as string);
   const latNum = parseFloat(lat as string);
-  if (!lngNum || !latNum) {
+  // 修复原 bug：!lngNum || !latNum 在 lng=0（本初子午线）或 lat=0（赤道）时误判为缺失
+  // 改用 Number.isFinite 显式校验 NaN/undefined，0 是合法经纬度值不应被拦截
+  if (!Number.isFinite(lngNum) || !Number.isFinite(latNum)) {
     return success(res, null);
+  }
+  // 范围校验：lng ∈ [-180, 180]、lat ∈ [-90, 90]
+  // 设计原因：原代码未校验范围，越界值（如 lng=200）会穿透到 mapService.regeo
+  // 调用高德 API 时返回错误数据或抛 5xx，错误响应语义错位（应为 400 客户端错误）
+  if (lngNum < -180 || lngNum > 180 || latNum < -90 || latNum > 90) {
+    throw new BadRequestError('经纬度范围非法：lng ∈ [-180, 180], lat ∈ [-90, 90]');
   }
   const result = await mapService.regeo(lngNum, latNum);
   success(res, result);

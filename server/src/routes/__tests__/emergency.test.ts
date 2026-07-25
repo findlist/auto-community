@@ -481,6 +481,39 @@ describe('emergency 路由集成测试', () => {
       expect(data.data).toBeNull();
       expect(mockRegeo).not.toHaveBeenCalled();
     });
+
+    it('lng=0&lat=0 边界值不应被误判为缺失（修复原 !lngNum 0 值 bug）', async () => {
+      // 回归测试：原代码 !lngNum || !latNum 在 lng=0 或 lat=0 时会误判为缺失返回 null
+      // 0 是合法经纬度（本初子午线 lng=0 / 赤道 lat=0），应正常调用 mapService
+      mockRegeo.mockResolvedValue({ address: '本初子午线与赤道交点' });
+      const res = await fetch(`${baseUrl}/map/regeo?lng=0&lat=0`);
+      expect(res.status).toBe(200);
+      expect(mockRegeo).toHaveBeenCalledWith(0, 0);
+    });
+
+    it('lng 越界（>180）返回 400，不调用 mapService', async () => {
+      // 防御性测试：经度范围 [-180, 180]，越界值直接 400 拦截，避免穿透到高德 API
+      const res = await fetch(`${baseUrl}/map/regeo?lng=200&lat=39.908`);
+      expect(res.status).toBe(400);
+      expect(mockRegeo).not.toHaveBeenCalled();
+    });
+
+    it('lat 越界（>90）返回 400，不调用 mapService', async () => {
+      // 防御性测试：纬度范围 [-90, 90]，越界值直接 400 拦截
+      const res = await fetch(`${baseUrl}/map/regeo?lng=116.397&lat=100`);
+      expect(res.status).toBe(400);
+      expect(mockRegeo).not.toHaveBeenCalled();
+    });
+
+    it('lng=abc 非数字返回 null（保持原行为，不破坏兼容）', async () => {
+      // 兼容性测试：parseFloat('abc') 返回 NaN，Number.isFinite(NaN) 为 false
+      // 与原 !lngNum 行为一致（NaN 也走短路返回 null），保持兼容
+      const res = await fetch(`${baseUrl}/map/regeo?lng=abc&lat=39.908`);
+      expect(res.status).toBe(200);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect(data.data).toBeNull();
+      expect(mockRegeo).not.toHaveBeenCalled();
+    });
   });
 
   describe('审计接入不变式（全量）', () => {
