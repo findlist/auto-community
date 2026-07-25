@@ -3,7 +3,7 @@ import { authenticate, requireRole } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 // validate 包装 express-validator 校验链，校验失败时标准化返回 422
 // 设计原因：仅传入 body() 数组不会自动拦截非法请求，必须经 validate 检查 validationResult 后短路返回
-import { validate, getPagination } from '../middleware/validator';
+import { validate, getPagination, uuidParam } from '../middleware/validator';
 import { body } from 'express-validator';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
@@ -123,10 +123,15 @@ router.get('/posts', asyncHandler(async (req: Request, res: Response) => {
   paginated(res, result.list, result.total, result.page, result.pageSize);
 }));
 
-router.get('/posts/:id', asyncHandler(async (req: Request, res: Response) => {
-  const post = await skillService.getPostById(req.params.id);
-  success(res, post);
-}));
+// GET /api/skills/posts/:id - 获取技能帖子详情
+// uuidParam 前置校验：与 users/address/emergency/kitchen 路由范式对齐，非法 id 在路由层 422 拦截
+router.get('/posts/:id',
+  validate([uuidParam()]),
+  asyncHandler(async (req: Request, res: Response) => {
+    const post = await skillService.getPostById(req.params.id);
+    success(res, post);
+  })
+);
 
 router.post('/posts', authenticate, createPostLimiter, auditMiddleware('CREATE_SKILL_POST', { resourceType: 'skill_post' }), validate([
   body('type').isIn(['offer', 'request']).withMessage('type 必须为 offer 或 request'),
@@ -150,7 +155,11 @@ router.post('/posts', authenticate, createPostLimiter, auditMiddleware('CREATE_S
   );
 }));
 
+// PUT /api/skills/posts/:id - 更新技能帖子
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler（与 emergency/kitchen 范式对齐）
 router.put('/posts/:id', authenticate, validate([
+  // uuidParam 前置校验：非法 id 在路由层 422 拦截，避免穿透到 service 层
+  uuidParam(),
   // 更新场景字段全部 optional（Partial<CreateSkillPostDTO>），仅校验传入字段格式
   // 设计原因：原实现无 validate 中间件，req.body 直接透传 service 层，
   // 非法值（负数 credit_price、超长 title）依赖 service 层兜底校验或导致 500
@@ -166,7 +175,9 @@ router.put('/posts/:id', authenticate, validate([
   success(res, post);
 }));
 
-router.delete('/posts/:id', authenticate, auditMiddleware('DELETE_SKILL_POST', { resourceType: 'skill_post', getResourceId: (req) => req.params.id }), asyncHandler(async (req: Request, res: Response) => {
+// DELETE /api/skills/posts/:id - 删除技能帖子
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
+router.delete('/posts/:id', authenticate, validate([uuidParam()]), auditMiddleware('DELETE_SKILL_POST', { resourceType: 'skill_post', getResourceId: (req) => req.params.id }), asyncHandler(async (req: Request, res: Response) => {
   await skillService.deletePost(req.params.id, req.user!.id);
   deleted(res);
 }));
@@ -230,7 +241,16 @@ router.get('/orders', authenticate, asyncHandler(async (req: Request, res: Respo
   paginated(res, result.list, result.total, result.page, result.pageSize);
 }));
 
-router.put('/orders/:id/status', authenticate, auditMiddleware('UPDATE_ORDER_STATUS', {
+// PUT /api/skills/orders/:id/status - 更新订单状态
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
+// 设计原因：校验失败时不进入 auditMiddleware，避免记录「未到达 handler 的失败请求」污染审计日志
+router.put('/orders/:id/status', authenticate, validate([
+  uuidParam(),
+  body('status').isIn(['accepted', 'rejected', 'in_progress', 'completed', 'cancelled', 'disputed']).withMessage('无效的状态值'),
+  // rating 仅 completed 状态使用，若提供则必须为 1-5，避免非法评分污染信誉分
+  body('rating').optional().isInt({ min: 1, max: 5 }).withMessage('评分必须为1-5'),
+  body('review').optional().isLength({ max: 500 }).withMessage('评价内容不超过500字符'),
+]), auditMiddleware('UPDATE_ORDER_STATUS', {
   resourceType: 'order',
   getResourceId: (req) => req.params.id,
   // 根据请求体中的 status 动态生成 action 名称，区分 accept/reject/complete/cancel
@@ -244,12 +264,7 @@ router.put('/orders/:id/status', authenticate, auditMiddleware('UPDATE_ORDER_STA
     const status = req.body?.status as string | undefined;
     return statusActionMap[status ?? ''] ?? 'UPDATE_ORDER_STATUS';
   },
-}), validate([
-  body('status').isIn(['accepted', 'rejected', 'in_progress', 'completed', 'cancelled', 'disputed']).withMessage('无效的状态值'),
-  // rating 仅 completed 状态使用，若提供则必须为 1-5，避免非法评分污染信誉分
-  body('rating').optional().isInt({ min: 1, max: 5 }).withMessage('评分必须为1-5'),
-  body('review').optional().isLength({ max: 500 }).withMessage('评价内容不超过500字符'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateSkillOrderStatusBody>, res: Response) => {
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateSkillOrderStatusBody>, res: Response) => {
   const { status, rating, review } = req.body;
   const userId = req.user!.id;
   const orderId = req.params.id;
@@ -279,24 +294,28 @@ router.put('/orders/:id/status', authenticate, auditMiddleware('UPDATE_ORDER_STA
 }));
 
 // 发起争议：买家或卖家在订单进行中可发起争议，状态置为 disputed
-router.post('/orders/:id/dispute', authenticate, auditMiddleware('DISPUTE_ORDER', {
+// 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
+router.post('/orders/:id/dispute', authenticate, validate([
+  uuidParam(),
+  body('reason').notEmpty().withMessage('争议原因不能为空'),
+]), auditMiddleware('DISPUTE_ORDER', {
   resourceType: 'order',
   getResourceId: (req) => req.params.id,
-}), validate([
-  body('reason').notEmpty().withMessage('争议原因不能为空'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, DisputeOrderBody>, res: Response) => {
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, DisputeOrderBody>, res: Response) => {
   const order = await skillOrderService.disputeOrder(req.params.id, req.user!.id, req.body.reason);
   success(res, order);
 }));
 
 // 处理争议：仅管理员可裁决，支持 refund/continue/cancel 三种 action
-router.put('/orders/:id/resolve', authenticate, requireRole('admin'), auditMiddleware('RESOLVE_DISPUTE', {
-  resourceType: 'order',
-  getResourceId: (req) => req.params.id,
-}), validate([
+// 中间件顺序：authenticate → requireRole → validate → auditMiddleware → asyncHandler
+router.put('/orders/:id/resolve', authenticate, requireRole('admin'), validate([
+  uuidParam(),
   body('resolution').notEmpty().withMessage('处理结果说明不能为空'),
   body('action').isIn(['refund', 'continue', 'cancel']).withMessage('action 必须为 refund/continue/cancel'),
-]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResolveDisputeBody>, res: Response) => {
+]), auditMiddleware('RESOLVE_DISPUTE', {
+  resourceType: 'order',
+  getResourceId: (req) => req.params.id,
+}), asyncHandler(async (req: Request<Record<string, string>, unknown, ResolveDisputeBody>, res: Response) => {
   const { resolution, action } = req.body;
   const order = await skillOrderService.resolveDispute(req.params.id, req.user!.id, resolution, action);
   success(res, order);

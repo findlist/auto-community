@@ -124,6 +124,14 @@ import skillsRouter from '../skills';
 import { errorHandler } from '../../middleware/errorHandler';
 import { ForbiddenError } from '../../utils/errors';
 
+// 测试 fixture UUID：路由层加 uuidParam 前置校验后，路径参数必须用合法 UUID
+// 设计原因：原 'p-1'/'o-1' 等非 UUID fixture 会被路由层 422 拦截，无法进入 service mock 验证路径
+// 按业务实体分别命名避免跨用例混淆，与 emergency.test.ts/kitchen.test.ts/users.test.ts/address.test.ts/admin.test.ts 风格对齐
+const POST_UUID = '550e8400-e29b-41d4-a716-446655440020';
+const ORDER_UUID = '550e8400-e29b-41d4-a716-446655440021';
+// 非法 id fixture：用于验证 uuidParam 前置校验在路由层 422 拦截，不进入 service 层
+const INVALID_ID = 'not-a-uuid';
+
 async function startServer(): Promise<{ server: http.Server; baseUrl: string }> {
   const app = express();
   app.use(express.json());
@@ -200,10 +208,17 @@ describe('skills 路由集成测试', () => {
 
   describe('GET /posts/:id', () => {
     it('返回帖子详情', async () => {
-      mockGetPostById.mockResolvedValue({ id: 'p-1', title: '技能' });
-      const res = await fetch(`${baseUrl}/posts/p-1`);
+      mockGetPostById.mockResolvedValue({ id: POST_UUID, title: '技能' });
+      const res = await fetch(`${baseUrl}/posts/${POST_UUID}`);
       expect(res.status).toBe(200);
-      expect(mockGetPostById).toHaveBeenCalledWith('p-1');
+      expect(mockGetPostById).toHaveBeenCalledWith(POST_UUID);
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 守护路由层 uuidParam 前置校验：非法 id 应在路由层 422 拦截，避免穿透到 service 层
+      const res = await fetch(`${baseUrl}/posts/${INVALID_ID}`);
+      expect(res.status).toBe(422);
+      expect(mockGetPostById).not.toHaveBeenCalled();
     });
   });
 
@@ -239,26 +254,45 @@ describe('skills 路由集成测试', () => {
 
   describe('PUT /posts/:id', () => {
     it('更新成功', async () => {
-      mockUpdatePost.mockResolvedValue({ id: 'p-1', title: '新标题' });
-      const res = await fetch(`${baseUrl}/posts/p-1`, {
+      mockUpdatePost.mockResolvedValue({ id: POST_UUID, title: '新标题' });
+      const res = await fetch(`${baseUrl}/posts/${POST_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ title: '新标题' }),
       });
       expect(res.status).toBe(200);
-      expect(mockUpdatePost).toHaveBeenCalledWith('p-1', 'user-001', { title: '新标题' });
+      expect(mockUpdatePost).toHaveBeenCalledWith(POST_UUID, 'user-001', { title: '新标题' });
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/posts/${INVALID_ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ title: '新标题' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockUpdatePost).not.toHaveBeenCalled();
     });
   });
 
   describe('DELETE /posts/:id', () => {
     it('删除成功', async () => {
       mockDeletePost.mockResolvedValue(undefined);
-      const res = await fetch(`${baseUrl}/posts/p-1`, {
+      const res = await fetch(`${baseUrl}/posts/${POST_UUID}`, {
         method: 'DELETE',
         headers: { Authorization: 'Bearer token' },
       });
       expect(res.status).toBe(200);
-      expect(mockDeletePost).toHaveBeenCalledWith('p-1', 'user-001');
+      expect(mockDeletePost).toHaveBeenCalledWith(POST_UUID, 'user-001');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/posts/${INVALID_ID}`, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer token' },
+      });
+      expect(res.status).toBe(422);
+      expect(mockDeletePost).not.toHaveBeenCalled();
     });
   });
 
@@ -297,77 +331,107 @@ describe('skills 路由集成测试', () => {
 
   describe('PUT /orders/:id/status', () => {
     it('accepted 状态调用 acceptOrder', async () => {
-      mockAcceptOrder.mockResolvedValue({ id: 'o-1', status: 'accepted' });
-      await fetch(`${baseUrl}/orders/o-1/status`, {
+      mockAcceptOrder.mockResolvedValue({ id: ORDER_UUID, status: 'accepted' });
+      await fetch(`${baseUrl}/orders/${ORDER_UUID}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ status: 'accepted' }),
       });
-      expect(mockAcceptOrder).toHaveBeenCalledWith('o-1', 'user-001');
+      expect(mockAcceptOrder).toHaveBeenCalledWith(ORDER_UUID, 'user-001');
     });
 
     it('completed 状态带 rating/review 调用 completeOrder', async () => {
-      mockCompleteOrder.mockResolvedValue({ id: 'o-1', status: 'completed' });
-      await fetch(`${baseUrl}/orders/o-1/status`, {
+      mockCompleteOrder.mockResolvedValue({ id: ORDER_UUID, status: 'completed' });
+      await fetch(`${baseUrl}/orders/${ORDER_UUID}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ status: 'completed', rating: 5, review: '好评' }),
       });
-      expect(mockCompleteOrder).toHaveBeenCalledWith('o-1', 'user-001', 5, '好评');
+      expect(mockCompleteOrder).toHaveBeenCalledWith(ORDER_UUID, 'user-001', 5, '好评');
     });
 
     it('cancelled 状态调用 cancelOrder', async () => {
-      mockCancelOrder.mockResolvedValue({ id: 'o-1', status: 'cancelled' });
-      await fetch(`${baseUrl}/orders/o-1/status`, {
+      mockCancelOrder.mockResolvedValue({ id: ORDER_UUID, status: 'cancelled' });
+      await fetch(`${baseUrl}/orders/${ORDER_UUID}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ status: 'cancelled' }),
       });
-      expect(mockCancelOrder).toHaveBeenCalledWith('o-1', 'user-001');
+      expect(mockCancelOrder).toHaveBeenCalledWith(ORDER_UUID, 'user-001');
     });
 
     it('disputed 状态调用 getOrderById 查询详情', async () => {
       // disputed 不能直接通过 status 接口完成争议，仅返回订单详情
-      mockGetOrderById.mockResolvedValue({ id: 'o-1', status: 'disputed' });
-      await fetch(`${baseUrl}/orders/o-1/status`, {
+      mockGetOrderById.mockResolvedValue({ id: ORDER_UUID, status: 'disputed' });
+      await fetch(`${baseUrl}/orders/${ORDER_UUID}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ status: 'disputed' }),
       });
-      expect(mockGetOrderById).toHaveBeenCalledWith('o-1', 'user-001');
+      expect(mockGetOrderById).toHaveBeenCalledWith(ORDER_UUID, 'user-001');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/orders/${INVALID_ID}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ status: 'accepted' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockAcceptOrder).not.toHaveBeenCalled();
     });
   });
 
   describe('POST /orders/:id/dispute', () => {
     it('发起争议成功', async () => {
-      mockDisputeOrder.mockResolvedValue({ id: 'o-1', status: 'disputed' });
-      const res = await fetch(`${baseUrl}/orders/o-1/dispute`, {
+      mockDisputeOrder.mockResolvedValue({ id: ORDER_UUID, status: 'disputed' });
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/dispute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ reason: '服务未完成' }),
       });
       expect(res.status).toBe(200);
-      expect(mockDisputeOrder).toHaveBeenCalledWith('o-1', 'user-001', '服务未完成');
+      expect(mockDisputeOrder).toHaveBeenCalledWith(ORDER_UUID, 'user-001', '服务未完成');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/orders/${INVALID_ID}/dispute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ reason: '服务未完成' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockDisputeOrder).not.toHaveBeenCalled();
     });
   });
 
   describe('PUT /orders/:id/resolve', () => {
     it('管理员裁决成功', async () => {
-      mockResolveDispute.mockResolvedValue({ id: 'o-1', status: 'cancelled' });
-      const res = await fetch(`${baseUrl}/orders/o-1/resolve`, {
+      mockResolveDispute.mockResolvedValue({ id: ORDER_UUID, status: 'cancelled' });
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/resolve`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ resolution: '退款处理', action: 'refund' }),
       });
       expect(res.status).toBe(200);
-      expect(mockResolveDispute).toHaveBeenCalledWith('o-1', 'user-001', '退款处理', 'refund');
+      expect(mockResolveDispute).toHaveBeenCalledWith(ORDER_UUID, 'user-001', '退款处理', 'refund');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      const res = await fetch(`${baseUrl}/orders/${INVALID_ID}/resolve`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ resolution: '退款', action: 'refund' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockResolveDispute).not.toHaveBeenCalled();
     });
 
     it('非管理员返回 403', async () => {
       mockRequireRoleMiddleware.mockImplementation((_req: Request, _res: Response, next: NextFunction) => {
         next(new ForbiddenError('权限不足'));
       });
-      const res = await fetch(`${baseUrl}/orders/o-1/resolve`, {
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/resolve`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ resolution: '退款', action: 'refund' }),
