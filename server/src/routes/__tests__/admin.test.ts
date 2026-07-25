@@ -197,6 +197,19 @@ async function stopServer(server: http.Server): Promise<void> {
 /** 构造合法 Authorization 头 */
 const authHeader = { Authorization: 'Bearer valid-admin-token' };
 
+/**
+ * 合法 UUID v4 fixture，按业务实体类型分别命名，避免跨用例混淆。
+ * 设计原因：路由层添加 uuidParam 前置校验后，原 'u1'/'c1' 等非 UUID 字符串
+ * 会在路由层被 422 拦截，无法进入 service mock 验证路径。
+ */
+const USER_UUID = '550e8400-e29b-41d4-a716-446655440000';
+const CONTENT_UUID = '550e8400-e29b-41d4-a716-446655440001';
+const CONTENT_UUID_2 = '550e8400-e29b-41d4-a716-446655440002';
+const ORDER_UUID = '550e8400-e29b-41d4-a716-446655440003';
+const REPORT_UUID = '550e8400-e29b-41d4-a716-446655440004';
+const VERIFICATION_UUID = '550e8400-e29b-41d4-a716-446655440005';
+const DELETION_UUID = '550e8400-e29b-41d4-a716-446655440006';
+
 describe('admin 路由集成测试', () => {
   let server: http.Server;
   let baseUrl: string;
@@ -244,38 +257,45 @@ describe('admin 路由集成测试', () => {
     });
 
     it('PUT /users/:id/ban 封禁成功', async () => {
-      mockBanUser.mockResolvedValue({ id: 'u1', status: 'banned' });
-      const res = await fetch(`${baseUrl}/users/u1/ban`, { method: 'PUT', headers: authHeader });
+      mockBanUser.mockResolvedValue({ id: USER_UUID, status: 'banned' });
+      const res = await fetch(`${baseUrl}/users/${USER_UUID}/ban`, { method: 'PUT', headers: authHeader });
       expect(res.status).toBe(200);
-      expect(mockBanUser).toHaveBeenCalledWith('u1');
+      expect(mockBanUser).toHaveBeenCalledWith(USER_UUID);
     });
 
     it('PUT /users/:id/ban 用户不存在 NotFoundError 404', async () => {
       mockBanUser.mockRejectedValue(new NotFoundError('用户'));
-      const res = await fetch(`${baseUrl}/users/u1/ban`, { method: 'PUT', headers: authHeader });
+      const res = await fetch(`${baseUrl}/users/${USER_UUID}/ban`, { method: 'PUT', headers: authHeader });
       expect(res.status).toBe(404);
     });
 
+    it('PUT /users/:id/ban 非法 UUID 422（前置校验拦截，不进入 service）', async () => {
+      // 防御性测试：:id 必须 UUID 格式，非法值（如 'u1'）路由层 422 拦截
+      const res = await fetch(`${baseUrl}/users/not-a-uuid/ban`, { method: 'PUT', headers: authHeader });
+      expect(res.status).toBe(422);
+      expect(mockBanUser).not.toHaveBeenCalled();
+    });
+
     it('PUT /users/:id/unban 解封成功', async () => {
-      mockUnbanUser.mockResolvedValue({ id: 'u1', status: 'active' });
-      const res = await fetch(`${baseUrl}/users/u1/unban`, { method: 'PUT', headers: authHeader });
+      mockUnbanUser.mockResolvedValue({ id: USER_UUID, status: 'active' });
+      const res = await fetch(`${baseUrl}/users/${USER_UUID}/unban`, { method: 'PUT', headers: authHeader });
       expect(res.status).toBe(200);
-      expect(mockUnbanUser).toHaveBeenCalledWith('u1');
+      expect(mockUnbanUser).toHaveBeenCalledWith(USER_UUID);
     });
 
     it('PUT /users/:id/role 合法角色更新成功', async () => {
-      mockUpdateUserRole.mockResolvedValue({ id: 'u1', role: 'admin' });
-      const res = await fetch(`${baseUrl}/users/u1/role`, {
+      mockUpdateUserRole.mockResolvedValue({ id: USER_UUID, role: 'admin' });
+      const res = await fetch(`${baseUrl}/users/${USER_UUID}/role`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ role: 'admin' }),
       });
       expect(res.status).toBe(200);
-      expect(mockUpdateUserRole).toHaveBeenCalledWith('u1', 'admin');
+      expect(mockUpdateUserRole).toHaveBeenCalledWith(USER_UUID, 'admin');
     });
 
     it('PUT /users/:id/role 非法角色 422', async () => {
-      const res = await fetch(`${baseUrl}/users/u1/role`, {
+      const res = await fetch(`${baseUrl}/users/${USER_UUID}/role`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ role: 'superadmin' }),
@@ -362,18 +382,18 @@ describe('admin 路由集成测试', () => {
     });
 
     it('PUT /content/:type/:id/status 合法状态更新成功', async () => {
-      mockUpdateContentStatus.mockResolvedValue({ id: 'c1', status: 'inactive' });
-      const res = await fetch(`${baseUrl}/content/skill/c1/status`, {
+      mockUpdateContentStatus.mockResolvedValue({ id: CONTENT_UUID, status: 'inactive' });
+      const res = await fetch(`${baseUrl}/content/skill/${CONTENT_UUID}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ status: 'inactive' }),
       });
       expect(res.status).toBe(200);
-      expect(mockUpdateContentStatus).toHaveBeenCalledWith('skill', 'c1', 'inactive');
+      expect(mockUpdateContentStatus).toHaveBeenCalledWith('skill', CONTENT_UUID, 'inactive');
     });
 
     it('PUT /content/:type/:id/status status 缺失 422', async () => {
-      const res = await fetch(`${baseUrl}/content/skill/c1/status`, {
+      const res = await fetch(`${baseUrl}/content/skill/${CONTENT_UUID}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({}),
@@ -381,15 +401,37 @@ describe('admin 路由集成测试', () => {
       expect(res.status).toBe(422);
     });
 
+    it('PUT /content/:type/:id/status :type 非枚举值 422（前置校验拦截）', async () => {
+      // 防御性测试：:type 必须 skill/kitchen/time_bank/emergency 之一
+      const res = await fetch(`${baseUrl}/content/invalid/${CONTENT_UUID}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ status: 'inactive' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockUpdateContentStatus).not.toHaveBeenCalled();
+    });
+
+    it('PUT /content/:type/:id/status :id 非 UUID 422（前置校验拦截）', async () => {
+      // 防御性测试：:id 必须 UUID 格式，与 :type 校验互不影响
+      const res = await fetch(`${baseUrl}/content/skill/not-a-uuid/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ status: 'inactive' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockUpdateContentStatus).not.toHaveBeenCalled();
+    });
+
     it('POST /content/:type/batch-status 批量更新成功', async () => {
-      mockBatchUpdateContentStatus.mockResolvedValue({ successfulIds: ['c1', 'c2'], notFoundIds: [] });
+      mockBatchUpdateContentStatus.mockResolvedValue({ successfulIds: [CONTENT_UUID, CONTENT_UUID_2], notFoundIds: [] });
       const res = await fetch(`${baseUrl}/content/kitchen/batch-status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ ids: ['c1', 'c2'], status: 'inactive' }),
+        body: JSON.stringify({ ids: [CONTENT_UUID, CONTENT_UUID_2], status: 'inactive' }),
       });
       expect(res.status).toBe(200);
-      expect(mockBatchUpdateContentStatus).toHaveBeenCalledWith('kitchen', ['c1', 'c2'], 'inactive');
+      expect(mockBatchUpdateContentStatus).toHaveBeenCalledWith('kitchen', [CONTENT_UUID, CONTENT_UUID_2], 'inactive');
     });
 
     it('POST /content/:type/batch-status ids 缺失 422', async () => {
@@ -405,28 +447,46 @@ describe('admin 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/content/kitchen/batch-status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ ids: ['c1'], status: 'deleted' }),
+        body: JSON.stringify({ ids: [CONTENT_UUID], status: 'deleted' }),
       });
       expect(res.status).toBe(422);
     });
 
+    it('POST /content/:type/batch-status :type 非枚举值 422（前置校验拦截）', async () => {
+      // 防御性测试：批量更新同样校验 :type，避免穿透到 service 层 switch
+      const res = await fetch(`${baseUrl}/content/invalid/batch-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ ids: [CONTENT_UUID], status: 'inactive' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockBatchUpdateContentStatus).not.toHaveBeenCalled();
+    });
+
     it('GET /content/:type/:id 返回内容详情', async () => {
-      mockGetContentDetail.mockResolvedValue({ id: 'c1', title: '帖子1' });
-      const res = await fetch(`${baseUrl}/content/skill/c1`);
+      mockGetContentDetail.mockResolvedValue({ id: CONTENT_UUID, title: '帖子1' });
+      const res = await fetch(`${baseUrl}/content/skill/${CONTENT_UUID}`);
       expect(res.status).toBe(200);
-      expect(mockGetContentDetail).toHaveBeenCalledWith('skill', 'c1');
+      expect(mockGetContentDetail).toHaveBeenCalledWith('skill', CONTENT_UUID);
     });
 
     it('PUT /content/:type/:id 管理员编辑内容成功', async () => {
-      mockUpdateContent.mockResolvedValue({ id: 'c1', title: '已修改' });
-      const res = await fetch(`${baseUrl}/content/skill/c1`, {
+      mockUpdateContent.mockResolvedValue({ id: CONTENT_UUID, title: '已修改' });
+      const res = await fetch(`${baseUrl}/content/skill/${CONTENT_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ title: '已修改' }),
       });
       expect(res.status).toBe(200);
       // updateContent 第三参为操作者 userId
-      expect(mockUpdateContent).toHaveBeenCalledWith('skill', 'c1', { title: '已修改' }, 'admin-uuid-001');
+      expect(mockUpdateContent).toHaveBeenCalledWith('skill', CONTENT_UUID, { title: '已修改' }, 'admin-uuid-001');
+    });
+
+    it('GET /content/:type/:id :id 非 UUID 422（前置校验拦截）', async () => {
+      // 防御性测试：详情查询同样校验 :id UUID 格式
+      const res = await fetch(`${baseUrl}/content/skill/not-a-uuid`);
+      expect(res.status).toBe(422);
+      expect(mockGetContentDetail).not.toHaveBeenCalled();
     });
   });
 
@@ -519,23 +579,45 @@ describe('admin 路由集成测试', () => {
     });
 
     it('PUT /orders/:type/:id/cancel 合法原因取消成功', async () => {
-      mockForceCancelOrder.mockResolvedValue({ id: 'o1', status: 'cancelled' });
-      const res = await fetch(`${baseUrl}/orders/skill/o1/cancel`, {
+      mockForceCancelOrder.mockResolvedValue({ id: ORDER_UUID, status: 'cancelled' });
+      const res = await fetch(`${baseUrl}/orders/skill/${ORDER_UUID}/cancel`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ reason: '违反平台规则' }),
       });
       expect(res.status).toBe(200);
-      expect(mockForceCancelOrder).toHaveBeenCalledWith('skill', 'o1', '违反平台规则', 'admin-uuid-001');
+      expect(mockForceCancelOrder).toHaveBeenCalledWith('skill', ORDER_UUID, '违反平台规则', 'admin-uuid-001');
     });
 
     it('PUT /orders/:type/:id/cancel reason 过短 422', async () => {
-      const res = await fetch(`${baseUrl}/orders/skill/o1/cancel`, {
+      const res = await fetch(`${baseUrl}/orders/skill/${ORDER_UUID}/cancel`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ reason: '违' }),
       });
       expect(res.status).toBe(422);
+    });
+
+    it('PUT /orders/:type/:id/cancel :type 非枚举值 422（前置校验拦截）', async () => {
+      // 防御性测试：:type 必须 skill/kitchen/time_bank 之一（emergency 无订单概念）
+      const res = await fetch(`${baseUrl}/orders/invalid/${ORDER_UUID}/cancel`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ reason: '违反平台规则' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockForceCancelOrder).not.toHaveBeenCalled();
+    });
+
+    it('PUT /orders/:type/:id/cancel :id 非 UUID 422（前置校验拦截）', async () => {
+      // 防御性测试：:id 必须 UUID 格式，避免穿透到 service 层返回 404 错误语义
+      const res = await fetch(`${baseUrl}/orders/skill/not-a-uuid/cancel`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ reason: '违反平台规则' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockForceCancelOrder).not.toHaveBeenCalled();
     });
   });
 
@@ -706,19 +788,19 @@ describe('admin 路由集成测试', () => {
     });
 
     it('PUT /reports/:id 合法处理成功', async () => {
-      mockHandleReport.mockResolvedValue({ id: 'r1', status: 'resolved' });
-      const res = await fetch(`${baseUrl}/reports/r1`, {
+      mockHandleReport.mockResolvedValue({ id: REPORT_UUID, status: 'resolved' });
+      const res = await fetch(`${baseUrl}/reports/${REPORT_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ status: 'resolved', handleNote: '已核实处理' }),
       });
       expect(res.status).toBe(200);
       // handleReport 第二参为操作者 userId
-      expect(mockHandleReport).toHaveBeenCalledWith('r1', 'admin-uuid-001', 'resolved', '已核实处理');
+      expect(mockHandleReport).toHaveBeenCalledWith(REPORT_UUID, 'admin-uuid-001', 'resolved', '已核实处理');
     });
 
     it('PUT /reports/:id status 非法 422', async () => {
-      const res = await fetch(`${baseUrl}/reports/r1`, {
+      const res = await fetch(`${baseUrl}/reports/${REPORT_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ status: 'invalid', handleNote: '说明内容' }),
@@ -727,12 +809,23 @@ describe('admin 路由集成测试', () => {
     });
 
     it('PUT /reports/:id handleNote 过短 422', async () => {
-      const res = await fetch(`${baseUrl}/reports/r1`, {
+      const res = await fetch(`${baseUrl}/reports/${REPORT_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ status: 'resolved', handleNote: '短' }),
       });
       expect(res.status).toBe(422);
+    });
+
+    it('PUT /reports/:id :id 非 UUID 422（前置校验拦截）', async () => {
+      // 防御性测试：:id 必须 UUID 格式，非法值路由层 422 拦截不进入 service
+      const res = await fetch(`${baseUrl}/reports/not-a-uuid`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ status: 'resolved', handleNote: '已核实处理' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockHandleReport).not.toHaveBeenCalled();
     });
   });
 
@@ -746,35 +839,46 @@ describe('admin 路由集成测试', () => {
     });
 
     it('PUT /verifications/:id approve 通过认证', async () => {
-      mockReviewVerificationRequest.mockResolvedValue({ id: 'v1', status: 'approved' });
-      const res = await fetch(`${baseUrl}/verifications/v1`, {
+      mockReviewVerificationRequest.mockResolvedValue({ id: VERIFICATION_UUID, status: 'approved' });
+      const res = await fetch(`${baseUrl}/verifications/${VERIFICATION_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ action: 'approve' }),
       });
       expect(res.status).toBe(200);
       // approve 时 rejectReason 为 undefined
-      expect(mockReviewVerificationRequest).toHaveBeenCalledWith('v1', 'admin-uuid-001', 'approve', undefined);
+      expect(mockReviewVerificationRequest).toHaveBeenCalledWith(VERIFICATION_UUID, 'admin-uuid-001', 'approve', undefined);
     });
 
     it('PUT /verifications/:id reject 带原因拒绝', async () => {
-      mockReviewVerificationRequest.mockResolvedValue({ id: 'v1', status: 'rejected' });
-      const res = await fetch(`${baseUrl}/verifications/v1`, {
+      mockReviewVerificationRequest.mockResolvedValue({ id: VERIFICATION_UUID, status: 'rejected' });
+      const res = await fetch(`${baseUrl}/verifications/${VERIFICATION_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ action: 'reject', rejectReason: '身份证照片模糊' }),
       });
       expect(res.status).toBe(200);
-      expect(mockReviewVerificationRequest).toHaveBeenCalledWith('v1', 'admin-uuid-001', 'reject', '身份证照片模糊');
+      expect(mockReviewVerificationRequest).toHaveBeenCalledWith(VERIFICATION_UUID, 'admin-uuid-001', 'reject', '身份证照片模糊');
     });
 
     it('PUT /verifications/:id reject 缺原因 422（条件校验）', async () => {
-      const res = await fetch(`${baseUrl}/verifications/v1`, {
+      const res = await fetch(`${baseUrl}/verifications/${VERIFICATION_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ action: 'reject' }),
       });
       expect(res.status).toBe(422);
+    });
+
+    it('PUT /verifications/:id :id 非 UUID 422（前置校验拦截）', async () => {
+      // 防御性测试：:id 必须 UUID 格式，避免穿透到 service 层返回 404 错误语义
+      const res = await fetch(`${baseUrl}/verifications/not-a-uuid`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ action: 'approve' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockReviewVerificationRequest).not.toHaveBeenCalled();
     });
   });
 
@@ -796,23 +900,34 @@ describe('admin 路由集成测试', () => {
     });
 
     it('PUT /deletion-requests/:id approve 通过注销', async () => {
-      mockReviewDeletionRequest.mockResolvedValue({ id: 'd1', status: 'approved' });
-      const res = await fetch(`${baseUrl}/deletion-requests/d1`, {
+      mockReviewDeletionRequest.mockResolvedValue({ id: DELETION_UUID, status: 'approved' });
+      const res = await fetch(`${baseUrl}/deletion-requests/${DELETION_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ action: 'approve' }),
       });
       expect(res.status).toBe(200);
-      expect(mockReviewDeletionRequest).toHaveBeenCalledWith('d1', 'admin-uuid-001', 'approve', undefined);
+      expect(mockReviewDeletionRequest).toHaveBeenCalledWith(DELETION_UUID, 'admin-uuid-001', 'approve', undefined);
     });
 
     it('PUT /deletion-requests/:id reject 缺原因 422', async () => {
-      const res = await fetch(`${baseUrl}/deletion-requests/d1`, {
+      const res = await fetch(`${baseUrl}/deletion-requests/${DELETION_UUID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ action: 'reject' }),
       });
       expect(res.status).toBe(422);
+    });
+
+    it('PUT /deletion-requests/:id :id 非 UUID 422（前置校验拦截）', async () => {
+      // 防御性测试：注销审核不可逆，:id 必须 UUID 格式避免误操作
+      const res = await fetch(`${baseUrl}/deletion-requests/not-a-uuid`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ action: 'approve' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockReviewDeletionRequest).not.toHaveBeenCalled();
     });
   });
 

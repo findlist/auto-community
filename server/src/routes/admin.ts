@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { body } from 'express-validator';
 import { authenticate, requireRole } from '../middleware/auth';
-import { validate, getPagination, enumParam, enumQuery } from '../middleware/validator';
+import { validate, getPagination, uuidParam, enumParam, enumQuery } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
 import { auditMiddleware } from '../middleware/auditLog';
 import { adminService } from '../services/admin.service';
@@ -92,7 +92,10 @@ router.get('/users', asyncHandler(async (req: Request, res: Response) => {
 
 // 封禁用户
 // 审计接入：单点封禁属高危管理操作，需记录操作者与目标用户便于申诉复核
-router.put('/users/:id/ban', auditMiddleware('BAN_USER', {
+// uuidParam 前置校验：避免非法 id 穿透到 service 层走完 query 才返回 404，错误语义对齐 422
+router.put('/users/:id/ban', validate([
+  uuidParam('id'),
+]), auditMiddleware('BAN_USER', {
   resourceType: 'user',
   getResourceId: (req) => req.params.id,
 }), asyncHandler(async (req: Request, res: Response) => {
@@ -101,7 +104,10 @@ router.put('/users/:id/ban', auditMiddleware('BAN_USER', {
 }));
 
 // 解封用户
-router.put('/users/:id/unban', auditMiddleware('UNBAN_USER', {
+// uuidParam 前置校验：与 PUT /users/:id/ban 行为对齐，避免错误响应语义碎片化
+router.put('/users/:id/unban', validate([
+  uuidParam('id'),
+]), auditMiddleware('UNBAN_USER', {
   resourceType: 'user',
   getResourceId: (req) => req.params.id,
 }), asyncHandler(async (req: Request, res: Response) => {
@@ -111,6 +117,8 @@ router.put('/users/:id/unban', auditMiddleware('UNBAN_USER', {
 
 // 修改用户角色
 router.put('/users/:id/role', validate([
+  // uuidParam 前置：与其他 :id 路由行为一致，非法 id 在路由层 422 拦截
+  uuidParam('id'),
   body('role').isIn(['admin', 'user']).withMessage('角色只能为 admin 或 user'),
 ]), auditMiddleware('UPDATE_USER_ROLE', {
   resourceType: 'user',
@@ -224,6 +232,10 @@ router.get('/content', validate([
 // 更新内容状态
 // 审计接入：内容上下架影响用户可见性与交易，需记录操作者与目标内容便于追溯
 router.put('/content/:type/:id/status', validate([
+  // :type 路径参数白名单：与 CONTENT_TYPES 对齐，非法值 422 拦截避免穿透到 service 层 switch
+  enumParam('type', CONTENT_TYPES),
+  // :id UUID 前置：避免非法 id 进入 service 层 query 返回 404 错误语义
+  uuidParam('id'),
   body('status').isString().withMessage('状态必须为字符串'),
 ]), auditMiddleware('UPDATE_CONTENT_STATUS', {
   resourceType: 'content',
@@ -268,6 +280,8 @@ router.put('/content/:type/:id/status', validate([
  *         description: 批量更新结果
  */
 router.post('/content/:type/batch-status', validate([
+  // :type 路径参数白名单：与单条更新路由行为一致，避免 type=invalid 时 service 层 switch 走 default 分支
+  enumParam('type', CONTENT_TYPES),
   body('ids').isArray({ min: 1, max: 50 }).withMessage('内容ID列表需为1-50条'),
   body('ids.*').isString().withMessage('内容ID必须为字符串'),
   body('status').isIn(['active', 'inactive']).withMessage('状态只能为 active 或 inactive'),
@@ -279,7 +293,10 @@ router.post('/content/:type/batch-status', validate([
 }));
 
 // 获取内容详情（含图片等可编辑字段）
-router.get('/content/:type/:id', asyncHandler(async (req: Request, res: Response) => {
+router.get('/content/:type/:id', validate([
+  enumParam('type', CONTENT_TYPES),
+  uuidParam('id'),
+]), asyncHandler(async (req: Request, res: Response) => {
   const { type, id } = req.params;
   const result = await adminService.getContentDetail(type as 'skill' | 'kitchen' | 'time_bank' | 'emergency', id);
   success(res, result);
@@ -287,7 +304,10 @@ router.get('/content/:type/:id', asyncHandler(async (req: Request, res: Response
 
 // 管理员编辑内容（标题/描述/图片/价格等）
 // 审计接入：管理员编辑内容属高危篡改操作，需记录操作者与目标内容便于事后追溯
-router.put('/content/:type/:id', auditMiddleware('ADMIN_UPDATE_CONTENT', {
+router.put('/content/:type/:id', validate([
+  enumParam('type', CONTENT_TYPES),
+  uuidParam('id'),
+]), auditMiddleware('ADMIN_UPDATE_CONTENT', {
   resourceType: 'content',
   getResourceId: (req) => req.params.id,
 }), asyncHandler(async (req: Request<Record<string, string>, unknown, Record<string, unknown>>, res: Response) => {
@@ -354,6 +374,10 @@ router.get('/orders/:type', validate([
 // 强制取消订单
 // 审计接入：强制取消订单影响用户交易权益，需记录操作者、目标订单与取消原因便于申诉复核
 router.put('/orders/:type/:id/cancel', validate([
+  // :type 路径参数白名单：与 GET /orders/:type 行为一致，避免 type 非枚举值穿透到 service 层
+  enumParam('type', ORDER_TYPES),
+  // :id UUID 前置：避免非法订单 id 进入 service 层返回 404 错误语义
+  uuidParam('id'),
   body('reason').isLength({ min: 2, max: 200 }).withMessage('取消原因需在2-200字符之间'),
 ]), auditMiddleware('FORCE_CANCEL_ORDER', {
   resourceType: 'order',
@@ -463,6 +487,7 @@ router.get('/reports', validate([
 // 处理举报
 // 审计接入：举报处理结果影响被举报用户权益，需记录操作者、处理结论与说明便于复核
 router.put('/reports/:id', validate([
+  uuidParam('id'),
   body('status').isIn(['resolved', 'rejected']).withMessage('状态只能为 resolved 或 rejected'),
   body('handleNote').isLength({ min: 2, max: 500 }).withMessage('处理说明需在2-500字符之间'),
 ]), auditMiddleware('HANDLE_REPORT', {
@@ -487,6 +512,7 @@ router.get('/verifications', asyncHandler(async (req: Request, res: Response) =>
 // 审核实名认证申请
 // 审计接入：实名认证审核结果影响用户身份权限，需记录操作者与审核结论便于申诉复核
 router.put('/verifications/:id', validate([
+  uuidParam('id'),
   body('action').isIn(['approve', 'reject']).withMessage('操作只能为 approve 或 reject'),
   body('rejectReason').if(body('action').equals('reject')).isLength({ min: 2, max: 200 }).withMessage('拒绝原因需在2-200字符之间'),
 ]), auditMiddleware('REVIEW_VERIFICATION', {
@@ -514,6 +540,7 @@ router.get('/deletion-requests', validate([
 // 审核注销申请
 // 审计接入：注销审核通过会触发用户数据匿名化（不可逆），必须留痕便于事后审计与合规追溯
 router.put('/deletion-requests/:id', validate([
+  uuidParam('id'),
   body('action').isIn(['approve', 'reject']).withMessage('操作只能为 approve 或 reject'),
   body('rejectReason').if(body('action').equals('reject')).isLength({ min: 2, max: 200 }).withMessage('拒绝原因需在2-200字符之间'),
 ]), auditMiddleware('REVIEW_DELETION_REQUEST', {
