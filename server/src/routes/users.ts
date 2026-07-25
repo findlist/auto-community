@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { body } from 'express-validator';
 import { authenticate } from '../middleware/auth';
-import { validate, getPagination } from '../middleware/validator';
+import { validate, getPagination, uuidParam } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
 import { auditMiddleware } from '../middleware/auditLog';
 import { userService } from '../services/user.service';
@@ -129,7 +129,8 @@ router.get('/time-history', authenticate, asyncHandler(async (req: Request, res:
 }));
 
 // 通配路由 :id 必须放在所有具名 GET 路由之后，否则会拦截 /credit-history、/time-history 等路径
-router.get('/:id', authenticate, asyncHandler(async (req: Request, res: Response) => {
+// 前置 UUID 校验：非法 id 直接 422，避免进入 service 层后走完 query 才返回 404（bug-check P2 技术债清理）
+router.get('/:id', authenticate, validate([uuidParam()]), asyncHandler(async (req: Request, res: Response) => {
   const user = await userService.getUserById(req.params.id);
   success(res, user);
 }));

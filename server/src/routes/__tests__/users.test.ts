@@ -195,19 +195,32 @@ describe('users 路由集成测试', () => {
 
   // ===================== GET /:id =====================
   describe('GET /:id', () => {
+    // 使用合法 UUID v4 作为测试 fixture，对齐 routes 层 uuidParam 校验
+    const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000';
+
     it('返回指定用户资料', async () => {
-      mockGetUserById.mockResolvedValue({ id: 'other-user', nickname: 'other' });
-      const res = await fetch(`${baseUrl}/other-user`, { headers: authHeader });
+      mockGetUserById.mockResolvedValue({ id: VALID_UUID, nickname: 'other' });
+      const res = await fetch(`${baseUrl}/${VALID_UUID}`, { headers: authHeader });
       expect(res.status).toBe(200);
-      expect(mockGetUserById).toHaveBeenCalledWith('other-user');
+      expect(mockGetUserById).toHaveBeenCalledWith(VALID_UUID);
     });
 
     it('用户不存在时 NotFoundError 标准化为 404', async () => {
       mockGetUserById.mockRejectedValue(new NotFoundError('用户不存在'));
-      const res = await fetch(`${baseUrl}/non-existent`, { headers: authHeader });
+      const res = await fetch(`${baseUrl}/${VALID_UUID}`, { headers: authHeader });
       expect(res.status).toBe(404);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('NOT_FOUND');
+    });
+
+    it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 'other-user' 含连字符但非 UUID 格式，express-validator isUUID('all') 应拒绝
+      const res = await fetch(`${baseUrl}/other-user`, { headers: authHeader });
+      expect(res.status).toBe(422);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect(data.code).toBe('VALIDATION_ERROR');
+      // service 不应被调用，验证前置校验拦截生效
+      expect(mockGetUserById).not.toHaveBeenCalled();
     });
   });
 
