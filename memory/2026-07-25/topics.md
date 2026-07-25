@@ -2,12 +2,13 @@
 
 ## 本轮迭代摘要（2026-07-25）
 
-承接 2026-07-24「假 label 批量修复清零」与「setState 卸载泄漏清零」两条收尾线，本轮处理两批遗漏：
+承接 2026-07-24「假 label 批量修复清零」与「setState 卸载泄漏清零」两条收尾线，本轮处理三批遗漏：
 
 1. 上轮遗留未提交的 TimeBank 三件套（DonateModal/TransferModal/FamilyBinding）共 7 处假 label 修复
 2. 扫描发现 SharedKitchen 模块仍有 3 个文件 8 处假 label 违规未修（AddressBook 3 处 + Detail 3 处 + FoodReview 2 处），本轮全部清零
+3. Admin 后台视觉一致性收尾：5 个列表页分页控件统一规范 + 6 个文件状态筛选/查询/分段按钮补按压反馈与选中态
 
-### 已完成任务（4 个最小迭代单元）
+### 已完成任务（6 个最小迭代单元）
 
 1. **TimeBank 弹窗与亲情绑定修复 7 处假 label 无障碍违规**（commit eb5da63）
    - 文件：`client/src/pages/TimeBank/DonateModal.tsx`、`client/src/pages/TimeBank/TransferModal.tsx`、`client/src/pages/TimeBank/FamilyBinding.tsx`
@@ -41,9 +42,31 @@
    - 测试同步更新：`getAllByRole("button").filter(btn => btn.querySelector("svg.lucide-star"))` 改为 `getAllByRole("radio").filter(...)`（同 Detail，role="radio" 覆盖隐式 button 角色）
    - 验收：针对性测试 13/13 通过
 
+5. **Admin 5 个列表页分页控件视觉规范统一**（commit f51dec3）
+   - 文件：`client/src/pages/Admin/ContentReview.tsx`、`OrderManagement.tsx`、`ReportManagement.tsx`、`AuditLog.tsx`、`UserManagement.tsx`（参照基准）
+   - 方案（与 07-20 UserManagement 范式对齐）：
+     - **当前页胶囊高亮**：`px-3 py-1.5 rounded-lg bg-neutral-100` + `font-semibold text-neutral-900` 当前页 / `text-neutral-500` 总页数 / `text-neutral-400` 分隔符，形成三级文字层级
+     - **前后翻页按钮补 `aria-label`**：`aria-label="上一页"/"下一页"`，屏幕阅读器可识别
+     - **active 反馈**：`active:scale-95 transition-all`，移动端按压有缩放反馈
+     - **总数统计 tabular-nums**：`tabular-nums` 让数字等宽对齐，避免翻页时数字宽度抖动
+   - 验收：前端 build ✅ 通过
+
+6. **Admin 6 个文件状态筛选/查询/分段按钮补按压反馈与选中态**（commit 97a66a3）
+   - 文件：`client/src/pages/Admin/ContentReview.tsx`、`OrderManagement.tsx`、`ReportManagement.tsx`、`VerificationReview.tsx`、`AuditLog.tsx`、`SystemConfig.tsx`
+   - 方案（统一交互反馈语言）：
+     - **状态筛选按钮**：选中态 `bg-emerald-500 text-white shadow-sm`（轻微抬升感），未选中态 `bg-neutral-100 text-neutral-600 hover:bg-neutral-200`，统一加 `active:scale-95 transition-all` 按压反馈
+     - **查询按钮（AuditLog）**：补 `active:scale-95 transition-all`
+     - **值类型分段选择器（SystemConfig）**：string/int/float 三选一按钮补 `active:scale-95` + 选中态 `shadow-sm` 抬升
+   - 设计原因：Admin 后台原有按钮交互反馈不一致（部分有 active 反馈部分无，部分选中态无视觉抬升），统一后视觉语言一致，用户操作有明确感知
+   - 验收：前端 build ✅ 通过（16.86s）
+
 ### 本轮总结
 
-本轮共完成 4 个迭代单元，累计修复 **15 处假 label 违规**，覆盖 6 个文件：
+本轮共完成 6 个迭代单元，分两条线：
+
+**线条一：无障碍假 label 修复清零**（4 个单元，commit eb5da63/f3e3bed/6a9d997/a9f7c0c）
+- 累计修复 **15 处假 label 违规**，覆盖 6 个文件
+- 加上 2026-07-24 累计 43 处，**全项目「假 label」违规累计清零 58 处**
 
 | 文件 | 违规数 | commit |
 | --- | --- | --- |
@@ -54,12 +77,19 @@
 | SharedKitchen/Detail | 3 | 6a9d997 |
 | SharedKitchen/FoodReview | 2 | a9f7c0c |
 
-加上 2026-07-24 累计 43 处，**全项目「假 label」违规累计清零 58 处**，所有页面表单均符合 WCAG label 关联规范。
+**线条二：Admin 后台视觉一致性收尾**（2 个单元，commit f51dec3/97a66a3）
+- 5 个列表页分页控件统一规范（当前页胶囊高亮 + 三级文字层级 + active 反馈 + aria-label）
+- 6 个文件状态筛选/查询/分段按钮统一交互反馈语言（active:scale-95 + shadow-sm 选中态）
+
+| 文件 | 改动类型 | commit |
+| --- | --- | --- |
+| ContentReview/OrderManagement/ReportManagement/AuditLog/UserManagement | 分页控件统一 | f51dec3 |
+| ContentReview/OrderManagement/ReportManagement/VerificationReview/AuditLog/SystemConfig | 按钮反馈统一 | 97a66a3 |
 
 ### 验证结果
 
 - 后端类型检查/单元测试：本轮无后端改动，基线保持（2026-07-24：✅ 1731/1731 通过）
-- 前端构建：✅ 通过（2m 17s，零错误零警告）
+- 前端构建：✅ 通过（16.86s，零错误零警告）
 - 前端针对性测试：✅ AddressBook 26/26、Detail 28/28、FoodReview 13/13 全部通过
 
 ### 关键技术决策
@@ -79,6 +109,13 @@
    - `<label><input type="checkbox">...</label>` 是 WCAG 标准做法，点击文字触发 checkbox
    - AddressBook 默认地址 checkbox 用此模式，无需修改
    - 与「假 label」（label 与 input 视觉同级但无 htmlFor/id 关联）不同，包裹模式天然存在 DOM 嵌套关系，屏幕阅读器可识别
+5. **分页控件统一参照 UserManagement 07-20 范式**：
+   - 不重新设计，直接对齐项目内已有的最优实现，降低视觉碎片化
+   - 关键元素：当前页 `bg-neutral-100` 胶囊高亮 + 三级文字层级（neutral-900/500/400）+ `tabular-nums` 数字等宽 + `aria-label` 无障碍
+6. **shadow-sm 用于选中态抬升，active:scale-95 用于按压反馈**：
+   - 选中态加 `shadow-sm` 营造轻微抬升感，比单纯改色更具层次
+   - `active:scale-95` 是 95% 缩放，配合 `transition-all` 形成「按下去」的物理反馈
+   - 两者结合让状态筛选按钮的「选中」与「按压」两个状态有明确区分
 
 ### Git 提交记录
 
@@ -86,6 +123,8 @@
 - `f3e3bed` fix: SharedKitchen/AddressBook 修复 3 处假 label 无障碍违规
 - `6a9d997` fix: SharedKitchen/Detail 修复 3 处假 label 无障碍违规
 - `a9f7c0c` fix: SharedKitchen/FoodReview 修复 2 处假 label 无障碍违规
+- `f51dec3` refactor: Admin 5 个列表页分页控件视觉规范统一（当前页胶囊高亮+三级文字层级+active 反馈+补 aria-label）
+- `97a66a3` refactor: Admin 6 个文件状态筛选/查询/分段按钮补 active:scale-95 按压反馈与 shadow-sm 选中态
 
 ### 遗留问题
 
@@ -99,8 +138,8 @@
 
 ### 下一轮建议
 
-「假 label」批量修复任务全部清零（含本轮 SharedKitchen 模块收尾），无剩余待修复文件。后续可选方向：
+「假 label」批量修复任务全部清零（含本轮 SharedKitchen 模块收尾），Admin 后台视觉一致性收尾完成。后续可选方向：
 
-1. **样式精修**：剩余样式问题清单（待扫描）
+1. **样式精修扩展**：扫描非 Admin 模块（TimeBank/SharedKitchen/SkillMarket 等）是否有分页控件/状态筛选按钮交互反馈不一致问题
 2. **测试补全**：未覆盖的关键路径补全测试用例
 3. **运维侧 P0/P1 遗留**（非 Agent 可推进，需用户介入）：见上方「遗留问题」
