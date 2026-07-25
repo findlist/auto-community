@@ -5,7 +5,7 @@ import { authenticate, optionalAuth } from '../middleware/auth';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
 import { success, paginated, created, updated, cursorPaginated } from '../utils/response';
-import { getPagination, validate, uuidParam } from '../middleware/validator';
+import { getPagination, validate, uuidParam, enumQuery } from '../middleware/validator';
 import { timeBankService } from '../services/time-bank.service';
 import { aiService, processPostPipeline } from '../services/ai.service';
 import { logger } from '../utils/logger';
@@ -13,6 +13,12 @@ import { safeNotify } from '../utils/safeNotify';
 import { BadRequestError } from '../utils/errors';
 
 const router = Router();
+
+// 时间银行服务类型白名单：与 time_bank_services.type 字段语义对齐
+// 设计原因：原 GET /services 的 type 查询参数直接 as string 透传到 service 层 SQL WHERE，
+// 非法值（如 'foo'）静默返回空列表，前端难以辨别「无数据」与「参数非法」。
+// 注意：与 skill/kitchen 的 'offer'/'need' 枚举不同，time_bank 用 'provide'/'request'
+const TIME_SERVICE_TYPES = ['provide', 'request'] as const;
 
 // ===================== 请求体类型定义 =====================
 // 与 time-bank.service 各函数入参对齐，编译期校验 req.body 字段访问类型安全
@@ -145,7 +151,11 @@ router.get('/recommend', authenticate, asyncHandler(async (req, res) => {
  *                     hasNext:
  *                       type: boolean
  */
-router.get('/services', optionalAuth, asyncHandler(async (req, res) => {
+router.get('/services', optionalAuth, validate([
+  // type 白名单：与 time_bank_services.type 字段对齐，非法值 422 拦截避免静默返回空列表
+  // category 为自由文本（用户填写分类名），不做白名单
+  enumQuery('type', TIME_SERVICE_TYPES),
+]), asyncHandler(async (req, res) => {
   const { page, pageSize } = getPagination(req);
   const filters = { type: req.query.type as string, category: req.query.category as string };
   const result = await timeBankService.getServiceList(filters, { page, pageSize });

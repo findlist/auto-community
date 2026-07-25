@@ -36,6 +36,22 @@ const DASHBOARD_TREND_TYPES = ['registration', 'order'] as const;
 const REPORT_STATUSES: readonly string[] = ['pending', 'resolved', 'rejected'];
 // 注销申请状态白名单：与 dataDeletionService.getDeletionRequests 的 status 参数收窄类型对齐
 const DELETION_REQUEST_STATUSES = ['pending', 'approved', 'rejected', 'completed'] as const;
+// 订单状态联合白名单：覆盖 skill/kitchen/time_bank 三类订单全状态集合
+// 设计原因：getOrders 跨三表查询，status 直接拼 SQL WHERE，虽为参数化防注入，
+// 但非法值会静默返回空列表（前端无法区分「无数据」与「参数非法」），前置 422 拦截让错误语义清晰
+const ORDER_STATUSES = [
+  'pending',      // 三类订单通用：待确认/待接受
+  'accepted',     // skill/time_bank：已接受
+  'confirmed',    // kitchen：已确认
+  'in_progress',  // skill/time_bank：进行中
+  'completed',    // 三类订单通用：已完成
+  'cancelled',    // 三类订单通用：已取消
+  'disputed',     // skill/time_bank：争议中
+] as const;
+// 实名认证状态白名单：与 verification_requests.status 字段 CHECK 约束对齐
+// 设计原因：getVerificationRequests 的 status 直接拼 SQL WHERE，非法值静默返回空列表，
+// 前置 422 拦截避免管理端误传 'approved ' (含空格) 等值时返回空列表造成「无待审核」错觉
+const VERIFICATION_STATUSES = ['pending', 'approved', 'rejected'] as const;
 
 const router = Router();
 
@@ -363,6 +379,8 @@ router.get('/orders/:type', validate([
   // :type 路径参数必填（路由定义无 ?），用 required 模式（enumParam 默认 optional=false）
   // 非法 type 直接 422 拦截，避免穿透到 service 层抛 BadRequestError（400 → 422 错误语义对齐）
   enumParam('type', ORDER_TYPES),
+  // status 查询参数白名单：跨三类订单状态联合，非法值 422 拦截避免静默返回空列表
+  enumQuery('status', ORDER_STATUSES),
 ]), asyncHandler(async (req: Request, res: Response) => {
   const { page, pageSize } = getPagination(req);
   const { type } = req.params;
@@ -502,7 +520,11 @@ router.put('/reports/:id', validate([
 // ===================== 实名认证审核 =====================
 
 // 实名认证申请列表
-router.get('/verifications', asyncHandler(async (req: Request, res: Response) => {
+router.get('/verifications', validate([
+  // status 白名单：与 verification_requests.status 字段 CHECK 约束对齐
+  // 非法值 422 拦截避免管理端误传脏数据时返回空列表造成「无待审核」错觉
+  enumQuery('status', VERIFICATION_STATUSES),
+]), asyncHandler(async (req: Request, res: Response) => {
   const { page, pageSize } = getPagination(req);
   const status = req.query.status as string | undefined;
   const result = await adminService.getVerificationRequests(page, pageSize, status);

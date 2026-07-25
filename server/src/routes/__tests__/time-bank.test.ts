@@ -231,12 +231,21 @@ describe('time-bank 路由集成测试', () => {
 
     it('支持 type/category 筛选', async () => {
       mockGetServiceList.mockResolvedValue({ list: [], total: 0, page: 1, pageSize: 20 });
-      const res = await fetch(`${baseUrl}/services?type=offer&category=医疗`);
+      // type 用合法值 'provide'：与 time_bank_services.type 字段枚举对齐
+      // 设计原因：原 fixture 误用 'offer'（来自 skill/kitchen 模块），路由层加 enumQuery 后会被 422 拦截
+      const res = await fetch(`${baseUrl}/services?type=provide&category=医疗`);
       expect(res.status).toBe(200);
       expect(mockGetServiceList).toHaveBeenCalledWith(
-        { type: 'offer', category: '医疗' },
+        { type: 'provide', category: '医疗' },
         { page: 1, pageSize: 20 },
       );
+    });
+
+    it('非枚举 type 应返回 422（前置校验拦截，不进入 service 层）', async () => {
+      // 'offer' 属于 skill/kitchen 模块枚举，time_bank 用 'provide'/'request'，应被 422 拦截
+      const res = await fetch(`${baseUrl}/services?type=offer`);
+      expect(res.status).toBe(422);
+      expect(mockGetServiceList).not.toHaveBeenCalled();
     });
   });
 

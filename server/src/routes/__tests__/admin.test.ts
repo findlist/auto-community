@@ -578,6 +578,15 @@ describe('admin 路由集成测试', () => {
       expect(mockGetOrders).not.toHaveBeenCalled();
     });
 
+    it('GET /orders/:type status 非枚举值 422（前置白名单拦截，不进入 service）', async () => {
+      // 防御性测试：status 查询参数必须是 ORDER_STATUSES 联合枚举之一
+      // 设计原因：原代码 status 直接拼 SQL WHERE，非法值静默返回空列表，
+      // 加白名单后路由层 422 拦截，前端可清晰区分「无数据」与「参数非法」
+      const res = await fetch(`${baseUrl}/orders/skill?status=invalid-status`);
+      expect(res.status).toBe(422);
+      expect(mockGetOrders).not.toHaveBeenCalled();
+    });
+
     it('PUT /orders/:type/:id/cancel 合法原因取消成功', async () => {
       mockForceCancelOrder.mockResolvedValue({ id: ORDER_UUID, status: 'cancelled' });
       const res = await fetch(`${baseUrl}/orders/skill/${ORDER_UUID}/cancel`, {
@@ -836,6 +845,15 @@ describe('admin 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/verifications?page=1&pageSize=10`);
       expect(res.status).toBe(200);
       expect(mockGetVerificationRequests).toHaveBeenCalledWith(1, 10, undefined);
+    });
+
+    it('GET /verifications status 非枚举值 422（前置白名单拦截，不进入 service）', async () => {
+      // 防御性测试：status 查询参数必须是 VERIFICATION_STATUSES 之一（pending/approved/rejected）
+      // 设计原因：原代码 status 直接拼 SQL WHERE，非法值静默返回空列表，
+      // 加白名单后路由层 422 拦截，避免管理端误传脏数据时返回空列表造成「无待审核」错觉
+      const res = await fetch(`${baseUrl}/verifications?status=invalid-status`);
+      expect(res.status).toBe(422);
+      expect(mockGetVerificationRequests).not.toHaveBeenCalled();
     });
 
     it('PUT /verifications/:id approve 通过认证', async () => {
