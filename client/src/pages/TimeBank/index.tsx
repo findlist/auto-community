@@ -105,7 +105,8 @@ export default function TimeBank() {
 
       {/* Tab 切换：下划线式，激活态下划线使用时间银行模块紫 */}
       {/* overflow-x-auto + whitespace-nowrap：移动端窄屏 Tab 文字不换行、可横向滚动，避免下划线动效错位 */}
-      <div className="flex items-center gap-6 border-b border-neutral-200 mb-6 overflow-x-auto pb-1">
+      {/* mb-5 与 SharedKitchen/SkillExchange 列表页 Tab 容器边距保持一致 */}
+      <div className="flex items-center gap-6 border-b border-neutral-200 mb-5 overflow-x-auto pb-1">
         {tabs.map(({ key, label }) => (
           <button
             key={key}

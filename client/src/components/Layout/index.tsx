@@ -111,10 +111,17 @@ function MobileTabItem({ path, label, icon: Icon }: { path: string; label: strin
     <Link
       to={path}
       aria-label={label}
-      className={`flex flex-col items-center gap-0.5 text-[11px] transition-colors duration-200 ${
+      className={`relative flex flex-col items-center gap-0.5 text-[11px] transition-colors duration-200 ${
         isActive ? "text-neutral-900" : "text-neutral-400"
       }`}
     >
+      {/* 激活态顶部线指示器：与桌面端 DesktopNavLink 的底部 underline 形成移动/桌面视觉呼应 */}
+      {isActive && (
+        <span
+          className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-neutral-900"
+          aria-hidden
+        />
+      )}
       <Icon className={`w-5 h-5 transition-transform duration-200 ${isActive ? "scale-110" : ""}`} />
       <span>{label}</span>
     </Link>
