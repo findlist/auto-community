@@ -181,22 +181,26 @@ describe("FoodReviewPage 评价列表页", () => {
       return makeReviewsResponse([page2Review], 2, 2, 2);
     });
     renderFoodReviewPage();
-    // 等待首页渲染
+    // 等待首页渲染：图标按钮改用 getByRole name 查询，页码胶囊用容器 toHaveTextContent 避免与评价数字误匹配
     await waitFor(() => {
-      expect(screen.getByText(/1 \/ 2/)).toBeInTheDocument();
+      const prevBtn = screen.getByRole('button', { name: '上一页' });
+      // 页码胶囊：page=1 / totalPages=2，验证容器文本而非单元素文本（拆分 span 后无单元素匹配 "1 / 2"）
+      const pagination = prevBtn.parentElement!;
+      expect(pagination).toHaveTextContent('1');
+      expect(pagination).toHaveTextContent('2');
     });
-    // 第 1 页时"上一页"禁用
-    expect(screen.getByText("上一页").closest("button")).toBeDisabled();
+    // 第 1 页时"上一页"禁用：getByRole 默认返回 HTMLElement，断言为 HTMLButtonElement 以访问 disabled
+    expect((screen.getByRole('button', { name: '上一页' }) as HTMLButtonElement).disabled).toBe(true);
     // 点击"下一页"
     await act(async () => {
-      fireEvent.click(screen.getByText("下一页"));
+      fireEvent.click(screen.getByRole('button', { name: '下一页' }));
     });
     // 第 2 页评价内容渲染
     await waitFor(() => {
       expect(screen.getByText("一般般")).toBeInTheDocument();
     });
     // 第 2 页时"下一页"禁用
-    expect(screen.getByText("下一页").closest("button")).toBeDisabled();
+    expect((screen.getByRole('button', { name: '下一页' }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
 

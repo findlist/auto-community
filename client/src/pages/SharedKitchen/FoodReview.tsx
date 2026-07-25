@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Star, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Star, Loader2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import Empty from "@/components/Empty";
 import { getFoodReviews } from "@/api/kitchen";
 import { getFoodShareById } from "@/api/kitchen";
@@ -166,25 +166,31 @@ export default function FoodReviewPage() {
             ))}
           </div>
 
-          {/* 分页 */}
+          {/* 分页：对齐 Admin/UserManagement 范式，图标按钮 + 当前页胶囊高亮 + tabular-nums 数字等宽 */}
+          {/* 设计原因：与 Admin 列表页 + Profile/PointsDetail 分页控件视觉语言一致，触控目标达 40px */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-4 text-sm">
+            <div className="flex items-center justify-center gap-2 mt-4">
               <button
                 onClick={() => loadReviews(page - 1)}
                 disabled={page <= 1}
-                className="px-3 py-1.5 border border-gray-300 rounded-lg disabled:opacity-40"
+                // p-2.5 + border + hover + active:scale-95 与 Admin 范式一致，触控目标达 40px
+                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
+                aria-label="上一页"
               >
-                上一页
+                <ChevronLeft className="w-5 h-5" />
               </button>
-              <span className="text-gray-600">
-                {page} / {totalPages}
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-neutral-100 tabular-nums text-sm">
+                <span className="font-semibold text-neutral-900">{page}</span>
+                <span className="text-neutral-400">/</span>
+                <span className="text-neutral-500">{totalPages}</span>
               </span>
               <button
                 onClick={() => loadReviews(page + 1)}
                 disabled={page >= totalPages}
-                className="px-3 py-1.5 border border-gray-300 rounded-lg disabled:opacity-40"
+                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
+                aria-label="下一页"
               >
-                下一页
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
           )}
