@@ -1,13 +1,13 @@
-邻里圈（linli-circle）开发规划文档（同步规范 v1.4.3）
-版本：v1.4.3（周评估同步版）
-更新日期：2026-07-25
-适配规范：auto-iteration-spec v1.4.1
+邻里圈（linli-circle）开发规划文档（同步规范 v1.4.4）
+版本：v1.4.4（周评估同步版）
+更新日期：2026-07-27
+适配规范：auto-iteration-spec v1.4.2
 优先级说明：本规划为任务基线参考，实际迭代节奏、任务排序以自动迭代规范为准
 核心目标：Phase1/2 已全部完成 → Phase3 技术债清理与生产就绪验收 → 达到生产上线标准
 
 ---
 一、项目现状总览（最新真实进度）
-当前项目整体完成度 96%+，Phase 1（应急资源地图页、CD 流水线）与 Phase 2（8 项 P1 核心功能）已全部验收通过，当前处于 Phase 3 技术债清理与生产就绪验收阶段。后端测试覆盖率 95.4%+（1770+ 用例，截至 2026-07-25），前端构建零错误零警告，server/src 全目录 SQL 精确列名改造（SELECT */RETURNING */JOIN SELECT t.*）已全面收尾，多轮安全加固（P0 漏洞修复、事务一致性、资源泄漏防御）已完成，前端 P2 setState 卸载泄漏已全量清零（累计 9 个页面），后端 P2 残留低风险 XSS 三项候选均已 sanitizeXss 清洗完毕。
+当前项目整体完成度 96%+，Phase 1（应急资源地图页、CD 流水线）与 Phase 2（8 项 P1 核心功能）已全部验收通过，当前处于 Phase 3 技术债清理与生产就绪验收阶段。后端测试覆盖率 95.4%+（1834+ 用例，截至 2026-07-27），前端构建零错误零警告，server/src 全目录 SQL 精确列名改造（SELECT */RETURNING */JOIN SELECT t.*）已全面收尾，多轮安全加固（P0 漏洞修复、事务一致性、资源泄漏防御）已完成，前端 P2 setState 卸载泄漏已全量清零（累计 9 个页面），后端 P2 残留低风险 XSS 三项候选均已 sanitizeXss 清洗完毕，routes 层 :id UUID 前置校验全量清零（覆盖 9 个 routes 模块），枚举型查询参数白名单补全（admin orders/verifications status、time-bank services type），service 层 map 模块经纬度 0 值误判 bug 已修复，无障碍假 label 修复全量清零（累计 58 处覆盖 11 个文件）。
 模块
 完善度
 已完成核心能力
@@ -167,7 +167,7 @@ Phase 3：质量优化与生产就绪（当前阶段）
 3. 运维侧确认：CD 流水线 GitHub Secrets 与 GHCR 登录态配置
 4. 高德地图 Key 配置后：即可启用完整地图能力（setTimeout onclick 清理问题已通过 useSafeTimeout + map.destroy() + 显式置 null ref 完整解决）
 5. 全页面样式精修、移动端适配统一（持续滚动）
-6. 滚动补全核心模块单元测试（覆盖率已达 95.4%+，测试用例 1728+）
+6. 滚动补全核心模块单元测试（覆盖率已达 95.4%+，测试用例 1834+）
 
 已剔除历史完成项：
 - 后端 P2 残留低风险 XSS 清洗候选（admin setSetting description / group-order cancel reason / ab-test recordEvent metadata 均已通过 sanitizeXss / sanitizeStringValues 清洗完毕，见 server/src/services/admin.service.ts:558 / group-order.service.ts:542 / ab-test.service.ts:106）
@@ -237,3 +237,6 @@ v1.4.2
 v1.4.3
 2026-07-25
 下一阶段重点剔除已完成项：后端 P2 残留低风险 XSS 三项候选（admin setSetting description / group-order cancel reason / ab-test recordEvent metadata 均已 sanitizeXss / sanitizeStringValues 清洗完毕）；前端 P2 setState 泄漏低概率场景全量清零（累计覆盖 9 个页面：Auth 4 件套 / Create 3 件套 / Profile / Admin/SystemConfig 异步提交路径均已加 mountedRef 守卫）。基线测试用例数从 1728+ 更新为 1770+（截至 2026-07-25）
+v1.4.4
+2026-07-27
+周评估同步：基线测试用例数从 1770+ 更新为 1834+（截至 2026-07-27）；本周新增完成 routes 层 :id UUID 前置校验全量清零（users/address/emergency/kitchen/skills/time-bank/admin/ai/notifications 9 个模块）+ 枚举型查询参数白名单补全（admin orders/verifications status、time-bank services type）+ service 层 falsy 误判修复（map.service regeo/geocode 经纬度 0 值误判，已改用 Number.isFinite）+ routes 层字符串查询参数长度校验补全（/map/geocode address 长度上限 200）+ 无障碍假 label 修复全量清零（累计 58 处覆盖 11 个文件，含 TimeBank/SharedKitchen/SkillExchange/Emergency/Admin 模块）+ setState 卸载泄漏收尾（Profile handleSaveAvatar + Admin SystemConfig handleSave/handleDelete）+ 移动端响应式适配收尾（SkillExchange/Detail、TimeBank/ServiceDetail、ImageUpload 预览网格）+ Admin 后台视觉一致性收尾（5 个列表页分页控件统一 + 6 个文件状态筛选按钮交互反馈统一）+ 非 Admin 模块样式精修（Profile/PointsDetail、SharedKitchen/Orders、SkillExchange/Orders、Emergency 3 处筛选按钮）
