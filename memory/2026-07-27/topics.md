@@ -1,12 +1,143 @@
 # 邻里圈项目迭代进度 - 2026-07-27
 
-## 本轮迭代摘要（2026-07-27 第 3 轮）
+## 本轮迭代摘要（2026-07-27 第 4 轮）
 
-承接 2026-07-27 第 2 轮 routes 层 category 长度校验补全 + service 层兜底校验复核，本轮进入 **Phase3 技术债清理** 下一站：service 层 sanitizeObject 清洗覆盖面扫描 + service 层事务边界复核。
+承接 2026-07-27 第 3 轮 routes 层 req.body 字段白名单校验扫描 + time-bank createDispute evidence 字段校验补全，本轮进入 **Phase3 技术债清理** 下一站：service 层 SQL 注入面扫描 + admin /export/:type orderType 白名单校验补全。
 
-本轮聚焦上轮 topics.md「下一轮建议」第 3 项「可选下一站」的 3.1 与 3.2 两个调研子项，共完成 2 个纯调研任务（无代码改动，无 commit）：
+本轮聚焦上轮 topics.md「下一轮建议」第 4.1 项「service 层 SQL 注入面扫描」，共完成 2 个任务（1 个纯调研 + 1 个代码改动）：
 
-### 已完成任务（2 个纯调研单元）
+### 已完成任务（2 个迭代单元）
+
+1. **service 层 SQL 注入面扫描**（纯调研，无代码改动）
+   - 调研目标：确认所有动态 SQL 构造（`${fields.join(', ')}` / `${conditions.join(' AND ')}` / `${cfg.table}` 等模板插值）的字段名均来自白名单常量或硬编码字符串，而非用户输入，防止 SQL 注入
+   - 调研方法：
+     - Grep 扫描 `server/src/services/**` 下所有 `${...}` 模板插值（230 处）
+     - 重点关注 `${fields.join}` / `${setClauses.join}` / `${updates.join}` UPDATE SET 拼接（9 处）+ `${conditions.join(' AND ')}` WHERE 拼接（13 处）+ `${config.table}` / `${cfg.table}` 表名插值（6 处）+ `'${truncUnit}'` 单字段插值（1 处）
+     - 逐一读取每处动态 SQL 的上下文，确认字段名来源
+   - 扫描结果（13 个 service 文件，22 处动态 SQL 构造，发现 1 处缺口）：
+
+     | service 文件 | 动态 SQL 类型 | 字段名来源 | 安全性 |
+     | --- | --- | --- | --- |
+     | address.service.ts | UPDATE SET `${fields.join}` | fieldMap 硬编码常量 | ✅ |
+     | admin.service.ts updateContent | UPDATE SET `${fields.join}` | config.editableFields 白名单 + isSqlParam type guard | ✅ |
+     | admin.service.ts EXPORT_CONFIG | `${cfg.table}` / `${cfg.buyerColumn}` | ORDER_EXPORT_SUB_CONFIG 硬编码（但 orderType 未校验） | ⚠️ 缺口 |
+     | emergency-resource.service.ts | UPDATE SET `${setClauses.join}` / INSERT `${fullColumns}` | pickResourceFields 白名单过滤 | ✅ |
+     | kitchen.service.ts | UPDATE SET `${updates.join}` | 硬编码字段名（if 分支） | ✅ |
+     | skill.service.ts | UPDATE SET `${fields.join}` | allowedFields 白名单 + isSqlParam type guard | ✅ |
+     | time-bank.service.ts updateService | UPDATE SET `${fields.join}` | UPDATABLE_SERVICE_FIELDS 白名单 + 可疑字段告警 | ✅ |
+     | user.service.ts | UPDATE SET `${fields.join}` | 硬编码字段名（if 分支） | ✅ |
+     | metrics-collector.service.ts | `DATE_TRUNC('${truncUnit}', ...)` | ALLOWED_GRANULARITIES 白名单 + 防御性回退 'day' | ✅ |
+     | audit.service.ts | WHERE `${conditions.join(' AND ')}` | 硬编码字段名（a.user_id/a.action 等） | ✅ |
+     | admin.service.ts getUsers/getContent/getReports | WHERE `${whereClause}` | 硬编码字段名（deleted_at/status/created_at 等） | ✅ |
+     | data-deletion.service.ts | WHERE `${whereClause}` | 硬编码字段名（dr.created_at/dr.status） | ✅ |
+     | emergency.service.ts | WHERE `${where}` | 硬编码字段名（er.deleted_at/er.type/er.status） | ✅ |
+     | group-order.service.ts | WHERE `${whereClause}` | 硬编码字段名（go.deleted_at/go.status） | ✅ |
+     | kitchen-order.service.ts | WHERE `${whereClause}` | 硬编码字段名（ko.user_id/ko.seller_id/ko.status） | ✅ |
+     | kitchen.service.ts | WHERE `${whereClause}` | 硬编码字段名（kp.type/kp.category/kp.title） | ✅ |
+     | metrics-collector.service.ts | WHERE `${whereClause}` | 硬编码字段名（name/recorded_at） | ✅ |
+     | emergency-resource.service.ts | WHERE `${whereClause}` | 硬编码字段名（deleted_at/type） | ✅ |
+
+   - 关键发现：
+     - **22 处动态 SQL 构造全部为白名单常量或硬编码字段名**：所有 UPDATE SET / WHERE / ORDER BY / 表名插值的字段名均来自硬编码常量或白名单过滤，无用户输入直接拼入 SQL
+     - **3 种白名单模式并存**：
+       - 模式 1：硬编码 fieldMap / if 分支（address/kitchen/user）—— 字段名直接写在代码里
+       - 模式 2：白名单常量数组 + isSqlParam type guard（admin.updateContent / skill / time-bank）—— 字段名来自 const 数组，type guard 校验值类型
+       - 模式 3：pickResourceFields 函数白名单过滤（emergency-resource）—— 字段名通过 ALLOWED_FIELDS.includes 校验
+     - **CONTENT_CONFIG / ORDER_EXPORT_SUB_CONFIG 表名硬编码**：admin.service.ts 的 `${config.table}` / `${cfg.table}` 来自硬编码常量对象，键为 ContentType/ExportType 枚举，值为字符串字面量
+     - **metrics truncUnit 白名单 + 防御性回退**：ALLOWED_GRANULARITIES 白名单校验，未匹配回退 'day'，避免 undefined 拼入 DATE_TRUNC
+     - **1 处缺口**：admin.service.ts EXPORT_CONFIG.orders buildQuery 中 `cfg = ORDER_EXPORT_SUB_CONFIG[orderType]`，若 orderType 为非法值（如 `evil`），cfg 为 undefined，后续 `cfg.buyerColumn` 抛 TypeError → 500 错误（非 SQL 注入，但属输入校验缺口）
+   - 验收：纯调研任务，无代码改动，无需 tsc/vitest/build 验收
+
+2. **admin /export/:type orderType 白名单校验补全**（代码改动 + 测试，commit 1561ff2）
+   - 调研目标：修复 service 层 SQL 注入面扫描发现的 1 处缺口 —— orderType 未校验导致非法值触发 500 错误
+   - 文件：
+     - `server/src/routes/admin.ts`（新增 ORDER_EXPORT_TYPES 常量 + handler 内加 orderType 白名单校验）
+     - `server/src/services/admin.service.ts`（buildQuery + getExportData orders 分支加 `if (!cfg) throw new BadRequestError` 防御性校验）
+     - `server/src/routes/__tests__/admin.test.ts`（新增 2 个用例：非法 orderType 返回 400 + 未传 orderType 正常通过）
+   - 改动点：
+     - **routes 层白名单前置拦截**：新增 `ORDER_EXPORT_TYPES = ['skill', 'kitchen', 'time_bank'] as const` 常量，与 service 层 ORDER_EXPORT_SUB_CONFIG 键集合对齐；handler 内 `if (orderType !== undefined && !ORDER_EXPORT_TYPES.includes(orderType as ...))` 校验，非法值返回 400 BAD_REQUEST
+     - **service 层防御性校验（defense-in-depth）**：buildQuery 内 `if (!cfg) throw new BadRequestError('无效的订单类型')`，防止 service 被其他入口调用时传入非法 orderType；getExportData orders 分支同样加校验，与 buildQuery 风格一致
+     - **与现有 type 校验风格对齐**：admin.ts /export/:type 路由已有 `if (!EXPORT_TYPES.includes(type as ExportType))` 手工校验，orderType 校验采用相同范式（手工 if + error 响应），保持代码风格一致
+   - 测试同步更新：
+     - 新增 2 个用例：
+       - `GET /export/orders 非法 orderType 返回 400，不调用 service`（验证 HTTP 400 + code=BAD_REQUEST + service 未被调用）
+       - `GET /export/orders 未传 orderType 时正常通过（回退 skill）`（验证 orderType 可选，未传时 service 层 filter.orderType || 'skill' 回退默认值）
+   - 验收：
+     - 后端 tsc --noEmit ✅ 通过
+     - 后端 vitest run 全量通过 ✅（81 文件 1845 用例，含新增 2 个）
+     - 前端无改动，基线保持
+
+### 本轮总结（2 个迭代单元）
+
+| 文件 | 改动类型 | commit |
+| --- | --- | --- |
+| （13 个 service 文件，22 处动态 SQL） | SQL 注入面扫描（纯调研，无改动） | 无 commit |
+| server/src/routes/admin.ts | 新增 ORDER_EXPORT_TYPES 常量 + handler 内 orderType 白名单校验 | 1561ff2 |
+| server/src/services/admin.service.ts | buildQuery + getExportData orders 分支加防御性校验 | 1561ff2 |
+| server/src/routes/__tests__/admin.test.ts | 新增非法 orderType 400 + 未传 orderType 正常用例 | 1561ff2 |
+
+### 验证结果（本轮）
+
+- 后端类型检查：✅ tsc --noEmit 通过
+- 后端单元测试：✅ 81 文件 1845 用例全量通过（含新增 2 个）
+- 前端构建：本轮无前端改动，基线保持
+
+### 关键技术决策（本轮）
+
+1. **SQL 注入面扫描的「全表盘点」方法论**：
+   - 不孤立检查已知动态 SQL，而是先 Grep 全量 `${...}` 模板插值（230 处），再分类筛选 UPDATE SET / WHERE / 表名 / ORDER BY 等高危模式
+   - 避免遗漏：仅检查「已知有动态 SQL 的位置」会漏掉「应该用参数化但用了插值」的位置；全表盘点可识别所有缺口
+   - 调研结论：22 处动态 SQL 构造全部为白名单常量或硬编码字段名，仅 1 处输入校验缺口（orderType 未校验）
+2. **3 种白名单模式的识别与归类**：
+   - 模式 1（硬编码 fieldMap / if 分支）：最简单，字段名直接写在代码里，适合字段数少且固定的场景（address 4 字段、user 2 字段、kitchen 9 字段）
+   - 模式 2（白名单常量数组 + isSqlParam type guard）：字段名来自 const 数组，type guard 校验值类型，适合字段数多且需统一校验的场景（admin.updateContent / skill 7 字段 / time-bank UPDATABLE_SERVICE_FIELDS）
+   - 模式 3（pickResourceFields 函数白名单过滤）：字段名通过 ALLOWED_FIELDS.includes 校验，适合动态字段集合需函数式提取的场景（emergency-resource）
+   - 三种模式均能保证字段名为受控常量，杜绝用户输入直接拼入 SQL
+3. **orderType 缺口的「非 SQL 注入」定性**：
+   - orderType 不直接拼入 SQL，而是通过 `ORDER_EXPORT_SUB_CONFIG[orderType]` 索引取硬编码值
+   - 非法 orderType 不会导致 SQL 注入，但会导致 cfg 为 undefined，后续 `cfg.buyerColumn` 抛 TypeError → 500 错误
+   - 属于输入校验缺口而非 SQL 注入漏洞，但同样需要修复（避免 500 错误 + 信息泄露）
+4. **orderType 校验的「routes 前置 + service 防御」双层范式**：
+   - routes 层白名单前置拦截：与 type 校验风格一致（手工 if + error 响应），非法值返回 400 而非 500
+   - service 层防御性校验：buildQuery + getExportData orders 分支均加 `if (!cfg) throw new BadRequestError`，防止 service 被其他入口调用时传入非法 orderType
+   - 与 time-bank createDispute evidence 校验范式一致：routes 层校验结构（isArray），service 层校验内容（validateImageUrls 白名单）
+5. **测试用例「未传 orderType 正常通过」的重要性**：
+   - 仅测非法值返回 400 无法验证「orderType 可选」语义
+   - 补测「未传 orderType 时正常通过（回退 skill）」确认 orderType 为可选参数，未传时 service 层 `filter.orderType || 'skill'` 回退默认值
+   - 与现有「GET /export/orders 透传 orderType 筛选参数」用例形成「合法值 / 非法值 / 未传」三态完整覆盖
+
+### Git 提交记录（本轮）
+
+- `1561ff2` fix: 补全 admin /export/:type orderType 白名单校验（routes 层前置拦截 + service 层防御性校验）
+
+### 遗留问题（本轮）
+
+无阻塞性遗留问题。剩余技术债清理项：
+
+1. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）：
+   - 5.1 P0 安全遗留：.env 历史 commit 含泄露凭据，需运维轮换 DB/Redis 密码与 JWT 密钥，并清理 git 历史
+   - 5.2 P1 生产就绪验收：全页面移动端适配、CD 流水线 GitHub Secrets、高德地图 Key 配置等运维侧确认
+
+### 下一轮建议（本轮）
+
+继续推进 Phase3 技术债清理：
+
+1. **service 层 SQL 注入面已确认无 SQL 注入风险**：本轮扫描确认 22 处动态 SQL 构造全部为白名单常量或硬编码字段名，仅 1 处输入校验缺口（orderType，已修复），无需继续扫描
+2. **可选下一站**（按优先级）：
+   - 2.1 routes 层 req.body 字段类型校验补全扫描：确认所有 POST/PUT 路由的 req.body 字段均有类型校验（isString/isInt/isBoolean/isArray），避免非法类型穿透到 service 层
+   - 2.2 service 层错误处理边界复核：抽查关键 service 的 catch 块，确认错误类型正确（NotFoundError/PermissionDeniedError/BadRequestError 等），避免抛出 500 错误
+   - 2.3 routes 层 req.params 字段校验扫描：确认所有带路径参数的路由均使用 uuidParam 或 enumParam 前置校验，避免非法 id 穿透到 service 层
+3. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）
+
+---
+
+## 上轮迭代摘要（2026-07-27 第 3 轮）
+
+承接 2026-07-27 第 2 轮 routes 层 category 长度校验补全 + service 层兜底校验复核，本轮进入 **Phase3 技术债清理** 下一站：service 层 sanitizeObject 清洗覆盖面扫描 + service 层事务边界复核 + routes 层 req.body 字段白名单校验扫描。
+
+本轮聚焦上轮 topics.md「下一轮建议」第 3 项「可选下一站」的 3.1、3.2、3.3 三个子项，共完成 3 个任务（2 个纯调研 + 1 个代码改动）：
+
+### 已完成任务（3 个迭代单元）
 
 1. **service 层 sanitizeObject 清洗覆盖面扫描**（纯调研，无代码改动）
    - 调研目标：确认所有用户输入的富文本字段（title/description/content/address/name 等）入库前均已调用 sanitizeObject/sanitizeXss 清洗，防止存储型 XSS
@@ -78,17 +209,51 @@
      - **emergency.service.ts createFalseReport 是单条 INSERT 无需事务**：举报记录仅 INSERT 一条记录，无关联更新，无需事务
    - 验收：纯调研任务，无代码改动，无需 tsc/vitest/build 验收
 
-### 本轮总结（2 个调研单元）
+3. **routes 层 req.body 字段白名单校验扫描 + time-bank createDispute evidence 字段校验补全**（代码改动 + 测试，commit 52ef56f）
+   - 调研目标：确认所有 POST/PUT 路由的 req.body 字段均经过 express-validator 校验，避免越权字段写入（如 is_admin、credit_balance 等敏感字段）
+   - 调研方法：
+     - Grep 扫描 `server/src/routes/**` 下所有 `req.body` 用法（82 处）
+     - 逐一比对每个 req.body 字段解构与 validate 中间件的 body() 校验链，识别未校验字段
+   - 扫描结果（11 个 routes 文件，发现 1 处缺口）：
+     - **address.ts / auth.ts / emergency.ts / kitchen.ts / skills.ts / time-bank.ts / users.ts / admin.ts / ab-test.ts / ai.ts / reports.ts / messages.ts**：大部分 req.body 字段已通过 body() 校验链覆盖
+     - **admin.ts:334 updateContent**：req.body 整体透传，但 service 层有 `config.editableFields` 白名单 + `isSqlParam` type guard + `sanitizeObject` 三重防御，安全性足够，无需 routes 层重复校验
+     - **emergency.ts:277/291 create/update resource**：req.body 整体透传，但 service 层有 `pickResourceFields` 白名单过滤，安全性足够
+     - **time-bank.ts:487 createDispute**：**发现缺口** —— `evidence` 字段在 req.body 中解构后直接传入 service 层，routes 层未校验 isArray，service 层未校验 validateImageUrls
+   - 缺口修复（time-bank createDispute evidence 字段）：
+     - 文件：
+       - `server/src/routes/time-bank.ts`（POST /disputes 新增 `body('evidence').optional().isArray()` 校验）
+       - `server/src/services/time-bank.service.ts`（createDispute 新增 `validateImageUrls(evidence)` 调用）
+       - `server/src/routes/__tests__/time-bank.test.ts`（新增 422 防御用例 + 修正现有用例 evidence 值为合法 /uploads/ 路径）
+       - `server/src/services/__tests__/time-bank.service.test.ts`（新增 2 个用例：URL 白名单拦截 + 空数组透传）
+     - 改动点：
+       - **routes 层 isArray 前置校验**：与 createService images 字段范式对齐，routes 层只校验结构（数组），service 层校验内容（URL 白名单）
+       - **service 层 validateImageUrls 白名单校验**：evidence 是用户上传的图片 URL 数组，未校验会允许外链任意域名图片，可能被恶意用户用于追踪访问者 IP 或注入恶意内容；validateImageUrls 强制仅允许 /uploads/ 相对路径或白名单 HTTPS 域名
+       - **现有测试用例修正**：原「正常创建争议」用例的 evidence 值 `['ev-1']` 不是合法图片 URL（不以 /uploads/ 开头，也不是 HTTPS URL），加了 validateImageUrls 后会失败，修正为 `['/uploads/ev-1.png']`
+     - 测试同步更新：
+       - routes 层新增 1 个 422 防御用例：`evidence 非数组时返回 422，不调用 service`（验证 HTTP 422 + service 未被调用）
+       - service 层新增 2 个用例：
+         - `evidence URL 不合法时抛 BadRequestError，不写入 DB`（验证仅 SELECT 被调用，INSERT 未被调用）
+         - `evidence 为空数组时正常通过`（验证 validateImageUrls 对空数组直接返回，不触发校验）
+     - 验收：
+       - 后端 tsc --noEmit ✅ 通过
+       - 后端 vitest run 全量通过 ✅（81 文件 1843 用例，含新增 3 个）
+       - 前端无改动，基线保持
+
+### 本轮总结（3 个迭代单元）
 
 | 文件 | 改动类型 | commit |
 | --- | --- | --- |
 | （22 个 service 文件） | sanitizeObject 清洗覆盖面扫描（纯调研，无改动） | 无 commit |
 | （11 个 service 文件） | 事务边界复核（纯调研，无改动） | 无 commit |
+| server/src/routes/time-bank.ts | POST /disputes 新增 evidence isArray 校验 | 52ef56f |
+| server/src/services/time-bank.service.ts | createDispute 新增 validateImageUrls 校验 | 52ef56f |
+| server/src/routes/__tests__/time-bank.test.ts | 新增 422 防御用例 + 修正现有用例 evidence 值 | 52ef56f |
+| server/src/services/__tests__/time-bank.service.test.ts | 新增 URL 白名单拦截 + 空数组透传用例 | 52ef56f |
 
 ### 验证结果（本轮）
 
-- 后端类型检查：✅ tsc --noEmit 通过（沿用上轮基线，本轮无代码改动）
-- 后端单元测试：✅ 81 文件 1840 用例全量通过（沿用上轮基线，本轮无代码改动）
+- 后端类型检查：✅ tsc --noEmit 通过
+- 后端单元测试：✅ 81 文件 1843 用例全量通过（含新增 3 个）
 - 前端构建：本轮无前端改动，基线保持
 
 ### 关键技术决策（本轮）
@@ -101,24 +266,28 @@
    - 单条 INSERT/UPDATE 天然原子，无需事务；事务的核心价值在多 SQL 写操作的一致性
    - 复核聚焦「2 条及以上写操作」的方法：forceCancelSkillOrder（UPDATE order+UPDATE users+INSERT transactions）、createGroupOrder（INSERT group_orders+INSERT participants+UPDATE count）等
    - 复核结论：42 处 transaction 调用覆盖所有多 SQL 写操作，行锁设计完善，credit.service.ts 采用 client 注入模式避免嵌套事务
-3. **纯调研任务的「双清洗 + 行锁」关键发现**：
-   - create + update 入口双清洗：kitchen.service.ts、skill.service.ts、emergency-resource.service.ts、time-bank.service.ts、address.service.ts 均 create 和 update 双入口清洗，避免 PUT 路由绕过清洗
-   - 行锁防双花：admin.service.ts 强制取消订单、credit.service.ts 积分扣减、emergency.service.ts 举报审核均使用 `SELECT ... FOR UPDATE`，与 transaction 配合保证并发安全
-4. **纯调研任务的进度沉淀价值**：
-   - 两轮调研确认 service 层 sanitize 清洗与事务边界均已完整覆盖，无技术债缺口
-   - 调研结论记录于 topics.md，作为后续迭代的「安全保障基线」，避免后续迭代误以为「service 层有缺口」而重复扫描
-   - 同时识别「无需事务」「无需清洗」的合法场景（单条 INSERT、内部生成字段），避免过度工程化
+3. **routes 层 req.body 字段白名单校验的「service 层兜底」识别**：
+   - admin.ts:334 updateContent 与 emergency.ts:277/291 create/update resource 虽 routes 层未做完整 body 校验，但 service 层有白名单 + type guard + sanitize 三重防御，安全性足够
+   - 避免过度工程化：动态字段场景（4 种内容类型 × 7-8 字段）在 routes 层写白名单会冗长且重复维护，service 层兜底是合理设计
+   - time-bank.ts:487 createDispute evidence 是真实缺口：service 层无白名单过滤，evidence 数组直接写入 DB，必须补 routes + service 双层校验
+4. **evidence 校验的「routes 结构 + service 内容」分层范式**：
+   - 与 createService images 字段范式对齐：routes 层 `body('evidence').optional().isArray()` 校验结构，service 层 `validateImageUrls(evidence)` 校验内容
+   - routes 层只校验结构避免重复维护 URL 白名单（白名单在 validateImageUrls 内通过 env.IMAGES_WHITELIST_DOMAINS 配置）
+   - service 层校验内容确保所有图片 URL 入口（create/update/dispute）统一走 validateImageUrls
+5. **测试用例「不调用 service」与「不写入 DB」双层断言**：
+   - routes 层 422 用例：`expect(mockCreateDispute).not.toHaveBeenCalled()` 验证前置拦截生效
+   - service 层 URL 白名单用例：`expect(mockQuery).toHaveBeenCalledTimes(1)` 验证仅 SELECT 被调用，INSERT 未被调用
+   - 与上轮 category 长度校验的测试范式一致，确保校验中间件确实在路由层短路返回
 
 ### Git 提交记录（本轮）
 
-无 commit（两个任务均为纯调研，无代码改动）
+- `52ef56f` fix: 补全 time-bank createDispute evidence 字段校验（routes 层 isArray + service 层 validateImageUrls 白名单）
 
 ### 遗留问题（本轮）
 
 无阻塞性遗留问题。剩余技术债清理项：
 
-1. **routes 层 req.body 字段白名单校验扫描**（下一轮推进）：确认所有 POST/PUT 路由的 req.body 字段均经过 express-validator 校验，避免越权字段写入
-2. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）：
+1. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）：
    - 5.1 P0 安全遗留：.env 历史 commit 含泄露凭据，需运维轮换 DB/Redis 密码与 JWT 密钥，并清理 git 历史
    - 5.2 P1 生产就绪验收：全页面移动端适配、CD 流水线 GitHub Secrets、高德地图 Key 配置等运维侧确认
 
@@ -126,10 +295,14 @@
 
 继续推进 Phase3 技术债清理：
 
-1. **routes 层 req.body 字段白名单校验扫描**：Grep 扫描所有 POST/PUT 路由的 `req.body` 用法，确认字段均经过 express-validator 校验，避免越权字段写入（如 is_admin、credit_balance 等敏感字段）
-2. **service 层 sanitize 清洗覆盖面已确认无缺口**：本轮扫描确认 22 个 service 文件全部覆盖，无需继续扫描
-3. **service 层事务边界已确认无缺口**：本轮复核确认 42 处 transaction 调用覆盖所有多 SQL 写操作，无需继续复核
-4. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）
+1. **service 层 sanitize 清洗覆盖面已确认无缺口**：本轮扫描确认 22 个 service 文件全部覆盖，无需继续扫描
+2. **service 层事务边界已确认无缺口**：本轮复核确认 42 处 transaction 调用覆盖所有多 SQL 写操作，无需继续复核
+3. **routes 层 req.body 字段白名单校验已收尾**：本轮扫描确认 11 个 routes 文件除 time-bank createDispute evidence（已修复）外全部覆盖，admin.updateContent / emergency.resource 等 req.body 整体透传场景由 service 层白名单兜底，无需继续补全
+4. **可选下一站**（按优先级）：
+   - 4.1 service 层 SQL 注入面扫描：抽查关键 service 的动态 SQL 构造（如 admin.updateContent 的 `${fields.join(', ')}`、address.update 的 `${fields.join(', ')}`），确认字段名均来自白名单常量而非用户输入
+   - 4.2 routes 层 req.body 字段类型校验补全扫描：确认所有 POST/PUT 路由的 req.body 字段均有类型校验（isString/isInt/isBoolean/isArray），避免非法类型穿透到 service 层
+   - 4.3 service 层错误处理边界复核：抽查关键 service 的 catch 块，确认错误类型正确（NotFoundError/PermissionDeniedError/BadRequestError 等），避免抛出 500 错误
+5. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）
 
 ---
 
