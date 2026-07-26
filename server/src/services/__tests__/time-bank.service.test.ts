@@ -836,7 +836,8 @@ describe('time-bank.service createDispute', () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ provider_id: 'user-2', requester_id: 'user-1' }] });
     mockQuery.mockResolvedValueOnce({ rows: [{ id: 'dispute-1', order_id: 'order-1', initiator_id: 'user-1', reason: '质量问题' }] });
 
-    const result = await timeBankService.createDispute('order-1', 'user-1', '质量问题', '详细描述', ['ev-1']);
+    // evidence 使用合法的 /uploads/ 相对路径，避免触发 validateImageUrls 白名单校验
+    const result = await timeBankService.createDispute('order-1', 'user-1', '质量问题', '详细描述', ['/uploads/ev-1.png']);
 
     expect(result.id).toBe('dispute-1');
     expect(result.reason).toBe('质量问题');
@@ -857,6 +858,29 @@ describe('time-bank.service createDispute', () => {
     const params = insertCall[1] as unknown[];
     expect(params[2]).not.toContain('<script>');
     expect(params[2]).toContain('正常原因');
+  });
+
+  it('evidence URL 不合法时抛 BadRequestError，不写入 DB', async () => {
+    // 设计原因：evidence 是用户上传的图片 URL 数组，必须走 validateImageUrls 白名单校验，
+    // 非法 URL（非 /uploads/ 前缀且非 HTTPS 白名单域名）应前置拦截，避免恶意外链图片入库
+    mockQuery.mockResolvedValueOnce({ rows: [{ provider_id: 'user-2', requester_id: 'user-1' }] });
+
+    await expect(
+      timeBankService.createDispute('order-1', 'user-1', '质量问题', '描述', ['https://evil.com/x.png']),
+    ).rejects.toThrow(BadRequestError);
+
+    // 验证仅 SELECT 被调用（orderResult），INSERT 未被调用
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it('evidence 为空数组时正常通过（无需校验空数组）', async () => {
+    // 设计原因：validateImageUrls 对空数组直接返回，不触发校验；空数组是合法的「无证据」场景
+    mockQuery.mockResolvedValueOnce({ rows: [{ provider_id: 'user-2', requester_id: 'user-1' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'dispute-1', reason: '质量问题' }] });
+
+    const result = await timeBankService.createDispute('order-1', 'user-1', '质量问题', '描述', []);
+
+    expect(result.id).toBe('dispute-1');
   });
 });
 

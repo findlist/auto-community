@@ -488,6 +488,9 @@ router.post('/disputes', authenticate, auditMiddleware('CREATE_TIME_DISPUTE', { 
   body('order_id').notEmpty().withMessage('请提供订单ID'),
   body('reason').notEmpty().isLength({ max: 100 }).withMessage('纠纷原因不能为空且不能超过100字符'),
   body('description').optional().isLength({ max: 1000 }).withMessage('纠纷描述不能超过1000字符'),
+  // evidence 必须为数组：证据图片 URL 列表，元素 URL 合法性由 service 层 validateImageUrls 校验白名单域名
+  // 设计原因：与 createService images 字段范式对齐，routes 层只校验结构（数组），service 层校验内容（URL 白名单）
+  body('evidence').optional().isArray().withMessage('证据图片必须为数组'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateDisputeBody>, res: Response) => {
   const { order_id, reason, description, evidence } = req.body;
   const result = await timeBankService.createDispute(order_id, req.user!.id, reason, description, evidence);

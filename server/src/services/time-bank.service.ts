@@ -1163,6 +1163,14 @@ async function createDispute(
   // 设计原因：与 skill-order.service disputeOrder 行为对齐
   const safeReason = sanitizeXss(reason) as string;
 
+  // 证据图片 URL 白名单校验：与 createService images 字段行为对齐
+  // 设计原因：evidence 是用户上传的图片 URL 数组，未校验会允许外链任意域名图片，
+  // 可能被恶意用户用于追踪访问者 IP 或注入恶意内容；validateImageUrls 强制仅允许
+  // /uploads/ 相对路径或白名单 HTTPS 域名，从源头阻断非法外链
+  if (evidence !== undefined) {
+    validateImageUrls(evidence);
+  }
+
   const result = await query(
     `INSERT INTO service_disputes (order_id, initiator_id, reason, evidence)
      VALUES ($1, $2, $3, $4) RETURNING ${SERVICE_DISPUTE_COLUMNS}`,

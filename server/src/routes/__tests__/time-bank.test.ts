@@ -618,10 +618,22 @@ describe('time-bank 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/disputes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ order_id: 'order-1', reason: '未提供服务', description: '描述', evidence: ['url'] }),
+        body: JSON.stringify({ order_id: 'order-1', reason: '未提供服务', description: '描述', evidence: ['/uploads/ev-1.png'] }),
       });
       expect(res.status).toBe(201);
-      expect(mockCreateDispute).toHaveBeenCalledWith('order-1', 'user-uuid-001', '未提供服务', '描述', ['url']);
+      expect(mockCreateDispute).toHaveBeenCalledWith('order-1', 'user-uuid-001', '未提供服务', '描述', ['/uploads/ev-1.png']);
+    });
+
+    it('evidence 非数组时返回 422，不调用 service', async () => {
+      // 设计原因：evidence 必须为图片 URL 数组，routes 层 isArray 前置校验拦截非数组值，
+      // 避免非法结构穿透到 service 层导致 pg 序列化异常
+      const res = await fetch(`${baseUrl}/disputes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ order_id: 'order-1', reason: '未提供服务', evidence: 'not-array' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockCreateDispute).not.toHaveBeenCalled();
     });
   });
 
