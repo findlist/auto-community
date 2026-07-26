@@ -1016,6 +1016,28 @@ describe('admin 路由集成测试', () => {
       );
     });
 
+    it('GET /export/orders 非法 orderType 返回 400，不调用 service', async () => {
+      // 设计原因：orderType 通过 req.query 传入，TS 仅声明联合类型但运行时无校验，
+      // 非法值会导致 ORDER_EXPORT_SUB_CONFIG[orderType] 返回 undefined，后续 cfg.buyerColumn 抛 TypeError → 500。
+      // routes 层白名单前置拦截，避免非法值穿透到 service 层
+      const res = await fetch(`${baseUrl}/export/orders?orderType=evil`);
+      expect(res.status).toBe(400);
+      const data = (await res.json()) as Record<string, unknown>;
+      expect(data.code).toBe('BAD_REQUEST');
+      expect(mockGetExportData).not.toHaveBeenCalled();
+    });
+
+    it('GET /export/orders 未传 orderType 时正常通过（回退 skill）', async () => {
+      // 设计原因：orderType 可选，未传时 service 层 filter.orderType || 'skill' 回退默认值
+      mockGetExportData.mockResolvedValue({ columns: [], rows: [] });
+      const res = await fetch(`${baseUrl}/export/orders`);
+      expect(res.status).toBe(200);
+      expect(mockGetExportData).toHaveBeenCalledWith(
+        'orders',
+        { orderType: undefined, status: undefined, startDate: undefined, endDate: undefined },
+      );
+    });
+
     it('GET /export/users CSV 字段含特殊字符时转义', async () => {
       mockGetExportData.mockResolvedValue({
         columns: [{ field: 'nickname', header: '昵称' }],

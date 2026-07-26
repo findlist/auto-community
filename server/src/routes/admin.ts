@@ -583,6 +583,12 @@ router.put('/deletion-requests/:id', validate([
 const EXPORT_TYPES = ['users', 'orders', 'reports', 'audit-logs'] as const;
 type ExportType = typeof EXPORT_TYPES[number];
 
+// 订单导出子类型白名单：与 service 层 ORDER_EXPORT_SUB_CONFIG 键集合对齐
+// 设计原因：filter.orderType 通过 req.query 传入，TS 仅声明为联合类型但运行时无校验，
+// 非法值会导致 ORDER_EXPORT_SUB_CONFIG[orderType] 返回 undefined，后续 cfg.buyerColumn 抛 TypeError → 500。
+// routes 层白名单前置拦截，避免非法值穿透到 service 层
+const ORDER_EXPORT_TYPES = ['skill', 'kitchen', 'time_bank'] as const;
+
 // CSV 字段转义：含逗号/引号/换行时用双引号包裹，内部双引号转义为两个双引号
 function escapeCsvField(value: unknown): string {
   if (value === null || value === undefined) return '';
@@ -644,6 +650,14 @@ router.get('/export/:type', auditMiddleware('EXPORT_DATA', { resourceType: 'expo
 
   // 收窄 query 类型：ParsedQs → string | undefined，避免解构变量类型泛滥
   const { orderType, status, startDate, endDate } = req.query as Record<string, string | undefined>;
+
+  // orderType 白名单校验：仅 type=orders 时生效，但此处统一校验避免穿透到 service 层
+  // 设计原因：与 type 校验风格一致（手工 if + error 响应），非法值返回 400 而非 500
+  if (orderType !== undefined && !ORDER_EXPORT_TYPES.includes(orderType as (typeof ORDER_EXPORT_TYPES)[number])) {
+    error(res, '无效的订单类型，支持：skill/kitchen/time_bank', 'BAD_REQUEST');
+    return;
+  }
+
   const { columns, rows } = await adminService.getExportData(type as ExportType, {
     orderType: orderType as 'skill' | 'kitchen' | 'time_bank' | undefined,
     status: status as string | undefined,

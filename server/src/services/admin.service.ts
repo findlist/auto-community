@@ -1156,6 +1156,9 @@ const EXPORT_CONFIG: Record<ExportType, ExportConfig> = {
     buildQuery: (filter) => {
       const orderType = filter.orderType || 'skill';
       const cfg = ORDER_EXPORT_SUB_CONFIG[orderType];
+      // 防御性校验：routes 层已做白名单拦截，此处兜底防止 service 被其他入口调用时
+      // 传入非法 orderType 导致 cfg 为 undefined，后续 cfg.buyerColumn 抛 TypeError → 500
+      if (!cfg) throw new BadRequestError('无效的订单类型');
       const conditions: string[] = ['1=1'];
       const params: SqlParam[] = [];
       let paramIndex = 1;
@@ -1281,6 +1284,8 @@ async function getExportData(type: ExportType, filter: ExportFilter) {
   if (type === 'orders') {
     const orderType = filter.orderType || 'skill';
     const cfg = ORDER_EXPORT_SUB_CONFIG[orderType];
+    // 防御性校验：与 buildQuery 内校验一致，防止未来 buildQuery 改动后 cfg 为 undefined 穿透到此
+    if (!cfg) throw new BadRequestError('无效的订单类型');
     // 行数据按 QueryResultRow 收窄，字段访问统一从 row 取
     const orderRows = rows as QueryResultRow[];
     return {
