@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
-import { validate, getPagination, uuidParam } from '../middleware/validator';
+import { validate, getPagination, uuidParam, queryStringLength } from '../middleware/validator';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
 import { kitchenService } from '../services/kitchen.service';
@@ -175,6 +175,8 @@ router.post('/posts',
  *                       type: boolean
  */
 router.get('/posts',
+  // keyword 长度上限 100 字符：防止超长搜索关键词穿透到 service 层拼入 ILIKE 查询，造成 DB 全表扫描压力
+  validate([queryStringLength('keyword', 100)]),
   asyncHandler(async (req: Request, res: Response) => {
     const { page, pageSize } = getPagination(req);
     // 收窄 query 类型：ParsedQs → string | undefined，避免解构变量类型泛滥

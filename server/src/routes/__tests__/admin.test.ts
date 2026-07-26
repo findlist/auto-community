@@ -256,6 +256,14 @@ describe('admin 路由集成测试', () => {
       expect(mockGetUsers).toHaveBeenCalledWith(1, 20, '张三');
     });
 
+    it('GET /users search 超长（>100 字符）返回 422，不调用 service', async () => {
+      // 设计原因：验证 queryStringLength 前置拦截，避免超长关键词穿透到 service 层 ILIKE 查询
+      const longSearch = 'a'.repeat(101);
+      const res = await fetch(`${baseUrl}/users?search=${longSearch}`);
+      expect(res.status).toBe(422);
+      expect(mockGetUsers).not.toHaveBeenCalled();
+    });
+
     it('PUT /users/:id/ban 封禁成功', async () => {
       mockBanUser.mockResolvedValue({ id: USER_UUID, status: 'banned' });
       const res = await fetch(`${baseUrl}/users/${USER_UUID}/ban`, { method: 'PUT', headers: authHeader });

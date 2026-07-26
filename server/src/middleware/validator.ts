@@ -147,3 +147,25 @@ export function enumQuery(queryName: string, allowed: readonly string[], optiona
   if (optional) chain.optional();
   return chain.withMessage(`${queryName} 必须是以下值之一: ${allowed.join(', ')}`);
 }
+
+/**
+ * 生成字符串查询参数长度上限校验链。
+ *
+ * 设计原因：routes 层多处直接解构 req.query.keyword/search 等字符串参数传入 service 层，
+ * 原代码无长度上限。超长文本可能引发 URL 过长、内存占用激增或被拼接进第三方 API（如高德地图）
+ * 导致请求超时，属于低门槛的 DoS 向量。前置长度校验在路由层 422 拦截，
+ * 与 enumQuery 同属「输入防御前置」策略，让 service 层专注业务逻辑而非参数边界清洗。
+ *
+ * 默认 optional=true：查询参数天然可选，未传时不触发校验，由 service 层按 undefined 处理。
+ * 默认 max=100：覆盖常见搜索关键词/地址场景（中文姓名 ≤ 10 字符，最长中国地址约 50 字符，
+ * 100 字符既保留国际化冗余又足以拦截明显异常的超长文本）。
+ *
+ * @param queryName 查询参数名
+ * @param max 最大长度，默认 100
+ * @param optional 是否可选（默认 true，查询参数通常可选）
+ */
+export function queryStringLength(queryName: string, max = 100, optional = true): ValidationChain {
+  const chain = query(queryName).isLength({ max });
+  if (optional) chain.optional();
+  return chain.withMessage(`${queryName} 长度不能超过 ${max} 字符`);
+}

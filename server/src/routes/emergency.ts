@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { body, query } from 'express-validator';
+import { body } from 'express-validator';
 import { authenticate, optionalAuth, requireRole } from '../middleware/auth';
 import { createPostLimiter } from '../middleware/rateLimiter';
-import { validate, getPagination, uuidParam } from '../middleware/validator';
+import { validate, getPagination, uuidParam, queryStringLength } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
 // 审计中间件：覆盖应急场景全部敏感操作（响应求助/状态变更/举报与审核/资源 CRUD）的审计追踪
 import { auditMiddleware } from '../middleware/auditLog';
@@ -306,7 +306,7 @@ router.delete('/resources/:id', authenticate, requireRole('admin'), validate([uu
 // address 长度上限 200 字符：防止超长文本攻击高德 API（中国最长地址约 50 字符，200 字符覆盖国际化场景）
 // 设计原因：原代码无长度限制，超长 address 会直接拼入高德 API URL，可能导致 URL 过长或请求超时
 router.get('/map/geocode', authenticate, validate([
-  query('address').optional().isLength({ max: 200 }).withMessage('地址长度不能超过 200 字符'),
+  queryStringLength('address', 200),
 ]), asyncHandler(async (req: Request, res: Response) => {
   // 收窄 query 类型：ParsedQs → string | undefined，避免解构变量类型泛滥
   const { address } = req.query as Record<string, string | undefined>;

@@ -3,7 +3,7 @@ import { authenticate, requireRole } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 // validate 包装 express-validator 校验链，校验失败时标准化返回 422
 // 设计原因：仅传入 body() 数组不会自动拦截非法请求，必须经 validate 检查 validationResult 后短路返回
-import { validate, getPagination, uuidParam } from '../middleware/validator';
+import { validate, getPagination, uuidParam, queryStringLength } from '../middleware/validator';
 import { body } from 'express-validator';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
@@ -114,14 +114,17 @@ router.get('/recommend', authenticate, asyncHandler(async (req: Request, res: Re
  *                     hasNext:
  *                       type: boolean
  */
-router.get('/posts', asyncHandler(async (req: Request, res: Response) => {
-  // 设计原因：req.query 字段类型为 string | ParsedQs | 数组，service 层 SkillPostFilters 要求 string，
-  // 此处显式收窄为 string | undefined，避免 ParsedQs 对象静默流入 SQL 参数
-  const { type, category, keyword } = req.query as Record<string, string | undefined>;
-  const { page, pageSize } = getPagination(req);
-  const result = await skillService.getPostList({ type, category, keyword }, page, pageSize);
-  paginated(res, result.list, result.total, result.page, result.pageSize);
-}));
+router.get('/posts',
+  // keyword 长度上限 100 字符：防止超长搜索关键词穿透到 service 层拼入 ILIKE 查询，造成 DB 全表扫描压力
+  validate([queryStringLength('keyword', 100)]),
+  asyncHandler(async (req: Request, res: Response) => {
+    // 设计原因：req.query 字段类型为 string | ParsedQs | 数组，service 层 SkillPostFilters 要求 string，
+    // 此处显式收窄为 string | undefined，避免 ParsedQs 对象静默流入 SQL 参数
+    const { type, category, keyword } = req.query as Record<string, string | undefined>;
+    const { page, pageSize } = getPagination(req);
+    const result = await skillService.getPostList({ type, category, keyword }, page, pageSize);
+    paginated(res, result.list, result.total, result.page, result.pageSize);
+  }));
 
 // GET /api/skills/posts/:id - 获取技能帖子详情
 // uuidParam 前置校验：与 users/address/emergency/kitchen 路由范式对齐，非法 id 在路由层 422 拦截

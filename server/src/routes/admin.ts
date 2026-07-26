@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { body } from 'express-validator';
 import { authenticate, requireRole } from '../middleware/auth';
-import { validate, getPagination, uuidParam, enumParam, enumQuery } from '../middleware/validator';
+import { validate, getPagination, uuidParam, enumParam, enumQuery, queryStringLength } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
 import { auditMiddleware } from '../middleware/auditLog';
 import { adminService } from '../services/admin.service';
@@ -99,7 +99,10 @@ interface UpdateSettingBody {
 // ===================== 用户管理 =====================
 
 // 用户列表
-router.get('/users', asyncHandler(async (req: Request, res: Response) => {
+// search 长度上限 100 字符：防止超长搜索关键词穿透到 service 层拼入 ILIKE 查询，造成 DB 全表扫描压力
+router.get('/users', validate([
+  queryStringLength('search', 100),
+]), asyncHandler(async (req: Request, res: Response) => {
   const { page, pageSize } = getPagination(req);
   const search = req.query.search as string | undefined;
   const result = await adminService.getUsers(page, pageSize, search);

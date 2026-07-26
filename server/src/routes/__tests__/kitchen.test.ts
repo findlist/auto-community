@@ -294,6 +294,14 @@ describe('kitchen 路由集成测试', () => {
         20,
       );
     });
+
+    it('keyword 超长（>100 字符）返回 422，不调用 service', async () => {
+      // 设计原因：验证 queryStringLength 前置拦截，避免超长关键词穿透到 service 层 ILIKE 查询
+      const longKeyword = 'a'.repeat(101);
+      const res = await fetch(`${baseUrl}/posts?keyword=${longKeyword}`);
+      expect(res.status).toBe(422);
+      expect(mockKitchenGetList).not.toHaveBeenCalled();
+    });
   });
 
   // ===================== GET /posts/:id =====================
