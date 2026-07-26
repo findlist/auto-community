@@ -116,7 +116,11 @@ router.get('/recommend', authenticate, asyncHandler(async (req: Request, res: Re
  */
 router.get('/posts',
   // keyword 长度上限 100 字符：防止超长搜索关键词穿透到 service 层拼入 ILIKE 查询，造成 DB 全表扫描压力
-  validate([queryStringLength('keyword', 100)]),
+  // category 长度上限 50 字符：对齐 skill_posts.category VARCHAR(50) schema，超长值无法命中索引属无效查询
+  validate([
+    queryStringLength('keyword', 100),
+    queryStringLength('category', 50),
+  ]),
   asyncHandler(async (req: Request, res: Response) => {
     // 设计原因：req.query 字段类型为 string | ParsedQs | 数组，service 层 SkillPostFilters 要求 string，
     // 此处显式收窄为 string | undefined，避免 ParsedQs 对象静默流入 SQL 参数

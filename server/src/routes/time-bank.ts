@@ -5,7 +5,7 @@ import { authenticate, optionalAuth } from '../middleware/auth';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
 import { success, paginated, created, updated, cursorPaginated } from '../utils/response';
-import { getPagination, validate, uuidParam, enumQuery } from '../middleware/validator';
+import { getPagination, validate, uuidParam, enumQuery, queryStringLength } from '../middleware/validator';
 import { timeBankService } from '../services/time-bank.service';
 import { aiService, processPostPipeline } from '../services/ai.service';
 import { logger } from '../utils/logger';
@@ -153,8 +153,10 @@ router.get('/recommend', authenticate, asyncHandler(async (req, res) => {
  */
 router.get('/services', optionalAuth, validate([
   // type 白名单：与 time_bank_services.type 字段对齐，非法值 422 拦截避免静默返回空列表
-  // category 为自由文本（用户填写分类名），不做白名单
+  // category 长度上限 50 字符：对齐 time_services.category VARCHAR(50) schema，超长值无法命中索引属无效查询
+  // （category 为自由文本，不做白名单，仅限长度）
   enumQuery('type', TIME_SERVICE_TYPES),
+  queryStringLength('category', 50),
 ]), asyncHandler(async (req, res) => {
   const { page, pageSize } = getPagination(req);
   const filters = { type: req.query.type as string, category: req.query.category as string };

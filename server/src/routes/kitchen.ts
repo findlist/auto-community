@@ -176,7 +176,11 @@ router.post('/posts',
  */
 router.get('/posts',
   // keyword 长度上限 100 字符：防止超长搜索关键词穿透到 service 层拼入 ILIKE 查询，造成 DB 全表扫描压力
-  validate([queryStringLength('keyword', 100)]),
+  // category 长度上限 50 字符：对齐 kitchen_posts.category VARCHAR(50) schema，超长值无法命中索引属无效查询
+  validate([
+    queryStringLength('keyword', 100),
+    queryStringLength('category', 50),
+  ]),
   asyncHandler(async (req: Request, res: Response) => {
     const { page, pageSize } = getPagination(req);
     // 收窄 query 类型：ParsedQs → string | undefined，避免解构变量类型泛滥

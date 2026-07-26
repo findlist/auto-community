@@ -247,6 +247,14 @@ describe('time-bank 路由集成测试', () => {
       expect(res.status).toBe(422);
       expect(mockGetServiceList).not.toHaveBeenCalled();
     });
+
+    it('category 超长（>50 字符）返回 422，不调用 service', async () => {
+      // 设计原因：对齐 time_services.category VARCHAR(50) schema，超长值无法命中索引属无效查询
+      const longCategory = 'a'.repeat(51);
+      const res = await fetch(`${baseUrl}/services?category=${longCategory}`);
+      expect(res.status).toBe(422);
+      expect(mockGetServiceList).not.toHaveBeenCalled();
+    });
   });
 
   // ===================== GET /services/:id =====================
