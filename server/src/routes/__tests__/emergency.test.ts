@@ -256,6 +256,17 @@ describe('emergency 路由集成测试', () => {
       });
       expect(res.status).toBe(422);
     });
+
+    it('category 非字符串（数字）返回 422，不调用 service', async () => {
+      // 守护 isString 前置校验：notEmpty 对数字类型放行，isString 严格校验字符串类型
+      const res = await fetch(`${baseUrl}/requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ category: 123, title: '求助', description: '描述' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockCreateRequest).not.toHaveBeenCalled();
+    });
   });
 
   describe('POST /requests/:id/respond', () => {
@@ -277,6 +288,17 @@ describe('emergency 路由集成测试', () => {
         body: JSON.stringify({ eta: 10 }),
       });
       expect(res.status).toBe(422);
+    });
+
+    it('message 非字符串（数字）返回 422，不调用 service', async () => {
+      // 守护 isString 前置校验：notEmpty 对数字类型放行，isString 严格校验字符串类型
+      const res = await fetch(`${baseUrl}/requests/${REQUEST_UUID}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ message: 123 }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockRespondToRequest).not.toHaveBeenCalled();
     });
 
     it('非 UUID 格式的 id 应返回 422（前置校验拦截，不进入 service 层）', async () => {
@@ -355,19 +377,30 @@ describe('emergency 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/false-reports`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-        body: JSON.stringify({ requestId: 'req-1', reason: '虚假信息' }),
+        body: JSON.stringify({ requestId: REQUEST_UUID, reason: '虚假信息' }),
       });
       expect(res.status).toBe(200);
-      expect(mockCreateReport).toHaveBeenCalledWith('user-001', 'req-1', '虚假信息');
+      expect(mockCreateReport).toHaveBeenCalledWith('user-001', REQUEST_UUID, '虚假信息');
     });
 
     it('缺少 reason 校验失败返回 422', async () => {
       const res = await fetch(`${baseUrl}/false-reports`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-        body: JSON.stringify({ requestId: 'req-1' }),
+        body: JSON.stringify({ requestId: REQUEST_UUID }),
       });
       expect(res.status).toBe(422);
+    });
+
+    it('requestId 非 UUID 返回 422，不调用 service', async () => {
+      // 守护 isUUID 前置校验：notEmpty 仅校验非空，任意字符串可穿透；isUUID 严格校验 UUID 格式
+      const res = await fetch(`${baseUrl}/false-reports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ requestId: 'not-a-uuid', reason: '虚假信息' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockCreateReport).not.toHaveBeenCalled();
     });
   });
 
@@ -482,6 +515,17 @@ describe('emergency 路由集成测试', () => {
       });
       expect(res.status).toBe(403);
     });
+
+    it('type 非字符串（数字）返回 422，不调用 service', async () => {
+      // 守护 isString 前置校验：notEmpty 对数字类型放行，isString 严格校验字符串类型
+      const res = await fetch(`${baseUrl}/resources`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ type: 123, name: '避难所' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockResourceCreate).not.toHaveBeenCalled();
+    });
   });
 
   describe('PUT /resources/:id', () => {
@@ -502,6 +546,17 @@ describe('emergency 路由集成测试', () => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ name: '新名称' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockResourceUpdate).not.toHaveBeenCalled();
+    });
+
+    it('name 非字符串（数字）返回 422，不调用 service', async () => {
+      // 守护 isString 前置校验：optional + notEmpty 对数字类型放行，isString 严格校验字符串类型
+      const res = await fetch(`${baseUrl}/resources/${RESOURCE_UUID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ name: 123 }),
       });
       expect(res.status).toBe(422);
       expect(mockResourceUpdate).not.toHaveBeenCalled();

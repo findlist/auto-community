@@ -176,9 +176,11 @@ router.get('/requests/:id', optionalAuth, validate([uuidParam()]), asyncHandler(
  *         description: 发布过于频繁
  */
 router.post('/requests', authenticate, createPostLimiter, validate([
-  body('category').notEmpty().withMessage('请选择求助类别'),
-  body('title').notEmpty().withMessage('请输入求助标题').isLength({ max: 100 }).withMessage('标题不超过100字'),
-  body('description').notEmpty().withMessage('请输入求助描述'),
+  // isString 前置校验类型：notEmpty 对数字/对象等非字符串类型会放行，导致 service 层 sanitizeObject 处理异常输入
+  // isLength 同时校验非空（min:1）与上限（对齐 DB schema），替代 notEmpty 的语义模糊行为
+  body('category').isString().isLength({ min: 1, max: 50 }).withMessage('求助类别不能为空且不超过50字符'),
+  body('title').isString().isLength({ min: 1, max: 100 }).withMessage('求助标题不能为空且不超过100字符'),
+  body('description').isString().isLength({ min: 1, max: 2000 }).withMessage('求助描述不能为空且不超过2000字符'),
 ]), auditMiddleware('CREATE_EMERGENCY_REQUEST', { resourceType: 'emergency_request' }), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateRequestBody>, res: Response) => {
   const result = await emergencyService.createRequest(req.user!.id, req.body);
   success(res, result, '发布成功');
@@ -189,7 +191,7 @@ router.post('/requests', authenticate, createPostLimiter, validate([
 // 设计原因：validate 失败时不进入 auditMiddleware，避免记录「未到达 handler 的失败请求」污染审计日志
 router.post('/requests/:id/respond', authenticate, validate([
   uuidParam(),
-  body('message').notEmpty().withMessage('请输入响应留言'),
+  body('message').isString().isLength({ min: 1, max: 500 }).withMessage('响应留言不能为空且不超过500字符'),
 ]), auditMiddleware('RESPOND_EMERGENCY_REQUEST', {
   resourceType: 'emergency_request',
   getResourceId: (req) => req.params.id,
@@ -222,8 +224,9 @@ router.post('/false-reports', authenticate, createPostLimiter, auditMiddleware('
   resourceType: 'false_report',
   getResourceId: (req) => req.body?.requestId,
 }), validate([
-  body('requestId').notEmpty().withMessage('请提供求助ID'),
-  body('reason').notEmpty().withMessage('请输入举报原因'),
+  // requestId 必须为 UUID：notEmpty 仅校验非空，任意字符串可穿透到 service 层导致查询语义错误
+  body('requestId').isUUID().withMessage('求助ID格式不正确'),
+  body('reason').isString().isLength({ min: 1, max: 500 }).withMessage('举报原因不能为空且不超过500字符'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateFalseReportBody>, res: Response) => {
   const { requestId, reason } = req.body;
   const result = await emergencyService.createReport(req.user!.id, requestId, reason);
@@ -271,8 +274,9 @@ router.get('/resources/:id', optionalAuth, validate([uuidParam()]), asyncHandler
 router.post('/resources', authenticate, requireRole('admin'), auditMiddleware('CREATE_EMERGENCY_RESOURCE', {
   resourceType: 'emergency_resource',
 }), validate([
-  body('type').notEmpty().withMessage('请选择资源类型'),
-  body('name').notEmpty().withMessage('请输入资源名称').isLength({ max: 100 }).withMessage('名称不超过100字'),
+  // 资源类型 type 对齐 emergency_resources.type VARCHAR(50)，资源名称 name 对齐 VARCHAR(100)
+  body('type').isString().isLength({ min: 1, max: 50 }).withMessage('资源类型不能为空且不超过50字符'),
+  body('name').isString().isLength({ min: 1, max: 100 }).withMessage('资源名称不能为空且不超过100字符'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResourceMutationBody>, res: Response) => {
   const result = await emergencyResourceService.create(req.body);
   success(res, result, '创建成功');
@@ -282,8 +286,8 @@ router.post('/resources', authenticate, requireRole('admin'), auditMiddleware('C
 // 中间件顺序：authenticate → requireRole → validate → auditMiddleware → asyncHandler（与 /false-reports/:id/resolve 一致）
 router.put('/resources/:id', authenticate, requireRole('admin'), validate([
   uuidParam(),
-  body('type').optional().notEmpty().withMessage('资源类型不能为空'),
-  body('name').optional().notEmpty().withMessage('资源名称不能为空').isLength({ max: 100 }).withMessage('名称不超过100字'),
+  body('type').optional().isString().isLength({ min: 1, max: 50 }).withMessage('资源类型不能为空且不超过50字符'),
+  body('name').optional().isString().isLength({ min: 1, max: 100 }).withMessage('资源名称不能为空且不超过100字符'),
 ]), auditMiddleware('UPDATE_EMERGENCY_RESOURCE', {
   resourceType: 'emergency_resource',
   getResourceId: (req) => req.params.id,
