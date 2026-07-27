@@ -98,7 +98,7 @@ export default function FoodReviewPage() {
         <button
           onClick={() => navigate(`/kitchen/${postId}`)}
           aria-label="返回"
-          className="text-neutral-500 hover:text-neutral-700 p-2.5 rounded hover:bg-neutral-100 transition-colors"
+          className="text-neutral-500 hover:text-neutral-700 p-3 rounded hover:bg-neutral-100 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -173,14 +173,14 @@ export default function FoodReviewPage() {
           </div>
 
           {/* 分页：对齐 Admin/UserManagement 范式，图标按钮 + 当前页胶囊高亮 + tabular-nums 数字等宽 */}
-          {/* 设计原因：与 Admin 列表页 + Profile/PointsDetail 分页控件视觉语言一致，触控目标达 40px */}
+          {/* 设计原因：与 Admin 列表页 + Profile/PointsDetail 分页控件视觉语言一致，触控目标达 44px */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-4">
               <button
                 onClick={() => loadReviews(page - 1)}
                 disabled={page <= 1}
-                // p-2.5 + border + hover + active:scale-95 与 Admin 范式一致，触控目标达 40px
-                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
+                // p-3 + border + hover + active:scale-95 与 Admin 范式一致，触控目标达 44px AAA
+                className="p-3 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
                 aria-label="上一页"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -193,7 +193,7 @@ export default function FoodReviewPage() {
               <button
                 onClick={() => loadReviews(page + 1)}
                 disabled={page >= totalPages}
-                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
+                className="p-3 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
                 aria-label="下一页"
               >
                 <ChevronRight className="w-5 h-5" />

@@ -94,7 +94,7 @@ export default function AdminLayout() {
             {/* 移动端菜单按钮 */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden p-2.5 rounded-lg hover:bg-neutral-100 transition-colors"
+              className="md:hidden p-3 rounded-lg hover:bg-neutral-100 transition-colors"
               aria-label="切换菜单"
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

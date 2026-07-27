@@ -270,7 +270,7 @@ export default function AuditLogPage() {
                 onClick={() => loadLogs(page - 1)}
                 disabled={page <= 1}
                 aria-label="上一页"
-                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
+                className="p-3 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -283,7 +283,7 @@ export default function AuditLogPage() {
                 onClick={() => loadLogs(page + 1)}
                 disabled={page >= totalPages}
                 aria-label="下一页"
-                className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
+                className="p-3 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>

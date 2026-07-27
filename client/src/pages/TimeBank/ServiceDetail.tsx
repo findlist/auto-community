@@ -133,7 +133,7 @@ export default function ServiceDetail() {
     // max-w-2xl mx-auto：详情页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="pb-20 max-w-2xl mx-auto">
       <div className="px-4 py-3 flex items-center gap-3 border-b border-neutral-100">
-        <button onClick={() => navigate(-1)} aria-label="返回" className="text-neutral-500 hover:text-neutral-700 p-2.5 rounded hover:bg-neutral-100 transition-colors">
+        <button onClick={() => navigate(-1)} aria-label="返回" className="text-neutral-500 hover:text-neutral-700 p-3 rounded hover:bg-neutral-100 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <h1 className="text-lg font-medium text-neutral-900 flex-1 truncate">{service.title}</h1>

@@ -210,8 +210,8 @@ export default function PointsDetail() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            // p-2.5 + border + hover + active:scale-95 与 Admin 范式一致，触控目标达 40px
-            className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
+            // p-3 + border + hover + active:scale-95 与 Admin 范式一致，触控目标达 44px AAA
+            className="p-3 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
             aria-label="上一页"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -224,7 +224,7 @@ export default function PointsDetail() {
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="p-2.5 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
+            className="p-3 rounded-lg border border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 transition-all"
             aria-label="下一页"
           >
             <ChevronRight className="w-5 h-5" />
