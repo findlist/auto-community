@@ -57,8 +57,19 @@ export function getOrders(params?: { page?: number; pageSize?: number }) {
   return client.get<never, ApiResponse<PaginatedResponse<TimeOrder>>>("/time-bank/orders", { params });
 }
 
-export function updateOrderStatus(orderId: string, status: string) {
-  return client.put<never, ApiResponse<TimeOrder>>(`/time-bank/orders/${orderId}/status`, { status });
+// 状态值映射：前端状态名词 → 后端 action 动词
+// 后端 PUT /time-bank/orders/:id/status 期望 body.action 为 accept/start/cancel/complete，
+// 前端 MyOrders 传入状态名词（accepted/in_progress/cancelled/completed），需转换
+const STATUS_TO_ACTION: Record<string, string> = {
+  accepted: 'accept',
+  in_progress: 'start',
+  completed: 'complete',
+  cancelled: 'cancel',
+};
+
+export function updateOrderStatus(orderId: string, status: string, actualDuration?: number) {
+  const action = STATUS_TO_ACTION[status] ?? status;
+  return client.put<never, ApiResponse<TimeOrder>>(`/time-bank/orders/${orderId}/status`, { action, actualDuration });
 }
 
 export interface CreateDisputeParams {

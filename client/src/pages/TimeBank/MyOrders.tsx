@@ -87,14 +87,14 @@ export default function MyOrders() {
 
   const filteredOrders = activeTab ? orders.filter(o => o.status === activeTab) : orders;
 
-  const handleStatusUpdate = async (orderId: string, status: string) => {
+  const handleStatusUpdate = async (orderId: string, status: string, actualDuration?: number) => {
     // 重复提交守卫：弱网下用户连点状态变更按钮会触发多次 updateOrderStatus 调用，
     // 接口非幂等（订单状态机有 pending→accepted→in_progress→completed 严格流转），
     // 重复调用可能导致状态跳过中间阶段，与 SkillExchange/Orders actioningId 守卫模式对齐
     if (actionLoading) return;
     setActionLoading(orderId);
     try {
-      await updateOrderStatus(orderId, status);
+      await updateOrderStatus(orderId, status, actualDuration);
       toast.success("操作成功");
       loadOrders(true);
     } catch (err) {
@@ -161,7 +161,7 @@ export default function MyOrders() {
       buttons.push(
         <button
           key="complete"
-          onClick={() => handleStatusUpdate(order.id, "completed")}
+          onClick={() => handleStatusUpdate(order.id, "completed", order.durationMinutes)}
           disabled={isLoading}
           className="flex-1 py-2 bg-violet-600 text-white rounded-lg text-xs font-medium flex items-center justify-center gap-1 hover:bg-violet-700 transition-colors disabled:opacity-50"
         >

@@ -111,7 +111,7 @@ export default function Dispute() {
           <AlertCircle className="w-5 h-5" />
           <span className="text-sm">{error}</span>
         </div>
-        <button onClick={() => navigate("/skill-exchange/orders")} className="mt-3 text-emerald-500">
+        <button onClick={() => navigate("/skills/orders")} className="mt-3 text-emerald-500">
           返回订单列表
         </button>
       </div>
@@ -122,7 +122,7 @@ export default function Dispute() {
     return (
       <div className="px-4 py-8 text-center text-gray-500">
         <p>订单不存在</p>
-        <button onClick={() => navigate("/skill-exchange/orders")} className="mt-3 text-emerald-500">
+        <button onClick={() => navigate("/skills/orders")} className="mt-3 text-emerald-500">
           返回订单列表
         </button>
       </div>
@@ -136,7 +136,7 @@ export default function Dispute() {
     <div className="px-4 py-4 pb-20 max-w-2xl mx-auto">
       {/* 顶部导航 */}
       <div className="flex items-center gap-3 mb-4">
-        <button onClick={() => navigate("/skill-exchange/orders")} aria-label="返回" className="p-2.5 hover:bg-gray-100 rounded transition-colors">
+        <button onClick={() => navigate("/skills/orders")} aria-label="返回" className="p-2.5 hover:bg-gray-100 rounded transition-colors">
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>
         <h1 className="text-lg font-bold text-gray-900">订单争议</h1>
@@ -285,7 +285,7 @@ export default function Dispute() {
           <p className="text-sm text-gray-500 mb-4">管理员将尽快处理您的争议申请</p>
           <div className="flex gap-2 justify-center">
             <button
-              onClick={() => navigate("/skill-exchange/orders")}
+              onClick={() => navigate("/skills/orders")}
               className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600"
             >
               返回订单列表

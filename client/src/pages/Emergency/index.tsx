@@ -826,7 +826,9 @@ function DetailView({ requestId }: { requestId: string }) {
   const isRequester = user?.id === request.userId;
   const hasArrivedResponse = request.responses.some((r) => r.status === "arrived");
   const canRespond = !myResponse && (request.status === "open" || request.status === "responding") && user;
-  const canComplete = isRequester && hasArrivedResponse;
+  // 后端 updateResponseStatus 在 completed 分支校验 request.status === 'responding'，
+  // 前端需同步检查避免按钮显示但后端拒绝（求助已 resolved 后其他响应仍可能为 arrived 状态）
+  const canComplete = isRequester && hasArrivedResponse && request.status === "responding";
 
   return (
     <div className="px-4 py-4 space-y-4">
