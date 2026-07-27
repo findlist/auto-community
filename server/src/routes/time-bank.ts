@@ -5,7 +5,7 @@ import { authenticate, optionalAuth } from '../middleware/auth';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
 import { success, paginated, created, updated, cursorPaginated } from '../utils/response';
-import { getPagination, validate, uuidParam, enumQuery, queryStringLength } from '../middleware/validator';
+import { getPagination, validate, uuidParam, uuidBody, enumQuery, queryStringLength } from '../middleware/validator';
 import { timeBankService } from '../services/time-bank.service';
 import { aiService, processPostPipeline } from '../services/ai.service';
 import { logger } from '../utils/logger';
@@ -223,8 +223,8 @@ router.put('/services/:id', authenticate, validate([
 
 // 创建订单接入审计：订单创建涉及时间账本预扣，需留痕便于事后追溯
 router.post('/orders', authenticate, orderLimiter, auditMiddleware('CREATE_TIME_ORDER', { resourceType: 'time_order' }), validate([
-  // service_id 必填，防止空值透传 service 层导致 500
-  body('service_id').notEmpty().withMessage('请提供服务ID'),
+  // service_id 必须为合法 UUID，防止非 UUID 值穿透到 service 层触发 PG invalid input syntax 错误
+  uuidBody('service_id'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateTimeOrderBody>, res: Response) => {
   const { service_id } = req.body;
   const result = await timeBankService.createOrder(req.user!.id, service_id);
@@ -345,8 +345,8 @@ router.get('/account', authenticate, asyncHandler(async (req, res) => {
  *         description: 操作过于频繁
  */
 router.post('/transfer', authenticate, orderLimiter, auditMiddleware('TRANSFER', { resourceType: 'transaction' }), validate([
-  // to_user_id 必填，防止转赠目标为空导致 service 层 500
-  body('to_user_id').notEmpty().withMessage('请输入对方用户ID'),
+  // to_user_id 必须为合法 UUID，与 service_id 范式对齐，防止非 UUID 值穿透到 service 层
+  uuidBody('to_user_id'),
   // amount 必须为正整数，与前端 TransferModal isAmountValid 口径一致，避免 0/负数/浮点数透传 service 层
   body('amount').isInt({ min: 1 }).withMessage('转赠金额必须为正整数'),
   // remark 选填但限制长度，防止超长文本占用存储与带宽
@@ -400,8 +400,8 @@ router.post('/transfer', authenticate, orderLimiter, auditMiddleware('TRANSFER',
  *         description: 操作过于频繁
  */
 router.post('/donate', authenticate, orderLimiter, auditMiddleware('DONATE', { resourceType: 'transaction' }), validate([
-  // to_user_id 必填，防止捐赠目标为空导致 service 层 500
-  body('to_user_id').notEmpty().withMessage('请输入受赠用户ID'),
+  // to_user_id 必须为合法 UUID，与 transfer 路由范式对齐
+  uuidBody('to_user_id'),
   // amount 必须为正整数，与前端 DonateModal isAmountValid 口径一致
   body('amount').isInt({ min: 1 }).withMessage('捐赠金额必须为正整数'),
   // remark 选填但限制长度
@@ -471,8 +471,8 @@ router.get('/family', authenticate, asyncHandler(async (req, res) => {
 
 // 评价创建接入审计：评价影响信誉分计算，需留痕便于事后追溯
 router.post('/reviews', authenticate, auditMiddleware('CREATE_TIME_REVIEW', { resourceType: 'time_review' }), validate([
-  // order_id 必填，防止空值透传 service 层
-  body('order_id').notEmpty().withMessage('请提供订单ID'),
+  // order_id 必须为合法 UUID，与 service_id / to_user_id 范式对齐
+  uuidBody('order_id'),
   // rating 必须为 1-5 整数，与业务评价口径一致
   body('rating').isInt({ min: 1, max: 5 }).withMessage('评分必须为1-5的整数'),
   // content 选填但限制长度
@@ -485,7 +485,8 @@ router.post('/reviews', authenticate, auditMiddleware('CREATE_TIME_REVIEW', { re
 
 // 纠纷创建接入审计：纠纷触发退款/争议流程，需留痕便于事后追溯
 router.post('/disputes', authenticate, auditMiddleware('CREATE_TIME_DISPUTE', { resourceType: 'time_dispute' }), validate([
-  body('order_id').notEmpty().withMessage('请提供订单ID'),
+  // order_id 必须为合法 UUID，与 createReview 范式对齐
+  uuidBody('order_id'),
   body('reason').notEmpty().isLength({ max: 100 }).withMessage('纠纷原因不能为空且不能超过100字符'),
   body('description').optional().isLength({ max: 1000 }).withMessage('纠纷描述不能超过1000字符'),
   // evidence 必须为数组：证据图片 URL 列表，元素 URL 合法性由 service 层 validateImageUrls 校验白名单域名

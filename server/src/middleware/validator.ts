@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { validationResult, param, query, type ValidationChain } from 'express-validator';
+import { validationResult, param, query, body, type ValidationChain } from 'express-validator';
 import { AppError, FieldError } from '../utils/errors';
 import { CommonErrorCode } from '../utils/errorCodes';
 
@@ -104,6 +104,27 @@ export function uuidParam(paramName: string = 'id'): ValidationChain {
   return param(paramName)
     .isUUID('all')
     .withMessage(`${paramName} 必须是合法 UUID`);
+}
+
+/**
+ * 生成 UUID 请求体字段校验链。
+ *
+ * 设计原因：与 uuidParam 对称，用于校验 req.body 中的 UUID 类字段（如 service_id / order_id /
+ * to_user_id）。原代码用 `body('xxx').notEmpty()` 仅校验非空，非法值（如 'abc'、数字、对象）
+ * 会穿透到 service 层，触发 PostgreSQL `invalid input syntax for type uuid` 错误（500 而非 422），
+ * 既浪费 DB 查询又让错误语义错位。前置 isUUID 校验在路由层 422 拦截，与 uuidParam 形成完整的
+ * 「路径参数 + 请求体字段」UUID 校验闭环。
+ *
+ * 默认 required：body 字段通常必填，仅 PUT/PATCH 更新场景传 optional=true。
+ * 选择 isUUID('all') 而非 'v4'：与 uuidParam 保持一致，兼容历史数据与其他 UUID 版本。
+ *
+ * @param bodyName 请求体字段名
+ * @param optional 是否可选（默认 false，body 字段通常必填）
+ */
+export function uuidBody(bodyName: string, optional = false): ValidationChain {
+  const chain = body(bodyName).isUUID('all');
+  if (optional) chain.optional();
+  return chain.withMessage(`${bodyName} 必须是合法 UUID`);
 }
 
 /**

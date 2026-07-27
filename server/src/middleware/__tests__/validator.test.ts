@@ -14,7 +14,7 @@ import type { Request, Response, NextFunction } from 'express';
 //
 // 注意：链式方法不能用 mockReturnThis()，因为 vitest mock 函数的 this 在严格模式/独立调用时为 undefined
 // 改用闭包引用 chain 自身：mockReturnValue(chain) 让 isUUID/withMessage 都返回同一个 chain 对象
-const { mockChain, mockParam } = vi.hoisted(() => {
+const { mockChain, mockParam, mockBody } = vi.hoisted(() => {
   // 先声明对象再设置 mockReturnValue，避免 TDZ（chain 在自身字面量内部不可引用）
   const chain: {
     isUUID: ReturnType<typeof vi.fn>;
@@ -28,19 +28,21 @@ const { mockChain, mockParam } = vi.hoisted(() => {
   return {
     mockChain: chain,
     mockParam: vi.fn().mockReturnValue(chain),
+    mockBody: vi.fn().mockReturnValue(chain),
   };
 });
 
 // mock express-validator：仅替换 validationResult，ValidationChain 为类型在运行时擦除
-// param 也需 mock：uuidParam 工厂内部调用 param(name).isUUID().withMessage() 链式构造 ValidationChain
+// param/body 也需 mock：uuidParam/uuidBody 工厂内部调用 param(name)/body(name).isUUID().withMessage() 链式构造 ValidationChain
 // 链式方法均返回 this（chain 对象），故用同一个 mockChain 串联
 vi.mock('express-validator', () => ({
   validationResult: vi.fn(),
   param: mockParam,
+  body: mockBody,
 }));
 
-import { validate, rules, getPagination, getSortParams, uuidParam } from '../validator';
-import { validationResult, param } from 'express-validator';
+import { validate, rules, getPagination, getSortParams, uuidParam, uuidBody } from '../validator';
+import { validationResult, param, body } from 'express-validator';
 import { AppError } from '../../utils/errors';
 import { CommonErrorCode } from '../../utils/errorCodes';
 
@@ -256,6 +258,32 @@ describe('uuidParam - UUID 路径参数校验工厂', () => {
     expect(mockChain.withMessage).toHaveBeenCalled();
     const messageArg = mockChain.withMessage.mock.calls[0][0] as string;
     expect(messageArg).toContain('orderId');
+    expect(messageArg).toContain('UUID');
+  });
+});
+
+describe('uuidBody - UUID 请求体字段校验工厂', () => {
+  // 与 uuidParam 对称：验证 uuidBody 工厂按预期调用 body(name).isUUID('all').withMessage(...)
+  // 真实的 UUID 格式校验由 express-validator 在运行时执行，集成测试已覆盖
+
+  it('必填模式（默认）应调用 body(name).isUUID("all")，不调用 optional', () => {
+    uuidBody('service_id');
+    expect(body).toHaveBeenCalledWith('service_id');
+    expect(mockChain.isUUID).toHaveBeenCalledWith('all');
+    // mockChain 没有 optional 方法（链式调用未涉及），通过 isUUID 调用确认必填链路
+  });
+
+  it('自定义字段名应透传（如 "to_user_id"）', () => {
+    uuidBody('to_user_id');
+    expect(body).toHaveBeenCalledWith('to_user_id');
+  });
+
+  it('应设置 withMessage 含字段名的中文提示', () => {
+    uuidBody('order_id');
+    // withMessage 第一参数应包含字段名 'order_id'，便于前端识别是哪个 body 字段格式错误
+    expect(mockChain.withMessage).toHaveBeenCalled();
+    const messageArg = mockChain.withMessage.mock.calls[0][0] as string;
+    expect(messageArg).toContain('order_id');
     expect(messageArg).toContain('UUID');
   });
 });

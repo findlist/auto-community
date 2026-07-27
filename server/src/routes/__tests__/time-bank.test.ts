@@ -138,6 +138,8 @@ import { errorHandler } from '../../middleware/errorHandler';
 const SERVICE_UUID = '550e8400-e29b-41d4-a716-446655440030';
 const ORDER_UUID = '550e8400-e29b-41d4-a716-446655440031';
 const FAMILY_UUID = '550e8400-e29b-41d4-a716-446655440032';
+// to_user_id body 字段的合法 UUID fixture：transfer/donate 路由加 uuidBody 校验后，body 必须用合法 UUID
+const USER_UUID_2 = '550e8400-e29b-41d4-a716-446655440033';
 // 非法 id fixture：用于验证 uuidParam 前置校验在路由层 422 拦截，不进入 service 层
 const INVALID_ID = 'not-a-uuid';
 
@@ -349,10 +351,22 @@ describe('time-bank 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ service_id: 'svc-1' }),
+        body: JSON.stringify({ service_id: SERVICE_UUID }),
       });
       expect(res.status).toBe(201);
-      expect(mockCreateOrder).toHaveBeenCalledWith('user-uuid-001', 'svc-1');
+      expect(mockCreateOrder).toHaveBeenCalledWith('user-uuid-001', SERVICE_UUID);
+    });
+
+    it('service_id 非 UUID 时返回 422，不调用 service', async () => {
+      // 设计原因：service_id 必须为合法 UUID，非 UUID 值（如 'svc-1'）会穿透到 service 层
+      // 触发 PostgreSQL invalid input syntax for type uuid 错误（500 而非 422），前置 isUUID 校验拦截
+      const res = await fetch(`${baseUrl}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ service_id: 'not-a-uuid' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockCreateOrder).not.toHaveBeenCalled();
     });
 
     it('接入审计中间件 CREATE_TIME_ORDER', async () => {
@@ -476,10 +490,21 @@ describe('time-bank 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/transfer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ to_user_id: 'user-uuid-002', amount: 30, remark: '感谢' }),
+        body: JSON.stringify({ to_user_id: USER_UUID_2, amount: 30, remark: '感谢' }),
       });
       expect(res.status).toBe(200);
-      expect(mockTransferTime).toHaveBeenCalledWith('user-uuid-001', 'user-uuid-002', 30, '感谢');
+      expect(mockTransferTime).toHaveBeenCalledWith('user-uuid-001', USER_UUID_2, 30, '感谢');
+    });
+
+    it('to_user_id 非 UUID 时返回 422，不调用 service', async () => {
+      // 设计原因：to_user_id 必须为合法 UUID，非 UUID 值穿透到 service 层会触发 PG 语法错误
+      const res = await fetch(`${baseUrl}/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ to_user_id: 'not-a-uuid', amount: 30 }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockTransferTime).not.toHaveBeenCalled();
     });
   });
 
@@ -490,10 +515,21 @@ describe('time-bank 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/donate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ to_user_id: 'user-uuid-002', amount: 10 }),
+        body: JSON.stringify({ to_user_id: USER_UUID_2, amount: 10 }),
       });
       expect(res.status).toBe(200);
-      expect(mockDonateTime).toHaveBeenCalledWith('user-uuid-001', 'user-uuid-002', 10, undefined);
+      expect(mockDonateTime).toHaveBeenCalledWith('user-uuid-001', USER_UUID_2, 10, undefined);
+    });
+
+    it('to_user_id 非 UUID 时返回 422，不调用 service', async () => {
+      // 设计原因：to_user_id 必须为合法 UUID，与 transfer 路由范式对齐
+      const res = await fetch(`${baseUrl}/donate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ to_user_id: 'not-a-uuid', amount: 10 }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockDonateTime).not.toHaveBeenCalled();
     });
   });
 
@@ -604,10 +640,21 @@ describe('time-bank 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ order_id: 'order-1', rating: 5, content: '很棒' }),
+        body: JSON.stringify({ order_id: ORDER_UUID, rating: 5, content: '很棒' }),
       });
       expect(res.status).toBe(201);
-      expect(mockCreateReview).toHaveBeenCalledWith('order-1', 'user-uuid-001', 5, '很棒');
+      expect(mockCreateReview).toHaveBeenCalledWith(ORDER_UUID, 'user-uuid-001', 5, '很棒');
+    });
+
+    it('order_id 非 UUID 时返回 422，不调用 service', async () => {
+      // 设计原因：order_id 必须为合法 UUID，非 UUID 值穿透到 service 层会触发 PG 语法错误
+      const res = await fetch(`${baseUrl}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ order_id: 'not-a-uuid', rating: 5 }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockCreateReview).not.toHaveBeenCalled();
     });
   });
 
@@ -618,19 +665,31 @@ describe('time-bank 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/disputes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ order_id: 'order-1', reason: '未提供服务', description: '描述', evidence: ['/uploads/ev-1.png'] }),
+        body: JSON.stringify({ order_id: ORDER_UUID, reason: '未提供服务', description: '描述', evidence: ['/uploads/ev-1.png'] }),
       });
       expect(res.status).toBe(201);
-      expect(mockCreateDispute).toHaveBeenCalledWith('order-1', 'user-uuid-001', '未提供服务', '描述', ['/uploads/ev-1.png']);
+      expect(mockCreateDispute).toHaveBeenCalledWith(ORDER_UUID, 'user-uuid-001', '未提供服务', '描述', ['/uploads/ev-1.png']);
+    });
+
+    it('order_id 非 UUID 时返回 422，不调用 service', async () => {
+      // 设计原因：order_id 必须为合法 UUID，与 createReview 范式对齐
+      const res = await fetch(`${baseUrl}/disputes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ order_id: 'not-a-uuid', reason: '未提供服务' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockCreateDispute).not.toHaveBeenCalled();
     });
 
     it('evidence 非数组时返回 422，不调用 service', async () => {
       // 设计原因：evidence 必须为图片 URL 数组，routes 层 isArray 前置校验拦截非数组值，
       // 避免非法结构穿透到 service 层导致 pg 序列化异常
+      // 注意：order_id 必须用合法 UUID，否则会在 order_id 校验环节就被 422 拦截，无法触达 evidence 校验
       const res = await fetch(`${baseUrl}/disputes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ order_id: 'order-1', reason: '未提供服务', evidence: 'not-array' }),
+        body: JSON.stringify({ order_id: ORDER_UUID, reason: '未提供服务', evidence: 'not-array' }),
       });
       expect(res.status).toBe(422);
       expect(mockCreateDispute).not.toHaveBeenCalled();
