@@ -142,8 +142,10 @@ router.get('/posts/:id',
 
 router.post('/posts', authenticate, createPostLimiter, auditMiddleware('CREATE_SKILL_POST', { resourceType: 'skill_post' }), validate([
   body('type').isIn(['offer', 'request']).withMessage('type 必须为 offer 或 request'),
-  body('category').notEmpty().withMessage('category 必填'),
-  body('title').notEmpty().isLength({ max: 100 }).withMessage('title 必填且不超过100字符'),
+  // isString 前置校验类型：notEmpty 对数字/对象等非字符串类型放行，isString 严格校验字符串类型
+  // isLength 同时校验非空（min:1）与上限（对齐 DB schema VARCHAR），替代 notEmpty 的语义模糊行为
+  body('category').isString().isLength({ min: 1, max: 50 }).withMessage('类别不能为空且不超过50字符'),
+  body('title').isString().isLength({ min: 1, max: 100 }).withMessage('标题不能为空且不超过100字符'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateSkillPostBody>, res: Response) => {
   const post = await skillService.createPost(req.user!.id, req.body);
   // 向量入库 + Pipeline 处理均为 fire-and-forget，失败不阻塞主流程但需记录日志便于排查
@@ -170,13 +172,14 @@ router.put('/posts/:id', authenticate, validate([
   // 更新场景字段全部 optional（Partial<CreateSkillPostDTO>），仅校验传入字段格式
   // 设计原因：原实现无 validate 中间件，req.body 直接透传 service 层，
   // 非法值（负数 credit_price、超长 title）依赖 service 层兜底校验或导致 500
-  body('title').optional().isLength({ min: 1, max: 100 }).withMessage('标题长度为1-100字符'),
-  body('category').optional().isLength({ min: 1, max: 50 }).withMessage('类别长度为1-50字符'),
-  body('description').optional().isLength({ max: 2000 }).withMessage('描述不能超过2000字符'),
+  // updatePost 字段补 isString：isLength 对非字符串行为不确定，isString 前置校验保证类型安全
+  body('title').optional().isString().isLength({ min: 1, max: 100 }).withMessage('标题长度为1-100字符'),
+  body('category').optional().isString().isLength({ min: 1, max: 50 }).withMessage('类别长度为1-50字符'),
+  body('description').optional().isString().isLength({ max: 2000 }).withMessage('描述不能超过2000字符'),
   body('credit_price').optional().isInt({ min: 0 }).withMessage('积分价格必须为非负整数'),
   body('images').optional().isArray().withMessage('图片必须为数组'),
   body('tags').optional().isArray().withMessage('标签必须为数组'),
-  body('address').optional().isLength({ max: 200 }).withMessage('地址不能超过200字符'),
+  body('address').optional().isString().isLength({ max: 200 }).withMessage('地址不能超过200字符'),
 ]), auditMiddleware('UPDATE_SKILL_POST', { resourceType: 'skill_post', getResourceId: (req) => req.params.id }), asyncHandler(async (req: Request<Record<string, string>, unknown, UpdateSkillPostBody>, res: Response) => {
   const post = await skillService.updatePost(req.params.id, req.user!.id, req.body);
   success(res, post);
@@ -304,7 +307,9 @@ router.put('/orders/:id/status', authenticate, validate([
 // 中间件顺序：authenticate → validate → auditMiddleware → asyncHandler
 router.post('/orders/:id/dispute', authenticate, validate([
   uuidParam(),
-  body('reason').notEmpty().withMessage('争议原因不能为空'),
+  // isString 前置校验：notEmpty 对数字/对象等非字符串类型放行，isString 严格校验字符串类型
+  // isLength 同时校验非空（min:1）与上限（500字符，对齐 emergency 举报原因范式），替代 notEmpty 的语义模糊行为
+  body('reason').isString().isLength({ min: 1, max: 500 }).withMessage('争议原因不能为空且不超过500字符'),
 ]), auditMiddleware('DISPUTE_ORDER', {
   resourceType: 'order',
   getResourceId: (req) => req.params.id,
@@ -317,7 +322,9 @@ router.post('/orders/:id/dispute', authenticate, validate([
 // 中间件顺序：authenticate → requireRole → validate → auditMiddleware → asyncHandler
 router.put('/orders/:id/resolve', authenticate, requireRole('admin'), validate([
   uuidParam(),
-  body('resolution').notEmpty().withMessage('处理结果说明不能为空'),
+  // resolution 是裁决说明：管理员操作记录需留痕便于申诉复核，isString 严格校验避免对象/数组类型穿透
+  // isLength 上限 500 字符对齐 dispute.reason 范式，保持争议双方字段语义一致
+  body('resolution').isString().isLength({ min: 1, max: 500 }).withMessage('处理结果说明不能为空且不超过500字符'),
   body('action').isIn(['refund', 'continue', 'cancel']).withMessage('action 必须为 refund/continue/cancel'),
 ]), auditMiddleware('RESOLVE_DISPUTE', {
   resourceType: 'order',

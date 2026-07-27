@@ -419,6 +419,29 @@ describe('skills 路由集成测试', () => {
       expect(res.status).toBe(422);
       expect(mockDisputeOrder).not.toHaveBeenCalled();
     });
+
+    it('reason 非字符串（数字）返回 422，不调用 service', async () => {
+      // 守护 isString 前置校验：notEmpty 对数字类型放行，isString 严格校验字符串类型
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/dispute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ reason: 12345 }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockDisputeOrder).not.toHaveBeenCalled();
+    });
+
+    it('reason 超长（>500 字符）返回 422，不调用 service', async () => {
+      // 守护 isLength 上限校验：对齐 emergency 举报原因范式，避免超长文本穿透到 service 层
+      const longReason = 'a'.repeat(501);
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/dispute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ reason: longReason }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockDisputeOrder).not.toHaveBeenCalled();
+    });
   });
 
   describe('PUT /orders/:id/resolve', () => {
@@ -438,6 +461,29 @@ describe('skills 路由集成测试', () => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
         body: JSON.stringify({ resolution: '退款', action: 'refund' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockResolveDispute).not.toHaveBeenCalled();
+    });
+
+    it('resolution 非字符串（数字）返回 422，不调用 service', async () => {
+      // 守护 isString 前置校验：notEmpty 对数字类型放行，isString 严格校验字符串类型
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/resolve`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ resolution: 12345, action: 'refund' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockResolveDispute).not.toHaveBeenCalled();
+    });
+
+    it('resolution 超长（>500 字符）返回 422，不调用 service', async () => {
+      // 守护 isLength 上限校验：对齐 dispute.reason 范式，保持争议双方字段语义一致
+      const longResolution = 'a'.repeat(501);
+      const res = await fetch(`${baseUrl}/orders/${ORDER_UUID}/resolve`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+        body: JSON.stringify({ resolution: longResolution, action: 'refund' }),
       });
       expect(res.status).toBe(422);
       expect(mockResolveDispute).not.toHaveBeenCalled();
