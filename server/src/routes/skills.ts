@@ -3,7 +3,7 @@ import { authenticate, requireRole } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
 // validate 包装 express-validator 校验链，校验失败时标准化返回 422
 // 设计原因：仅传入 body() 数组不会自动拦截非法请求，必须经 validate 检查 validationResult 后短路返回
-import { validate, getPagination, uuidParam, queryStringLength } from '../middleware/validator';
+import { validate, getPagination, uuidParam, uuidQuery, queryStringLength } from '../middleware/validator';
 import { body } from 'express-validator';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
@@ -41,7 +41,13 @@ interface ResolveDisputeBody {
 }
 
 // 智能推荐：基于指定帖子，调用 AI 匹配推荐用户（需认证）
-router.get('/recommend', authenticate, asyncHandler(async (req: Request, res: Response) => {
+// uuidQuery 格式校验 + if 必填校验分层：
+// - 未传 post_id：uuidQuery（optional=true）不触发，if 抛 400 BadRequestError（缺少必填参数）
+// - 传了非法 post_id（如 'abc'）：uuidQuery 校验失败抛 422（参数格式错误）
+// - 传了合法 post_id：两层校验均通过，进入 service 层
+router.get('/recommend', authenticate, validate([
+  uuidQuery('post_id'),
+]), asyncHandler(async (req: Request, res: Response) => {
   const postId = req.query.post_id as string;
   if (!postId) {
     throw new BadRequestError('post_id 参数必填');

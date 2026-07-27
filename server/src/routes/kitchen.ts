@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errorHandler';
-import { validate, getPagination, uuidParam, queryStringLength } from '../middleware/validator';
+import { validate, getPagination, uuidParam, uuidQuery, queryStringLength } from '../middleware/validator';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
 import { kitchenService } from '../services/kitchen.service';
@@ -492,8 +492,11 @@ router.post('/group-orders/:id/exit',
 // GET /api/kitchen/reviews - 获取评价列表
 // 设计原因：SQL 已下沉至 review.service.getReviewsByOrderType，路由层只负责参数解析与响应包装，
 // 避免路由层直接拼接 SQL 违反 routes → service 分层规范
-router.get('/reviews',
-  asyncHandler(async (req: Request, res: Response) => {
+// uuidQuery 校验 userId 格式：非法 UUID 会穿透到 service 层 SQL WHERE user_id = $1 触发 500，
+// 前置 422 拦截避免错误语义错位。userId 可选（未传时返回全量评价）
+router.get('/reviews', validate([
+  uuidQuery('userId'),
+]), asyncHandler(async (req: Request, res: Response) => {
     const { page, pageSize } = getPagination(req);
     // userId 来自查询参数，收窄为 string | undefined 以匹配 service 层 options.userId 类型
     const userId = req.query.userId as string | undefined;

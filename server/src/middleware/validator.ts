@@ -128,6 +128,31 @@ export function uuidBody(bodyName: string, optional = false): ValidationChain {
 }
 
 /**
+ * 生成 UUID 查询参数校验链。
+ *
+ * 设计原因：与 uuidParam/uuidBody 对称，用于校验 req.query 中的 UUID 类字段
+ * （如 /skills/recommend?post_id=xxx、/time-bank/recommend?service_id=xxx）。
+ * 原代码用 `req.query.xxx as string` 直接断言取值，仅靠 if (!xxx) 抛 BadRequestError
+ * 校验非空，非法值（如 'abc'、'../../etc'）会穿透到 service 层触发 PostgreSQL
+ * `invalid input syntax for type uuid` 错误（500 而非 422），错误语义错位且浪费 DB 查询。
+ * 前置 isUUID 校验在路由层 422 拦截，与 uuidParam/uuidBody 形成完整的
+ * 「路径参数 + 请求体字段 + 查询参数」UUID 校验闭环。
+ *
+ * 默认 optional=true：查询参数天然可选，未传时由路由层 if (!xxx) 检查必填
+ * （如 skills.ts 的 post_id 必填、kitchen.ts 的 userId 可选）。
+ * 与 uuidBody 的默认值差异：body 字段通常必填（默认 optional=false），
+ * 查询参数通常可选（默认 optional=true），与 enumQuery 保持一致。
+ *
+ * @param queryName 查询参数名
+ * @param optional 是否可选（默认 true，查询参数通常可选）
+ */
+export function uuidQuery(queryName: string, optional = true): ValidationChain {
+  const chain = query(queryName).isUUID('all');
+  if (optional) chain.optional();
+  return chain.withMessage(`${queryName} 必须是合法 UUID`);
+}
+
+/**
  * 生成枚举型路径参数校验链。
  *
  * 设计原因：路径参数 :type 在 admin 路由中存在封闭枚举语义（如 skill/kitchen/time_bank），

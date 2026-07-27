@@ -5,7 +5,7 @@ import { authenticate, optionalAuth } from '../middleware/auth';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
 import { success, paginated, created, updated, cursorPaginated } from '../utils/response';
-import { getPagination, validate, uuidParam, uuidBody, enumQuery, enumBody, queryStringLength } from '../middleware/validator';
+import { getPagination, validate, uuidParam, uuidBody, uuidQuery, enumQuery, enumBody, queryStringLength } from '../middleware/validator';
 import { timeBankService } from '../services/time-bank.service';
 import { aiService, processPostPipeline } from '../services/ai.service';
 import { logger } from '../utils/logger';
@@ -84,7 +84,12 @@ interface CreateDisputeBody {
 }
 
 // 智能推荐：基于指定服务，调用 AI 匹配推荐用户（需认证）
-router.get('/recommend', authenticate, asyncHandler(async (req, res) => {
+// uuidQuery 格式校验 + if 必填校验分层：与 skills.ts GET /recommend 对称
+// - 未传 service_id：uuidQuery（optional=true）不触发，if 抛 400 BadRequestError（缺少必填参数）
+// - 传了非法 service_id（如 'abc'）：uuidQuery 校验失败抛 422（参数格式错误）
+router.get('/recommend', authenticate, validate([
+  uuidQuery('service_id'),
+]), asyncHandler(async (req, res) => {
   const serviceId = req.query.service_id as string;
   if (!serviceId) {
     throw new BadRequestError('service_id 参数必填');

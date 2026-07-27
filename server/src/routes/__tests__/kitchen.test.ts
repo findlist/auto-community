@@ -136,7 +136,9 @@ import { NotFoundError } from '../../utils/errors';
 const POST_UUID = '550e8400-e29b-41d4-a716-446655440010';
 const ORDER_UUID = '550e8400-e29b-41d4-a716-446655440011';
 const GROUP_UUID = '550e8400-e29b-41d4-a716-446655440012';
-// 非法 id fixture：用于验证 uuidParam 前置校验在路由层 422 拦截，不进入 service 层
+// GET /reviews?userId 查询参数的合法 UUID fixture：路由层加 uuidQuery 校验后，非 UUID 会被 422 拦截
+const REVIEWER_UUID = '550e8400-e29b-41d4-a716-446655440013';
+// 非法 id fixture：用于验证 uuidParam/uuidQuery 前置校验在路由层 422 拦截，不进入 service 层
 const INVALID_ID = 'not-a-uuid';
 
 /**
@@ -719,7 +721,7 @@ describe('kitchen 路由集成测试', () => {
         totalPages: 1,
       });
 
-      const res = await fetch(`${baseUrl}/reviews?userId=user-uuid-001&page=1&pageSize=10`);
+      const res = await fetch(`${baseUrl}/reviews?userId=${REVIEWER_UUID}&page=1&pageSize=10`);
       expect(res.status).toBe(200);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
@@ -732,7 +734,7 @@ describe('kitchen 路由集成测试', () => {
 
       // 关键断言：路由层只透传 orderType='kitchen' + userId + 分页参数给 service
       expect(mockGetReviewsByOrderType).toHaveBeenCalledWith('kitchen', {
-        userId: 'user-uuid-001',
+        userId: REVIEWER_UUID,
         page: 1,
         pageSize: 10,
       });
@@ -774,12 +776,20 @@ describe('kitchen 路由集成测试', () => {
         totalPages: 0,
       });
 
-      const res = await fetch(`${baseUrl}/reviews?userId=empty-user`);
+      // userId 用合法 UUID：路由层加 uuidQuery 校验后，非 UUID 会被 422 拦截
+      const res = await fetch(`${baseUrl}/reviews?userId=${REVIEWER_UUID}`);
       expect(res.status).toBe(200);
       const data = (await res.json()) as Record<string, unknown>;
       const dataData = data.data as Record<string, unknown>;
       expect(dataData.total).toBe(0);
       expect(dataData.list).toEqual([]);
+    });
+
+    it('userId 非 UUID 格式应返回 422，不调用 service', async () => {
+      // 守护 uuidQuery 前置校验：非法 UUID 应在路由层 422 拦截，避免穿透到 service 层触发 PG invalid input syntax
+      const res = await fetch(`${baseUrl}/reviews?userId=${INVALID_ID}`);
+      expect(res.status).toBe(422);
+      expect(mockGetReviewsByOrderType).not.toHaveBeenCalled();
     });
   });
 

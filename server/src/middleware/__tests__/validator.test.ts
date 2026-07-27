@@ -14,7 +14,7 @@ import type { Request, Response, NextFunction } from 'express';
 //
 // 注意：链式方法不能用 mockReturnThis()，因为 vitest mock 函数的 this 在严格模式/独立调用时为 undefined
 // 改用闭包引用 chain 自身：mockReturnValue(chain) 让 isUUID/isIn/optional/withMessage 都返回同一个 chain 对象
-const { mockChain, mockParam, mockBody } = vi.hoisted(() => {
+const { mockChain, mockParam, mockBody, mockQuery } = vi.hoisted(() => {
   // 先声明对象再设置 mockReturnValue，避免 TDZ（chain 在自身字面量内部不可引用）
   const chain: {
     isUUID: ReturnType<typeof vi.fn>;
@@ -35,20 +35,22 @@ const { mockChain, mockParam, mockBody } = vi.hoisted(() => {
     mockChain: chain,
     mockParam: vi.fn().mockReturnValue(chain),
     mockBody: vi.fn().mockReturnValue(chain),
+    mockQuery: vi.fn().mockReturnValue(chain),
   };
 });
 
 // mock express-validator：仅替换 validationResult，ValidationChain 为类型在运行时擦除
-// param/body 也需 mock：uuidParam/uuidBody 工厂内部调用 param(name)/body(name).isUUID().withMessage() 链式构造 ValidationChain
+// param/body/query 也需 mock：uuidParam/uuidBody/uuidQuery 工厂内部调用 param/body/query(name).isUUID().withMessage() 链式构造 ValidationChain
 // 链式方法均返回 this（chain 对象），故用同一个 mockChain 串联
 vi.mock('express-validator', () => ({
   validationResult: vi.fn(),
   param: mockParam,
   body: mockBody,
+  query: mockQuery,
 }));
 
-import { validate, rules, getPagination, getSortParams, uuidParam, uuidBody, enumBody } from '../validator';
-import { validationResult, param, body } from 'express-validator';
+import { validate, rules, getPagination, getSortParams, uuidParam, uuidBody, uuidQuery, enumBody } from '../validator';
+import { validationResult, param, body, query } from 'express-validator';
 import { AppError } from '../../utils/errors';
 import { CommonErrorCode } from '../../utils/errorCodes';
 
@@ -328,5 +330,38 @@ describe('enumBody - 枚举型请求体字段校验工厂', () => {
     expect(messageArg).toContain('type');
     expect(messageArg).toContain('provide');
     expect(messageArg).toContain('request');
+  });
+});
+
+describe('uuidQuery - UUID 查询参数校验工厂', () => {
+  // 与 uuidParam/uuidBody 对称：验证 uuidQuery 工厂按预期调用 query(name).isUUID('all').withMessage(...)
+  // 真实的 UUID 格式校验由 express-validator 在运行时执行，集成测试已覆盖
+
+  it('可选模式（默认）应调用 optional，与 enumQuery 默认值一致', () => {
+    // 查询参数天然可选，默认 optional=true，与 uuidBody 默认 optional=false 形成差异
+    uuidQuery('post_id');
+    expect(query).toHaveBeenCalledWith('post_id');
+    expect(mockChain.isUUID).toHaveBeenCalledWith('all');
+    // 可选模式调用 optional
+    expect(mockChain.optional).toHaveBeenCalled();
+  });
+
+  it('必填模式应不调用 optional', () => {
+    uuidQuery('service_id', false);
+    expect(mockChain.optional).not.toHaveBeenCalled();
+  });
+
+  it('自定义字段名应透传（如 "userId"）', () => {
+    uuidQuery('userId');
+    expect(query).toHaveBeenCalledWith('userId');
+  });
+
+  it('应设置 withMessage 含字段名的中文提示', () => {
+    uuidQuery('order_id');
+    // withMessage 应包含字段名 'order_id'，便于前端识别是哪个查询参数格式错误
+    expect(mockChain.withMessage).toHaveBeenCalled();
+    const messageArg = mockChain.withMessage.mock.calls[0][0] as string;
+    expect(messageArg).toContain('order_id');
+    expect(messageArg).toContain('UUID');
   });
 });

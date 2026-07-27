@@ -176,11 +176,12 @@ describe('skills 路由集成测试', () => {
   describe('GET /recommend', () => {
     it('认证通过返回推荐列表', async () => {
       mockMatchSkill.mockResolvedValue([{ userId: 'u-2', score: 0.9 }]);
-      const res = await fetch(`${baseUrl}/recommend?post_id=post-1`, {
+      // post_id 用合法 UUID：路由层加 uuidQuery 校验后，非 UUID 会被 422 拦截
+      const res = await fetch(`${baseUrl}/recommend?post_id=${POST_UUID}`, {
         headers: { Authorization: 'Bearer token' },
       });
       expect(res.status).toBe(200);
-      expect(mockMatchSkill).toHaveBeenCalledWith('post-1', 'user-001');
+      expect(mockMatchSkill).toHaveBeenCalledWith(POST_UUID, 'user-001');
     });
 
     it('缺 post_id 返回 400', async () => {
@@ -188,6 +189,15 @@ describe('skills 路由集成测试', () => {
         headers: { Authorization: 'Bearer token' },
       });
       expect(res.status).toBe(400);
+    });
+
+    it('post_id 非 UUID 格式应返回 422，不调用 service', async () => {
+      // 守护 uuidQuery 前置校验：非法 UUID 应在路由层 422 拦截，避免穿透到 service 层触发 PG invalid input syntax
+      const res = await fetch(`${baseUrl}/recommend?post_id=not-a-uuid`, {
+        headers: { Authorization: 'Bearer token' },
+      });
+      expect(res.status).toBe(422);
+      expect(mockMatchSkill).not.toHaveBeenCalled();
     });
   });
 

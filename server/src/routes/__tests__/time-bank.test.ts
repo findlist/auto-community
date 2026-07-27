@@ -200,9 +200,10 @@ describe('time-bank 路由集成测试', () => {
   describe('GET /recommend', () => {
     it('认证通过返回推荐列表', async () => {
       mockMatchTimeService.mockResolvedValue([{ userId: 'u-2', score: 0.95 }]);
-      const res = await fetch(`${baseUrl}/recommend?service_id=svc-1`, { headers: authHeader });
+      // service_id 用合法 UUID：路由层加 uuidQuery 校验后，非 UUID 会被 422 拦截
+      const res = await fetch(`${baseUrl}/recommend?service_id=${SERVICE_UUID}`, { headers: authHeader });
       expect(res.status).toBe(200);
-      expect(mockMatchTimeService).toHaveBeenCalledWith('svc-1', 'user-uuid-001');
+      expect(mockMatchTimeService).toHaveBeenCalledWith(SERVICE_UUID, 'user-uuid-001');
     });
 
     it('缺 service_id 抛 BadRequestError 400', async () => {
@@ -210,6 +211,13 @@ describe('time-bank 路由集成测试', () => {
       expect(res.status).toBe(400);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('BAD_REQUEST');
+      expect(mockMatchTimeService).not.toHaveBeenCalled();
+    });
+
+    it('service_id 非 UUID 格式应返回 422，不调用 service', async () => {
+      // 守护 uuidQuery 前置校验：非法 UUID 应在路由层 422 拦截，避免穿透到 service 层触发 PG invalid input syntax
+      const res = await fetch(`${baseUrl}/recommend?service_id=${INVALID_ID}`, { headers: authHeader });
+      expect(res.status).toBe(422);
       expect(mockMatchTimeService).not.toHaveBeenCalled();
     });
   });
