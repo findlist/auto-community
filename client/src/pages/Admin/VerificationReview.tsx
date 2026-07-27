@@ -119,7 +119,7 @@ export default function VerificationReview() {
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
       pending: "bg-yellow-100 text-yellow-700",
-      approved: "bg-green-100 text-green-700",
+      approved: "bg-emerald-100 text-emerald-700",
       rejected: "bg-red-100 text-red-700",
     };
     const labels: Record<string, string> = {

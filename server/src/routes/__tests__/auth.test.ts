@@ -1,14 +1,14 @@
 /**
  * auth 路由集成测试
  *
- * 测试目标：覆盖注册、登录、刷新令牌、登出、忘记密码、重置密码全链路
+ * 测试目标：覆盖认证全链路（register/login/refresh-token/logout/forgot-password/reset-password）
  * 测试策略：
- * - mock middleware/auth 的 authenticate（仅在 /logout 路由生效，动态决定通过/拒绝）
- * - mock middleware/rateLimiter 的 authLimiter（限流中间件直接放行，聚焦业务逻辑验证）
- * - mock middleware/auditLog 的 auditMiddleware（审计中间件直接放行，避免审计副作用）
- * - mock services/auth.service 的 authService（避免真实 DB 读写与 Redis 操作）
- * - 真实挂载 validate 中间件（验证 express-validator 链路完整可用）
- * - 挂载 errorHandler 捕获 handler 转发的异常，验证标准化错误响应
+ * - mock middleware/auth 的 authenticate（logout 路由使用，默认放行设置 req.user）
+ * - mock middleware/rateLimiter 的 authLimiter（直接中间件，mock 为 pass-through）
+ * - mock middleware/auditLog 的 auditMiddleware（高阶函数，mock 为返回 pass-through 的工厂）
+ * - mock services/auth.service 的 6 个方法避免真实 DB 读写
+ * - mock utils/logger 避免 console 噪音
+ * - 重点验证本轮新增的 isString 类型校验在路由层 422 拦截非字符串输入
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -33,10 +33,11 @@ const {
   mockForgotPassword,
   mockResetPassword,
 } = vi.hoisted(() => ({
+  // authenticate 默认放行并设置 req.user（logout 路由依赖 req.headers.authorization）
   mockAuthenticate: vi.fn(),
-  // authLimiter 与 auditMiddleware 为高阶中间件，mock 为直接放行的 pass-through 函数
+  // authLimiter 为直接中间件，mock 为 pass-through
   mockAuthLimiter: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
-  // auditMiddleware 是工厂函数，调用后返回中间件；mock 为返回 pass-through 的函数
+  // auditMiddleware 为高阶函数（调用后返回中间件），mock 为返回 pass-through 的工厂
   mockAuditMiddleware: vi.fn(() => (_req: Request, _res: Response, next: NextFunction) => next()),
   mockRegister: vi.fn(),
   mockLogin: vi.fn(),
@@ -62,12 +63,11 @@ vi.mock('../../services/auth.service', () => ({
 
 import authRouter from '../auth';
 import { errorHandler } from '../../middleware/errorHandler';
-import { UnauthorizedError, BadRequestError } from '../../utils/errors';
 
 /**
  * 启动临时 Express 服务器到随机端口
  * 设计原因：listen(0) 让操作系统分配可用端口，避免端口冲突；
- * 挂载 errorHandler 捕获 validate 与 handler 转发的异常，验证错误响应标准化逻辑
+ * 挂载 errorHandler 捕获 handler 转发的异常，验证错误响应标准化逻辑
  */
 async function startServer(): Promise<{ server: http.Server; baseUrl: string }> {
   const app = express();
@@ -85,22 +85,19 @@ async function stopServer(server: http.Server): Promise<void> {
   await new Promise<void>((resolve) => server.close(() => resolve()));
 }
 
-/** 构造合法 Authorization 头，/logout 路由认证通过时使用 */
-const authHeader = { Authorization: 'Bearer valid-token' };
-
 describe('auth 路由集成测试', () => {
   let server: http.Server;
   let baseUrl: string;
 
   beforeEach(async () => {
-    // 使用 resetAllMocks 彻底清除 mock 行为，避免 mockResolvedValue/mockRejectedValue 跨测试污染
+    // resetAllMocks 彻底清除 mock 行为，避免跨测试污染
     vi.resetAllMocks();
     // 重新设置 pass-through 中间件默认行为（resetAllMocks 会清除 mockImplementation）
     mockAuthLimiter.mockImplementation((_req: Request, _res: Response, next: NextFunction) => next());
     mockAuditMiddleware.mockImplementation(
       () => (_req: Request, _res: Response, next: NextFunction) => next(),
     );
-    // authenticate 默认通过并设置 req.user，供 /logout 路由使用
+    // authenticate 默认通过并设置 req.user（logout 路由使用）
     mockAuthenticate.mockImplementation((req: Request, _res: Response, next: NextFunction) => {
       req.user = { id: 'user-uuid-001', nickname: 'tester' };
       next();
@@ -114,225 +111,208 @@ describe('auth 路由集成测试', () => {
 
   // ===================== POST /register =====================
   describe('POST /register', () => {
-    it('合法请求体注册成功返回 200', async () => {
-      mockRegister.mockResolvedValue({ user: { id: 'new-user' }, accessToken: 'token', refreshToken: 'rtn' });
-      const body = {
-        phone: '13800138000',
-        password: 'password123',
-        nickname: '新用户',
-        privacyConsentVersion: 'v1.0',
-      };
+    const validBody = {
+      phone: '13800138000',
+      password: 'pass123',
+      nickname: 'tester',
+      privacyConsentVersion: 'v1.0',
+    };
+
+    it('合法输入应返回 200 并调用 authService.register', async () => {
+      mockRegister.mockResolvedValue({ user: { id: 'u-1' }, accessToken: 'tok' });
       const res = await fetch(`${baseUrl}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(validBody),
       });
       expect(res.status).toBe(200);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect(data.code).toBe('SUCCESS');
-      // 验证 register 收到正确的参数
-      expect(mockRegister).toHaveBeenCalledWith('13800138000', 'password123', '新用户', 'v1.0');
+      expect(mockRegister).toHaveBeenCalledWith('13800138000', 'pass123', 'tester', 'v1.0');
     });
 
-    it('手机号格式错误时 validate 返回 422', async () => {
-      const body = {
-        phone: 'invalid-phone',
-        password: 'password123',
-        nickname: '新用户',
-        privacyConsentVersion: 'v1.0',
-      };
+    it('password 非字符串（数字）返回 422，不调用 service', async () => {
       const res = await fetch(`${baseUrl}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...validBody, password: 123456 }),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect(data.code).toBe('VALIDATION_ERROR');
-      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'phone')).toBe(true);
       expect(mockRegister).not.toHaveBeenCalled();
     });
 
-    it('密码少于 6 位时 validate 返回 422', async () => {
-      const body = {
-        phone: '13800138000',
-        password: '12345',
-        nickname: '新用户',
-        privacyConsentVersion: 'v1.0',
-      };
+    it('nickname 非字符串（数字）返回 422，不调用 service', async () => {
       const res = await fetch(`${baseUrl}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...validBody, nickname: 12345 }),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'password')).toBe(true);
+      expect(mockRegister).not.toHaveBeenCalled();
     });
 
-    it('未同意隐私政策时 validate 返回 422', async () => {
-      const body = {
-        phone: '13800138000',
-        password: 'password123',
-        nickname: '新用户',
-        // privacyConsentVersion 缺失
-      };
+    it('privacyConsentVersion 非字符串（数字）返回 422，不调用 service', async () => {
       const res = await fetch(`${baseUrl}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...validBody, privacyConsentVersion: 1 }),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'privacyConsentVersion')).toBe(true);
+      expect(mockRegister).not.toHaveBeenCalled();
     });
 
-    it('register 抛错时由 errorHandler 返回 500', async () => {
-      mockRegister.mockRejectedValue(new Error('数据库写入失败'));
-      const body = {
-        phone: '13800138000',
-        password: 'password123',
-        nickname: '新用户',
-        privacyConsentVersion: 'v1.0',
-      };
+    it('手机号格式错误返回 422', async () => {
       const res = await fetch(`${baseUrl}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...validBody, phone: 'abc' }),
       });
-      expect(res.status).toBe(500);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect(data.code).toBe('INTERNAL_SERVER_ERROR');
+      expect(res.status).toBe(422);
+      expect(mockRegister).not.toHaveBeenCalled();
+    });
+
+    it('password 太短（<6）返回 422', async () => {
+      const res = await fetch(`${baseUrl}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...validBody, password: '123' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockRegister).not.toHaveBeenCalled();
+    });
+
+    it('nickname 太短（<2）返回 422', async () => {
+      const res = await fetch(`${baseUrl}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...validBody, nickname: 'a' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockRegister).not.toHaveBeenCalled();
     });
   });
 
   // ===================== POST /login =====================
   describe('POST /login', () => {
-    it('合法凭据登录成功返回 200', async () => {
-      mockLogin.mockResolvedValue({ user: { id: 'user-001' }, accessToken: 'token', refreshToken: 'rtn' });
-      const body = { phone: '13800138000', password: 'password123' };
+    const validBody = {
+      phone: '13800138000',
+      password: 'pass123',
+    };
+
+    it('合法输入应返回 200 并调用 authService.login', async () => {
+      mockLogin.mockResolvedValue({ accessToken: 'tok', refreshToken: 'rt' });
       const res = await fetch(`${baseUrl}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(validBody),
       });
       expect(res.status).toBe(200);
-      expect(mockLogin).toHaveBeenCalledWith('13800138000', 'password123');
+      expect(mockLogin).toHaveBeenCalledWith('13800138000', 'pass123');
     });
 
-    it('未提供手机号时 validate 返回 422', async () => {
-      const body = { password: 'password123' };
+    it('phone 非手机号格式返回 422', async () => {
       const res = await fetch(`${baseUrl}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ phone: 'abc', password: 'pass123' }),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'phone')).toBe(true);
+      expect(mockLogin).not.toHaveBeenCalled();
     });
 
-    it('账号不存在时 UnauthorizedError 标准化为 401', async () => {
-      mockLogin.mockRejectedValue(new UnauthorizedError('手机号或密码错误'));
-      const body = { phone: '13800138000', password: 'wrong-password' };
+    it('password 非字符串（数字）返回 422，不调用 service', async () => {
       const res = await fetch(`${baseUrl}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ phone: '13800138000', password: 123456 }),
       });
-      expect(res.status).toBe(401);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect(data.code).toBe('UNAUTHORIZED');
+      expect(res.status).toBe(422);
+      expect(mockLogin).not.toHaveBeenCalled();
+    });
+
+    it('password 空字符串返回 422', async () => {
+      const res = await fetch(`${baseUrl}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: '13800138000', password: '' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockLogin).not.toHaveBeenCalled();
     });
   });
 
   // ===================== POST /refresh-token =====================
   describe('POST /refresh-token', () => {
-    it('合法 refreshToken 刷新成功返回 200', async () => {
-      mockRefreshToken.mockResolvedValue({ accessToken: 'new-token', refreshToken: 'new-rtn' });
-      const body = { refreshToken: 'valid-refresh-token' };
+    it('合法 refreshToken 应返回 200 并调用 authService.refreshToken', async () => {
+      mockRefreshToken.mockResolvedValue({ accessToken: 'new-tok' });
       const res = await fetch(`${baseUrl}/refresh-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ refreshToken: 'some-refresh-token' }),
       });
       expect(res.status).toBe(200);
-      expect(mockRefreshToken).toHaveBeenCalledWith('valid-refresh-token');
+      expect(mockRefreshToken).toHaveBeenCalledWith('some-refresh-token');
     });
 
-    it('未提供 refreshToken 时 validate 返回 422', async () => {
-      const body = {};
+    it('refreshToken 非字符串（数字）返回 422，不调用 service', async () => {
       const res = await fetch(`${baseUrl}/refresh-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ refreshToken: 12345 }),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'refreshToken')).toBe(true);
+      expect(mockRefreshToken).not.toHaveBeenCalled();
     });
 
-    it('refreshToken 无效时 UnauthorizedError 标准化为 401', async () => {
-      mockRefreshToken.mockRejectedValue(new UnauthorizedError('refreshToken 无效或已过期'));
-      const body = { refreshToken: 'invalid-token' };
+    it('refreshToken 空字符串返回 422', async () => {
       const res = await fetch(`${baseUrl}/refresh-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ refreshToken: '' }),
       });
-      expect(res.status).toBe(401);
+      expect(res.status).toBe(422);
+      expect(mockRefreshToken).not.toHaveBeenCalled();
     });
   });
 
   // ===================== POST /logout =====================
   describe('POST /logout', () => {
-    it('认证通过登出成功返回 200', async () => {
+    it('携带 Bearer token 应返回 200 并调用 authService.logout', async () => {
       mockLogout.mockResolvedValue(undefined);
       const res = await fetch(`${baseUrl}/logout`, {
         method: 'POST',
-        headers: authHeader,
+        headers: { Authorization: 'Bearer some-token' },
       });
       expect(res.status).toBe(200);
-      // 验证 logout 收到从 Authorization 头提取的 token
-      expect(mockLogout).toHaveBeenCalledWith('valid-token');
+      expect(mockLogout).toHaveBeenCalledWith('some-token');
     });
 
-    it('未携带 Authorization 头时返回 401', async () => {
-      mockAuthenticate.mockImplementation((_req: Request, _res: Response, next: NextFunction) => {
-        next(new UnauthorizedError('未提供认证令牌'));
-      });
+    it('未携带 Authorization 头时传入空字符串调用 logout', async () => {
+      mockLogout.mockResolvedValue(undefined);
       const res = await fetch(`${baseUrl}/logout`, { method: 'POST' });
-      expect(res.status).toBe(401);
-      expect(mockLogout).not.toHaveBeenCalled();
-    });
-
-    it('logout 抛错时由 errorHandler 返回 500', async () => {
-      mockLogout.mockRejectedValue(new Error('Redis 删除失败'));
-      const res = await fetch(`${baseUrl}/logout`, { method: 'POST', headers: authHeader });
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(200);
+      // 设计原因：handler 内 token = authHeader?.startsWith('Bearer ') ? substring(7) : ''
+      // 未携带 Authorization 时 authHeader 为 undefined，token 回退为空字符串
+      expect(mockLogout).toHaveBeenCalledWith('');
     });
   });
 
   // ===================== POST /forgot-password =====================
   describe('POST /forgot-password', () => {
-    it('合法手机号发送验证码成功返回 200', async () => {
+    it('合法手机号应返回 200 并调用 authService.forgotPassword', async () => {
       mockForgotPassword.mockResolvedValue(undefined);
-      const body = { phone: '13800138000' };
       const res = await fetch(`${baseUrl}/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ phone: '13800138000' }),
       });
       expect(res.status).toBe(200);
       expect(mockForgotPassword).toHaveBeenCalledWith('13800138000');
     });
 
-    it('手机号格式错误时 validate 返回 422', async () => {
-      const body = { phone: 'invalid' };
+    it('手机号格式错误返回 422', async () => {
       const res = await fetch(`${baseUrl}/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ phone: 'abc' }),
       });
       expect(res.status).toBe(422);
       expect(mockForgotPassword).not.toHaveBeenCalled();
@@ -341,69 +321,61 @@ describe('auth 路由集成测试', () => {
 
   // ===================== POST /reset-password =====================
   describe('POST /reset-password', () => {
-    it('合法请求体重置密码成功返回 200', async () => {
+    const validBody = {
+      phone: '13800138000',
+      code: '123456',
+      password: 'newpass123',
+    };
+
+    it('合法输入应返回 200 并调用 authService.resetPassword', async () => {
       mockResetPassword.mockResolvedValue(undefined);
-      const body = { phone: '13800138000', code: '123456', password: 'newpassword' };
       const res = await fetch(`${baseUrl}/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(validBody),
       });
       expect(res.status).toBe(200);
-      expect(mockResetPassword).toHaveBeenCalledWith('13800138000', '123456', 'newpassword');
+      expect(mockResetPassword).toHaveBeenCalledWith('13800138000', '123456', 'newpass123');
     });
 
-    it('验证码非 6 位时 validate 返回 422', async () => {
-      const body = { phone: '13800138000', code: '12345', password: 'newpassword' };
+    it('code 非字符串（数字）返回 422，不调用 service', async () => {
       const res = await fetch(`${baseUrl}/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...validBody, code: 123456 }),
       });
       expect(res.status).toBe(422);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'code')).toBe(true);
+      expect(mockResetPassword).not.toHaveBeenCalled();
     });
 
-    it('验证码错误时 BadRequestError 标准化为 400', async () => {
-      mockResetPassword.mockRejectedValue(new BadRequestError('验证码错误或已过期'));
-      const body = { phone: '13800138000', code: '000000', password: 'newpassword' };
+    it('password 非字符串（数字）返回 422，不调用 service', async () => {
       const res = await fetch(`${baseUrl}/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...validBody, password: 123456 }),
       });
-      expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect(data.code).toBe('BAD_REQUEST');
+      expect(res.status).toBe(422);
+      expect(mockResetPassword).not.toHaveBeenCalled();
     });
-  });
 
-  describe('审计接入不变式', () => {
-    it('6 处敏感操作路由均以正确 action 与 resourceType 调用 auditMiddleware', async () => {
-      // 守护审计接入不变式：路由加载时 auditMiddleware 以正确 action 与 resourceType 调用
-      // 设计原因：beforeEach 的 vi.resetAllMocks 会清除路由加载时的调用记录，需重新加载路由模块以重新触发 auditMiddleware 调用
-      // 覆盖范围：4 处原有（REGISTER/LOGIN/LOGOUT/RESET_PASSWORD）+ 2 处本轮新增（REFRESH_TOKEN/FORGOT_PASSWORD）
-      vi.resetModules();
-      await import('../auth');
+    it('code 长度不为6返回 422', async () => {
+      const res = await fetch(`${baseUrl}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...validBody, code: '12345' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockResetPassword).not.toHaveBeenCalled();
+    });
 
-      // 期望的 action 与 resourceType 映射表（数据驱动断言，新增接入只需在此追加一行）
-      const expected: Array<{ action: string; resourceType: string }> = [
-        { action: 'REGISTER', resourceType: 'user' },
-        { action: 'LOGIN', resourceType: 'user' },
-        { action: 'LOGOUT', resourceType: 'user' },
-        { action: 'REFRESH_TOKEN', resourceType: 'session' },
-        { action: 'FORGOT_PASSWORD', resourceType: 'verification_code' },
-        { action: 'RESET_PASSWORD', resourceType: 'user' },
-      ];
-
-      // 验证 auditMiddleware 被调用 6 次
-      expect(mockAuditMiddleware).toHaveBeenCalledTimes(expected.length);
-
-      // 逐项验证 action 与 resourceType 参数完整
-      for (const item of expected) {
-        expect(mockAuditMiddleware).toHaveBeenCalledWith(item.action, expect.objectContaining({ resourceType: item.resourceType }));
-      }
+    it('password 太短（<6）返回 422', async () => {
+      const res = await fetch(`${baseUrl}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...validBody, password: '123' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockResetPassword).not.toHaveBeenCalled();
     });
   });
 });

@@ -223,7 +223,8 @@ function toResponseResponse(row: EmergencyResponseRow) {
   return {
     id: row.id,
     requestId: row.request_id,
-    responderId: row.responder_id,
+    // 字段名用 userId 而非 responderId，与前端 EmergencyResponse.userId 类型定义对齐
+    userId: row.responder_id,
     message: row.message,
     eta: row.eta,
     status: row.status,

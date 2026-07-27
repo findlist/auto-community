@@ -137,11 +137,12 @@ export default function SharedKitchen() {
 
   // 美食列表项：左图右文，分隔线组织，悬停轻底色
   // 悬停态与价格色采用厨房模块橙，强化模块身份
+  // stagger-item：列表项错落入场，30ms 递进延迟最多 270ms，提升首屏感知性能
   const renderFoodItem = (post: KitchenPost) => (
     <div
       key={post.id}
       onClick={() => navigate(`/kitchen/${post.id}`)}
-      className="group flex gap-4 lg:gap-6 border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6"
+      className="stagger-item group flex gap-4 lg:gap-6 border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6"
     >
       {/* 图片：固定方寸，缺省时用 emoji 占位 */}
       <div className="flex-shrink-0 w-20 h-20 lg:w-28 lg:h-28 rounded-lg overflow-hidden bg-neutral-100">
@@ -186,13 +187,14 @@ export default function SharedKitchen() {
 
   // 拼单列表项：标题 + 进度条内联
   // 进度条与百分比色采用厨房模块橙，与美食列表项保持模块身份一致
+  // stagger-item：与 renderFoodItem 一致的错落入场节奏
   const renderGroupItem = (order: GroupOrder) => {
     const percent = Math.min(100, Math.round((order.currentAmount / order.targetAmount) * 100));
     return (
       <div
         key={order.id}
         onClick={() => navigate(`/kitchen/group-orders/${order.id}`)}
-        className="group border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6"
+        className="stagger-item group border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6"
       >
         <div className="flex items-baseline justify-between gap-3 mb-2">
           <h3 className="text-base lg:text-lg font-semibold text-neutral-900 truncate group-hover:text-orange-700 group-hover:translate-x-1 transition-all duration-200">

@@ -127,7 +127,7 @@ export default function ReportManagement() {
   const getStatusStyle = (s: string) => {
     const map: Record<string, string> = {
       pending: "bg-yellow-100 text-yellow-700",
-      resolved: "bg-green-100 text-green-700",
+      resolved: "bg-emerald-100 text-emerald-700",
       rejected: "bg-neutral-100 text-neutral-600",
     };
     return map[s] || "bg-neutral-100 text-neutral-600";

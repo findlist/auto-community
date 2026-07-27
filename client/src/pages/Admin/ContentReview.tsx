@@ -422,7 +422,7 @@ export default function ContentReview() {
                       <span
                         className={`px-2 py-0.5 rounded text-xs ${
                           item.status === "active"
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-emerald-100 text-emerald-700"
                             : "bg-neutral-100 text-neutral-600"
                         }`}
                       >
@@ -482,7 +482,7 @@ export default function ContentReview() {
                   <span
                     className={`px-2 py-0.5 rounded text-xs whitespace-nowrap ${
                       item.status === "active"
-                        ? "bg-green-100 text-green-700"
+                        ? "bg-emerald-100 text-emerald-700"
                         : "bg-neutral-100 text-neutral-600"
                     }`}
                   >

@@ -91,9 +91,11 @@ interface ResetPasswordBody {
 // POST /register - 用户注册
 router.post('/register', authLimiter, auditMiddleware('REGISTER', { resourceType: 'user' }), validate([
   body('phone').matches(/^1[3-9]\d{9}$/).withMessage('手机号格式不正确'),
-  body('password').isLength({ min: 6 }).withMessage('密码至少6位'),
-  body('nickname').isLength({ min: 2 }).withMessage('昵称至少2个字符'),
-  body('privacyConsentVersion').notEmpty().withMessage('必须同意隐私政策')
+  // isString 前置校验：防止数字/对象等非字符串类型穿透到 service 层 sanitizeXss 时抛 TypeError → 500 错误
+  // isLength 校验长度下限：与原 notEmpty 等效（min:6 同时拦截空字符串），并显式约束密码长度
+  body('password').isString().isLength({ min: 6 }).withMessage('密码至少6位'),
+  body('nickname').isString().isLength({ min: 2 }).withMessage('昵称至少2个字符'),
+  body('privacyConsentVersion').isString().notEmpty().withMessage('必须同意隐私政策')
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, RegisterBody>, res: Response) => {
   const { phone, password, nickname, privacyConsentVersion } = req.body;
   const result = await authService.register(phone, password, nickname, privacyConsentVersion);
@@ -144,8 +146,10 @@ router.post('/register', authLimiter, auditMiddleware('REGISTER', { resourceType
  */
 // POST /login - 用户登录
 router.post('/login', authLimiter, auditMiddleware('LOGIN', { resourceType: 'user' }), validate([
-  body('phone').notEmpty().withMessage('请输入手机号'),
-  body('password').notEmpty().withMessage('请输入密码')
+  // 与 register/forgot-password/reset-password 一致：matches 正则同时校验类型与格式，notEmpty 无法拦截 'abc' 等非手机号字符串
+  body('phone').matches(/^1[3-9]\d{9}$/).withMessage('手机号格式不正确'),
+  // isString 前置校验类型，notEmpty 校验非空；login 不暴露密码长度下限（min:6）避免信息泄露
+  body('password').isString().notEmpty().withMessage('请输入密码')
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, LoginBody>, res: Response) => {
   const { phone, password } = req.body;
   const result = await authService.login(phone, password);
@@ -190,7 +194,8 @@ router.post('/login', authLimiter, auditMiddleware('LOGIN', { resourceType: 'use
 // POST /refresh-token - 刷新令牌（限流：防止通过暴力刷新令牌规避安全策略）
 // 审计接入：会话延续操作，记录刷新来源便于异常 token 使用链路追溯
 router.post('/refresh-token', authLimiter, validate([
-  body('refreshToken').notEmpty().withMessage('请提供refreshToken')
+  // isString 前置校验类型：refreshToken 是 JWT 字符串，非字符串类型穿透到 service 层 verify 时会抛错 → 500
+  body('refreshToken').isString().notEmpty().withMessage('请提供refreshToken')
 ]), auditMiddleware('REFRESH_TOKEN', { resourceType: 'session' }), asyncHandler(async (req: Request<Record<string, string>, unknown, RefreshTokenBody>, res: Response) => {
   const { refreshToken } = req.body;
   const result = await authService.refreshToken(refreshToken);
@@ -306,8 +311,9 @@ router.post('/forgot-password', authLimiter, validate([
 // sanitizeRequestBody 会自动将 phone/password 字段脱敏为 ***，code 字段不在敏感关键词清单中保留原值用于排查
 router.post('/reset-password', authLimiter, auditMiddleware('RESET_PASSWORD', { resourceType: 'user' }), validate([
   body('phone').matches(/^1[3-9]\d{9}$/).withMessage('手机号格式不正确'),
-  body('code').isLength({ min: 6, max: 6 }).withMessage('验证码为6位数字'),
-  body('password').isLength({ min: 6 }).withMessage('密码至少6位')
+  // isString 前置校验类型：code 是 6 位数字字符串，非字符串类型（如数字 123456）会绕过 isLength 校验
+  body('code').isString().isLength({ min: 6, max: 6 }).withMessage('验证码为6位数字'),
+  body('password').isString().isLength({ min: 6 }).withMessage('密码至少6位')
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, ResetPasswordBody>, res: Response) => {
   const { phone, code, password } = req.body;
   await authService.resetPassword(phone, code, password);

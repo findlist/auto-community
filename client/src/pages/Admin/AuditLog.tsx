@@ -212,7 +212,7 @@ export default function AuditLogPage() {
                       <span
                         className={`px-2 py-0.5 rounded text-xs ${
                           log.status === "success"
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-emerald-100 text-emerald-700"
                             : "bg-red-100 text-red-700"
                         }`}
                       >
@@ -246,7 +246,7 @@ export default function AuditLogPage() {
                   <span
                     className={`px-2 py-0.5 rounded text-xs ${
                       log.status === "success"
-                        ? "bg-green-100 text-green-700"
+                        ? "bg-emerald-100 text-emerald-700"
                         : "bg-red-100 text-red-700"
                     }`}
                   >

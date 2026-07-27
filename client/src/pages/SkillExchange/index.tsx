@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Star, MapPin, X, Loader2 } from "lucide-react";
+import { Search, Plus, Star, MapPin, X, Loader2, ChevronDown } from "lucide-react";
 import Empty from "@/components/Empty";
 import { getPosts } from "@/api/skills";
 import type { SkillPost } from "@/types";
@@ -100,11 +100,12 @@ export default function SkillExchange() {
 
   // 编辑式列表项：无卡片，靠分隔线与留白组织信息
   // 悬停态与价格/分类色采用技能模块蓝，强化模块身份
+  // stagger-item：列表项错落入场，30ms 递进延迟最多 270ms，与 SharedKitchen/TimeBank 列表页保持一致的入场节奏
   const renderItem = (post: SkillPost) => (
     <div
       key={post.id}
       onClick={() => navigate(`/skills/${post.id}`)}
-      className="group border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6"
+      className="stagger-item group border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -201,15 +202,21 @@ export default function SkillExchange() {
             />
           )}
         </div>
-        <select
-          value={selectedCategory}
-          onChange={e => setSelectedCategory(e.target.value)}
-          className="px-4 py-2.5 bg-neutral-100 border border-transparent rounded-lg text-sm text-neutral-700 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 transition-all cursor-pointer"
-        >
-          {categories.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            value={selectedCategory}
+            onChange={e => setSelectedCategory(e.target.value)}
+            // appearance-none：隐藏浏览器默认下拉箭头，使用自定义 ChevronDown 图标统一视觉语言
+            // pr-10：右侧留出 40px 空间给自定义箭头，避免文字与图标重叠
+            className="w-full pl-4 pr-10 py-2.5 bg-neutral-100 border border-transparent rounded-lg text-sm text-neutral-700 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 transition-all cursor-pointer appearance-none"
+          >
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          {/* 自定义下拉箭头：与搜索框 Search 图标语言一致，pointer-events-none 避免拦截点击 */}
+          <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+        </div>
       </div>
 
       {/* 列表区 */}

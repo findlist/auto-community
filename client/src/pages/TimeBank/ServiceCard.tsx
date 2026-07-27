@@ -22,7 +22,9 @@ export default function ServiceCard({ service, onClick }: ServiceCardProps) {
   return (
     <div
       onClick={onClick}
-      className="group flex items-start gap-4 lg:gap-6 border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6"
+      // stagger-item：列表项错落入场动画，opacity:0 → 1 + translateY 上浮
+      // 配合 CSS 中的 :nth-child(n) 实现 30ms 递进延迟，最多 270ms（第 9 项起封顶）
+      className="stagger-item group flex items-start gap-4 lg:gap-6 border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6"
     >
       {/* 左侧：类型竖条标记，颜色区分提供/需求 */}
       <div className="flex-shrink-0 pt-1">

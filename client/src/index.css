@@ -344,6 +344,20 @@ button {
   box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.12);
 }
 
+/* 玻璃态表单输入框自动填充覆盖
+   设计原因：Chrome/Safari 的 :autofill 默认填充黄底 (#fff8dc)，
+   会覆盖玻璃态表单的 bg-white/5 半透明背景，破坏整体氛围。
+   用 box-shadow 模拟同款半透明白底，文字与光标色保持白色，与玻璃态风格一致。
+   transition: background-color 9999s ease-out 0s 是经典技巧，让 autofill 背景色过渡极慢，相当于"冻结"原背景。
+   :autofill 是标准伪类，:-webkit-autofill 是 Chrome/Safari 私有伪类，两者覆盖浏览器范围不同需同时声明。 */
+.glass-form input:autofill,
+.glass-form input:-webkit-autofill {
+  -webkit-text-fill-color: #ffffff;
+  -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.05) inset;
+  caret-color: #ffffff;
+  transition: background-color 9999s ease-out 0s;
+}
+
 /* 减弱动画偏好 */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

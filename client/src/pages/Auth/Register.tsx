@@ -120,9 +120,10 @@ export default function Register() {
         </div>
 
         {/* 表单：玻璃态卡片，与登录页一致；悬停轻提、焦点环细化；space-y-5 与 Login/ForgotPassword 保持视觉节奏一致 */}
+        {/* glass-form：触发 index.css 中的 :autofill 覆盖规则，避免 Chrome 自动填充黄底破坏玻璃态 */}
         <form
           onSubmit={handleSubmit}
-          className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 lg:p-8 space-y-5 animate-fade-in-up shadow-2xl transition-shadow duration-300 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]"
+          className="glass-form bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 lg:p-8 space-y-5 animate-fade-in-up shadow-2xl transition-shadow duration-300 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)]"
           style={{ animationDelay: "120ms" }}
         >
           {/* 昵称 */}

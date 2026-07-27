@@ -1,6 +1,214 @@
 # 邻里圈项目迭代进度 - 2026-07-27
 
-## 本轮迭代摘要（2026-07-27 第 4 轮）
+## 本轮迭代摘要（2026-07-27 第 6 轮）
+
+承接 2026-07-27 第 5 轮 skills dispute/resolve 路由 reason/resolution 字段类型校验补全（commit d0858c6），本轮继续推进 **Phase3 技术债清理** 下一站：routes 层其他 notEmpty 用法扫描 + time-bank UUID body 字段校验补全。
+
+本轮聚焦上轮 topics.md「下一轮建议」第 2.3 项「routes 层其他 notEmpty 用法扫描」，完成 1 个迭代单元：
+
+### 已完成任务（1 个迭代单元）
+
+1. **新增 uuidBody 工具函数 + time-bank.ts 5 处 UUID body 字段 notEmpty → uuidBody 替换**（代码改动 + 测试，commit d4341d6）
+   - 调研目标：扫描 routes 层所有 notEmpty 用法（18 处），识别缺类型校验的真实缺口，聚焦 UUID 类 body 字段（service_id / to_user_id / order_id）
+   - 文件：
+     - `server/src/middleware/validator.ts`（新增 `uuidBody(bodyName, optional)` 工具函数 + import 补 `body`）
+     - `server/src/routes/time-bank.ts`（5 处 `body('xxx').notEmpty().withMessage(...)` → `uuidBody('xxx')`，import 补 `uuidBody`）
+     - `server/src/routes/__tests__/time-bank.test.ts`（新增 `USER_UUID_2` fixture + 现有 5 个测试 fixture 改为合法 UUID + 新增 5 个 422 防御用例 + 现有 evidence 422 用例 fixture 同步）
+     - `server/src/middleware/__tests__/validator.test.ts`（新增 `mockBody` + import 补 `body`/`uuidBody` + 新增 uuidBody 测试块 3 个用例）
+   - 改动点：
+     - **新增 `uuidBody(bodyName, optional=false)` 工具函数**：
+       - 与 `uuidParam` 对称，用于校验 req.body 中的 UUID 类字段
+       - 设计原因：原 `body('xxx').notEmpty()` 仅校验非空，非 UUID 值（如 'abc'、数字、对象）会穿透到 service 层，触发 PostgreSQL `invalid input syntax for type uuid` 错误（500 而非 422），既浪费 DB 查询又让错误语义错位
+       - 默认 required（optional=false）：body 字段通常必填，与 uuidParam 的 path 参数默认必填一致
+       - isUUID('all') 而非 'v4'：与 uuidParam 保持一致，兼容历史数据与其他 UUID 版本
+     - **5 处 notEmpty → uuidBody 替换**：
+       - `POST /orders` `body('service_id').notEmpty()` → `uuidBody('service_id')`（createOrder）
+       - `POST /transfer` `body('to_user_id').notEmpty()` → `uuidBody('to_user_id')`（transferTime）
+       - `POST /donate` `body('to_user_id').notEmpty()` → `uuidBody('to_user_id')`（donateTime）
+       - `POST /reviews` `body('order_id').notEmpty()` → `uuidBody('order_id')`（createReview）
+       - `POST /disputes` `body('order_id').notEmpty()` → `uuidBody('order_id')`（createDispute）
+     - **现有测试 fixture 同步更新**：
+       - `service_id: 'svc-1'` → `service_id: SERVICE_UUID`（POST /orders 成功用例）
+       - `to_user_id: 'user-uuid-002'` → `to_user_id: USER_UUID_2`（POST /transfer + POST /donate 成功用例）
+       - `order_id: 'order-1'` → `order_id: ORDER_UUID`（POST /reviews + POST /disputes 成功用例 + evidence 422 用例）
+       - 新增 `USER_UUID_2 = '550e8400-e29b-41d4-a716-446655440033'` 常量
+       - 设计原因：加 uuidBody isUUID 校验后，原非 UUID fixture 会被路由层 422 拦截，无法进入 service mock 验证路径
+     - **新增 5 个 422 防御用例**（time-bank.test.ts）：
+       - `POST /orders service_id 非 UUID 时返回 422，不调用 service`
+       - `POST /transfer to_user_id 非 UUID 时返回 422，不调用 service`
+       - `POST /donate to_user_id 非 UUID 时返回 422，不调用 service`
+       - `POST /reviews order_id 非 UUID 时返回 422，不调用 service`
+       - `POST /disputes order_id 非 UUID 时返回 422，不调用 service`
+       - 每个用例同步断言 HTTP 422 + service 方法未被调用，验证校验中间件确实在路由层短路返回
+     - **新增 3 个 uuidBody 单元测试**（validator.test.ts）：
+       - `必填模式（默认）应调用 body(name).isUUID("all")，不调用 optional`
+       - `自定义字段名应透传（如 "to_user_id"）`
+       - `应设置 withMessage 含字段名的中文提示`
+       - 与 uuidParam 测试块完全对称，验证工厂函数按预期调用 body(name).isUUID('all').withMessage(...)
+     - **现有 evidence 422 用例 fixture 同步**：
+       - 原 evidence 422 用例的 `order_id: 'order-1'` 改为 `order_id: ORDER_UUID`
+       - 设计原因：加 uuidBody 校验后，非 UUID 的 order_id 会在 order_id 校验环节就被 422 拦截，无法触达 evidence 校验，导致原 evidence 422 用例的测试意图被掩盖
+   - 验收：
+     - 后端 tsc --noEmit ✅ 通过
+     - 后端 vitest run 全量通过 ✅（81 文件 1862 用例，含新增 8 个：5 个 time-bank 422 防御 + 3 个 uuidBody 单元测试；time-bank.test.ts 43 用例，validator.test.ts 29 用例）
+     - 前端 npm run build ✅ 通过（1732 模块，16.50s，零错误零警告）
+
+### 本轮总结（1 个迭代单元）
+
+| 文件 | 改动类型 | commit |
+| --- | --- | --- |
+| server/src/middleware/validator.ts | 新增 uuidBody 工具函数 + import 补 body | d4341d6 |
+| server/src/routes/time-bank.ts | 5 处 notEmpty → uuidBody + import 补 uuidBody | d4341d6 |
+| server/src/routes/__tests__/time-bank.test.ts | fixture 改合法 UUID + 新增 5 个 422 防御用例 + USER_UUID_2 常量 | d4341d6 |
+| server/src/middleware/__tests__/validator.test.ts | 新增 mockBody + uuidBody 测试块（3 个用例） | d4341d6 |
+
+### 验证结果（本轮）
+
+- 后端类型检查：✅ tsc --noEmit 通过
+- 后端单元测试：✅ 81 文件 1862 用例全量通过（含新增 8 个）
+- 前端构建：✅ 1732 模块构建成功（16.50s，零错误零警告）
+
+### 关键技术决策（本轮）
+
+1. **uuidBody 与 uuidParam 的对称设计**：
+   - uuidParam 校验路径参数（req.params），uuidBody 校验请求体字段（req.body）
+   - 两者共享相同的设计哲学：isUUID('all') + 默认必填 + 中文 withMessage
+   - 工厂函数签名对称：`uuidParam(paramName='id')` vs `uuidBody(bodyName, optional=false)`
+   - 差异：uuidParam 的 path 参数默认名 'id'（大多数路由用 :id），uuidBody 必须显式传字段名（body 字段名各不相同）
+2. **notEmpty 的语义局限性与 isUUID 的必要性**：
+   - `notEmpty()` 仅校验字段存在且不为空字符串，对数字、对象、非 UUID 字符串等均放行
+   - 非 UUID 值穿透到 service 层后，PostgreSQL `WHERE id = $1` 参数化查询会抛出 `invalid input syntax for type uuid: "xxx"` 错误，返回 500 而非 422
+   - `isUUID('all')` 在路由层前置拦截，返回 422 参数校验错误，错误语义清晰（参数格式错误应 422 而非 500 服务器错误）
+   - 与 uuidParam 形成「路径参数 + 请求体字段」UUID 校验完整闭环
+3. **测试 fixture 必须同步更新避免假阴性**：
+   - 原 time-bank.test.ts 使用 'svc-1'/'order-1'/'user-uuid-002' 等非 UUID fixture
+   - 加 uuidBody 校验后，这些 fixture 会被路由层 422 拦截，成功用例会失败（假阴性：功能正确但测试失败）
+   - 同步更新为合法 UUID（SERVICE_UUID/ORDER_UUID/USER_UUID_2）后，成功用例恢复验证 service mock 调用链路
+4. **evidence 422 用例的 order_id 必须同步更新**：
+   - 原 evidence 422 用例的 `order_id: 'order-1'` 在加 uuidBody 校验后，会在 order_id 校验环节就被 422 拦截
+   - 这会导致 evidence 校验永远不会被触达，原 evidence 422 用例的测试意图被掩盖（通过 422 但不是因 evidence 校验失败）
+   - 改为 `order_id: ORDER_UUID` 后，order_id 校验通过，evidence 校验被触达并返回 422，测试意图恢复正确
+5. **扫描结果分类与下一轮范围界定**：
+   - 18 处 notEmpty 用法扫描后分类：
+     - ✅ 2 处已有 isString（ab-test.ts eventType/variant）
+     - ⚠️ 5 处 UUID body 字段（本轮修复：time-bank.ts service_id/to_user_id/order_id）
+     - ⚠️ 4 处 auth.ts 字符串字段（phone/password/refreshToken/privacyConsentVersion，下轮候选）
+     - ⚠️ 7 处 time-bank.ts 字符串字段（type/category/title/relationship/reason 等，下轮候选）
+   - 本轮聚焦 UUID 字段（最高风险：触发 PG 500 错误），字符串字段留待下一轮
+
+### Git 提交记录（本轮）
+
+- `d4341d6` fix: 收紧 time-bank routes 层 UUID body 字段校验（新增 uuidBody 工具函数 + 5 处 notEmpty 替换）
+
+### 遗留问题（本轮）
+
+无阻塞性遗留问题。剩余技术债清理项：
+
+1. **routes 层字符串字段 notEmpty 缺 isString 类型校验**（下轮候选）：
+   - auth.ts: phone/password/refreshToken/privacyConsentVersion（4 处，安全相关，高优先级）
+   - time-bank.ts: type/category/title/relationship/reason（7 处，已有 isLength 但缺 isString）
+2. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）：
+   - 5.1 P0 安全遗留：.env 历史 commit 含泄露凭据，需运维轮换 DB/Redis 密码与 JWT 密钥，并清理 git 历史
+   - 5.2 P1 生产就绪验收：全页面移动端适配、CD 流水线 GitHub Secrets、高德地图 Key 配置等运维侧确认
+
+### 下一轮建议（本轮）
+
+继续推进 Phase3 技术债清理：
+
+1. **routes 层 UUID body 字段校验已收尾**：time-bank.ts 的 5 处 UUID body 字段已全部替换为 uuidBody，其他 routes 模块无 UUID body 字段缺口
+2. **可选下一站**（按优先级）：
+   - 2.1 auth.ts 字符串字段 notEmpty → isString 类型校验补全（phone/password/refreshToken/privacyConsentVersion 4 处，安全相关高优先级）
+   - 2.2 time-bank.ts 字符串字段 notEmpty → isString 类型校验补全（type/category/title/relationship/reason 7 处，已有 isLength 但缺 isString）
+   - 2.3 service 层错误处理边界复核：抽查关键 service 的 catch 块，确认错误类型正确（NotFoundError/PermissionDeniedError/BadRequestError 等），避免抛出 500 错误
+3. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）
+
+---
+
+## 上轮迭代摘要（2026-07-27 第 5 轮）
+
+承接 2026-07-27 第 4 轮 service 层 SQL 注入面扫描 + admin /export/:type orderType 白名单校验补全 + emergency routes 字段类型校验补全（commit 3e88449），本轮继续推进 **Phase3 技术债清理** 下一站：skills routes req.body 字段类型校验补全收尾。
+
+本轮聚焦上轮 topics.md「下一轮建议」第 2.1 项「routes 层 req.body 字段类型校验补全扫描」的收尾工作，完成 1 个迭代单元：
+
+### 已完成任务（1 个迭代单元）
+
+1. **skills.ts disputeOrder/resolveDispute 路由 reason/resolution 字段类型校验补全**（代码改动 + 测试，commit d0858c6）
+   - 调研目标：完成 skills 模块剩余 2 处 notEmpty 缺类型校验缺口的收尾工作（disputeOrder 与 resolveDispute 路由的 reason/resolution 字段）
+   - 文件：
+     - `server/src/routes/skills.ts`（disputeOrder 与 resolveDispute 路由各 1 处 notEmpty → isString().isLength()，共 2 处修改）
+     - `server/src/routes/__tests__/skills.test.ts`（新增 4 个 422 防御用例，覆盖非字符串与超长文本场景）
+   - 改动点：
+     - **disputeOrder 路由 reason 字段**：`body('reason').notEmpty().withMessage('争议原因不能为空')` → `body('reason').isString().isLength({ min: 1, max: 500 }).withMessage('争议原因不能为空且不超过500字符')`
+       - 设计原因：notEmpty 对数字/对象等非字符串类型放行，isString 严格校验字符串类型；isLength 同时校验非空（min:1）与上限（500 字符，对齐 emergency 举报原因范式），替代 notEmpty 的语义模糊行为
+     - **resolveDispute 路由 resolution 字段**：`body('resolution').notEmpty().withMessage('处理结果说明不能为空')` → `body('resolution').isString().isLength({ min: 1, max: 500 }).withMessage('处理结果说明不能为空且不超过500字符')`
+       - 设计原因：resolution 是管理员裁决说明，需留痕便于申诉复核，isString 严格校验避免对象/数组类型穿透；isLength 上限 500 字符对齐 dispute.reason 范式，保持争议双方字段语义一致
+     - **新增 4 个 422 防御用例**：
+       - dispute 路由：`reason 非字符串（数字）返回 422，不调用 service` + `reason 超长（>500 字符）返回 422，不调用 service`
+       - resolve 路由：`resolution 非字符串（数字）返回 422，不调用 service` + `resolution 超长（>500 字符）返回 422，不调用 service`
+       - 每个用例同步断言 HTTP 422 + service 方法未被调用，验证校验中间件确实在路由层短路返回
+   - 验收：
+     - 后端 tsc --noEmit ✅ 通过
+     - 后端 vitest run 全量通过 ✅（81 文件 1854 用例，含新增 4 个；skills.test.ts 31 个用例全通过）
+     - 前端 npm run build ✅ 通过（1732 模块，2m 38s）
+
+### 本轮总结（1 个迭代单元）
+
+| 文件 | 改动类型 | commit |
+| --- | --- | --- |
+| server/src/routes/skills.ts | disputeOrder/resolveDispute 路由 reason/resolution 字段 notEmpty → isString().isLength() | d0858c6 |
+| server/src/routes/__tests__/skills.test.ts | 新增 4 个 422 防御用例（非字符串 + 超长文本） | d0858c6 |
+
+### 验证结果（本轮）
+
+- 后端类型检查：✅ tsc --noEmit 通过
+- 后端单元测试：✅ 81 文件 1854 用例全量通过（含新增 4 个）
+- 前端构建：✅ 1732 模块构建成功（2m 38s）
+
+### 关键技术决策（本轮）
+
+1. **reason/resolution 字段上限对齐 emergency 举报原因范式（500 字符）**：
+   - emergency.ts createFalseReport.reason 与 resolveFalseReport.resolution 均为 500 字符上限（commit 3e88449 已确立）
+   - skills.ts disputeOrder.reason 与 resolveDispute.resolution 同为争议/裁决场景的说明字段，对齐 500 字符保持语义一致
+   - 与 address 字段上限（200 字符）/ title 字段上限（100 字符）形成差异化：reason/resolution 是争议说明（需更长冗余），address 是地理地址（200 字符足够），title 是标题（100 字符紧凑）
+2. **isString 前置校验的语义价值**：
+   - notEmpty 仅校验字段存在且不为空字符串，对数字/对象/数组等非字符串类型会放行（如 `reason: 12345` 会通过 notEmpty 校验）
+   - isString 严格校验字符串类型，避免 service 层 sanitizeXss 处理非字符串输入时的异常行为
+   - 与 emergency.ts 的 reason/resolution 字段校验范式完全对齐，保持 routes 层校验风格一致性
+3. **测试用例「非字符串 + 超长文本」双场景覆盖**：
+   - 非字符串场景（`reason: 12345`）：验证 isString 校验生效，notEmpty 无法拦截此类输入
+   - 超长文本场景（`reason: 'a'.repeat(501)`）：验证 isLength 上限校验生效，避免超长文本穿透到 service 层 sanitizeXss 造成性能压力
+   - 与 emergency.test.ts 的防御用例范式一致，形成 routes 层校验的完整测试覆盖
+4. **routes 层 req.body 字段类型校验补全线的收尾**：
+   - 上一轮（第 4 轮）已完成 emergency.ts 的 5 处 notEmpty → isString/isUUID 严格校验（commit 3e88449）
+   - 本轮完成 skills.ts 的 2 处剩余 notEmpty → isString().isLength() 严格校验
+   - 至此 routes 层 req.body 字段类型校验补全扫描已收尾，emergency + skills 两个模块的所有 notEmpty 缺类型校验问题均已修复
+
+### Git 提交记录（本轮）
+
+- `d0858c6` refactor: 收紧 skills dispute/resolve 路由 reason/resolution 字段类型校验
+
+### 遗留问题（本轮）
+
+无阻塞性遗留问题。剩余技术债清理项：
+
+1. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）：
+   - 5.1 P0 安全遗留：.env 历史 commit 含泄露凭据，需运维轮换 DB/Redis 密码与 JWT 密钥，并清理 git 历史
+   - 5.2 P1 生产就绪验收：全页面移动端适配、CD 流水线 GitHub Secrets、高德地图 Key 配置等运维侧确认
+
+### 下一轮建议（本轮）
+
+继续推进 Phase3 技术债清理：
+
+1. **routes 层 req.body 字段类型校验补全已收尾**：emergency + skills 两个模块的所有 notEmpty 缺类型校验问题均已修复，无需继续扫描
+2. **可选下一站**（按优先级）：
+   - 2.1 routes 层 req.params 字段校验扫描：确认所有带路径参数的路由均使用 uuidParam 或 enumParam 前置校验，避免非法 id 穿透到 service 层
+   - 2.2 service 层错误处理边界复核：抽查关键 service 的 catch 块，确认错误类型正确（NotFoundError/PermissionDeniedError/BadRequestError 等），避免抛出 500 错误
+   - 2.3 routes 层其他 notEmpty 用法扫描：扫描是否还有其他 routes 文件存在 notEmpty 缺类型校验问题（如 messages/notifications/upload 等）
+3. **运维侧 P0/P1**（非 Agent 可推进，需用户介入）
+
+---
+
+## 上轮迭代摘要（2026-07-27 第 4 轮）
 
 承接 2026-07-27 第 3 轮 routes 层 req.body 字段白名单校验扫描 + time-bank createDispute evidence 字段校验补全，本轮进入 **Phase3 技术债清理** 下一站：service 层 SQL 注入面扫描 + admin /export/:type orderType 白名单校验补全。
 

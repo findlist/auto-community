@@ -121,6 +121,8 @@ export default function Home() {
   const [heroImage, setHeroImage] = useState<string>("/llq.jpg");
   const { ref: proofRef, visible: proofVisible } = useScrollReveal<HTMLDivElement>();
   const { ref: ctaRef, visible: ctaVisible } = useScrollReveal<HTMLDivElement>();
+  // 页脚滚动揭示：与 proof/CTA 区保持统一的滚动入场节奏
+  const { ref: footerRef, visible: footerVisible } = useScrollReveal<HTMLElement>();
 
   // 设计原因：两个独立 Promise 链在组件卸载后仍可能 resolve，用 cancelled 标志守护
   // 避免对已卸载组件 setState 造成内存泄漏与 React 警告
@@ -330,7 +332,14 @@ export default function Home() {
       </section>
 
       {/* 页脚版权：顶部细线分隔，避免与终极 CTA 黑色块完全连成一片 */}
-      <footer className="py-10 px-6 text-center bg-neutral-900 text-neutral-500 text-xs border-t border-white/5">
+      <footer
+        ref={footerRef}
+        className="py-10 px-6 text-center bg-neutral-900 text-neutral-500 text-xs border-t border-white/5 transition-all duration-700"
+        style={{
+          opacity: footerVisible ? 1 : 0,
+          transform: footerVisible ? "translateY(0)" : "translateY(12px)",
+        }}
+      >
         <p className="tracking-wide">© 邻里圈 · 让社区更有温度</p>
         <p className="mt-1.5 text-neutral-600 text-[11px] font-mono tracking-widest">NEIGHBORHOOD CIRCLE</p>
       </footer>
