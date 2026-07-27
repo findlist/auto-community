@@ -306,9 +306,10 @@ describe('TimeBank/MyOrders 订单列表', () => {
     // 点击"接受"按钮：精确匹配避免与状态筛选 Tab"待接受"冲突
     await user.click(screen.getByRole('button', { name: '接受' }));
 
-    // 应调用 updateOrderStatus，参数为 (orderId, 'accepted')
+    // 应调用 updateOrderStatus，参数为 (orderId, 'accepted', undefined)
+    // 第三参数 actualDuration 仅完成服务时传入，其他场景为 undefined
     await waitFor(() => {
-      expect(updateOrderStatus).toHaveBeenCalledWith('order-pending-1', 'accepted');
+      expect(updateOrderStatus).toHaveBeenCalledWith('order-pending-1', 'accepted', undefined);
     });
     // 应显示成功提示
     await waitFor(() => {
@@ -324,7 +325,7 @@ describe('TimeBank/MyOrders 订单列表', () => {
     await user.click(screen.getByRole('button', { name: '开始服务' }));
 
     await waitFor(() => {
-      expect(updateOrderStatus).toHaveBeenCalledWith('order-accepted-1', 'in_progress');
+      expect(updateOrderStatus).toHaveBeenCalledWith('order-accepted-1', 'in_progress', undefined);
     });
   });
 
@@ -338,7 +339,8 @@ describe('TimeBank/MyOrders 订单列表', () => {
     await user.click(screen.getByRole('button', { name: '完成服务' }));
 
     await waitFor(() => {
-      expect(updateOrderStatus).toHaveBeenCalledWith('order-in-progress-1', 'completed');
+      // 完成服务时传入 actualDuration = order.durationMinutes（家电维修 90 分钟）
+      expect(updateOrderStatus).toHaveBeenCalledWith('order-in-progress-1', 'completed', 90);
     });
   });
 
@@ -353,7 +355,7 @@ describe('TimeBank/MyOrders 订单列表', () => {
     await user.click(cancelButtons[0]!);
 
     await waitFor(() => {
-      expect(updateOrderStatus).toHaveBeenCalledWith('order-pending-1', 'cancelled');
+      expect(updateOrderStatus).toHaveBeenCalledWith('order-pending-1', 'cancelled', undefined);
     });
   });
 
@@ -389,7 +391,7 @@ describe('TimeBank/MyOrders 订单列表', () => {
 
     // 第一次点击应触发 updateOrderStatus 调用
     await waitFor(() => {
-      expect(updateOrderStatus).toHaveBeenCalledWith('order-pending-1', 'accepted');
+      expect(updateOrderStatus).toHaveBeenCalledWith('order-pending-1', 'accepted', undefined);
       expect(updateOrderStatus).toHaveBeenCalledTimes(1);
     });
 

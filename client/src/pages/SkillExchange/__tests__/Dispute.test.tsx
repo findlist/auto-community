@@ -135,10 +135,11 @@ describe('SkillExchange/Dispute 订单争议', () => {
     const backButton = screen.getByRole('button', { name: '返回订单列表' });
     await user.click(backButton);
 
-    expect(navigateMock).toHaveBeenCalledWith('/skill-exchange/orders');
+    // 订单列表页路由为 /skills/orders（与 App.tsx 中 skills/orders 路由一致）
+    expect(navigateMock).toHaveBeenCalledWith('/skills/orders');
   });
 
-  it('顶部返回按钮点击调用 navigate("/skill-exchange/orders")', async () => {
+  it('顶部返回按钮点击调用 navigate("/skills/orders")', async () => {
     renderDispute();
 
     // 等待订单信息卡片加载完成
@@ -148,7 +149,7 @@ describe('SkillExchange/Dispute 订单争议', () => {
     const backButton = screen.getByRole('button', { name: '返回' });
     await user.click(backButton);
 
-    expect(navigateMock).toHaveBeenCalledWith('/skill-exchange/orders');
+    expect(navigateMock).toHaveBeenCalledWith('/skills/orders');
   });
 
   it('订单信息卡片渲染标题、状态徽章、对方昵称、积分', async () => {
@@ -316,7 +317,7 @@ describe('SkillExchange/Dispute 订单争议', () => {
     await screen.findByText('争议已提交');
     await user.click(screen.getByRole('button', { name: '返回订单列表' }));
 
-    expect(navigateMock).toHaveBeenCalledWith('/skill-exchange/orders');
+    expect(navigateMock).toHaveBeenCalledWith('/skills/orders');
   });
 
   it('成功卡片点击"查看详情"回到详情视图（setSuccess(false)）', async () => {
