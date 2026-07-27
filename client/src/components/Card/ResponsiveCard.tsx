@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 // 徽章颜色映射
 const badgeColorMap: Record<string, string> = {
   primary: "text-emerald-600", warning: "text-amber-600", error: "text-red-600",
-  info: "text-blue-600", neutral: "text-gray-600",
+  info: "text-blue-600", neutral: "text-neutral-600",
 };
 // 左侧边框颜色映射（用于紧急程度等场景）
 const leftBorderMap: Record<string, string> = {
@@ -44,14 +44,14 @@ export function ResponsiveCard({
       {image ? (
         <img src={image} alt={title} className="h-40 w-full rounded-lg object-cover mb-3" />
       ) : (
-        <div className="h-40 w-full rounded-lg bg-gray-50 flex items-center justify-center text-4xl mb-3">{imagePlaceholder}</div>
+        <div className="h-40 w-full rounded-lg bg-neutral-50 flex items-center justify-center text-4xl mb-3">{imagePlaceholder}</div>
       )}
       {/* 标题与徽章 */}
       <div className="flex items-start justify-between mb-1">
-        <h3 className="font-medium text-gray-900 flex-1 truncate pr-2">{title}</h3>
+        <h3 className="font-medium text-neutral-900 flex-1 truncate pr-2">{title}</h3>
         {badge && <span className={`text-sm font-medium whitespace-nowrap ${badgeColorMap[badge.color ?? "primary"]}`}>{badge.text}</span>}
       </div>
-      {description && <p className="text-sm text-gray-500 line-clamp-2 mb-2">{description}</p>}
+      {description && <p className="text-sm text-neutral-500 line-clamp-2 mb-2">{description}</p>}
       {/* 标签列表 */}
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-2">
@@ -61,14 +61,14 @@ export function ResponsiveCard({
       {children}
       {/* 底部：用户信息 + 元数据 */}
       {(user || meta) && (
-        <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+        <div className="flex items-center justify-between pt-2 border-t border-neutral-50">
           {user && (
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden">
+              <div className="w-6 h-6 rounded-full bg-neutral-200 overflow-hidden">
                 {/* 头像 alt 使用用户昵称，屏幕阅读器可识别用户身份 */}
                 {user.avatar && <img src={user.avatar} alt={user.nickname ? `${user.nickname}的头像` : "用户头像"} className="w-full h-full object-cover" />}
               </div>
-              <span className="text-sm text-gray-600">{user.nickname}</span>
+              <span className="text-sm text-neutral-600">{user.nickname}</span>
               {user.reputationScore != null && (
                 <span className="flex items-center gap-0.5 text-sm text-amber-500">
                   <Star className="w-3.5 h-3.5 fill-current" />{user.reputationScore}
@@ -76,7 +76,7 @@ export function ResponsiveCard({
               )}
             </div>
           )}
-          {meta && <span className="flex items-center gap-0.5 text-xs text-gray-400"><MapPin className="w-3 h-3" />{meta}</span>}
+          {meta && <span className="flex items-center gap-0.5 text-xs text-neutral-400"><MapPin className="w-3 h-3" />{meta}</span>}
         </div>
       )}
     </Wrapper>

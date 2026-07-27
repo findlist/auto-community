@@ -224,7 +224,7 @@ export default function ImageUpload({
           {previews.map(preview => (
             <div
               key={preview.id}
-              className="relative aspect-square rounded-lg overflow-hidden bg-gray-100"
+              className="relative aspect-square rounded-lg overflow-hidden bg-neutral-100"
             >
               <img
                 src={preview.url}
@@ -262,23 +262,23 @@ export default function ImageUpload({
           onDragOver={handleDragOver}
           className={`border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer transition-colors ${
             uploading 
-              ? 'border-gray-200 bg-gray-50 cursor-not-allowed' 
-              : 'border-gray-300 hover:border-emerald-500 hover:bg-emerald-50'
+              ? 'border-neutral-200 bg-neutral-50 cursor-not-allowed' 
+              : 'border-neutral-300 hover:border-emerald-500 hover:bg-emerald-50'
           }`}
         >
           {uploading ? (
-            <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-neutral-400 animate-spin" />
           ) : (
             <>
-              <Upload className="w-8 h-8 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-500">
+              <Upload className="w-8 h-8 text-neutral-400 mb-2" />
+              <p className="text-sm text-neutral-500">
                 点击或拖拽上传图片
               </p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-neutral-400 mt-1">
                 支持 JPEG、PNG、GIF，最大 5MB
               </p>
               {previews.length > 0 && (
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-neutral-400 mt-1">
                   还可上传 {maxCount - previews.length} 张
                 </p>
               )}
