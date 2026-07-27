@@ -275,7 +275,7 @@ export default function AddressBook() {
       {/* 新增/编辑弹窗 */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
             <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100">
               <h3 className="font-semibold text-neutral-800">
                 {editingId ? "编辑地址" : "新增地址"}

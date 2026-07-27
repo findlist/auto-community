@@ -330,7 +330,7 @@ function EditServiceModal({ service, saving, onClose, onSave }: EditServiceModal
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl w-full max-w-md p-5 shadow-lg my-8">
+      <div className="bg-white rounded-2xl w-full max-w-md p-5 shadow-lg my-8">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-bold text-neutral-800">编辑服务</h3>
           <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600" disabled={saving}>

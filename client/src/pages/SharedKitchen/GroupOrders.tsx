@@ -346,7 +346,7 @@ export default function GroupOrders() {
       {/* 参与弹窗 */}
       {showJoinModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
             <h3 className="text-lg font-medium mb-4">参与拼单</h3>
             <p className="text-sm text-neutral-600 mb-4">{showJoinModal.title}</p>
             

@@ -102,7 +102,7 @@ export default function TransferModal({ open, onClose, onSuccess, currentBalance
   // 内容 w-full max-w-sm：替代 w-[90%] 固定百分比，配合 p-4 实现稳定的 viewport 适配
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-xl w-full max-w-sm p-5 shadow-lg">
+      <div className="bg-white rounded-2xl w-full max-w-sm p-5 shadow-lg">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <Send className="w-5 h-5 text-emerald-600" />
