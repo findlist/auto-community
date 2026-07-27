@@ -90,8 +90,8 @@ export default function PointsDetail() {
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4">
-        <Clock className="w-16 h-16 text-gray-300 mb-4" />
-        <p className="text-gray-500 mb-4">请先登录</p>
+        <Clock className="w-16 h-16 text-neutral-300 mb-4" />
+        <p className="text-neutral-500 mb-4">请先登录</p>
         <Link to="/login" className="px-6 py-2 bg-emerald-500 text-white rounded-lg">
           去登录
         </Link>
@@ -129,12 +129,12 @@ export default function PointsDetail() {
         {/* 触控区域标准：py-1.5 px-2 ≥40px，-ml-2 抵消父容器 px-4 保持视觉对齐 */}
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1 text-gray-600 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors"
+          className="flex items-center gap-1 text-neutral-600 py-1.5 px-2 -ml-2 rounded hover:bg-neutral-100 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           返回
         </button>
-        <h2 className="text-lg font-semibold text-gray-900">积分明细</h2>
+        <h2 className="text-lg font-semibold text-neutral-900">积分明细</h2>
       </div>
 
       {/* 积分余额卡片 */}
@@ -148,10 +148,10 @@ export default function PointsDetail() {
 
       {/* 交易记录列表 */}
       <div className="bg-white rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100">
-          <span className="text-sm font-medium text-gray-700">
+        <div className="px-4 py-3 border-b border-neutral-100">
+          <span className="text-sm font-medium text-neutral-700">
             交易记录
-            {total > 0 && <span className="text-gray-400 ml-1">（共 {total} 条）</span>}
+            {total > 0 && <span className="text-neutral-400 ml-1">（共 {total} 条）</span>}
           </span>
         </div>
 
@@ -181,20 +181,20 @@ export default function PointsDetail() {
             const style = typeStyle[tx.type] || typeStyle.spend;
             const Icon = style.icon;
             return (
-              <div key={tx.id} className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0">
+              <div key={tx.id} className="flex items-center gap-3 px-4 py-3 border-b border-neutral-50 last:border-0">
                 <div className={`w-9 h-9 rounded-full ${style.bg} flex items-center justify-center flex-shrink-0`}>
                   <Icon className={`w-4 h-4 ${style.color}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900 truncate">{tx.description || typeLabel[tx.type] || tx.type}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{formatTime(tx.createdAt)}</p>
+                  <p className="text-sm text-neutral-900 truncate">{tx.description || typeLabel[tx.type] || tx.type}</p>
+                  <p className="text-xs text-neutral-400 mt-0.5">{formatTime(tx.createdAt)}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className={`text-sm font-medium ${amountClass(tx.type)}`}>
                     {formatAmount(tx.type, tx.amount)}
                   </p>
                   {tx.balanceAfter !== undefined && (
-                    <p className="text-xs text-gray-400 mt-0.5">余额 {tx.balanceAfter}</p>
+                    <p className="text-xs text-neutral-400 mt-0.5">余额 {tx.balanceAfter}</p>
                   )}
                 </div>
               </div>
