@@ -51,7 +51,7 @@ import {
   type SystemSetting, type AuditLog, type AuditLogQuery, type AdminOrderItem,
   type Report, type VerificationRequest, type MetricsResponse, type DashboardMetric,
   type MetricSummary, type MetricTrendItem, type BatchBanResult, type BatchResult,
-  type ExportType, type ExportFormat, type ExportParams,
+  type ExportParams,
 } from '../admin';
 
 // mock client 模块，覆盖 get/post/put/delete 4 种方法
@@ -73,8 +73,6 @@ const mockCreateObjectURL = vi.fn(() => 'blob:mock-url');
 const mockRevokeObjectURL = vi.fn();
 Object.defineProperty(globalThis.URL, 'createObjectURL', { value: mockCreateObjectURL, writable: true });
 Object.defineProperty(globalThis.URL, 'revokeObjectURL', { value: mockRevokeObjectURL, writable: true });
-
-import client from '../client';
 
 describe('api/admin - 管理后台 API 层', () => {
   beforeEach(() => {
