@@ -226,12 +226,12 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="text-gray-600 hover:text-gray-900">
+    <div className="flex flex-col h-screen bg-neutral-50">
+      <div className="bg-white border-b border-neutral-200 px-4 py-3 flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="text-neutral-600 hover:text-neutral-900">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-lg font-semibold text-gray-900">聊天</h1>
+        <h1 className="text-lg font-semibold text-neutral-900">聊天</h1>
       </div>
 
       {/* 连接状态提示：重连中显示黄色，断开显示红色，已连接不显示 */}
@@ -248,7 +248,7 @@ export default function Chat() {
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {loading && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-neutral-500">
             <Loader2 className="w-5 h-5 animate-spin text-emerald-500 inline-block mr-2 align-middle" />
             加载中...
           </div>
@@ -285,13 +285,13 @@ export default function Chat() {
                 className={`px-4 py-2 rounded-lg ${
                   isMyMessage(message)
                     ? "bg-emerald-500 text-white"
-                    : "bg-white text-gray-900"
+                    : "bg-white text-neutral-900"
                 }`}
               >
                 {message.content}
               </div>
               <div
-                className={`text-xs text-gray-400 mt-1 ${
+                className={`text-xs text-neutral-400 mt-1 ${
                   isMyMessage(message) ? "text-right" : "text-left"
                 }`}
               >
@@ -303,7 +303,7 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="bg-white border-t border-gray-200 px-4 py-3">
+      <div className="bg-white border-t border-neutral-200 px-4 py-3">
         <div className="flex gap-2">
           <input
             type="text"
@@ -312,7 +312,7 @@ export default function Chat() {
             onKeyPress={handleKeyPress}
             placeholder="输入消息..."
             aria-label="输入消息"
-            className="flex-1 px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="flex-1 px-4 py-2 bg-neutral-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
           <button
             onClick={handleSendMessage}
