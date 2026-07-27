@@ -142,8 +142,8 @@ export default function DeleteAccount() {
       <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center px-4">
         <div className="bg-white rounded-xl p-6 max-w-sm w-full text-center">
           <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-          <h2 className="text-lg font-bold text-gray-800 mb-2">注销申请已通过</h2>
-          <p className="text-sm text-gray-500 mb-4">
+          <h2 className="text-lg font-bold text-neutral-800 mb-2">注销申请已通过</h2>
+          <p className="text-sm text-neutral-500 mb-4">
             您的账号数据已匿名化处理，即将退出登录。
           </p>
         </div>
@@ -158,7 +158,7 @@ export default function DeleteAccount() {
         {/* 触控区域标准：py-1.5 px-2 ≥40px，-ml-2 抵消父容器 px-4 保持视觉对齐 */}
         <button
           onClick={() => navigate("/profile")}
-          className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors"
+          className="flex items-center gap-1 text-neutral-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-neutral-100 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           返回
@@ -167,22 +167,22 @@ export default function DeleteAccount() {
         <div className="bg-white rounded-xl p-6 max-w-md mx-auto w-full">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-yellow-500" />
-            <h2 className="text-lg font-bold text-gray-800">注销申请审核中</h2>
+            <h2 className="text-lg font-bold text-neutral-800">注销申请审核中</h2>
           </div>
 
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-neutral-500 mb-4">
             您的账号注销申请正在审核中，请耐心等待管理员审核。
           </p>
 
-          <div className="bg-gray-50 rounded-lg p-3 mb-4">
-            <p className="text-xs text-gray-400">提交时间</p>
-            <p className="text-sm text-gray-600">
+          <div className="bg-neutral-50 rounded-lg p-3 mb-4">
+            <p className="text-xs text-neutral-400">提交时间</p>
+            <p className="text-sm text-neutral-600">
               {status.createdAt ? new Date(status.createdAt).toLocaleString() : "-"}
             </p>
             {status.reason && (
               <>
-                <p className="text-xs text-gray-400 mt-2">注销原因</p>
-                <p className="text-sm text-gray-600">{status.reason}</p>
+                <p className="text-xs text-neutral-400 mt-2">注销原因</p>
+                <p className="text-sm text-neutral-600">{status.reason}</p>
               </>
             )}
           </div>
@@ -197,7 +197,7 @@ export default function DeleteAccount() {
           <button
             onClick={handleCancel}
             disabled={canceling}
-            className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3 bg-neutral-100 text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-200 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {canceling ? (
               <>
@@ -223,7 +223,7 @@ export default function DeleteAccount() {
         {/* 触控区域标准：py-1.5 px-2 ≥40px，-ml-2 抵消父容器 px-4 保持视觉对齐 */}
         <button
           onClick={() => navigate("/profile")}
-          className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors"
+          className="flex items-center gap-1 text-neutral-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-neutral-100 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           返回
@@ -232,22 +232,22 @@ export default function DeleteAccount() {
         <div className="bg-white rounded-xl p-6 max-w-md mx-auto w-full">
           <div className="flex items-center gap-2 mb-4">
             <XCircle className="w-5 h-5 text-red-500" />
-            <h2 className="text-lg font-bold text-gray-800">注销申请被拒绝</h2>
+            <h2 className="text-lg font-bold text-neutral-800">注销申请被拒绝</h2>
           </div>
 
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-neutral-500 mb-4">
             您可以修改信息后重新提交注销申请。
           </p>
 
           <div className="bg-red-50 rounded-lg p-3 mb-4">
-            <p className="text-xs text-gray-400">审核时间</p>
-            <p className="text-sm text-gray-600">
+            <p className="text-xs text-neutral-400">审核时间</p>
+            <p className="text-sm text-neutral-600">
               {status.reviewedAt ? new Date(status.reviewedAt).toLocaleString() : "-"}
             </p>
             {status.reviewerNickname && (
               <>
-                <p className="text-xs text-gray-400 mt-2">审核人</p>
-                <p className="text-sm text-gray-600">{status.reviewerNickname}</p>
+                <p className="text-xs text-neutral-400 mt-2">审核人</p>
+                <p className="text-sm text-neutral-600">{status.reviewerNickname}</p>
               </>
             )}
           </div>
@@ -278,7 +278,7 @@ export default function DeleteAccount() {
         onClick={() => navigate("/profile")}
         // 与同文件 pending/rejected 状态返回按钮（py-1.5）保持一致，避免同文件三处返回按钮触控目标不一致
         // py-1.5 px-2 + -ml-2 抵消父容器 px-4，保持视觉对齐同时触控目标达 32px 满足移动端可点击标准
-        className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-1 text-neutral-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-neutral-100 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         返回
@@ -292,7 +292,7 @@ export default function DeleteAccount() {
         <div className="bg-white rounded-xl p-6 max-w-md mx-auto w-full">
           <div className="flex items-center gap-2 mb-4">
             <Trash2 className="w-5 h-5 text-red-500" />
-            <h2 className="text-lg font-bold text-gray-800">账号注销</h2>
+            <h2 className="text-lg font-bold text-neutral-800">账号注销</h2>
           </div>
 
           <div className="bg-yellow-50 rounded-lg p-3 mb-4 flex items-start gap-2">
@@ -315,14 +315,14 @@ export default function DeleteAccount() {
           )}
 
           <div className="mb-4">
-            <label className="block text-sm text-gray-600 mb-1">注销原因（可选）</label>
+            <label className="block text-sm text-neutral-600 mb-1">注销原因（可选）</label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="请填写注销原因（最多500字符）"
               maxLength={500}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500 resize-none"
             />
           </div>
 
@@ -344,7 +344,7 @@ export default function DeleteAccount() {
             )}
           </button>
 
-          <p className="mt-4 text-xs text-gray-400 text-center">
+          <p className="mt-4 text-xs text-neutral-400 text-center">
             提交后将由管理员审核，审核通过后账号将被注销
           </p>
         </div>
@@ -353,20 +353,20 @@ export default function DeleteAccount() {
       {/* 确认弹窗 */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
             <div className="flex items-center gap-2 mb-4">
               <AlertTriangle className="w-6 h-6 text-red-500" />
-              <h3 className="text-lg font-bold text-gray-800">确认注销账号？</h3>
+              <h3 className="text-lg font-bold text-neutral-800">确认注销账号？</h3>
             </div>
 
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-neutral-500 mb-6">
               此操作不可撤销，注销后您的个人信息将被匿名化处理，无法恢复。确定要继续吗？
             </p>
 
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirmModal(false)}
-                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
+                className="flex-1 py-3 bg-neutral-100 text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-200"
               >
                 取消
               </button>
