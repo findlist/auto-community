@@ -53,6 +53,30 @@ const METRIC_CONFIG = {
 
 type MetricName = keyof typeof METRIC_CONFIG;
 
+// stale 判定阈值：scheduler 每小时第 5 分钟采集一次，2 小时未更新意味着连续 2 次采集失败
+// 设计原因：阈值放前端而非后端预计算，便于后续调整且避免阈值常量散落前后端两处
+const STALE_THRESHOLD_MS = 2 * 60 * 60 * 1000;
+
+// 格式化「更新于 N 分钟前」文案
+// 设计原因：用相对时间而非绝对时间，管理员一眼感知数据新旧程度，无需心算时间差
+function formatUpdatedAt(recordedAt: string): string {
+  const diffMs = Date.now() - new Date(recordedAt).getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "刚刚更新";
+  if (diffMin < 60) return `${diffMin} 分钟前更新`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} 小时前更新`;
+  const diffDay = Math.floor(diffHour / 24);
+  return `${diffDay} 天前更新`;
+}
+
+// 判断指标是否过期：超过阈值或无 recordedAt 时返回 true
+// 设计原因：无 recordedAt 视为过期，提示管理员数据采集可能异常（如首次部署未触发采集）
+function isStale(recordedAt: string | undefined): boolean {
+  if (!recordedAt) return true;
+  return Date.now() - new Date(recordedAt).getTime() > STALE_THRESHOLD_MS;
+}
+
 export default function Metrics() {
   const [dashboardData, setDashboardData] = useState<DashboardMetric[]>([]);
   const [trendData, setTrendData] = useState<Record<string, MetricTrendItem[]>>({});
@@ -156,13 +180,16 @@ export default function Metrics() {
 
   // CSV 导出
   const handleExportCSV = () => {
-    const headers = ["指标名称", "当前值", "标签"];
+    // 表头新增「最后更新时间」：导出时附带 recordedAt 便于离线分析数据时效性
+    const headers = ["指标名称", "当前值", "标签", "最后更新时间"];
     const rows = dashboardData.map((metric) => {
       const config = METRIC_CONFIG[metric.name as MetricName];
       return [
         config?.label || metric.name,
-        config?.format(metric.value) || metric.value,
+        config?.format(metric.value) || String(metric.value),
         JSON.stringify(metric.tags),
+        // 格式化为本地时间字符串，避免 ISO 时区歧义
+        metric.recordedAt ? new Date(metric.recordedAt).toLocaleString("zh-CN") : "",
       ];
     });
 
@@ -187,6 +214,13 @@ export default function Metrics() {
   const getMetricValue = (metricName: MetricName) => {
     const metric = dashboardData.find((m) => m.name === metricName);
     return metric?.value ?? 0;
+  };
+
+  // 获取指标最后更新时间
+  // 设计原因：dashboardData 为数组，需按 name 查找对应 metric 的 recordedAt，封装避免重复
+  const getMetricRecordedAt = (metricName: MetricName): string | undefined => {
+    const metric = dashboardData.find((m) => m.name === metricName);
+    return metric?.recordedAt;
   };
 
   if (loading) {
@@ -239,6 +273,9 @@ export default function Metrics() {
         {(Object.keys(METRIC_CONFIG) as MetricName[]).map((metricName) => {
           const config = METRIC_CONFIG[metricName];
           const value = getMetricValue(metricName);
+          const recordedAt = getMetricRecordedAt(metricName);
+          // stale 判定：超过 2 小时未更新视为过期，提示管理员数据采集可能异常
+          const stale = isStale(recordedAt);
           const isExpanded = expandedMetric === metricName;
           // 将 icon 字段提到局部大写变量：lucide 组件需要作为 JSX 标签使用，小写会被识别为原生标签
           const Icon = config.icon;
@@ -264,6 +301,17 @@ export default function Metrics() {
                 style={{ color: config.color }}
               >
                 {config.format(value)}
+              </div>
+              {/* 更新时间与 stale 标签：让管理员感知数据新旧程度，stale 时高亮提示 */}
+              <div className="flex items-center gap-1 mt-1.5 text-[10px]">
+                <span className={stale ? "text-orange-500" : "text-neutral-400"}>
+                  {recordedAt ? formatUpdatedAt(recordedAt) : "暂无数据"}
+                </span>
+                {stale && (
+                  <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded">
+                    可能过期
+                  </span>
+                )}
               </div>
             </button>
           );
