@@ -107,7 +107,9 @@ describe('ContentReview 批量操作', () => {
     expect(screen.getAllByText('技能帖B').length).toBeGreaterThan(0);
     expect(screen.getAllByText('技能帖C').length).toBeGreaterThan(0);
     // 共 3 条计数应出现
-    expect(screen.getByText('共 3 条')).toBeInTheDocument();
+    // 设计原因：组件将数字包在 <span> 中做加粗强调，DOM 文本节点被拆分，
+    // getByText 默认按单个文本节点匹配会失败，改用函数 matcher 按 textContent 整体匹配
+    expect(screen.getByText((_, node) => node?.textContent === '共 3 条')).toBeInTheDocument();
   });
 
   it('加载中显示 Loader2 旋转动画', async () => {

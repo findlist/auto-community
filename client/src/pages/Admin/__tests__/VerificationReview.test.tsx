@@ -400,7 +400,11 @@ describe('VerificationReview 实名认证审核', () => {
       renderVerificationReview();
     });
     await waitFor(() => {
-      expect(screen.getByText('1 / 2')).toBeInTheDocument();
+      // 设计原因：组件将 page 与 totalPages 分别包在 <span> 中做样式区分（页码加粗+灰色分隔），
+      // DOM 文本节点被拆分，且实际渲染无空格（<span>1</span><span>/</span><span>2</span>），
+      // 改用函数 matcher 按 textContent 整体匹配 '1/2'
+      // 桌面表格 + 移动卡片双布局渲染 2 套分页，用 getAllByText 断言长度
+      expect(screen.getAllByText((_, node) => node?.textContent === '1/2').length).toBeGreaterThan(0);
     });
     const initialCallCount = vi.mocked(getVerificationRequests).mock.calls.length;
     // 下一页按钮（ChevronRight 图标按钮无 accessible name，用 class 定位）
