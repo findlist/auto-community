@@ -18,6 +18,7 @@ interface JwtPayload {
 
 // 扩展Request类型
 declare global {
+  // Express 类型扩展官方范式：通过 namespace 合并向 Express.Request 注入 user 字段，禁用 no-namespace 规则以使用此范式
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {

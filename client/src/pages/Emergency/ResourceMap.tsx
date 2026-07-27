@@ -290,6 +290,7 @@ export default function ResourceMap() {
     if (allPositions.length > 1) {
       map.setFitView(allPositions.map((p) => new window.AMap.LngLat(p[0], p[1])));
     }
+    // showInfoWindow 是 useCallback 稳定引用、setSelectedId 是 React 稳定 setState、parseLocation/escapeHtml 为模块级纯函数，均无需纳入依赖
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resources, userLocation]);
 

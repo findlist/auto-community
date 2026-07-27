@@ -87,6 +87,7 @@ export default function FoodReviewPage() {
     // 同步活跃 postId 并触发请求
     activePostIdRef.current = postId;
     loadReviews(1);
+    // loadReviews 依赖 post，纳入会导致 post 变化时重复触发此 effect（post 由 loadReviews 内部 setPost 更新，会形成循环）
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
