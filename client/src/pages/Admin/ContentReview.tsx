@@ -752,7 +752,7 @@ export default function ContentReview() {
               <button
                 onClick={() => setBatchConfirm(null)}
                 aria-label="关闭批量操作确认弹窗"
-                className="text-neutral-400 hover:text-neutral-600 p-1 rounded hover:bg-neutral-100 transition-colors"
+                className="text-neutral-400 hover:text-neutral-600 p-2.5 rounded hover:bg-neutral-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

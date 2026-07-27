@@ -519,7 +519,7 @@ export default function UserManagement() {
               </h3>
               <button
                 onClick={() => setConfirm(null)}
-                className="text-neutral-400 hover:text-neutral-600 p-1 rounded hover:bg-neutral-100 transition-colors"
+                className="text-neutral-400 hover:text-neutral-600 p-2.5 rounded hover:bg-neutral-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
