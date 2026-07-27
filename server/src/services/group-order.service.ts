@@ -632,8 +632,11 @@ async function complete(groupOrderId: string, userId: string): Promise<void> {
 }
 
 // 检查过期拼单：截止时间已过且未达最低人数的拼单自动取消并退款
-// 返回本次处理的拼单数量
-async function checkExpired(): Promise<number> {
+// 返回本次处理结果：processedCount 为成功取消的拼单数，failedIds 为取消失败的拼单 ID 列表
+// 设计原因：原仅返回 processedCount，scheduler 无法识别哪些拼单取消失败，失败的拼单会
+// 在下一轮定时任务再次查询到并重复尝试。返回 failedIds 后，scheduler 可记录 warn 日志
+// 便于运维识别问题（如退款异常、拼单状态异常等需人工介入的场景）
+async function checkExpired(): Promise<{ processedCount: number; failedIds: string[] }> {
   // 查询过期且未达最低人数的活跃拼单（open/full/ongoing 均视为活跃）
   // 同时取出 initiator_id，以便以发起人身份调用 cancel 完成权限校验
   const expiredResult = await query<{ id: string; initiator_id: string }>(
@@ -645,6 +648,7 @@ async function checkExpired(): Promise<number> {
   );
 
   let processedCount = 0;
+  const failedIds: string[] = [];
   for (const row of expiredResult.rows) {
     try {
       // 以发起人身份执行取消，使用系统默认原因
@@ -652,12 +656,13 @@ async function checkExpired(): Promise<number> {
       processedCount++;
       logger.info({ orderId: row.id }, '拼单过期已自动取消并退款');
     } catch (error) {
-      // 单个拼单取消失败不影响其他拼单处理
+      // 单个拼单取消失败不影响其他拼单处理，但记录失败 ID 供 scheduler 决策
+      failedIds.push(row.id);
       logger.error({ err: error, orderId: row.id }, '拼单过期自动取消失败');
     }
   }
 
-  return processedCount;
+  return { processedCount, failedIds };
 }
 
 export const groupOrderService = {

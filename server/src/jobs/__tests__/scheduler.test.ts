@@ -438,21 +438,40 @@ describe('scheduler - handleEmergencyRequestTimeout', () => {
 
 describe('scheduler - handleGroupOrderTimeout', () => {
   it('checkExpired 返回 0 时不记录日志', async () => {
-    mockGroupOrderCheckExpired.mockResolvedValueOnce(0);
+    mockGroupOrderCheckExpired.mockResolvedValueOnce({ processedCount: 0, failedIds: [] });
 
     await handleGroupOrderTimeout();
 
     expect(mockLoggerInfo).not.toHaveBeenCalled();
+    expect(mockLoggerWarn).not.toHaveBeenCalled();
   });
 
   it('checkExpired 返回 N 时记录处理日志', async () => {
-    mockGroupOrderCheckExpired.mockResolvedValueOnce(5);
+    mockGroupOrderCheckExpired.mockResolvedValueOnce({ processedCount: 5, failedIds: [] });
 
     await handleGroupOrderTimeout();
 
     expect(mockLoggerInfo).toHaveBeenCalledWith(
       expect.objectContaining({ count: 5 }),
       expect.stringContaining('拼单过期处理完成'),
+    );
+    expect(mockLoggerWarn).not.toHaveBeenCalled();
+  });
+
+  it('checkExpired 返回 failedIds 时记录 warn 日志', async () => {
+    // 设计原因：失败的拼单可能因退款异常、状态机异常等原因无法自动取消，
+    // scheduler 记录 warn 日志便于运维通过日志告警识别需人工介入的拼单
+    mockGroupOrderCheckExpired.mockResolvedValueOnce({ processedCount: 2, failedIds: ['order-1', 'order-2'] });
+
+    await handleGroupOrderTimeout();
+
+    expect(mockLoggerInfo).toHaveBeenCalledWith(
+      expect.objectContaining({ count: 2 }),
+      expect.stringContaining('拼单过期处理完成'),
+    );
+    expect(mockLoggerWarn).toHaveBeenCalledWith(
+      expect.objectContaining({ failedIds: ['order-1', 'order-2'], failedCount: 2 }),
+      expect.stringContaining('拼单过期处理存在失败项'),
     );
   });
 });

@@ -826,15 +826,16 @@ describe('group-order.service - getById 获取详情', () => {
 // ==================== checkExpired 测试 ====================
 
 describe('group-order.service - checkExpired 检查过期', () => {
-  it('无过期拼单返回 0', async () => {
+  it('无过期拼单返回 processedCount=0 与空 failedIds', async () => {
     mockedQuery.mockResolvedValueOnce({ rows: [] } as unknown as DbResult);
 
-    const count = await groupOrderService.checkExpired();
+    const result = await groupOrderService.checkExpired();
 
-    expect(count).toBe(0);
+    expect(result.processedCount).toBe(0);
+    expect(result.failedIds).toEqual([]);
   });
 
-  it('有过期拼单 + cancel 失败时不阻塞，返回已处理数 0', async () => {
+  it('有过期拼单 + cancel 失败时不阻塞，返回 processedCount=0 与失败 ID 列表', async () => {
     // checkExpired 查询返回 1 个过期拼单
     mockedQuery.mockResolvedValueOnce({
       rows: [{ id: 'expired-1', initiator_id: 'initiator-1' }],
@@ -843,10 +844,11 @@ describe('group-order.service - checkExpired 检查过期', () => {
     mockClient.query.mockReset();
     mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-    const count = await groupOrderService.checkExpired();
+    const result = await groupOrderService.checkExpired();
 
-    // cancel 失败，processedCount 为 0
-    expect(count).toBe(0);
+    // cancel 失败，processedCount 为 0，failedIds 包含失败的拼单 ID
+    expect(result.processedCount).toBe(0);
+    expect(result.failedIds).toEqual(['expired-1']);
   });
 });
 

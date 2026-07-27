@@ -335,9 +335,15 @@ export async function handleEmergencyRequestTimeout(): Promise<void> {
 
 // 拼单过期处理：截止时间已过且未达最低参与人数的拼单自动取消并退款
 export async function handleGroupOrderTimeout(): Promise<void> {
-  const processedCount = await groupOrderService.checkExpired();
+  const { processedCount, failedIds } = await groupOrderService.checkExpired();
   if (processedCount > 0) {
     logger.info({ count: processedCount }, '[定时任务] 拼单过期处理完成');
+  }
+  // 失败的拼单会在下一轮定时任务再次尝试，但持续失败需运维介入
+  // 设计原因：失败的拼单可能因退款异常、状态机异常等原因无法自动取消，
+  // 记录 warn 日志便于运维通过日志告警识别需人工介入的拼单
+  if (failedIds.length > 0) {
+    logger.warn({ failedIds, failedCount: failedIds.length }, '[定时任务] 拼单过期处理存在失败项，需人工核查');
   }
 }
 
