@@ -136,6 +136,26 @@ describe("FoodReviewPage 评价列表页", () => {
     // reviewer 昵称
     expect(screen.getByText("张三")).toBeInTheDocument();
     expect(screen.getByText("李四")).toBeInTheDocument();
+    // 回归断言：getFoodReviews 首次调用应携带正确的 userId（mockPost.userId='user-1'）
+    // 设计原因：曾存在 stale closure bug，setPost 异步调度后 post 仍为闭包旧值 null，
+    // 导致 userId=undefined，getFoodReviews 退化为查全量评价。此断言锁定修复，防回归
+    expect(getFoodReviewsMock).toHaveBeenCalledWith({
+      userId: "user-1",
+      page: 1,
+      pageSize: 10,
+    });
+  });
+
+  it("首次加载时 getFoodReviews 收到帖子提供者 userId（stale closure 回归守护）", async () => {
+    // 单独验证 stale closure 修复：mockPost.userId='user-1'，应原样透传到 getFoodReviews
+    // 设计原因：与「加载成功」用例解耦，避免用例过长难以定位失败原因
+    renderFoodReviewPage();
+    await waitFor(() => {
+      expect(getFoodReviewsMock).toHaveBeenCalled();
+    });
+    const firstCallArgs = getFoodReviewsMock.mock.calls[0]![0];
+    expect(firstCallArgs.userId).toBe("user-1");
+    expect(firstCallArgs.userId).not.toBeUndefined();
   });
 
   it("无评价时显示空状态", async () => {

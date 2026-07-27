@@ -48,13 +48,18 @@ export default function FoodReviewPage() {
     setError("");
     try {
       // 首次加载时获取帖子信息，确定被评价者
-      if (!post) {
+      // 用局部变量 currentPost 承接 postRes.data，避免 setPost 异步调度后本次调用内 post 仍为闭包旧值（null）
+      // 设计原因：React setState 是异步的，调用后本次函数内的 post 仍是闭包快照，
+      // 若直接读 post?.userId 会得到 undefined，导致 getFoodReviews 退化为查全量评价
+      let currentPost = post;
+      if (!currentPost) {
         const postRes = await getFoodShareById(postId);
         // 竞态守卫：await 期间若 postId 已变化，跳过 setPost 避免旧数据覆盖新数据
         if (activePostIdRef.current !== postId) return;
         setPost(postRes.data);
+        currentPost = postRes.data;
       }
-      const userId = post?.userId;
+      const userId = currentPost?.userId;
       const res = await getFoodReviews({ userId, page: p, pageSize: PAGE_SIZE });
       if (activePostIdRef.current !== postId) return;
       setReviews(res.data.list);
