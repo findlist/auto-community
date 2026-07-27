@@ -20,7 +20,7 @@ const NOTIFICATION_COLORS: Record<NotificationType, string> = {
   order_status: "text-blue-500 bg-blue-50",
   emergency_response: "text-red-500 bg-red-50",
   report_result: "text-orange-500 bg-orange-50",
-  system: "text-gray-500 bg-gray-50",
+  system: "text-neutral-500 bg-neutral-50",
 };
 
 export default function Notifications() {
@@ -178,12 +178,12 @@ export default function Notifications() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-4">
+    <div className="min-h-screen bg-neutral-50 pb-4">
       {/* 头部 */}
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-200">
+      <header className="sticky top-0 z-10 bg-white border-b border-neutral-200">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
-            <Link to="/" className="text-gray-500">
+            <Link to="/" className="text-neutral-500">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <h1 className="text-lg font-semibold">通知中心</h1>
@@ -231,7 +231,7 @@ export default function Notifications() {
           <Empty title="暂无通知" description="新消息会在这里显示" icon={<Bell className="w-16 h-16" />} />
         ) : (
           <>
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-neutral-100">
               {notifications.map((notification) => {
                 const Icon = NOTIFICATION_ICONS[notification.type];
                 const colorClass = NOTIFICATION_COLORS[notification.type];
@@ -244,7 +244,7 @@ export default function Notifications() {
                     className={`bg-white ${isUnread ? "bg-opacity-95" : "bg-opacity-80"}`}
                   >
                     <div
-                      className="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50"
+                      className="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-neutral-50"
                       onClick={() => handleMarkRead(notification)}
                     >
                       {/* 图标：markingId 命中时显示 Loader2 替代原 Icon，让用户感知单条标记已读进行中 */}
@@ -259,7 +259,7 @@ export default function Notifications() {
                       {/* 内容 */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <h3 className={`font-medium truncate ${isUnread ? "text-gray-900" : "text-gray-600"}`}>
+                          <h3 className={`font-medium truncate ${isUnread ? "text-neutral-900" : "text-neutral-600"}`}>
                             {notification.title}
                           </h3>
                           {isUnread && (
@@ -267,11 +267,11 @@ export default function Notifications() {
                           )}
                         </div>
                         {notification.content && (
-                          <p className={`mt-1 text-sm line-clamp-2 ${isUnread ? "text-gray-700" : "text-gray-500"}`}>
+                          <p className={`mt-1 text-sm line-clamp-2 ${isUnread ? "text-neutral-700" : "text-neutral-500"}`}>
                             {notification.content}
                           </p>
                         )}
-                        <p className="mt-1 text-xs text-gray-400">
+                        <p className="mt-1 text-xs text-neutral-400">
                           {formatDate(notification.createdAt)}
                         </p>
                       </div>
@@ -297,7 +297,7 @@ export default function Notifications() {
                 <button
                   onClick={handleLoadMore}
                   disabled={loading}
-                  className="px-4 py-2 text-sm text-emerald-600 hover:text-emerald-700 disabled:text-gray-400"
+                  className="px-4 py-2 text-sm text-emerald-600 hover:text-emerald-700 disabled:text-neutral-400"
                 >
                   {loading ? "加载中..." : "加载更多"}
                 </button>

@@ -249,25 +249,25 @@ describe('Notifications 通知中心', () => {
     expect(screen.queryByRole('button', { name: '全部已读' })).toBeNull();
   });
 
-  it('未读通知显示小红点 + 标题加粗（text-gray-900）', async () => {
+  it('未读通知显示小红点 + 标题加粗（text-neutral-900）', async () => {
     renderNotifications();
 
     await screen.findByText('订单状态更新');
-    // 未读通知标题（订单状态更新）应有 text-gray-900 class
+    // 未读通知标题（订单状态更新）应有 text-neutral-900 class
     const unreadTitle = screen.getByText('订单状态更新');
-    expect(unreadTitle.className).toContain('text-gray-900');
+    expect(unreadTitle.className).toContain('text-neutral-900');
     // 未读通知应有小红点（w-2 h-2 bg-red-500 rounded-full）
     const redDot = unreadTitle.parentElement?.querySelector('.bg-red-500.rounded-full');
     expect(redDot).toBeInTheDocument();
   });
 
-  it('已读通知无小红点 + 标题变浅（text-gray-600）', async () => {
+  it('已读通知无小红点 + 标题变浅（text-neutral-600）', async () => {
     renderNotifications();
 
     await screen.findByText('举报处理结果');
-    // 已读通知标题（举报处理结果）应有 text-gray-600 class
+    // 已读通知标题（举报处理结果）应有 text-neutral-600 class
     const readTitle = screen.getByText('举报处理结果');
-    expect(readTitle.className).toContain('text-gray-600');
+    expect(readTitle.className).toContain('text-neutral-600');
     // 已读通知不应有小红点
     const redDot = readTitle.parentElement?.querySelector('.bg-red-500.rounded-full');
     expect(redDot).toBeNull();
