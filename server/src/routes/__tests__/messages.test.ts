@@ -167,17 +167,29 @@ describe('messages 路由集成测试', () => {
 
     it('order_type=kitchen 与 cursor/limit query 透传到 service', async () => {
       const res = await fetch(
-        `${baseUrl}/?order_id=order-uuid-001&order_type=kitchen&cursor=msg-uuid-000&limit=10`,
+        `${baseUrl}/?order_id=order-uuid-001&order_type=kitchen&cursor=550e8400-e29b-41d4-a716-446655440001&limit=10`,
         { headers: { Authorization: 'Bearer valid-token' } },
       );
       expect(res.status).toBe(200);
       expect(mockGetMessages).toHaveBeenCalledWith(
         'order-uuid-001',
         'user-uuid-001',
-        'msg-uuid-000',
+        '550e8400-e29b-41d4-a716-446655440001',
         10,
         'kitchen',
       );
+    });
+
+    it('cursor 非 UUID 时返回 422，不调用 service', async () => {
+      // 设计原因：messages 表 id 为 UUID 类型，非 UUID cursor 会在 service 层 WHERE id < $cursor
+      // 触发 PostgreSQL invalid input syntax for type uuid 错误（500 而非 422），
+      // uuidQuery 在路由层前置拦截，返回 422 错误语义更清晰
+      const res = await fetch(
+        `${baseUrl}/?order_id=order-uuid-001&cursor=not-a-uuid`,
+        { headers: { Authorization: 'Bearer valid-token' } },
+      );
+      expect(res.status).toBe(422);
+      expect(mockGetMessages).not.toHaveBeenCalled();
     });
 
     it('limit 超过 100 时被截断为 100', async () => {

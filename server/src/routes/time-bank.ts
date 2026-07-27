@@ -422,7 +422,13 @@ router.post('/donate', authenticate, orderLimiter, auditMiddleware('DONATE', { r
   success(res, result);
 }));
 
-router.get('/transactions', authenticate, asyncHandler(async (req, res) => {
+router.get('/transactions', authenticate, validate([
+  // cursor 为游标分页参数，可选；为上一页最后一条记录的 id（UUID 格式）
+  // 设计原因：time_transactions 表 id 为 UUID 类型，非 UUID cursor 会在 service 层 WHERE id < $cursor
+  // 触发 PostgreSQL invalid input syntax for type uuid 错误（500 而非 422），
+  // uuidQuery 在路由层前置拦截，避免 DB 资源浪费并提供清晰的 422 错误语义
+  uuidQuery('cursor'),
+]), asyncHandler(async (req, res) => {
   // 游标分页参数：cursor 为上一页最后一条记录的 ID，limit 为每页条数
   const cursor = req.query.cursor as string | undefined;
   const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);

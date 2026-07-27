@@ -4,6 +4,7 @@ import { asyncHandler } from '../middleware/errorHandler';
 import { auditMiddleware } from '../middleware/auditLog';
 import { success, cursorPaginated } from '../utils/response';
 import { messageService, OrderType } from '../services/message.service';
+import { validate, uuidQuery } from '../middleware/validator';
 import { BadRequestError } from '../utils/errors';
 
 const router = Router();
@@ -98,7 +99,13 @@ function parseOrderType(value: unknown): OrderType {
  *       403:
  *         description: 权限不足
  */
-router.get('/', authenticate, asyncHandler(async (req: Request, res: Response) => {
+router.get('/', authenticate, validate([
+  // cursor 为游标分页参数，可选；为上一页最后一条记录的 id（UUID 格式）
+  // 设计原因：messages 表 id 为 UUID 类型，非 UUID cursor 会在 service 层 WHERE id < $cursor
+  // 触发 PostgreSQL invalid input syntax for type uuid 错误（500 而非 422），
+  // uuidQuery 在路由层前置拦截，避免 DB 资源浪费并提供清晰的 422 错误语义
+  uuidQuery('cursor'),
+]), asyncHandler(async (req: Request, res: Response) => {
   // 收窄 query 类型：ParsedQs → string | undefined，避免解构变量类型泛滥
   const { order_id } = req.query as Record<string, string | undefined>;
   if (!order_id) throw new BadRequestError('order_id 参数必填');

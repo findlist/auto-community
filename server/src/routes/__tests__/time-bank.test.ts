@@ -585,13 +585,22 @@ describe('time-bank 路由集成测试', () => {
         nextCursor: 'tx-1',
         hasMore: true,
       });
-      const res = await fetch(`${baseUrl}/transactions?cursor=tx-0&limit=10`, { headers: authHeader });
+      const res = await fetch(`${baseUrl}/transactions?cursor=550e8400-e29b-41d4-a716-446655440001&limit=10`, { headers: authHeader });
       expect(res.status).toBe(200);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       expect((data.data as Record<string, unknown>).nextCursor).toBe('tx-1');
       expect((data.data as Record<string, unknown>).hasMore).toBe(true);
-      expect(mockGetTransactions).toHaveBeenCalledWith('user-uuid-001', 'tx-0', 10);
+      expect(mockGetTransactions).toHaveBeenCalledWith('user-uuid-001', '550e8400-e29b-41d4-a716-446655440001', 10);
+    });
+
+    it('cursor 非 UUID 时返回 422，不调用 service', async () => {
+      // 设计原因：time_transactions 表 id 为 UUID 类型，非 UUID cursor 会在 service 层 WHERE id < $cursor
+      // 触发 PostgreSQL invalid input syntax for type uuid 错误（500 而非 422），
+      // uuidQuery 在路由层前置拦截，返回 422 错误语义更清晰
+      const res = await fetch(`${baseUrl}/transactions?cursor=not-a-uuid`, { headers: authHeader });
+      expect(res.status).toBe(422);
+      expect(mockGetTransactions).not.toHaveBeenCalled();
     });
 
     it('limit 默认 20，最大 100', async () => {
