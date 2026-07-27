@@ -269,7 +269,8 @@ export default function ABTestResults() {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead>
+                {/* 编辑式表头：小号大写字母 + 字距加宽，与其他 Admin 列表页 thead 范式对齐 */}
+                <thead className="text-xs uppercase tracking-wider font-medium">
                   <tr className="border-b border-neutral-200 bg-neutral-50">
                     <th className="px-5 py-3 text-left font-medium text-neutral-500">
                       变体
