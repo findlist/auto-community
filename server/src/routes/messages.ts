@@ -4,7 +4,7 @@ import { asyncHandler } from '../middleware/errorHandler';
 import { auditMiddleware } from '../middleware/auditLog';
 import { success, cursorPaginated } from '../utils/response';
 import { messageService, OrderType } from '../services/message.service';
-import { validate, uuidQuery } from '../middleware/validator';
+import { validate, uuidQuery, uuidBody } from '../middleware/validator';
 import { BadRequestError } from '../utils/errors';
 
 const router = Router();
@@ -158,9 +158,11 @@ router.get('/', authenticate, validate([
  *                   type: string
  *                   example: SUCCESS
  *       400:
- *         description: order_id 参数必填 / order_type 参数非法
+ *         description: order_type 参数非法
  *       401:
  *         description: 未授权
+ *       422:
+ *         description: order_id 缺失或非合法 UUID
  */
 router.post('/read', authenticate, auditMiddleware('MARK_MESSAGE_READ', {
   resourceType: 'message',
@@ -168,9 +170,14 @@ router.post('/read', authenticate, auditMiddleware('MARK_MESSAGE_READ', {
   // 设计原因：messages 路由的资源标识是 order_id（订单 ID），与 notifications 的 notification id 不同
   // 标记已读会一次性影响订单内所有未读消息，order_id 是合适的关联键
   getResourceId: (req) => (req.body as { order_id?: string } | undefined)?.order_id,
-}), asyncHandler(async (req: Request<Record<string, string>, unknown, MarkReadBody>, res: Response) => {
+}), validate([
+  // order_id 必须为合法 UUID：messages.order_id 为 UUID 类型，非 UUID 值会穿透到 service 层
+  // 触发 PostgreSQL invalid input syntax for type uuid 错误（500 而非 422）
+  // 与 time-bank.ts POST /reviews/transfer/donate 的 uuidBody('order_id') 范式对齐
+  uuidBody('order_id'),
+]), asyncHandler(async (req: Request<Record<string, string>, unknown, MarkReadBody>, res: Response) => {
   const { order_id } = req.body;
-  if (!order_id) throw new BadRequestError('order_id 参数必填');
+  // order_id 必填校验已由 uuidBody 默认 required 完成，此处无需重复 if 校验
 
   const orderType = parseOrderType(req.body.order_type);
   await messageService.markAsRead(order_id, req.user!.id, orderType);

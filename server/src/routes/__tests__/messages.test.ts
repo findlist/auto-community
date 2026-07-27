@@ -58,6 +58,9 @@ import messagesRouter from '../messages';
 import { errorHandler } from '../../middleware/errorHandler';
 import { UnauthorizedError } from '../../utils/errors';
 
+// 合法 UUID v4 fixture：POST /read 的 order_id 加 uuidBody 校验后，非 UUID 值会被 422 拦截
+const ORDER_UUID = '550e8400-e29b-41d4-a716-446655440010';
+
 /**
  * 启动临时 Express 服务器到随机端口
  * 设计原因：listen(0) 让操作系统分配可用端口，避免端口冲突；
@@ -233,25 +236,36 @@ describe('messages 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/read`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid-token' },
-        body: JSON.stringify({ order_id: 'order-uuid-001' }),
+        body: JSON.stringify({ order_id: ORDER_UUID }),
       });
       expect(res.status).toBe(200);
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('SUCCESS');
       expect(data.message).toBe('标记已读成功');
       // 默认 order_type=skill
-      expect(mockMarkAsRead).toHaveBeenCalledWith('order-uuid-001', 'user-uuid-001', 'skill');
+      expect(mockMarkAsRead).toHaveBeenCalledWith(ORDER_UUID, 'user-uuid-001', 'skill');
     });
 
-    it('order_id 缺失时抛 BadRequestError 返回 400', async () => {
+    it('order_id 缺失时由 uuidBody 校验返回 422', async () => {
+      // uuidBody 默认 required：order_id 缺失时由 validate 中间件 422 拦截，不进入 handler
       const res = await fetch(`${baseUrl}/read`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid-token' },
         body: JSON.stringify({}),
       });
-      expect(res.status).toBe(400);
-      const data = (await res.json()) as Record<string, unknown>;
-      expect(data.code).toBe('BAD_REQUEST');
+      expect(res.status).toBe(422);
+      expect(mockMarkAsRead).not.toHaveBeenCalled();
+    });
+
+    it('order_id 非 UUID 时由 uuidBody 校验返回 422（前置校验拦截，不进入 service）', async () => {
+      // 防御性测试：order_id 必须为合法 UUID，非 UUID 值（如 'order-uuid-001'）直接 422
+      // 设计原因：messages.order_id 为 UUID 类型，非 UUID 值会穿透到 service 层触发 PG invalid input syntax 错误（500 而非 422）
+      const res = await fetch(`${baseUrl}/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid-token' },
+        body: JSON.stringify({ order_id: 'not-a-uuid' }),
+      });
+      expect(res.status).toBe(422);
       expect(mockMarkAsRead).not.toHaveBeenCalled();
     });
 
@@ -259,10 +273,10 @@ describe('messages 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/read`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid-token' },
-        body: JSON.stringify({ order_id: 'order-uuid-001', order_type: 'time' }),
+        body: JSON.stringify({ order_id: ORDER_UUID, order_type: 'time' }),
       });
       expect(res.status).toBe(200);
-      expect(mockMarkAsRead).toHaveBeenCalledWith('order-uuid-001', 'user-uuid-001', 'time');
+      expect(mockMarkAsRead).toHaveBeenCalledWith(ORDER_UUID, 'user-uuid-001', 'time');
     });
 
     it('未认证时返回 401', async () => {
@@ -272,7 +286,7 @@ describe('messages 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/read`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: 'order-uuid-001' }),
+        body: JSON.stringify({ order_id: ORDER_UUID }),
       });
       expect(res.status).toBe(401);
       expect(mockMarkAsRead).not.toHaveBeenCalled();

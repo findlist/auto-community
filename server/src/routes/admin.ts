@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { body } from 'express-validator';
 import { authenticate, requireRole } from '../middleware/auth';
-import { validate, getPagination, uuidParam, enumParam, enumQuery, queryStringLength } from '../middleware/validator';
+import { validate, getPagination, uuidParam, uuidQuery, enumParam, enumQuery, queryStringLength } from '../middleware/validator';
 import { asyncHandler } from '../middleware/errorHandler';
 import { auditMiddleware } from '../middleware/auditLog';
 import { adminService } from '../services/admin.service';
@@ -190,7 +190,9 @@ router.put('/users/:id/role', validate([
  */
 router.post('/users/batch-ban', validate([
   body('userIds').isArray({ min: 1, max: 50 }).withMessage('用户ID列表需为1-50条'),
-  body('userIds.*').isString().withMessage('用户ID必须为字符串'),
+  // 数组元素必须为合法 UUID：users.id 为 UUID 类型，非 UUID 值会穿透到 service 层
+  // 触发 PostgreSQL invalid input syntax for type uuid 错误（500 而非 422）
+  body('userIds.*').isUUID('all').withMessage('用户ID必须为合法 UUID'),
 ]), auditMiddleware('BATCH_BAN_USERS', { resourceType: 'user' }), asyncHandler(async (req: Request<Record<string, string>, unknown, BatchUserIdsBody>, res: Response) => {
   const { userIds } = req.body;
   const result = await adminService.batchBanUsers(userIds, req.user!.id);
@@ -225,7 +227,8 @@ router.post('/users/batch-ban', validate([
  */
 router.post('/users/batch-unban', validate([
   body('userIds').isArray({ min: 1, max: 50 }).withMessage('用户ID列表需为1-50条'),
-  body('userIds.*').isString().withMessage('用户ID必须为字符串'),
+  // 数组元素必须为合法 UUID：与 batch-ban 范式对齐，防止非 UUID 值穿透到 service 层
+  body('userIds.*').isUUID('all').withMessage('用户ID必须为合法 UUID'),
 ]), auditMiddleware('BATCH_UNBAN_USERS', { resourceType: 'user' }), asyncHandler(async (req: Request<Record<string, string>, unknown, BatchUserIdsBody>, res: Response) => {
   const { userIds } = req.body;
   const result = await adminService.batchUnbanUsers(userIds);
@@ -356,7 +359,8 @@ router.put('/homepage-image', validate([
 // ===================== 审计日志 =====================
 
 // 查询审计日志：支持按用户、操作类型、状态、时间范围筛选
-router.get('/audit-logs', asyncHandler(async (req: Request, res: Response) => {
+// userId 查询参数 UUID 校验：audit_logs.user_id 为 UUID 类型，非 UUID 值会触发 PG 500 错误
+router.get('/audit-logs', validate([uuidQuery('userId')]), asyncHandler(async (req: Request, res: Response) => {
   const { page, pageSize } = getPagination(req);
   // 收窄 query 类型：ParsedQs → string | undefined，避免解构变量类型泛滥
   const { userId, action, status, startDate, endDate } = req.query as Record<string, string | undefined>;

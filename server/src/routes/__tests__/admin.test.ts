@@ -209,6 +209,8 @@ const ORDER_UUID = '550e8400-e29b-41d4-a716-446655440003';
 const REPORT_UUID = '550e8400-e29b-41d4-a716-446655440004';
 const VERIFICATION_UUID = '550e8400-e29b-41d4-a716-446655440005';
 const DELETION_UUID = '550e8400-e29b-41d4-a716-446655440006';
+// 批量操作第二个用户 ID：与 USER_UUID 区分，用于 batch-ban/batch-unban 多元素场景
+const BATCH_USER_UUID = '550e8400-e29b-41d4-a716-446655440007';
 
 describe('admin 路由集成测试', () => {
   let server: http.Server;
@@ -314,7 +316,7 @@ describe('admin 路由集成测试', () => {
 
     it('POST /users/batch-ban 批量封禁成功', async () => {
       mockBatchBanUsers.mockResolvedValue({
-        successfulIds: ['u1', 'u2'],
+        successfulIds: [USER_UUID, BATCH_USER_UUID],
         skippedAdminIds: [],
         skippedSelfId: [],
         failedIds: [],
@@ -322,11 +324,11 @@ describe('admin 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/users/batch-ban`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ userIds: ['u1', 'u2'] }),
+        body: JSON.stringify({ userIds: [USER_UUID, BATCH_USER_UUID] }),
       });
       expect(res.status).toBe(200);
       // batchBanUsers 第二参为操作者自身 userId（来自 req.user.id）
-      expect(mockBatchBanUsers).toHaveBeenCalledWith(['u1', 'u2'], 'admin-uuid-001');
+      expect(mockBatchBanUsers).toHaveBeenCalledWith([USER_UUID, BATCH_USER_UUID], 'admin-uuid-001');
     });
 
     it('POST /users/batch-ban userIds 缺失 422', async () => {
@@ -339,7 +341,8 @@ describe('admin 路由集成测试', () => {
     });
 
     it('POST /users/batch-ban 数组超过 50 个 422', async () => {
-      const ids = Array.from({ length: 51 }, (_, i) => `u${i}`);
+      // 用合法 UUID 重复 51 次：仅触发 isArray 长度校验失败，不混入 isUUID 校验失败
+      const ids = Array.from({ length: 51 }, () => USER_UUID);
       const res = await fetch(`${baseUrl}/users/batch-ban`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
@@ -348,19 +351,31 @@ describe('admin 路由集成测试', () => {
       expect(res.status).toBe(422);
     });
 
+    it('POST /users/batch-ban userIds 元素非 UUID 422（前置 isUUID 校验拦截，不进入 service）', async () => {
+      // 防御性测试：userIds 数组元素必须为合法 UUID，非 UUID 值（如 'u1'）直接 422
+      // 设计原因：users.id 为 UUID 类型，非 UUID 值会穿透到 service 层触发 PG invalid input syntax 错误（500 而非 422）
+      const res = await fetch(`${baseUrl}/users/batch-ban`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ userIds: ['u1', 'u2'] }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockBatchBanUsers).not.toHaveBeenCalled();
+    });
+
     it('POST /users/batch-unban 批量解封成功', async () => {
       mockBatchUnbanUsers.mockResolvedValue({
-        successfulIds: ['u1'],
+        successfulIds: [USER_UUID],
         skippedIds: [],
         failedIds: [],
       });
       const res = await fetch(`${baseUrl}/users/batch-unban`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ userIds: ['u1'] }),
+        body: JSON.stringify({ userIds: [USER_UUID] }),
       });
       expect(res.status).toBe(200);
-      expect(mockBatchUnbanUsers).toHaveBeenCalledWith(['u1']);
+      expect(mockBatchUnbanUsers).toHaveBeenCalledWith([USER_UUID]);
     });
   });
 
@@ -544,12 +559,12 @@ describe('admin 路由集成测试', () => {
 
     it('GET /audit-logs 支持 userId/action/status/startDate/endDate 多条件筛选', async () => {
       mockGetAuditLogs.mockResolvedValue({ list: [], total: 0, page: 1, pageSize: 20 });
-      const res = await fetch(`${baseUrl}/audit-logs?userId=u1&action=LOGIN&status=success&startDate=2026-01-01&endDate=2026-01-31`);
+      const res = await fetch(`${baseUrl}/audit-logs?userId=${USER_UUID}&action=LOGIN&status=success&startDate=2026-01-01&endDate=2026-01-31`);
       expect(res.status).toBe(200);
       // 验证 5 个筛选参数全部透传
       expect(mockGetAuditLogs).toHaveBeenCalledWith(
         {
-          userId: 'u1',
+          userId: USER_UUID,
           action: 'LOGIN',
           status: 'success',
           startDate: '2026-01-01',
@@ -558,6 +573,14 @@ describe('admin 路由集成测试', () => {
         1,
         20,
       );
+    });
+
+    it('GET /audit-logs userId 非 UUID 422（前置 uuidQuery 校验拦截，不进入 service）', async () => {
+      // 防御性测试：userId 查询参数必须为合法 UUID，非 UUID 值（如 'u1'）直接 422
+      // 设计原因：audit_logs.user_id 为 UUID 类型，非 UUID 值会穿透到 service 层触发 PG invalid input syntax 错误（500 而非 422）
+      const res = await fetch(`${baseUrl}/audit-logs?userId=not-a-uuid`);
+      expect(res.status).toBe(422);
+      expect(mockGetAuditLogs).not.toHaveBeenCalled();
     });
   });
 
