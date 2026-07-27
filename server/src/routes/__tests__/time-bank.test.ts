@@ -279,8 +279,10 @@ describe('time-bank 路由集成测试', () => {
 
   // ===================== POST /services =====================
   describe('POST /services', () => {
+    // type 用合法值 'provide'：与 TIME_SERVICE_TYPES 白名单对齐
+    // 设计原因：原 fixture 误用 'offer'（skill/kitchen 模块枚举），加 enumBody 校验后会被 422 拦截
     const validServiceBody = {
-      type: 'offer',
+      type: 'provide',
       category: '医疗',
       title: '陪诊服务',
       description: '陪同就医',
@@ -318,6 +320,29 @@ describe('time-bank 路由集成测试', () => {
       expect(res.status).toBe(401);
       expect(mockCreateService).not.toHaveBeenCalled();
     });
+
+    it('type 非法值时返回 422，不调用 service', async () => {
+      // 设计原因：type 必须为 TIME_SERVICE_TYPES 白名单值（provide/request），
+      // 非法值（如 'offer'/'foo'）会导致脏数据写入或后续查询无法命中，enumBody 前置拦截
+      const res = await fetch(`${baseUrl}/services`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ ...validServiceBody, type: 'foo' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockCreateService).not.toHaveBeenCalled();
+    });
+
+    it('category 非字符串时返回 422，不调用 service', async () => {
+      // 设计原因：isString 前置校验类型，防止数字/对象等非字符串类型穿透到 service 层 sanitizeXss 抛 TypeError → 500
+      const res = await fetch(`${baseUrl}/services`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ ...validServiceBody, category: 123 }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockCreateService).not.toHaveBeenCalled();
+    });
   });
 
   // ===================== PUT /services/:id =====================
@@ -338,6 +363,17 @@ describe('time-bank 路由集成测试', () => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ title: '新标题' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockUpdateService).not.toHaveBeenCalled();
+    });
+
+    it('type 非法值时返回 422，不调用 service', async () => {
+      // 设计原因：更新时 type 也必须为 TIME_SERVICE_TYPES 白名单值，与 POST /services 的 enumBody 对称
+      const res = await fetch(`${baseUrl}/services/${SERVICE_UUID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ type: 'foo' }),
       });
       expect(res.status).toBe(422);
       expect(mockUpdateService).not.toHaveBeenCalled();
@@ -573,6 +609,17 @@ describe('time-bank 路由集成测试', () => {
       expect(res.status).toBe(201);
       expect(mockCreateFamilyBinding).toHaveBeenCalledWith('user-uuid-001', '13800138000', 'parent');
     });
+
+    it('relationship 非字符串时返回 422，不调用 service', async () => {
+      // 设计原因：isString 前置校验类型，防止数字/对象等非字符串类型穿透到 service 层 sanitizeXss 抛 TypeError → 500
+      const res = await fetch(`${baseUrl}/family`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ parent_phone: '13800138000', relationship: 123 }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockCreateFamilyBinding).not.toHaveBeenCalled();
+    });
   });
 
   // ===================== PUT /family/:id/confirm =====================
@@ -690,6 +737,18 @@ describe('time-bank 路由集成测试', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ order_id: ORDER_UUID, reason: '未提供服务', evidence: 'not-array' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockCreateDispute).not.toHaveBeenCalled();
+    });
+
+    it('reason 非字符串时返回 422，不调用 service', async () => {
+      // 设计原因：isString 前置校验类型，与 skills.ts disputeOrder.reason 范式一致，
+      // 防止数字/对象等非字符串类型穿透到 service 层 sanitizeXss 抛 TypeError → 500
+      const res = await fetch(`${baseUrl}/disputes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ order_id: ORDER_UUID, reason: 123 }),
       });
       expect(res.status).toBe(422);
       expect(mockCreateDispute).not.toHaveBeenCalled();

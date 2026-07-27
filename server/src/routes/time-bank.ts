@@ -5,7 +5,7 @@ import { authenticate, optionalAuth } from '../middleware/auth';
 import { createPostLimiter, orderLimiter } from '../middleware/rateLimiter';
 import { auditMiddleware } from '../middleware/auditLog';
 import { success, paginated, created, updated, cursorPaginated } from '../utils/response';
-import { getPagination, validate, uuidParam, uuidBody, enumQuery, queryStringLength } from '../middleware/validator';
+import { getPagination, validate, uuidParam, uuidBody, enumQuery, enumBody, queryStringLength } from '../middleware/validator';
 import { timeBankService } from '../services/time-bank.service';
 import { aiService, processPostPipeline } from '../services/ai.service';
 import { logger } from '../utils/logger';
@@ -174,9 +174,12 @@ router.get('/services/:id', optionalAuth, validate([uuidParam()]), asyncHandler(
 
 router.post('/services', authenticate, createPostLimiter, auditMiddleware('CREATE_TIME_SERVICE', { resourceType: 'time_service' }), validate([
   // type/category/title 必填，构成服务核心信息
-  body('type').notEmpty().withMessage('请选择服务类型'),
-  body('category').notEmpty().withMessage('请选择服务分类'),
-  body('title').notEmpty().isLength({ max: 50 }).withMessage('标题不能为空且不能超过50字符'),
+  // type 用 enumBody 枚举白名单：与 GET /services 的 enumQuery('type', TIME_SERVICE_TYPES) 对称，
+  // 防止非法值（如 'foo'）穿透到 service 层导致脏数据写入或后续查询无法命中
+  enumBody('type', TIME_SERVICE_TYPES),
+  // isString 前置校验类型：防止数字/对象等非字符串类型穿透到 service 层 sanitizeXss 时抛 TypeError → 500
+  body('category').isString().notEmpty().withMessage('请选择服务分类'),
+  body('title').isString().notEmpty().isLength({ max: 50 }).withMessage('标题不能为空且不能超过50字符'),
   // duration_minutes 必须为正整数，防止 0/负数导致服务时长异常
   body('duration_minutes').isInt({ min: 1 }).withMessage('服务时长必须为正整数'),
   body('description').optional().isLength({ max: 2000 }).withMessage('描述不能超过2000字符'),
@@ -207,8 +210,10 @@ router.post('/services', authenticate, createPostLimiter, auditMiddleware('CREAT
 router.put('/services/:id', authenticate, validate([
   uuidParam(),
   // 更新场景字段全部 optional，仅校验传入字段格式
-  body('type').optional().notEmpty().withMessage('服务类型不能为空'),
-  body('category').optional().notEmpty().withMessage('服务分类不能为空'),
+  // type 用 enumBody 枚举白名单 + optional=true：与 POST /services 的 enumBody 对称，更新时也校验枚举值
+  enumBody('type', TIME_SERVICE_TYPES, true),
+  // isString 前置校验类型：与 POST /services 的 category 校验范式一致
+  body('category').optional().isString().notEmpty().withMessage('服务分类不能为空'),
   body('title').optional().isLength({ min: 1, max: 50 }).withMessage('标题长度为1-50字符'),
   body('duration_minutes').optional().isInt({ min: 1 }).withMessage('服务时长必须为正整数'),
   body('description').optional().isLength({ max: 2000 }).withMessage('描述不能超过2000字符'),
@@ -427,7 +432,8 @@ router.post('/family', authenticate, auditMiddleware('FAMILY_BIND', { resourceTy
   // 设计原因：service 层用 hashPhone 查询 phone_hash，非法格式哈希后无法命中
   body('parent_phone').matches(/^1[3-9]\d{9}$/).withMessage('请输入正确的手机号'),
   // relationship 必填且限制长度，防止超长文本
-  body('relationship').notEmpty().isLength({ max: 20 }).withMessage('关系不能为空且不能超过20字符'),
+  // isString 前置校验类型：防止数字/对象等非字符串类型穿透到 service 层 sanitizeXss 时抛 TypeError → 500
+  body('relationship').isString().notEmpty().isLength({ max: 20 }).withMessage('关系不能为空且不能超过20字符'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateFamilyBindingBody>, res: Response) => {
   const { parent_phone, relationship } = req.body;
   const result = await timeBankService.createFamilyBinding(req.user!.id, parent_phone, relationship);
@@ -487,7 +493,8 @@ router.post('/reviews', authenticate, auditMiddleware('CREATE_TIME_REVIEW', { re
 router.post('/disputes', authenticate, auditMiddleware('CREATE_TIME_DISPUTE', { resourceType: 'time_dispute' }), validate([
   // order_id 必须为合法 UUID，与 createReview 范式对齐
   uuidBody('order_id'),
-  body('reason').notEmpty().isLength({ max: 100 }).withMessage('纠纷原因不能为空且不能超过100字符'),
+  // isString 前置校验类型：与 skills.ts disputeOrder.reason 范式一致，防止非字符串类型穿透到 service 层
+  body('reason').isString().notEmpty().isLength({ max: 100 }).withMessage('纠纷原因不能为空且不能超过100字符'),
   body('description').optional().isLength({ max: 1000 }).withMessage('纠纷描述不能超过1000字符'),
   // evidence 必须为数组：证据图片 URL 列表，元素 URL 合法性由 service 层 validateImageUrls 校验白名单域名
   // 设计原因：与 createService images 字段范式对齐，routes 层只校验结构（数组），service 层校验内容（URL 白名单）

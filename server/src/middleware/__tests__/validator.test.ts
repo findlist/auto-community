@@ -13,17 +13,23 @@ import type { Request, Response, NextFunction } from 'express';
 // 提升 chain 到模块作用域后，可在 beforeEach 中重新调用 mockReturnValue(chain) 恢复链式行为
 //
 // 注意：链式方法不能用 mockReturnThis()，因为 vitest mock 函数的 this 在严格模式/独立调用时为 undefined
-// 改用闭包引用 chain 自身：mockReturnValue(chain) 让 isUUID/withMessage 都返回同一个 chain 对象
+// 改用闭包引用 chain 自身：mockReturnValue(chain) 让 isUUID/isIn/optional/withMessage 都返回同一个 chain 对象
 const { mockChain, mockParam, mockBody } = vi.hoisted(() => {
   // 先声明对象再设置 mockReturnValue，避免 TDZ（chain 在自身字面量内部不可引用）
   const chain: {
     isUUID: ReturnType<typeof vi.fn>;
+    isIn: ReturnType<typeof vi.fn>;
+    optional: ReturnType<typeof vi.fn>;
     withMessage: ReturnType<typeof vi.fn>;
   } = {
     isUUID: vi.fn(),
+    isIn: vi.fn(),
+    optional: vi.fn(),
     withMessage: vi.fn(),
   };
   chain.isUUID.mockReturnValue(chain);
+  chain.isIn.mockReturnValue(chain);
+  chain.optional.mockReturnValue(chain);
   chain.withMessage.mockReturnValue(chain);
   return {
     mockChain: chain,
@@ -41,7 +47,7 @@ vi.mock('express-validator', () => ({
   body: mockBody,
 }));
 
-import { validate, rules, getPagination, getSortParams, uuidParam, uuidBody } from '../validator';
+import { validate, rules, getPagination, getSortParams, uuidParam, uuidBody, enumBody } from '../validator';
 import { validationResult, param, body } from 'express-validator';
 import { AppError } from '../../utils/errors';
 import { CommonErrorCode } from '../../utils/errorCodes';
@@ -285,5 +291,42 @@ describe('uuidBody - UUID 请求体字段校验工厂', () => {
     const messageArg = mockChain.withMessage.mock.calls[0][0] as string;
     expect(messageArg).toContain('order_id');
     expect(messageArg).toContain('UUID');
+  });
+});
+
+describe('enumBody - 枚举型请求体字段校验工厂', () => {
+  // 与 uuidBody 对称：验证 enumBody 工厂按预期调用 body(name).isIn(allowed).withMessage(...)
+  // 真实的枚举值校验由 express-validator 在运行时执行，集成测试已覆盖
+
+  it('必填模式（默认）应调用 body(name).isIn(allowed)，不调用 optional', () => {
+    const ALLOWED = ['provide', 'request'] as const;
+    enumBody('type', ALLOWED);
+    expect(body).toHaveBeenCalledWith('type');
+    expect(mockChain.isIn).toHaveBeenCalledWith(['provide', 'request']);
+    // 必填模式不调用 optional
+    expect(mockChain.optional).not.toHaveBeenCalled();
+  });
+
+  it('可选模式应调用 optional', () => {
+    const ALLOWED = ['provide', 'request'] as const;
+    enumBody('type', ALLOWED, true);
+    expect(mockChain.optional).toHaveBeenCalled();
+  });
+
+  it('自定义字段名应透传（如 "status"）', () => {
+    const ALLOWED = ['pending', 'resolved'] as const;
+    enumBody('status', ALLOWED);
+    expect(body).toHaveBeenCalledWith('status');
+  });
+
+  it('应设置 withMessage 含字段名与枚举值列表的中文提示', () => {
+    const ALLOWED = ['provide', 'request'] as const;
+    enumBody('type', ALLOWED);
+    // withMessage 应包含字段名 'type' 与枚举值列表，便于前端识别合法值范围
+    expect(mockChain.withMessage).toHaveBeenCalled();
+    const messageArg = mockChain.withMessage.mock.calls[0][0] as string;
+    expect(messageArg).toContain('type');
+    expect(messageArg).toContain('provide');
+    expect(messageArg).toContain('request');
   });
 });

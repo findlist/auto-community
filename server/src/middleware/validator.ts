@@ -170,6 +170,29 @@ export function enumQuery(queryName: string, allowed: readonly string[], optiona
 }
 
 /**
+ * 生成枚举型请求体字段校验链。
+ *
+ * 设计原因：与 enumParam/enumQuery 对称，用于校验 req.body 中的枚举类字段
+ * （如 time_service.type ∈ [provide, request]）。原代码用 `body('xxx').notEmpty()`
+ * 仅校验非空，非法值（如 'foo'）会穿透到 service 层，可能导致脏数据写入或
+ * 后续查询无法命中。前置白名单校验在路由层 422 拦截，与 enumQuery 形成
+ * 「查询参数 + 请求体字段」枚举校验闭环。
+ *
+ * 默认 required：body 字段通常必填，仅 PUT/PATCH 更新场景传 optional=true。
+ * 与 enumQuery 的默认值差异：查询参数天然可选（默认 optional=true），
+ * 请求体字段通常必填（默认 optional=false），与 uuidBody 保持一致。
+ *
+ * @param bodyName 请求体字段名
+ * @param allowed 允许的枚举值列表
+ * @param optional 是否可选（默认 false，body 字段通常必填）
+ */
+export function enumBody(bodyName: string, allowed: readonly string[], optional = false): ValidationChain {
+  const chain = body(bodyName).isIn(allowed as string[]);
+  if (optional) chain.optional();
+  return chain.withMessage(`${bodyName} 必须是以下值之一: ${allowed.join(', ')}`);
+}
+
+/**
  * 生成字符串查询参数长度上限校验链。
  *
  * 设计原因：routes 层多处直接解构 req.query.keyword/search 等字符串参数传入 service 层，
