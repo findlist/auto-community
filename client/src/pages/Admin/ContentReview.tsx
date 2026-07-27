@@ -554,7 +554,7 @@ export default function ContentReview() {
       {/* ============ 编辑弹窗 ============ */}
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-backdrop">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-modal-enter">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-modal-enter">
             {/* 弹窗头部 */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100">
               <h3 className="font-semibold text-neutral-800">编辑内容</h3>
@@ -744,7 +744,7 @@ export default function ContentReview() {
       {/* ============ 批量操作确认弹窗 ============ */}
       {batchConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-backdrop">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm animate-modal-enter">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm animate-modal-enter">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-bold text-neutral-800">
                 {batchConfirm.action === "batchActive" ? "批量上架" : "批量下架"}
