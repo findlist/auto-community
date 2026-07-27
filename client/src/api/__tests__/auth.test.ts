@@ -210,10 +210,10 @@ describe('api/auth - 认证 API 层', () => {
       await logout();
 
       expect(client.post).toHaveBeenCalledTimes(2);
-      // 验证两次调用的 URL 顺序
+      // 验证两次调用的 URL 顺序（noUncheckedIndexedAccess 严格模式下，需显式断言 mock.calls 元素非空）
       const calls = (client.post as ReturnType<typeof vi.fn>).mock.calls;
-      expect(calls[0][0]).toBe('/auth/login');
-      expect(calls[1][0]).toBe('/auth/logout');
+      expect(calls[0]![0]).toBe('/auth/login');
+      expect(calls[1]![0]).toBe('/auth/logout');
     });
   });
 });

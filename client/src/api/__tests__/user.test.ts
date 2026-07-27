@@ -280,7 +280,7 @@ describe('api/user - 用户信息 API 层', () => {
       expect(client.get).toHaveBeenCalledWith('/users/credit-history', {
         params: { page: 1, pageSize: 20 },
       });
-      expect(result.data.list[0].amount).toBe(50);
+      expect(result.data.list[0]!.amount).toBe(50);
       expect(result.data.hasNext).toBe(false);
     });
 
