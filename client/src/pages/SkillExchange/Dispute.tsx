@@ -106,7 +106,7 @@ export default function Dispute() {
   // 仍走正常表单 + 顶部错误提示条，保留用户继续操作的上下文
   if (!order && error) {
     return (
-      <div className="px-4 py-8 text-center text-gray-500">
+      <div className="px-4 py-8 text-center text-neutral-500">
         <div className="flex items-center justify-center gap-2 mb-3 text-red-600">
           <AlertCircle className="w-5 h-5" />
           <span className="text-sm">{error}</span>
@@ -120,7 +120,7 @@ export default function Dispute() {
 
   if (!order) {
     return (
-      <div className="px-4 py-8 text-center text-gray-500">
+      <div className="px-4 py-8 text-center text-neutral-500">
         <p>订单不存在</p>
         <button onClick={() => navigate("/skills/orders")} className="mt-3 text-emerald-500">
           返回订单列表
@@ -136,10 +136,10 @@ export default function Dispute() {
     <div className="px-4 py-4 pb-20 max-w-2xl mx-auto">
       {/* 顶部导航 */}
       <div className="flex items-center gap-3 mb-4">
-        <button onClick={() => navigate("/skills/orders")} aria-label="返回" className="p-2.5 hover:bg-gray-100 rounded transition-colors">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <button onClick={() => navigate("/skills/orders")} aria-label="返回" className="p-2.5 hover:bg-neutral-100 rounded transition-colors">
+          <ArrowLeft className="w-5 h-5 text-neutral-600" />
         </button>
-        <h1 className="text-lg font-bold text-gray-900">订单争议</h1>
+        <h1 className="text-lg font-bold text-neutral-900">订单争议</h1>
       </div>
 
       {/* 顶部错误提示条：disputeOrder 提交失败时显示，保留表单上下文供用户重试 */}
@@ -151,14 +151,14 @@ export default function Dispute() {
       )}
 
       {/* 订单信息卡片 */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
+      <div className="bg-white rounded-xl border border-neutral-100 p-4 mb-4">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="font-medium text-gray-900">{order.post?.title || "未知技能"}</h3>
-          <span className="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-600">
+          <h3 className="font-medium text-neutral-900">{order.post?.title || "未知技能"}</h3>
+          <span className="px-2 py-0.5 text-xs rounded bg-neutral-100 text-neutral-600">
             {statusLabels[order.status] || order.status}
           </span>
         </div>
-        <div className="flex justify-between items-center text-sm text-gray-500">
+        <div className="flex justify-between items-center text-sm text-neutral-500">
           <span>
             {order.buyerId ? `对方: ${order.seller?.nickname || "未知"}` : ""}
           </span>
@@ -168,20 +168,20 @@ export default function Dispute() {
 
       {/* 已有争议结果显示 */}
       {isDisputed && !success && (
-        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
+        <div className="bg-white rounded-xl border border-neutral-100 p-4 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <AlertCircle className="w-5 h-5 text-red-500" />
-            <h3 className="font-medium text-gray-900">争议处理中</h3>
+            <h3 className="font-medium text-neutral-900">争议处理中</h3>
           </div>
           <div className="space-y-2 text-sm">
             <div>
-              <span className="text-gray-500">争议原因：</span>
-              <span className="text-gray-800">{order.disputeReason}</span>
+              <span className="text-neutral-500">争议原因：</span>
+              <span className="text-neutral-800">{order.disputeReason}</span>
             </div>
             {order.disputeTime && (
               <div>
-                <span className="text-gray-500">发起时间：</span>
-                <span className="text-gray-800">{new Date(order.disputeTime).toLocaleString()}</span>
+                <span className="text-neutral-500">发起时间：</span>
+                <span className="text-neutral-800">{new Date(order.disputeTime).toLocaleString()}</span>
               </div>
             )}
             <div className="p-3 bg-yellow-50 rounded-lg text-yellow-700 text-xs">
@@ -193,27 +193,27 @@ export default function Dispute() {
 
       {/* 裁决结果显示 */}
       {hasResolution && (
-        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
+        <div className="bg-white rounded-xl border border-neutral-100 p-4 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <Check className="w-5 h-5 text-emerald-500" />
-            <h3 className="font-medium text-gray-900">裁决结果</h3>
+            <h3 className="font-medium text-neutral-900">裁决结果</h3>
           </div>
           <div className="space-y-2 text-sm">
             <div>
-              <span className="text-gray-500">处理结果：</span>
-              <span className="text-gray-800">{order.resolution}</span>
+              <span className="text-neutral-500">处理结果：</span>
+              <span className="text-neutral-800">{order.resolution}</span>
             </div>
             {order.resolvedAt && (
               <div>
-                <span className="text-gray-500">裁决时间：</span>
-                <span className="text-gray-800">{new Date(order.resolvedAt).toLocaleString()}</span>
+                <span className="text-neutral-500">裁决时间：</span>
+                <span className="text-neutral-800">{new Date(order.resolvedAt).toLocaleString()}</span>
               </div>
             )}
             <div className="flex items-center gap-2 mt-2">
-              <span className="text-gray-500">订单状态：</span>
+              <span className="text-neutral-500">订单状态：</span>
               <span className={`px-2 py-0.5 text-xs rounded ${
                 order.status === "cancelled"
-                  ? "bg-gray-100 text-gray-600"
+                  ? "bg-neutral-100 text-neutral-600"
                   : "bg-green-100 text-green-700"
               }`}>
                 {statusLabels[order.status] || order.status}
@@ -225,9 +225,9 @@ export default function Dispute() {
 
       {/* 发起争议表单（仅未争议且未裁决时显示） */}
       {!isDisputed && !hasResolution && !success && (
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
-          <h3 className="font-medium text-gray-900 mb-3">发起争议</h3>
-          <p className="text-sm text-gray-500 mb-3">
+        <div className="bg-white rounded-xl border border-neutral-100 p-4">
+          <h3 className="font-medium text-neutral-900 mb-3">发起争议</h3>
+          <p className="text-sm text-neutral-500 mb-3">
             如果对方未按约定提供服务或存在其他问题，您可以发起争议。管理员将介入处理。
           </p>
 
@@ -245,14 +245,14 @@ export default function Dispute() {
                   }}
                   className="text-emerald-500"
                 />
-                <span className="text-sm text-gray-700">{r}</span>
+                <span className="text-sm text-neutral-700">{r}</span>
               </label>
             ))}
           </div>
 
           {/* 自定义原因输入 */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               或输入具体原因
             </label>
             <textarea
@@ -263,7 +263,7 @@ export default function Dispute() {
               }}
               rows={3}
               placeholder="请详细描述争议原因..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
             />
           </div>
 
@@ -279,10 +279,10 @@ export default function Dispute() {
 
       {/* 成功提示 */}
       {success && (
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white rounded-xl border border-neutral-100 p-4 text-center">
           <Check className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
-          <h3 className="font-medium text-gray-900 mb-1">争议已提交</h3>
-          <p className="text-sm text-gray-500 mb-4">管理员将尽快处理您的争议申请</p>
+          <h3 className="font-medium text-neutral-900 mb-1">争议已提交</h3>
+          <p className="text-sm text-neutral-500 mb-4">管理员将尽快处理您的争议申请</p>
           <div className="flex gap-2 justify-center">
             <button
               onClick={() => navigate("/skills/orders")}
@@ -292,7 +292,7 @@ export default function Dispute() {
             </button>
             <button
               onClick={() => setSuccess(false)}
-              className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm"
+              className="px-4 py-2 border border-neutral-200 text-neutral-600 rounded-lg text-sm"
             >
               查看详情
             </button>

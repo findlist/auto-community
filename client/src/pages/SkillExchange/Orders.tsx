@@ -21,10 +21,10 @@ const statusLabels: Record<string, string> = {
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
   accepted: "bg-blue-100 text-blue-700",
-  rejected: "bg-gray-100 text-gray-700",
+  rejected: "bg-neutral-100 text-neutral-700",
   in_progress: "bg-purple-100 text-purple-700",
   completed: "bg-green-100 text-green-700",
-  cancelled: "bg-gray-100 text-gray-700",
+  cancelled: "bg-neutral-100 text-neutral-700",
   disputed: "bg-red-100 text-red-700",
 };
 
@@ -153,7 +153,7 @@ export default function SkillExchangeOrders() {
           <button
             onClick={() => handleReject(order.id)}
             disabled={disabledAny}
-            className={actionBtnClass("border border-gray-200 text-gray-600")}
+            className={actionBtnClass("border border-neutral-200 text-neutral-600")}
           >
             拒绝
           </button>
@@ -166,7 +166,7 @@ export default function SkillExchangeOrders() {
         <button
           onClick={() => handleCancel(order.id)}
           disabled={disabledAny}
-          className={actionBtnClass("border border-gray-200 text-gray-600")}
+          className={actionBtnClass("border border-neutral-200 text-neutral-600")}
         >
           取消
         </button>
@@ -188,7 +188,7 @@ export default function SkillExchangeOrders() {
           <button
             onClick={() => handleCancel(order.id)}
             disabled={disabledAny}
-            className={actionBtnClass("border border-gray-200 text-gray-600")}
+            className={actionBtnClass("border border-neutral-200 text-neutral-600")}
           >
             取消
           </button>
@@ -267,7 +267,7 @@ export default function SkillExchangeOrders() {
       {/* 二级页面返回按钮：触控区域 ≥40px（py-1.5 px-2），与项目其他页面统一 */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-1 text-neutral-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-neutral-100 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         返回
@@ -291,7 +291,7 @@ export default function SkillExchangeOrders() {
       </div>
 
       {loading && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-neutral-500">
           <Loader2 className="w-5 h-5 animate-spin text-emerald-500 inline-block mr-2 align-middle" />
           加载中...
         </div>
@@ -321,8 +321,8 @@ export default function SkillExchangeOrders() {
         <div key={order.id} className="bg-white rounded-lg shadow-sm p-4 mb-3">
           <div className="flex justify-between items-start mb-2">
             <div className="flex-1">
-              <h3 className="font-medium text-gray-900">{order.post?.title}</h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="font-medium text-neutral-900">{order.post?.title}</h3>
+              <p className="text-sm text-neutral-500">
                 {order.buyerId === user?.id
                   ? `卖家: ${order.seller?.nickname || "未知"}`
                   : `买家: ${order.buyer?.nickname || "未知"}`}
@@ -334,11 +334,11 @@ export default function SkillExchangeOrders() {
           </div>
 
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm text-gray-600">积分</span>
+            <span className="text-sm text-neutral-600">积分</span>
             <span className="text-emerald-600 font-medium">{order.creditsAmount}</span>
           </div>
 
-          <div className="text-xs text-gray-400 mb-3">
+          <div className="text-xs text-neutral-400 mb-3">
             {new Date(order.createdAt).toLocaleString()}
           </div>
 
