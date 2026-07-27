@@ -106,28 +106,28 @@ export default function DonateModal({ open, onClose, onSuccess, currentBalance }
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <Heart className="w-5 h-5 text-purple-600" />
-            <h2 className="text-lg font-semibold text-gray-900">捐赠时间</h2>
+            <h2 className="text-lg font-semibold text-neutral-900">捐赠时间</h2>
           </div>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={handleClose} className="text-neutral-400 hover:text-neutral-600">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="donate-to-user-id" className="block text-sm font-medium text-gray-700 mb-1">受赠用户ID</label>
+            <label htmlFor="donate-to-user-id" className="block text-sm font-medium text-neutral-700 mb-1">受赠用户ID</label>
             <input
               id="donate-to-user-id"
               type="text"
               value={toUserId}
               onChange={e => setToUserId(e.target.value)}
               placeholder="请输入受赠用户ID"
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
           <div>
-            <label htmlFor="donate-amount" className="block text-sm font-medium text-gray-700 mb-1">捐赠金额（分钟）</label>
+            <label htmlFor="donate-amount" className="block text-sm font-medium text-neutral-700 mb-1">捐赠金额（分钟）</label>
             <input
               id="donate-amount"
               type="number"
@@ -135,19 +135,19 @@ export default function DonateModal({ open, onClose, onSuccess, currentBalance }
               onChange={e => setAmount(e.target.value)}
               placeholder="请输入捐赠分钟数"
               min="1"
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
           <div>
-            <label htmlFor="donate-remark" className="block text-sm font-medium text-gray-700 mb-1">备注</label>
+            <label htmlFor="donate-remark" className="block text-sm font-medium text-neutral-700 mb-1">备注</label>
             <input
               id="donate-remark"
               type="text"
               value={remark}
               onChange={e => setRemark(e.target.value)}
               placeholder="选填"
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
         </div>
