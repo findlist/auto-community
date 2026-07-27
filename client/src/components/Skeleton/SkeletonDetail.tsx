@@ -1,6 +1,6 @@
 // 基础骨架元素
 function SkeletonBox({ className = "" }: { className?: string }) {
-  return <div className={`bg-gray-200 rounded animate-pulse ${className}`} />;
+  return <div className={`bg-neutral-200 rounded animate-pulse ${className}`} />;
 }
 
 interface SkeletonDetailProps {
@@ -40,7 +40,7 @@ export function SkeletonDetail({
             <SkeletonBox className="h-6 w-14 rounded-full" />
           </div>
         )}
-        <div className="flex items-center gap-3 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-3 pt-3 border-t border-neutral-100">
           <SkeletonBox className="h-10 w-10 rounded-full" />
           <div className="flex-1">
             <SkeletonBox className="h-4 w-24 mb-1" />
@@ -48,7 +48,7 @@ export function SkeletonDetail({
           </div>
         </div>
         {showActions && (
-          <div className="flex gap-3 pt-4 border-t border-gray-100 mt-4">
+          <div className="flex gap-3 pt-4 border-t border-neutral-100 mt-4">
             <SkeletonBox className="h-10 w-full rounded-lg" />
           </div>
         )}
@@ -91,7 +91,7 @@ export function SkeletonProfile({ className = "" }: { className?: string }) {
           <SkeletonBox className="h-6 w-16 rounded-full" />
         </div>
       </div>
-      <div className="border-t border-gray-100 p-4">
+      <div className="border-t border-neutral-100 p-4">
         <SkeletonBox className="h-4 w-full mb-3" />
         <SkeletonBox className="h-4 w-3/4 mb-3" />
         <SkeletonBox className="h-4 w-1/2" />

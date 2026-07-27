@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 // 基础骨架元素
 function SkeletonBox({ className = "" }: { className?: string }) {
-  return <div className={`bg-gray-200 rounded animate-pulse ${className}`} />;
+  return <div className={`bg-neutral-200 rounded animate-pulse ${className}`} />;
 }
 
 interface SkeletonListProps {

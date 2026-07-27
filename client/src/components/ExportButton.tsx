@@ -75,7 +75,7 @@ export default function ExportButton({
         disabled={exporting}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${className}`}
+        className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-neutral-300 text-neutral-700 bg-white hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${className}`}
       >
         {exporting ? (
           <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
@@ -91,14 +91,14 @@ export default function ExportButton({
       {open && !exporting && (
         <ul
           role="menu"
-          className="absolute right-0 mt-1 w-36 rounded-lg border border-gray-200 bg-white shadow-lg z-20 overflow-hidden"
+          className="absolute right-0 mt-1 w-36 rounded-lg border border-neutral-200 bg-white shadow-lg z-20 overflow-hidden"
         >
           {FORMAT_OPTIONS.map(({ value, label: fmtLabel, icon: Icon }) => (
             <li key={value}>
               <button
                 role="menuitem"
                 onClick={() => handleExport(value)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
               >
                 <Icon className="w-4 h-4 opacity-70" aria-hidden />
                 {fmtLabel}

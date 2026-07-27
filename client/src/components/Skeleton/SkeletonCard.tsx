@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 // 基础骨架元素
 function SkeletonBox({ className = "" }: { className?: string }) {
-  return <div className={`bg-gray-200 rounded animate-pulse ${className}`} />;
+  return <div className={`bg-neutral-200 rounded animate-pulse ${className}`} />;
 }
 
 interface SkeletonCardProps {
@@ -33,7 +33,7 @@ export function SkeletonCard({ count = 1, showImage = false, className = "" }: S
           <SkeletonBox className="h-5 w-16 rounded-full" />
           <SkeletonBox className="h-5 w-20 rounded-full" />
         </div>
-        <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+        <div className="flex items-center justify-between pt-2 border-t border-neutral-50">
           <div className="flex items-center gap-2">
             <SkeletonBox className="h-6 w-6 rounded-full" />
             <SkeletonBox className="h-4 w-16" />
@@ -64,7 +64,7 @@ export function SkeletonListCard({ count = 1, showLeftBorder = false, className 
     items.push(
       <div
         key={i}
-        className={`p-4 bg-white rounded-lg ${showLeftBorder ? "border-l-4 border-gray-200" : "shadow-sm"} ${className}`}
+        className={`p-4 bg-white rounded-lg ${showLeftBorder ? "border-l-4 border-neutral-200" : "shadow-sm"} ${className}`}
       >
         <div className="flex items-start justify-between mb-2">
           <SkeletonBox className="h-4 w-3/4" />

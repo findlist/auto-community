@@ -18,10 +18,10 @@ interface LoadingButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<string, string> = {
   primary: "bg-emerald-500 text-white hover:bg-emerald-600 disabled:bg-emerald-300",
-  secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:bg-gray-50",
+  secondary: "bg-neutral-100 text-neutral-700 hover:bg-neutral-200 disabled:bg-neutral-50",
   danger: "bg-red-500 text-white hover:bg-red-600 disabled:bg-red-300",
-  outline: "border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:text-gray-300",
-  ghost: "text-gray-600 hover:bg-gray-100 disabled:text-gray-300",
+  outline: "border border-neutral-200 text-neutral-600 hover:bg-neutral-50 disabled:text-neutral-300",
+  ghost: "text-neutral-600 hover:bg-neutral-100 disabled:text-neutral-300",
 };
 
 const sizeStyles: Record<string, string> = {
@@ -88,7 +88,7 @@ export function Spinner({ size = "md", className = "" }: { size?: "sm" | "md" | 
  */
 export function InlineLoader({ text = "加载中...", className = "" }: { text?: string; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-2 text-gray-500 ${className}`}>
+    <span className={`inline-flex items-center gap-2 text-neutral-500 ${className}`}>
       <Loader2 className="w-4 h-4 animate-spin" />
       {text}
     </span>

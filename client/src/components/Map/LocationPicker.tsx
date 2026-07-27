@@ -192,8 +192,8 @@ export default function LocationPicker({
       {/* 搜索框 */}
       {showSearch && (
         <div className="flex gap-2">
-          <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg">
-            <Search className="w-4 h-4 text-gray-400" />
+          <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-white border border-neutral-200 rounded-lg">
+            <Search className="w-4 h-4 text-neutral-400" />
             <input
               type="text"
               value={searchText}
@@ -205,7 +205,7 @@ export default function LocationPicker({
             />
             {searchText && (
               <button onClick={() => setSearchText('')} aria-label="清除搜索内容">
-                <X className="w-4 h-4 text-gray-400" />
+                <X className="w-4 h-4 text-neutral-400" />
               </button>
             )}
           </div>
@@ -223,7 +223,7 @@ export default function LocationPicker({
       <div
         ref={containerRef}
         style={{ height }}
-        className="w-full rounded-lg border border-gray-200 bg-gray-100"
+        className="w-full rounded-lg border border-neutral-200 bg-neutral-100"
       >
         {!mapLoaded && (
           <div className="h-full flex items-center justify-center">
@@ -238,8 +238,8 @@ export default function LocationPicker({
       </div>
 
       {/* 当前位置信息 */}
-      <div className="p-3 bg-gray-50 rounded-lg space-y-1">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+      <div className="p-3 bg-neutral-50 rounded-lg space-y-1">
+        <div className="flex items-center gap-2 text-sm text-neutral-600">
           <MapPin className="w-4 h-4 text-emerald-500" />
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -250,7 +250,7 @@ export default function LocationPicker({
           )}
         </div>
         {address && (
-          <p className="text-xs text-gray-500 pl-6">{address}</p>
+          <p className="text-xs text-neutral-500 pl-6">{address}</p>
         )}
         {error && (
           <p className="text-xs text-red-500 pl-6">{error}</p>
@@ -258,7 +258,7 @@ export default function LocationPicker({
       </div>
 
       {/* 提示 */}
-      <p className="text-xs text-gray-400 text-center">拖拽地图上的标记点选择位置</p>
+      <p className="text-xs text-neutral-400 text-center">拖拽地图上的标记点选择位置</p>
     </div>
   );
 }
