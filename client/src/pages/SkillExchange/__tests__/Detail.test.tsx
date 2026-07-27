@@ -151,7 +151,7 @@ describe('SkillExchange/Detail 帖子详情', () => {
     renderDetail();
 
     // 骨架屏应可见（animate-pulse 是 className，无法直接断言，验证骨架元素存在）
-    // 骨架屏由 3 个 bg-gray-200 rounded div 组成
+    // 骨架屏由 3 个 bg-neutral-200 rounded div 组成
     const skeletonBlocks = document.querySelectorAll('.animate-pulse');
     expect(skeletonBlocks.length).toBeGreaterThan(0);
   });
