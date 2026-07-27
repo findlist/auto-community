@@ -12,11 +12,11 @@ export default function NotFound() {
         </span>
       </div>
 
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">
+      <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800 mb-3">
         页面走丢了
       </h1>
 
-      <p className="text-gray-500 mb-8 max-w-md">
+      <p className="text-neutral-500 mb-8 max-w-md">
         您访问的页面不存在或已被移除
       </p>
 
@@ -31,7 +31,7 @@ export default function NotFound() {
 
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 border border-gray-300 text-gray-700 rounded-full font-medium hover:bg-gray-50 transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 border border-neutral-300 text-neutral-700 rounded-full font-medium hover:bg-neutral-50 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           返回上一页
