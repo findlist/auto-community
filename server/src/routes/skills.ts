@@ -284,6 +284,10 @@ router.put('/orders/:id/status', authenticate, validate([
     case 'accepted':
       order = await skillOrderService.acceptOrder(orderId, userId);
       break;
+    case 'in_progress':
+      // 卖家在 accepted 状态下开始服务，推进到 in_progress
+      order = await skillOrderService.startOrder(orderId, userId);
+      break;
     case 'rejected':
       order = await skillOrderService.rejectOrder(orderId, userId);
       break;

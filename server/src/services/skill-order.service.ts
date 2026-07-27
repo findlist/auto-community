@@ -191,6 +191,47 @@ async function acceptOrder(orderId: string, sellerId: string) {
   });
 }
 
+// 开始服务：卖家在 accepted 状态下推进到 in_progress，标记服务正式开始
+// 设计原因：前端 Orders.tsx 在 accepted 状态下显示"开始服务"按钮，发送 status=in_progress，
+// 但原 switch 无对应 case 导致状态不更新，形成 accepted→in_progress 的状态死锁
+async function startOrder(orderId: string, sellerId: string) {
+  return transaction(async (client) => {
+    const orderResult = await client.query<SkillOrderRow>(
+      `SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1 FOR UPDATE`,
+      [orderId],
+    );
+    if (orderResult.rows.length === 0) throw new NotFoundError('订单');
+    const order = orderResult.rows[0];
+
+    if (order.seller_id !== sellerId) throw new PermissionDeniedError();
+    if (order.status !== 'accepted') throw new OrderStatusInvalidError();
+
+    await client.query(
+      "UPDATE skill_orders SET status = 'in_progress', updated_at = NOW() WHERE id = $1",
+      [orderId],
+    );
+
+    const updatedResult = await client.query<SkillOrderRow>(
+      `SELECT ${SKILL_ORDER_COLUMNS} FROM skill_orders WHERE id = $1`,
+      [orderId],
+    );
+    const updatedOrder = toSkillOrder(updatedResult.rows[0]);
+
+    // 通知买家：卖家已开始服务
+    safeNotify(
+      notificationService.notifyOrderStatusChange(
+        order.buyer_id,
+        orderId,
+        'skill_order',
+        'in_progress',
+      ),
+      { userId: order.buyer_id, orderId },
+    );
+
+    return updatedOrder;
+  });
+}
+
 async function rejectOrder(orderId: string, sellerId: string) {
   return transaction(async (client) => {
     const orderResult = await client.query<SkillOrderRow>(
@@ -621,6 +662,7 @@ async function getOrderById(orderId: string, userId: string) {
 export const skillOrderService = {
   createOrder,
   acceptOrder,
+  startOrder,
   rejectOrder,
   completeOrder,
   cancelOrder,
