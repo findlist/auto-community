@@ -191,7 +191,8 @@ export default function ReportManagement() {
           {/* 桌面端表格 */}
           <div className="hidden md:block overflow-x-auto bg-white rounded-xl border border-neutral-100">
             <table className="w-full text-sm">
-              <thead className="bg-neutral-50 text-neutral-600">
+              {/* 编辑式表头：小号大写字母 + 字距加宽，强化"分类标签"语义 */}
+              <thead className="bg-neutral-50 text-neutral-600 text-xs uppercase tracking-wider font-medium">
                 <tr>
                   <th className="px-4 py-3 text-left">举报类型</th>
                   <th className="px-4 py-3 text-left">目标ID</th>
