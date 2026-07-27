@@ -110,8 +110,8 @@ export default function Verify() {
       <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center px-4">
         <div className="bg-white rounded-xl p-6 max-w-sm w-full text-center">
           <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-          <h2 className="text-lg font-bold text-gray-800 mb-2">实名认证已通过</h2>
-          <p className="text-sm text-gray-500 mb-4">
+          <h2 className="text-lg font-bold text-neutral-800 mb-2">实名认证已通过</h2>
+          <p className="text-sm text-neutral-500 mb-4">
             您已完成实名认证，真实姓名：{status.request?.realName}
           </p>
           <button
@@ -131,11 +131,11 @@ export default function Verify() {
       <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center px-4">
         <div className="bg-white rounded-xl p-6 max-w-sm w-full text-center">
           <Clock className="w-16 h-16 text-yellow-500 mx-auto mb-4 animate-pulse" />
-          <h2 className="text-lg font-bold text-gray-800 mb-2">认证审核中</h2>
-          <p className="text-sm text-gray-500 mb-4">
+          <h2 className="text-lg font-bold text-neutral-800 mb-2">认证审核中</h2>
+          <p className="text-sm text-neutral-500 mb-4">
             您的实名认证申请正在审核中，请耐心等待管理员审核。
           </p>
-          <p className="text-xs text-gray-400 mb-4">
+          <p className="text-xs text-neutral-400 mb-4">
             提交时间：{status.submittedAt ? new Date(status.submittedAt).toLocaleString() : "-"}
           </p>
           <button
@@ -156,7 +156,7 @@ export default function Verify() {
         {/* 触控区域标准：py-1.5 px-2 ≥40px，-ml-2 抵消父容器 px-4 保持视觉对齐 */}
         <button
           onClick={() => navigate("/profile")}
-          className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors"
+          className="flex items-center gap-1 text-neutral-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-neutral-100 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           返回
@@ -165,7 +165,7 @@ export default function Verify() {
         <div className="bg-white rounded-xl p-6 max-w-md mx-auto w-full">
           <div className="flex items-center gap-2 mb-4">
             <XCircle className="w-5 h-5 text-red-500" />
-            <h2 className="text-lg font-bold text-gray-800">认证被拒绝</h2>
+            <h2 className="text-lg font-bold text-neutral-800">认证被拒绝</h2>
           </div>
 
           {status.request?.rejectReason && (
@@ -176,7 +176,7 @@ export default function Verify() {
             </div>
           )}
 
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-neutral-500 mb-4">
             您可以修改信息后重新提交认证申请。
           </p>
 
@@ -189,27 +189,27 @@ export default function Verify() {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-1">真实姓名 *</label>
+              <label className="block text-sm text-neutral-600 mb-1">真实姓名 *</label>
               <input
                 type="text"
                 value={realName}
                 onChange={(e) => setRealName(e.target.value)}
                 placeholder="请输入真实姓名"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
               />
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-1">身份证号 *</label>
+              <label className="block text-sm text-neutral-600 mb-1">身份证号 *</label>
               <input
                 type="text"
                 value={idCard}
                 onChange={(e) => setIdCard(e.target.value)}
                 placeholder="请输入18位身份证号"
                 maxLength={18}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
               />
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-neutral-400 mt-1">
                 身份证号将使用 AES-256-GCM 加密存储，仅用于实名认证
               </p>
             </div>
@@ -242,7 +242,9 @@ export default function Verify() {
     <div className="min-h-[calc(100vh-8rem)] flex flex-col px-4 py-6">
       <button
         onClick={() => navigate("/profile")}
-        className="flex items-center gap-1 text-gray-600 mb-4"
+        // 与同文件 rejected 状态返回按钮保持一致：py-1.5 px-2 + -ml-2 抵消父容器 px-4
+        // 设计原因：触控目标达 32px 满足移动端可点击标准，hover 反馈与同文件其他返回按钮统一
+        className="flex items-center gap-1 text-neutral-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-neutral-100 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         返回
@@ -256,10 +258,10 @@ export default function Verify() {
         <div className="bg-white rounded-xl p-6 max-w-md mx-auto w-full">
           <div className="flex items-center gap-2 mb-4">
             <ShieldCheck className="w-5 h-5 text-emerald-500" />
-            <h2 className="text-lg font-bold text-gray-800">实名认证</h2>
+            <h2 className="text-lg font-bold text-neutral-800">实名认证</h2>
           </div>
 
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-neutral-500 mb-4">
             完成实名认证后，您将获得更多平台权益和信任度。
           </p>
 
@@ -272,27 +274,27 @@ export default function Verify() {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-1">真实姓名 *</label>
+              <label className="block text-sm text-neutral-600 mb-1">真实姓名 *</label>
               <input
                 type="text"
                 value={realName}
                 onChange={(e) => setRealName(e.target.value)}
                 placeholder="请输入真实姓名（2-100字符）"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
               />
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-1">身份证号 *</label>
+              <label className="block text-sm text-neutral-600 mb-1">身份证号 *</label>
               <input
                 type="text"
                 value={idCard}
                 onChange={(e) => setIdCard(e.target.value.toUpperCase())}
                 placeholder="请输入18位身份证号"
                 maxLength={18}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500"
               />
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-neutral-400 mt-1">
                 身份证号将使用 AES-256-GCM 加密存储，仅用于实名认证
               </p>
             </div>
@@ -316,7 +318,7 @@ export default function Verify() {
             </button>
           </form>
 
-          <div className="mt-4 text-xs text-gray-400 text-center">
+          <div className="mt-4 text-xs text-neutral-400 text-center">
             <p>提交后将由管理员审核，审核通过后即可完成认证</p>
           </div>
         </div>
