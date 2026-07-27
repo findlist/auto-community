@@ -8,6 +8,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test-setup.ts'],
+    // 超时配置：jsdom 环境初始化开销大，多进程并行时偶现 worker forks 超时
+    // 设计原因：82 个测试文件每个独立初始化 jsdom（environment 总耗时 471s+），
+    // 默认 testTimeout 5000ms / hookTimeout 10000ms 在 CPU 资源竞争时偶现超时，
+    // 提升阈值给 jsdom setup 与慢测试更多余量，避免偶现 flaky 失败
+    testTimeout: 10000,
+    hookTimeout: 30000,
+    teardownTimeout: 20000,
     // 覆盖率配置：使用 v8 provider，统计 src 下 ts/tsx 文件
     coverage: {
       provider: 'v8',
