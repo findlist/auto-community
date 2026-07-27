@@ -244,7 +244,7 @@ export default function Notifications() {
                     className={`bg-white ${isUnread ? "bg-opacity-95" : "bg-opacity-80"}`}
                   >
                     <div
-                      className="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-neutral-50"
+                      className="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-neutral-50/60"
                       onClick={() => handleMarkRead(notification)}
                     >
                       {/* 图标：markingId 命中时显示 Loader2 替代原 Icon，让用户感知单条标记已读进行中 */}
