@@ -178,10 +178,10 @@ export default function AddressBook() {
       {/* 顶部导航 */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2.5 hover:bg-gray-100 rounded transition-colors">
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          <button onClick={() => navigate(-1)} className="p-2.5 hover:bg-neutral-100 rounded transition-colors">
+            <ArrowLeft className="w-5 h-5 text-neutral-600" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">配送地址簿</h1>
+          <h1 className="text-lg font-bold text-neutral-900">配送地址簿</h1>
         </div>
         <button
           onClick={handleAdd}
@@ -216,22 +216,22 @@ export default function AddressBook() {
       ) : (
         <div className="space-y-3">
           {addresses.map((addr) => (
-            <div key={addr.id} className="bg-white rounded-xl border border-gray-100 p-4">
+            <div key={addr.id} className="bg-white rounded-xl border border-neutral-100 p-4">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-gray-900">{addr.recipient}</span>
-                    <span className="text-sm text-gray-500">{addr.phone}</span>
+                    <span className="font-medium text-neutral-900">{addr.recipient}</span>
+                    <span className="text-sm text-neutral-500">{addr.phone}</span>
                     {addr.isDefault && (
                       <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded">
                         默认
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600">{addr.address}</p>
+                  <p className="text-sm text-neutral-600">{addr.address}</p>
                 </div>
               </div>
-              <div className="flex gap-3 mt-3 pt-3 border-t border-gray-50">
+              <div className="flex gap-3 mt-3 pt-3 border-t border-neutral-50">
                 {!addr.isDefault && (
                   <button
                     onClick={() => handleSetDefault(addr.id)}
@@ -276,17 +276,17 @@ export default function AddressBook() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-800">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100">
+              <h3 className="font-semibold text-neutral-800">
                 {editingId ? "编辑地址" : "新增地址"}
               </h3>
-              <button onClick={() => setShowForm(false)} className="p-2.5 hover:bg-gray-100 rounded transition-colors">
-                <X className="w-5 h-5 text-gray-500" />
+              <button onClick={() => setShowForm(false)} className="p-2.5 hover:bg-neutral-100 rounded transition-colors">
+                <X className="w-5 h-5 text-neutral-500" />
               </button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label htmlFor="address-recipient" className="block text-sm font-medium text-gray-700 mb-1">收件人</label>
+                <label htmlFor="address-recipient" className="block text-sm font-medium text-neutral-700 mb-1">收件人</label>
                 <input
                   id="address-recipient"
                   type="text"
@@ -294,7 +294,7 @@ export default function AddressBook() {
                   onChange={(e) => setForm({ ...form, recipient: e.target.value })}
                   placeholder="请输入收件人姓名"
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm ${
-                    fieldErrors.recipient ? "border-red-500" : "border-gray-300"
+                    fieldErrors.recipient ? "border-red-500" : "border-neutral-300"
                   }`}
                 />
                 {fieldErrors.recipient && (
@@ -302,7 +302,7 @@ export default function AddressBook() {
                 )}
               </div>
               <div>
-                <label htmlFor="address-phone" className="block text-sm font-medium text-gray-700 mb-1">手机号</label>
+                <label htmlFor="address-phone" className="block text-sm font-medium text-neutral-700 mb-1">手机号</label>
                 <input
                   id="address-phone"
                   type="tel"
@@ -310,7 +310,7 @@ export default function AddressBook() {
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                   placeholder="请输入手机号"
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm ${
-                    fieldErrors.phone ? "border-red-500" : "border-gray-300"
+                    fieldErrors.phone ? "border-red-500" : "border-neutral-300"
                   }`}
                 />
                 {fieldErrors.phone && (
@@ -318,7 +318,7 @@ export default function AddressBook() {
                 )}
               </div>
               <div>
-                <label htmlFor="address-detail" className="block text-sm font-medium text-gray-700 mb-1">详细地址</label>
+                <label htmlFor="address-detail" className="block text-sm font-medium text-neutral-700 mb-1">详细地址</label>
                 <textarea
                   id="address-detail"
                   value={form.address}
@@ -326,7 +326,7 @@ export default function AddressBook() {
                   rows={2}
                   placeholder="请输入详细地址"
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none ${
-                    fieldErrors.address ? "border-red-500" : "border-gray-300"
+                    fieldErrors.address ? "border-red-500" : "border-neutral-300"
                   }`}
                 />
                 {fieldErrors.address && (
@@ -340,13 +340,13 @@ export default function AddressBook() {
                   onChange={(e) => setForm({ ...form, isDefault: e.target.checked })}
                   className="text-emerald-500"
                 />
-                <span className="text-sm text-gray-700">设为默认地址</span>
+                <span className="text-sm text-neutral-700">设为默认地址</span>
               </label>
             </div>
-            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-100">
+            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-neutral-100">
               <button
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 rounded-lg"
               >
                 取消
               </button>

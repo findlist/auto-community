@@ -16,7 +16,7 @@ function StarRating({ rating, size = "w-4 h-4" }: { rating: number; size?: strin
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
-          className={`${size} ${n <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+          className={`${size} ${n <= rating ? "fill-yellow-400 text-yellow-400" : "text-neutral-300"}`}
         />
       ))}
     </div>
@@ -97,11 +97,11 @@ export default function FoodReviewPage() {
         <button
           onClick={() => navigate(`/kitchen/${postId}`)}
           aria-label="返回"
-          className="p-2.5 hover:bg-gray-100 rounded transition-colors"
+          className="p-2.5 hover:bg-neutral-100 rounded transition-colors"
         >
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+          <ArrowLeft className="w-5 h-5 text-neutral-600" />
         </button>
-        <h1 className="text-lg font-bold text-gray-900">食物评价</h1>
+        <h1 className="text-lg font-bold text-neutral-900">食物评价</h1>
       </div>
 
       {error && (
@@ -113,19 +113,19 @@ export default function FoodReviewPage() {
 
       {/* 食物信息卡片 */}
       {post && (
-        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
-          <h3 className="font-medium text-gray-900 mb-1">{post.title}</h3>
-          <p className="text-sm text-gray-500">提供者: {post.user?.nickname || "未知"}</p>
+        <div className="bg-white rounded-xl border border-neutral-100 p-4 mb-4">
+          <h3 className="font-medium text-neutral-900 mb-1">{post.title}</h3>
+          <p className="text-sm text-neutral-500">提供者: {post.user?.nickname || "未知"}</p>
         </div>
       )}
 
       {/* 评分统计卡片 */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4 flex items-center gap-4">
+      <div className="bg-white rounded-xl border border-neutral-100 p-4 mb-4 flex items-center gap-4">
         <div className="text-center">
-          <div className="text-3xl font-bold text-gray-900">{avgRating.toFixed(1)}</div>
+          <div className="text-3xl font-bold text-neutral-900">{avgRating.toFixed(1)}</div>
           <StarRating rating={Math.round(avgRating)} />
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-neutral-500">
           共 {total} 条评价
         </div>
       </div>
@@ -141,7 +141,7 @@ export default function FoodReviewPage() {
         <>
           <div className="space-y-3">
             {reviews.map((review) => (
-              <div key={review.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div key={review.id} className="bg-white rounded-xl border border-neutral-100 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     {review.reviewer?.avatar ? (
@@ -151,20 +151,20 @@ export default function FoodReviewPage() {
                         className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-500">
+                      <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center text-xs text-neutral-500">
                         {(review.reviewer?.nickname || "匿")[0]}
                       </div>
                     )}
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-neutral-700">
                       {review.reviewer?.nickname || "匿名用户"}
                     </span>
                   </div>
                   <StarRating rating={review.rating} />
                 </div>
                 {review.content && (
-                  <p className="text-sm text-gray-600 mt-2">{review.content}</p>
+                  <p className="text-sm text-neutral-600 mt-2">{review.content}</p>
                 )}
-                <div className="text-xs text-gray-400 mt-2">
+                <div className="text-xs text-neutral-400 mt-2">
                   {new Date(review.createdAt).toLocaleString()}
                 </div>
               </div>
@@ -266,8 +266,8 @@ export function ReviewSubmitModal({ orderId, visible, onClose, onSuccess }: Revi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
-        <div className="px-5 py-3 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-800">评价订单</h3>
+        <div className="px-5 py-3 border-b border-neutral-100">
+          <h3 className="font-semibold text-neutral-800">评价订单</h3>
         </div>
         <div className="p-5 space-y-4">
           {error && (
@@ -279,7 +279,7 @@ export function ReviewSubmitModal({ orderId, visible, onClose, onSuccess }: Revi
 
           {/* 星级选择：自定义单选 button 组，label 改 span+aria-labelledby 关联 radiogroup，星按钮加 role=radio+aria-checked+aria-label */}
           <div>
-            <span id="food-review-rating" className="block text-sm font-medium text-gray-700 mb-2">评分</span>
+            <span id="food-review-rating" className="block text-sm font-medium text-neutral-700 mb-2">评分</span>
             <div className="flex items-center gap-1" role="radiogroup" aria-labelledby="food-review-rating">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
@@ -294,7 +294,7 @@ export function ReviewSubmitModal({ orderId, visible, onClose, onSuccess }: Revi
                     className={`w-7 h-7 ${
                       n <= rating
                         ? "fill-yellow-400 text-yellow-400"
-                        : "text-gray-300 hover:text-gray-400"
+                        : "text-neutral-300 hover:text-neutral-400"
                     }`}
                   />
                 </button>
@@ -304,7 +304,7 @@ export function ReviewSubmitModal({ orderId, visible, onClose, onSuccess }: Revi
 
           {/* 评价内容：标准 textarea，用 htmlFor/id 关联 */}
           <div>
-            <label htmlFor="food-review-content" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="food-review-content" className="block text-sm font-medium text-neutral-700 mb-1">
               评价内容（选填）
             </label>
             <textarea
@@ -313,15 +313,15 @@ export function ReviewSubmitModal({ orderId, visible, onClose, onSuccess }: Revi
               onChange={(e) => setContent(e.target.value)}
               rows={3}
               placeholder="分享您的用餐体验..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
             />
           </div>
         </div>
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-100">
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-neutral-100">
           <button
             onClick={onClose}
             disabled={submitting}
-            className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+            className="px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-100 rounded-lg disabled:opacity-50"
           >
             取消
           </button>

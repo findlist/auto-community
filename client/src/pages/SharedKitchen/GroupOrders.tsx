@@ -141,9 +141,9 @@ export default function GroupOrders() {
   // 渲染拼单卡片
   const renderCard = (order: GroupOrder) => (
     <div key={order.id} className="bg-white rounded-lg shadow-sm p-4 mb-3">
-      <h3 className="font-medium text-gray-900 mb-1">{order.title}</h3>
+      <h3 className="font-medium text-neutral-900 mb-1">{order.title}</h3>
       {order.description && (
-        <p className="text-sm text-gray-500 mb-3">{order.description}</p>
+        <p className="text-sm text-neutral-500 mb-3">{order.description}</p>
       )}
 
       {/* 进度 */}
@@ -152,7 +152,7 @@ export default function GroupOrders() {
           <span>¥{order.currentAmount} / ¥{order.targetAmount}</span>
           <span>{Math.round((order.currentAmount / order.targetAmount) * 100)}%</span>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">
           <div
             className="h-full bg-emerald-500 transition-all"
             style={{ width: `${Math.min(100, (order.currentAmount / order.targetAmount) * 100)}%` }}
@@ -160,7 +160,7 @@ export default function GroupOrders() {
         </div>
       </div>
 
-      <div className="flex justify-between text-sm text-gray-500 mb-3">
+      <div className="flex justify-between text-sm text-neutral-500 mb-3">
         <span>{order.currentParticipants}/{order.maxParticipants} 人</span>
         <span>截止: {new Date(order.deadline).toLocaleDateString()}</span>
       </div>
@@ -178,7 +178,7 @@ export default function GroupOrders() {
         </button>
         <button
           onClick={() => navigate(`/kitchen/group-orders/${order.id}`)}
-          className="flex-1 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg"
+          className="flex-1 py-2 border border-neutral-200 text-neutral-600 text-sm rounded-lg"
         >
           查看详情
         </button>
@@ -190,7 +190,7 @@ export default function GroupOrders() {
     // max-w-2xl mx-auto：拼单列表页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="px-4 py-4 pb-20 max-w-2xl mx-auto">
       {/* 返回按钮：与模块内其他二级页风格统一，触控区域 ≥40px */}
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-neutral-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-neutral-100 transition-colors">
         <ArrowLeft className="w-4 h-4" />返回
       </button>
       {/* 创建按钮 */}
@@ -244,7 +244,7 @@ export default function GroupOrders() {
             
             <div className="space-y-4">
               <div>
-                <label htmlFor="group-order-create-title" className="block text-sm text-gray-600 mb-1">标题 *</label>
+                <label htmlFor="group-order-create-title" className="block text-sm text-neutral-600 mb-1">标题 *</label>
                 <input
                   id="group-order-create-title"
                   value={title}
@@ -255,7 +255,7 @@ export default function GroupOrders() {
               </div>
 
               <div>
-                <label htmlFor="group-order-create-description" className="block text-sm text-gray-600 mb-1">描述</label>
+                <label htmlFor="group-order-create-description" className="block text-sm text-neutral-600 mb-1">描述</label>
                 <textarea
                   id="group-order-create-description"
                   value={description}
@@ -270,7 +270,7 @@ export default function GroupOrders() {
                   设计原因：原 flex gap-4 在 <360px 窄屏三列 input 严重挤压，label 与 input 易错位 */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label htmlFor="group-order-create-target" className="block text-sm text-gray-600 mb-1">目标金额 *</label>
+                  <label htmlFor="group-order-create-target" className="block text-sm text-neutral-600 mb-1">目标金额 *</label>
                   <input
                     id="group-order-create-target"
                     type="number"
@@ -280,7 +280,7 @@ export default function GroupOrders() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="group-order-create-min" className="block text-sm text-gray-600 mb-1">最小人数</label>
+                  <label htmlFor="group-order-create-min" className="block text-sm text-neutral-600 mb-1">最小人数</label>
                   <input
                     id="group-order-create-min"
                     type="number"
@@ -290,7 +290,7 @@ export default function GroupOrders() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="group-order-create-max" className="block text-sm text-gray-600 mb-1">最大人数</label>
+                  <label htmlFor="group-order-create-max" className="block text-sm text-neutral-600 mb-1">最大人数</label>
                   <input
                     id="group-order-create-max"
                     type="number"
@@ -302,7 +302,7 @@ export default function GroupOrders() {
               </div>
 
               <div>
-                <label htmlFor="group-order-create-address" className="block text-sm text-gray-600 mb-1">集合地点 *</label>
+                <label htmlFor="group-order-create-address" className="block text-sm text-neutral-600 mb-1">集合地点 *</label>
                 <input
                   id="group-order-create-address"
                   value={address}
@@ -313,7 +313,7 @@ export default function GroupOrders() {
               </div>
 
               <div>
-                <label htmlFor="group-order-create-deadline" className="block text-sm text-gray-600 mb-1">截止时间 *</label>
+                <label htmlFor="group-order-create-deadline" className="block text-sm text-neutral-600 mb-1">截止时间 *</label>
                 <input
                   id="group-order-create-deadline"
                   type="datetime-local"
@@ -348,10 +348,10 @@ export default function GroupOrders() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-sm">
             <h3 className="text-lg font-medium mb-4">参与拼单</h3>
-            <p className="text-sm text-gray-600 mb-4">{showJoinModal.title}</p>
+            <p className="text-sm text-neutral-600 mb-4">{showJoinModal.title}</p>
             
             <div className="mb-4">
-              <label htmlFor="group-order-join-amount" className="block text-sm text-gray-600 mb-1">分摊金额</label>
+              <label htmlFor="group-order-join-amount" className="block text-sm text-neutral-600 mb-1">分摊金额</label>
               <input
                 id="group-order-join-amount"
                 type="number"
@@ -359,7 +359,7 @@ export default function GroupOrders() {
                 onChange={e => setJoinAmount(Number(e.target.value))}
                 className="w-full px-3 py-2 border rounded-lg"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-neutral-500 mt-1">
                 建议: ¥{Math.ceil(showJoinModal.targetAmount / showJoinModal.maxParticipants)}
               </p>
             </div>

@@ -151,10 +151,10 @@ export default function Orders() {
       pending: "bg-yellow-100 text-yellow-700",
       confirmed: "bg-blue-100 text-blue-700",
       completed: "bg-green-100 text-green-700",
-      cancelled: "bg-gray-100 text-gray-700",
+      cancelled: "bg-neutral-100 text-neutral-700",
       timeout: "bg-red-100 text-red-700",
     };
-    return map[status] || "bg-gray-100";
+    return map[status] || "bg-neutral-100";
   };
 
   // 渲染订单卡片
@@ -162,8 +162,8 @@ export default function Orders() {
     <div key={order.id} className="bg-white rounded-lg shadow-sm p-4 mb-3">
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
-          <h3 className="font-medium text-gray-900">{order.post?.title}</h3>
-          <p className="text-sm text-gray-500">
+          <h3 className="font-medium text-neutral-900">{order.post?.title}</h3>
+          <p className="text-sm text-neutral-500">
             {activeTab === "buyer" ? `卖家: ${order.seller?.nickname}` : `买家: ${order.buyer?.nickname}`}
           </p>
         </div>
@@ -173,15 +173,15 @@ export default function Orders() {
       </div>
 
       <div className="flex justify-between items-center mb-3">
-        <span className="text-gray-600">份数: {order.quantity}</span>
+        <span className="text-neutral-600">份数: {order.quantity}</span>
         <span className="text-emerald-600 font-medium">{order.totalPrice}积分</span>
       </div>
 
       {order.remark && (
-        <p className="text-sm text-gray-500 mb-3">备注: {order.remark}</p>
+        <p className="text-sm text-neutral-500 mb-3">备注: {order.remark}</p>
       )}
 
-      <div className="text-xs text-gray-400 mb-3">
+      <div className="text-xs text-neutral-400 mb-3">
         {new Date(order.createdAt).toLocaleString()}
       </div>
 
@@ -214,7 +214,7 @@ export default function Orders() {
           <button
             onClick={() => handleCancel(order.id)}
             disabled={actioningId !== null}
-            className={`flex-1 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg ${
+            className={`flex-1 py-2 border border-neutral-200 text-neutral-600 text-sm rounded-lg ${
               actioningId !== null ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
@@ -237,15 +237,15 @@ export default function Orders() {
     // max-w-2xl mx-auto：订单列表页统一容器约束，桌面端避免横向拉伸过度影响可读性
     <div className="px-4 py-4 pb-20 max-w-2xl mx-auto">
       {/* 返回按钮：与模块内其他二级页风格统一，触控区域 ≥40px */}
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-gray-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-gray-100 transition-colors">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-neutral-600 mb-4 py-1.5 px-2 -ml-2 rounded hover:bg-neutral-100 transition-colors">
         <ArrowLeft className="w-4 h-4" />返回
       </button>
       {/* Tab 切换 */}
-      <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
+      <div className="flex bg-neutral-100 rounded-lg p-1 mb-4">
         <button
           onClick={() => setActiveTab("buyer")}
           className={`flex-1 py-2 text-sm rounded-md transition-colors ${
-            activeTab === "buyer" ? "bg-white text-emerald-600 shadow-sm" : "text-gray-500"
+            activeTab === "buyer" ? "bg-white text-emerald-600 shadow-sm" : "text-neutral-500"
           }`}
         >
           我领取的
@@ -253,7 +253,7 @@ export default function Orders() {
         <button
           onClick={() => setActiveTab("seller")}
           className={`flex-1 py-2 text-sm rounded-md transition-colors ${
-            activeTab === "seller" ? "bg-white text-emerald-600 shadow-sm" : "text-gray-500"
+            activeTab === "seller" ? "bg-white text-emerald-600 shadow-sm" : "text-neutral-500"
           }`}
         >
           我分享的
@@ -283,7 +283,7 @@ export default function Orders() {
 
       {/* 加载状态 */}
       {loading && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-neutral-500">
           <Loader2 className="w-5 h-5 animate-spin text-emerald-500 inline-block mr-2 align-middle" />
           加载中...
         </div>
