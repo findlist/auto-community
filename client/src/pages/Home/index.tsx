@@ -225,7 +225,7 @@ export default function Home() {
               </Link>
               <Link
                 to="/register"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-transparent border border-white/40 text-white text-sm font-medium hover:bg-white/10 transition-all duration-300"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-transparent border border-white/40 text-white text-sm font-medium hover:bg-white/10 hover:border-white/60 transition-all duration-300"
               >
                 注册账号
               </Link>
@@ -334,7 +334,7 @@ export default function Home() {
       {/* 页脚版权：顶部细线分隔，避免与终极 CTA 黑色块完全连成一片 */}
       <footer
         ref={footerRef}
-        className="py-10 px-6 text-center bg-neutral-900 text-neutral-500 text-xs border-t border-white/5 transition-all duration-700"
+        className="py-10 px-6 text-center bg-neutral-900 text-neutral-500 text-xs border-t border-white/10 transition-all duration-700"
         style={{
           opacity: footerVisible ? 1 : 0,
           transform: footerVisible ? "translateY(0)" : "translateY(12px)",

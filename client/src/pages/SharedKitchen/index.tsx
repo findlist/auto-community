@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, AlertTriangle } from "lucide-react";
 import Empty from "@/components/Empty";
 import { getFoodShares, getGroupOrders } from "@/api/kitchen";
 import type { KitchenPost, GroupOrder } from "@/types";
@@ -170,8 +170,9 @@ export default function SharedKitchen() {
           {post.allergens && post.allergens.length > 0 && (
             <div className="flex flex-wrap gap-1 mb-1">
               {post.allergens.map(allergen => (
-                <span key={allergen} className="text-[11px] px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded">
-                  ⚠ {allergen}
+                <span key={allergen} className="inline-flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 bg-orange-50 text-orange-600 rounded">
+                  <AlertTriangle className="w-2.5 h-2.5" />
+                  {allergen}
                 </span>
               ))}
             </div>

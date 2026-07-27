@@ -105,7 +105,7 @@ describe('Auth/Login 登录页', () => {
     expect(screen.getByRole('button', { name: '登录' })).toBeInTheDocument();
     // 跳转链接
     expect(screen.getByText('忘记密码？')).toBeInTheDocument();
-    expect(screen.getByText('立即注册 →')).toBeInTheDocument();
+    expect(screen.getByText('立即注册')).toBeInTheDocument();
   });
 
   it('手机号格式错误时显示字段错误且不提交', async () => {

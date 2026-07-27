@@ -196,10 +196,14 @@ export default function SkillExchange() {
             className="w-full pl-10 pr-10 py-2.5 bg-neutral-100 border border-transparent rounded-lg text-sm focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 transition-all"
           />
           {searchInput && (
-            <X
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 hover:text-neutral-600 cursor-pointer"
+            <button
+              type="button"
               onClick={() => setSearchInput("")}
-            />
+              aria-label="清除搜索"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-neutral-400 hover:text-neutral-600 hover:bg-neutral-200 transition-all"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
         <div className="relative">

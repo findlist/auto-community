@@ -201,9 +201,10 @@ export default function Login() {
             </Link>
             <Link
               to="/register"
-              className="text-white font-medium hover:text-white/80 transition-colors"
+              className="inline-flex items-center gap-1 text-white font-medium hover:text-white/80 transition-colors"
             >
-              立即注册 →
+              立即注册
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </form>
