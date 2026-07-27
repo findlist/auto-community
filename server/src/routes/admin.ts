@@ -295,17 +295,22 @@ router.put('/content/:type/:id/status', validate([
  *                 type: array
  *                 minItems: 1
  *                 maxItems: 50
- *                 items: { type: string }
+ *                 items: { type: string, format: uuid }
  *               status: { type: string, enum: [active, inactive] }
  *     responses:
  *       200:
  *         description: 批量更新结果
+ *       422:
+ *         description: ids 元素非合法 UUID / status 非法值 / type 非枚举值
  */
 router.post('/content/:type/batch-status', validate([
   // :type 路径参数白名单：与单条更新路由行为一致，避免 type=invalid 时 service 层 switch 走 default 分支
   enumParam('type', CONTENT_TYPES),
   body('ids').isArray({ min: 1, max: 50 }).withMessage('内容ID列表需为1-50条'),
-  body('ids.*').isString().withMessage('内容ID必须为字符串'),
+  // ids 元素必须为合法 UUID：按 type 分别对应 skill_posts/kitchen_posts/time_bank_services/emergency_resources 的 id（UUID 类型）
+  // 非 UUID 值会穿透到 adminService.batchUpdateContentStatus 的 WHERE id = ANY($1) 触发 PG invalid input syntax 错误（500 而非 422）
+  // 与同文件 batch-ban/batch-unban 的 userIds.* 校验范式保持一致
+  body('ids.*').isUUID('all').withMessage('内容ID必须为合法 UUID'),
   body('status').isIn(['active', 'inactive']).withMessage('状态只能为 active 或 inactive'),
 ]), auditMiddleware('BATCH_UPDATE_CONTENT_STATUS', { resourceType: 'content' }), asyncHandler(async (req: Request<Record<string, string>, unknown, BatchUpdateContentStatusBody>, res: Response) => {
   const { type } = req.params;

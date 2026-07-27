@@ -486,6 +486,19 @@ describe('admin 路由集成测试', () => {
       expect(mockBatchUpdateContentStatus).not.toHaveBeenCalled();
     });
 
+    it('POST /content/:type/batch-status ids 元素非 UUID 422（前置 isUUID 校验拦截，不进入 service）', async () => {
+      // 防御性测试：ids 数组元素必须为合法 UUID，非 UUID 值（如 'c1'）直接 422
+      // 设计原因：ids 元素按 type 分别对应 skill_posts/kitchen_posts/time_bank_services/emergency_resources 的 id（UUID 类型）
+      // 非 UUID 值会穿透到 adminService.batchUpdateContentStatus 的 WHERE id = ANY($1) 触发 PG invalid input syntax 错误（500 而非 422）
+      const res = await fetch(`${baseUrl}/content/kitchen/batch-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify({ ids: ['c1', 'c2'], status: 'inactive' }),
+      });
+      expect(res.status).toBe(422);
+      expect(mockBatchUpdateContentStatus).not.toHaveBeenCalled();
+    });
+
     it('GET /content/:type/:id 返回内容详情', async () => {
       mockGetContentDetail.mockResolvedValue({ id: CONTENT_UUID, title: '帖子1' });
       const res = await fetch(`${baseUrl}/content/skill/${CONTENT_UUID}`);

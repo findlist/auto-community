@@ -121,7 +121,7 @@ describe('messages 路由集成测试', () => {
 
   describe('GET /', () => {
     it('认证通过返回聊天记录游标分页 200 默认 order_type=skill', async () => {
-      const res = await fetch(`${baseUrl}/?order_id=order-uuid-001`, {
+      const res = await fetch(`${baseUrl}/?order_id=${ORDER_UUID}`, {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(200);
@@ -137,7 +137,7 @@ describe('messages 路由集成测试', () => {
       // 验证 getMessages 收到正确的参数（order_id, userId, cursor, limit, orderType）
       // 默认 order_type=skill，cursor=undefined，limit=50
       expect(mockGetMessages).toHaveBeenCalledWith(
-        'order-uuid-001',
+        ORDER_UUID,
         'user-uuid-001',
         undefined,
         50,
@@ -146,6 +146,8 @@ describe('messages 路由集成测试', () => {
     });
 
     it('order_id 缺失时抛 BadRequestError 返回 400', async () => {
+      // uuidQuery('order_id') 默认 optional=true：未传时不触发校验，由路由层 if (!order_id) 抛 400
+      // 与 skills.ts 的 post_id 必填范式保持一致
       const res = await fetch(`${baseUrl}/`, {
         headers: { Authorization: 'Bearer valid-token' },
       });
@@ -157,8 +159,19 @@ describe('messages 路由集成测试', () => {
       expect(mockGetMessages).not.toHaveBeenCalled();
     });
 
+    it('order_id 非 UUID 时由 uuidQuery 校验返回 422（前置校验拦截，不进入 handler）', async () => {
+      // 防御性测试：order_id 必须为合法 UUID，非 UUID 值（如 'order-uuid-001'）直接 422
+      // 设计原因：messages.order_id 为 UUID 类型，非 UUID 值会穿透到 service 层 WHERE order_id = $1
+      // 触发 PostgreSQL invalid input syntax for type uuid 错误（500 而非 422）
+      const res = await fetch(`${baseUrl}/?order_id=not-a-uuid`, {
+        headers: { Authorization: 'Bearer valid-token' },
+      });
+      expect(res.status).toBe(422);
+      expect(mockGetMessages).not.toHaveBeenCalled();
+    });
+
     it('order_type 非法值时抛 BadRequestError 返回 400', async () => {
-      const res = await fetch(`${baseUrl}/?order_id=order-uuid-001&order_type=invalid`, {
+      const res = await fetch(`${baseUrl}/?order_id=${ORDER_UUID}&order_type=invalid`, {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(400);
@@ -170,12 +183,12 @@ describe('messages 路由集成测试', () => {
 
     it('order_type=kitchen 与 cursor/limit query 透传到 service', async () => {
       const res = await fetch(
-        `${baseUrl}/?order_id=order-uuid-001&order_type=kitchen&cursor=550e8400-e29b-41d4-a716-446655440001&limit=10`,
+        `${baseUrl}/?order_id=${ORDER_UUID}&order_type=kitchen&cursor=550e8400-e29b-41d4-a716-446655440001&limit=10`,
         { headers: { Authorization: 'Bearer valid-token' } },
       );
       expect(res.status).toBe(200);
       expect(mockGetMessages).toHaveBeenCalledWith(
-        'order-uuid-001',
+        ORDER_UUID,
         'user-uuid-001',
         '550e8400-e29b-41d4-a716-446655440001',
         10,
@@ -188,7 +201,7 @@ describe('messages 路由集成测试', () => {
       // 触发 PostgreSQL invalid input syntax for type uuid 错误（500 而非 422），
       // uuidQuery 在路由层前置拦截，返回 422 错误语义更清晰
       const res = await fetch(
-        `${baseUrl}/?order_id=order-uuid-001&cursor=not-a-uuid`,
+        `${baseUrl}/?order_id=${ORDER_UUID}&cursor=not-a-uuid`,
         { headers: { Authorization: 'Bearer valid-token' } },
       );
       expect(res.status).toBe(422);
@@ -197,13 +210,13 @@ describe('messages 路由集成测试', () => {
 
     it('limit 超过 100 时被截断为 100', async () => {
       const res = await fetch(
-        `${baseUrl}/?order_id=order-uuid-001&limit=200`,
+        `${baseUrl}/?order_id=${ORDER_UUID}&limit=200`,
         { headers: { Authorization: 'Bearer valid-token' } },
       );
       expect(res.status).toBe(200);
       // Math.min(200, 100) = 100，验证 limit 上限保护
       expect(mockGetMessages).toHaveBeenCalledWith(
-        'order-uuid-001',
+        ORDER_UUID,
         'user-uuid-001',
         undefined,
         100,
@@ -215,14 +228,14 @@ describe('messages 路由集成测试', () => {
       mockAuthenticate.mockImplementation((_req: Request, _res: Response, next: NextFunction) => {
         next(new UnauthorizedError('未提供认证令牌'));
       });
-      const res = await fetch(`${baseUrl}/?order_id=order-uuid-001`);
+      const res = await fetch(`${baseUrl}/?order_id=${ORDER_UUID}`);
       expect(res.status).toBe(401);
       expect(mockGetMessages).not.toHaveBeenCalled();
     });
 
     it('getMessages 抛错时由 errorHandler 返回 500', async () => {
       mockGetMessages.mockRejectedValue(new Error('权限校验失败'));
-      const res = await fetch(`${baseUrl}/?order_id=order-uuid-001`, {
+      const res = await fetch(`${baseUrl}/?order_id=${ORDER_UUID}`, {
         headers: { Authorization: 'Bearer valid-token' },
       });
       expect(res.status).toBe(500);

@@ -49,7 +49,7 @@ function parseOrderType(value: unknown): OrderType {
  *         schema:
  *           type: string
  *           format: uuid
- *         description: 订单 ID
+ *         description: 订单 ID（必须为合法 UUID）
  *       - in: query
  *         name: order_type
  *         schema:
@@ -98,8 +98,14 @@ function parseOrderType(value: unknown): OrderType {
  *         description: 未授权
  *       403:
  *         description: 权限不足
+ *       422:
+ *         description: order_id 非合法 UUID / cursor 非合法 UUID
  */
 router.get('/', authenticate, validate([
+  // order_id 为订单标识，必填；messages.order_id 为 UUID 类型，非 UUID 值会在 service 层 WHERE order_id = $1
+  // 触发 PostgreSQL invalid input syntax for type uuid 错误（500 而非 422）
+  // 默认 optional=true：未传时由下方 if (!order_id) 抛 400 处理必填，与 skills.ts 的 post_id 范式一致
+  uuidQuery('order_id'),
   // cursor 为游标分页参数，可选；为上一页最后一条记录的 id（UUID 格式）
   // 设计原因：messages 表 id 为 UUID 类型，非 UUID cursor 会在 service 层 WHERE id < $cursor
   // 触发 PostgreSQL invalid input syntax for type uuid 错误（500 而非 422），
