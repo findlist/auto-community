@@ -83,8 +83,8 @@ export default function Profile() {
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4">
-        <User className="w-16 h-16 text-gray-300 mb-4" />
-        <p className="text-gray-500 mb-4">请先登录</p>
+        <User className="w-16 h-16 text-neutral-300 mb-4" />
+        <p className="text-neutral-500 mb-4">请先登录</p>
         <Link to="/login" className="px-6 py-2 bg-emerald-500 text-white rounded-lg">
           去登录
         </Link>
@@ -113,8 +113,8 @@ export default function Profile() {
           </span>
         </button>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-gray-900">{user?.nickname}</h2>
-          <p className="text-sm text-gray-500">信誉分 {user?.reputationScore ?? 0}</p>
+          <h2 className="text-lg font-semibold text-neutral-900">{user?.nickname}</h2>
+          <p className="text-sm text-neutral-500">信誉分 {user?.reputationScore ?? 0}</p>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-full">
           <Shield className="w-4 h-4 text-emerald-600" />
@@ -125,18 +125,18 @@ export default function Profile() {
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="flex flex-col items-center p-3 bg-white rounded-xl">
           <CreditCard className="w-5 h-5 text-blue-500 mb-1" />
-          <span className="text-lg font-semibold text-gray-900">{user?.creditBalance ?? 0}</span>
-          <span className="text-xs text-gray-500">积分</span>
+          <span className="text-lg font-semibold text-neutral-900">{user?.creditBalance ?? 0}</span>
+          <span className="text-xs text-neutral-500">积分</span>
         </div>
         <div className="flex flex-col items-center p-3 bg-white rounded-xl">
           <Clock className="w-5 h-5 text-purple-500 mb-1" />
-          <span className="text-lg font-semibold text-gray-900">{user?.timeBalance ?? 0}</span>
-          <span className="text-xs text-gray-500">时间币</span>
+          <span className="text-lg font-semibold text-neutral-900">{user?.timeBalance ?? 0}</span>
+          <span className="text-xs text-neutral-500">时间币</span>
         </div>
         <div className="flex flex-col items-center p-3 bg-white rounded-xl">
           <Star className="w-5 h-5 text-yellow-500 mb-1" />
-          <span className="text-lg font-semibold text-gray-900">{user?.reputationScore ?? 0}</span>
-          <span className="text-xs text-gray-500">信誉分</span>
+          <span className="text-lg font-semibold text-neutral-900">{user?.reputationScore ?? 0}</span>
+          <span className="text-xs text-neutral-500">信誉分</span>
         </div>
       </div>
 
@@ -145,13 +145,16 @@ export default function Profile() {
           <Link
             key={path}
             to={path}
-            className={`flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 ${
-              danger ? "text-red-500" : ""
+            // 悬停反馈：普通项用中性色微底，danger 项用红色调强调破坏性操作语义
+            // 设计原因：菜单项纯白底无 hover 反馈，移动端/桌面端点击缺乏视觉确认；
+            // danger 项单独用 red-50 与退出登录按钮 hover 一致，避免误操作
+            className={`flex items-center gap-3 px-4 py-3 border-b border-neutral-200 last:border-0 transition-colors ${
+              danger ? "text-red-500 hover:bg-red-50" : "text-neutral-700 hover:bg-neutral-50"
             }`}
           >
-            <Icon className={`w-5 h-5 ${danger ? "text-red-500" : "text-gray-500"}`} />
-            <span className={`flex-1 ${danger ? "text-red-500" : "text-gray-700"}`}>{label}</span>
-            <ChevronRight className={`w-4 h-4 ${danger ? "text-red-300" : "text-gray-300"}`} />
+            <Icon className={`w-5 h-5 ${danger ? "text-red-500" : "text-neutral-500"}`} />
+            <span className="flex-1">{label}</span>
+            <ChevronRight className={`w-4 h-4 ${danger ? "text-red-300" : "text-neutral-300"}`} />
           </Link>
         ))}
       </div>
@@ -171,14 +174,14 @@ export default function Profile() {
           onClick={() => !saving && setEditingAvatar(false)}
         >
           <div
-            className="bg-white rounded-xl p-4 w-full max-w-sm"
+            className="bg-white rounded-2xl p-4 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-gray-900">修改头像</h3>
+              <h3 className="text-base font-semibold text-neutral-900">修改头像</h3>
               <button
                 onClick={() => !saving && setEditingAvatar(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-neutral-400 hover:text-neutral-600"
                 aria-label="关闭"
               >
                 <X className="w-5 h-5" />
@@ -203,7 +206,7 @@ export default function Profile() {
               <button
                 onClick={() => setEditingAvatar(false)}
                 disabled={saving}
-                className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+                className="flex-1 py-2.5 bg-neutral-100 text-neutral-600 rounded-lg text-sm font-medium hover:bg-neutral-200 transition-colors disabled:opacity-50"
               >
                 取消
               </button>
