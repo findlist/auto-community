@@ -381,9 +381,9 @@ describe('kitchen 路由集成测试', () => {
   // ===================== POST /orders =====================
   describe('POST /orders', () => {
     const validOrderBody = {
-      postId: '550e8400-e29b-41d4-a716-446655440000',
+      post_id: '550e8400-e29b-41d4-a716-446655440000',
       quantity: 2,
-      pickupType: 'self_pickup',
+      pickup_type: 'self_pickup',
     };
 
     it('创建订单成功', async () => {
@@ -401,11 +401,11 @@ describe('kitchen 路由集成测试', () => {
       // beforeEach 的 resetAllMocks 会清除模块加载阶段的调用记录，故此处不验证调用次数
     });
 
-    it('postId 非 UUID 校验失败 422', async () => {
+    it('post_id 非 UUID 校验失败 422', async () => {
       const res = await fetch(`${baseUrl}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
-        body: JSON.stringify({ ...validOrderBody, postId: 'not-a-uuid' }),
+        body: JSON.stringify({ ...validOrderBody, post_id: 'not-a-uuid' }),
       });
       expect(res.status).toBe(422);
       expect(mockOrderCreate).not.toHaveBeenCalled();

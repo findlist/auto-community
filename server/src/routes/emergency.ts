@@ -36,8 +36,9 @@ interface UpdateResponseStatusBody {
 }
 
 // 举报虚假求助
+// 字段命名使用 snake_case：前端 axios 拦截器将 camelCase 请求体统一转为 snake_case
 interface CreateFalseReportBody {
-  requestId: string;
+  request_id: string;
   reason: string;
 }
 
@@ -218,18 +219,18 @@ router.put('/responses/:id/status', authenticate, validate([
 }));
 
 // 举报虚假求助：限流防止恶意批量举报
-// 审计接入：举报可能影响被举报用户信用，需记录举报者与被举报的 requestId 便于恶意举报追溯
-// resourceId 取 req.body.requestId（被举报的求助 ID），举报记录自身 ID 在创建后由审计日志的 response 体承载
+// 审计接入：举报可能影响被举报用户信用，需记录举报者与被举报的 request_id 便于恶意举报追溯
+// resourceId 取 req.body.request_id（被举报的求助 ID），举报记录自身 ID 在创建后由审计日志的 response 体承载
 router.post('/false-reports', authenticate, createPostLimiter, auditMiddleware('CREATE_FALSE_REPORT', {
   resourceType: 'false_report',
-  getResourceId: (req) => req.body?.requestId,
+  getResourceId: (req) => req.body?.request_id,
 }), validate([
-  // requestId 必须为 UUID：notEmpty 仅校验非空，任意字符串可穿透到 service 层导致查询语义错误
-  body('requestId').isUUID().withMessage('求助ID格式不正确'),
+  // request_id 必须为 UUID：notEmpty 仅校验非空，任意字符串可穿透到 service 层导致查询语义错误
+  body('request_id').isUUID().withMessage('求助ID格式不正确'),
   body('reason').isString().isLength({ min: 1, max: 500 }).withMessage('举报原因不能为空且不超过500字符'),
 ]), asyncHandler(async (req: Request<Record<string, string>, unknown, CreateFalseReportBody>, res: Response) => {
-  const { requestId, reason } = req.body;
-  const result = await emergencyService.createReport(req.user!.id, requestId, reason);
+  const { request_id, reason } = req.body;
+  const result = await emergencyService.createReport(req.user!.id, request_id, reason);
   success(res, result, '举报成功');
 }));
 

@@ -377,7 +377,7 @@ describe('emergency 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/false-reports`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-        body: JSON.stringify({ requestId: REQUEST_UUID, reason: '虚假信息' }),
+        body: JSON.stringify({ request_id: REQUEST_UUID, reason: '虚假信息' }),
       });
       expect(res.status).toBe(200);
       expect(mockCreateReport).toHaveBeenCalledWith('user-001', REQUEST_UUID, '虚假信息');
@@ -387,17 +387,17 @@ describe('emergency 路由集成测试', () => {
       const res = await fetch(`${baseUrl}/false-reports`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-        body: JSON.stringify({ requestId: REQUEST_UUID }),
+        body: JSON.stringify({ request_id: REQUEST_UUID }),
       });
       expect(res.status).toBe(422);
     });
 
-    it('requestId 非 UUID 返回 422，不调用 service', async () => {
+    it('request_id 非 UUID 返回 422，不调用 service', async () => {
       // 守护 isUUID 前置校验：notEmpty 仅校验非空，任意字符串可穿透；isUUID 严格校验 UUID 格式
       const res = await fetch(`${baseUrl}/false-reports`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
-        body: JSON.stringify({ requestId: 'not-a-uuid', reason: '虚假信息' }),
+        body: JSON.stringify({ request_id: 'not-a-uuid', reason: '虚假信息' }),
       });
       expect(res.status).toBe(422);
       expect(mockCreateReport).not.toHaveBeenCalled();
@@ -676,14 +676,14 @@ describe('emergency 路由集成测试', () => {
       expect(mockAuditMiddleware).toHaveBeenCalledWith('UPDATE_EMERGENCY_RESOURCE', expect.objectContaining({ resourceType: 'emergency_resource' }));
       expect(mockAuditMiddleware).toHaveBeenCalledWith('DELETE_EMERGENCY_RESOURCE', expect.objectContaining({ resourceType: 'emergency_resource' }));
 
-      // 验证带 getResourceId 的路由能正确提取资源 ID（params.id 或 body.requestId）
-      const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { params: { id: string }; body?: { requestId?: string } }) => string | undefined }]>;
+      // 验证带 getResourceId 的路由能正确提取资源 ID（params.id 或 body.request_id）
+      const calls = mockAuditMiddleware.mock.calls as unknown as Array<[string, { getResourceId?: (req: { params: { id: string }; body?: { request_id?: string } }) => string | undefined }]>;
       const getById = (action: string) => calls.find(([a]) => a === action)?.[1]?.getResourceId;
 
       // UPDATE_EMERGENCY_RESPONSE_STATUS 从 req.params.id 提取
       expect(getById('UPDATE_EMERGENCY_RESPONSE_STATUS')?.({ params: { id: 'resp-123' } })).toBe('resp-123');
-      // CREATE_FALSE_REPORT 从 req.body.requestId 提取（被举报的求助 ID）
-      expect(getById('CREATE_FALSE_REPORT')?.({ params: { id: '' }, body: { requestId: 'req-456' } })).toBe('req-456');
+      // CREATE_FALSE_REPORT 从 req.body.request_id 提取（被举报的求助 ID）
+      expect(getById('CREATE_FALSE_REPORT')?.({ params: { id: '' }, body: { request_id: 'req-456' } })).toBe('req-456');
       // UPDATE/DELETE_EMERGENCY_RESOURCE 从 req.params.id 提取
       expect(getById('UPDATE_EMERGENCY_RESOURCE')?.({ params: { id: 'res-789' } })).toBe('res-789');
       expect(getById('DELETE_EMERGENCY_RESOURCE')?.({ params: { id: 'res-999' } })).toBe('res-999');

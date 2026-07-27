@@ -46,12 +46,14 @@ interface UpdateKitchenPostBody {
   allergens?: string[];
   status?: string;
 }
+// 字段命名使用 snake_case：前端 axios 拦截器将 camelCase 请求体统一转为 snake_case
+// post_id 与 skills.ts 路由保持一致，避免 kitchen 模块单独使用 camelCase 导致校验失败
 interface CreateKitchenOrderBody {
-  postId: string;
+  post_id: string;
   quantity: number;
-  pickupType?: 'self_pickup' | 'delivery';
-  pickupTime?: string;
-  deliveryAddress?: string;
+  pickup_type?: 'self_pickup' | 'delivery';
+  pickup_time?: string;
+  delivery_address?: string;
   remark?: string;
 }
 interface CompleteKitchenOrderBody {
@@ -302,12 +304,16 @@ router.post('/orders',
   orderLimiter,
   auditMiddleware('CREATE_ORDER', { resourceType: 'order' }),
   validate([
-    body('postId').isUUID().withMessage('美食ID格式不正确'),
+    body('post_id').isUUID().withMessage('美食ID格式不正确'),
     body('quantity').isInt({ min: 1 }).withMessage('份数必须大于0'),
-    body('pickupType').optional().isIn(['self_pickup', 'delivery']).withMessage('领取方式不正确'),
+    body('pickup_type').optional().isIn(['self_pickup', 'delivery']).withMessage('领取方式不正确'),
   ]),
   asyncHandler(async (req: Request<Record<string, string>, unknown, CreateKitchenOrderBody>, res: Response) => {
-    const result = await kitchenOrderService.create(req.user!.id, req.body);
+    // 路由层接收 snake_case（与前端拦截器转换一致），映射为 service 层期望的 camelCase
+    const { post_id, quantity, pickup_type, pickup_time, delivery_address, remark } = req.body;
+    const result = await kitchenOrderService.create(req.user!.id, {
+      postId: post_id, quantity, pickupType: pickup_type, pickupTime: pickup_time, deliveryAddress: delivery_address, remark,
+    });
     created(res, result, '预约成功');
   })
 );

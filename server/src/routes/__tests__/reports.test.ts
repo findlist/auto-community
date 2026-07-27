@@ -94,8 +94,8 @@ describe('reports 路由集成测试', () => {
   describe('POST /', () => {
     it('合法请求体创建举报成功返回 200', async () => {
       const body = {
-        targetType: 'skill',
-        targetId: '550e8400-e29b-41d4-a716-446655440000',
+        target_type: 'skill',
+        target_id: '550e8400-e29b-41d4-a716-446655440000',
         reason: '内容存在违规行为需要举报',
       };
       const res = await fetch(`${baseUrl}/`, {
@@ -125,8 +125,8 @@ describe('reports 路由集成测试', () => {
         next(new UnauthorizedError('未提供认证令牌'));
       });
       const body = {
-        targetType: 'skill',
-        targetId: '550e8400-e29b-41d4-a716-446655440000',
+        target_type: 'skill',
+        target_id: '550e8400-e29b-41d4-a716-446655440000',
         reason: '内容存在违规行为需要举报',
       };
       const res = await fetch(`${baseUrl}/`, {
@@ -143,10 +143,10 @@ describe('reports 路由集成测试', () => {
       expect(mockCreateReport).not.toHaveBeenCalled();
     });
 
-    it('targetType 非法时 validate 返回 422 与字段级错误', async () => {
+    it('target_type 非法时 validate 返回 422 与字段级错误', async () => {
       const body = {
-        targetType: 'invalid_type', // 非白名单值
-        targetId: '550e8400-e29b-41d4-a716-446655440000',
+        target_type: 'invalid_type', // 非白名单值
+        target_id: '550e8400-e29b-41d4-a716-446655440000',
         reason: '内容存在违规行为需要举报',
       };
       const res = await fetch(`${baseUrl}/`, {
@@ -159,16 +159,16 @@ describe('reports 路由集成测试', () => {
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
       expect(data.message).toBe('参数验证失败');
-      // 验证 errors 数组包含 targetType 字段错误
+      // 验证 errors 数组包含 target_type 字段错误
       expect(Array.isArray(data.errors)).toBe(true);
-      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'targetType')).toBe(true);
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'target_type')).toBe(true);
       expect(mockCreateReport).not.toHaveBeenCalled();
     });
 
-    it('targetId 非 UUID 时 validate 返回 422', async () => {
+    it('target_id 非 UUID 时 validate 返回 422', async () => {
       const body = {
-        targetType: 'kitchen',
-        targetId: 'not-a-uuid',
+        target_type: 'kitchen',
+        target_id: 'not-a-uuid',
         reason: '内容存在违规行为需要举报',
       };
       const res = await fetch(`${baseUrl}/`, {
@@ -180,13 +180,13 @@ describe('reports 路由集成测试', () => {
       // fetch.Response.json() 返回 Promise<unknown>，断言为 Record<string, unknown> 便于字段访问
       const data = (await res.json()) as Record<string, unknown>;
       expect(data.code).toBe('VALIDATION_ERROR');
-      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'targetId')).toBe(true);
+      expect((data.errors as Array<{ field: string }>).some((e: { field: string }) => e.field === 'target_id')).toBe(true);
     });
 
     it('reason 长度不足 5 时 validate 返回 422', async () => {
       const body = {
-        targetType: 'time_bank',
-        targetId: '550e8400-e29b-41d4-a716-446655440000',
+        target_type: 'time_bank',
+        target_id: '550e8400-e29b-41d4-a716-446655440000',
         reason: '太短', // 仅 2 个字符，小于 min:5
       };
       const res = await fetch(`${baseUrl}/`, {
@@ -204,8 +204,8 @@ describe('reports 路由集成测试', () => {
     it('createReport 抛错时由 errorHandler 返回 500', async () => {
       mockCreateReport.mockRejectedValue(new Error('数据库写入失败'));
       const body = {
-        targetType: 'user',
-        targetId: '550e8400-e29b-41d4-a716-446655440000',
+        target_type: 'user',
+        target_id: '550e8400-e29b-41d4-a716-446655440000',
         reason: '内容存在违规行为需要举报',
       };
       const res = await fetch(`${baseUrl}/`, {
@@ -223,8 +223,8 @@ describe('reports 路由集成测试', () => {
     it('未提供 reason 字段时 validate 返回 422', async () => {
       // 缺少必填字段的边界场景
       const body = {
-        targetType: 'skill',
-        targetId: '550e8400-e29b-41d4-a716-446655440000',
+        target_type: 'skill',
+        target_id: '550e8400-e29b-41d4-a716-446655440000',
         // reason 缺失
       };
       const res = await fetch(`${baseUrl}/`, {
