@@ -23,7 +23,7 @@ const RESOURCE_TYPE_META: Record<string, { label: string; color: string; bg: str
 const RESOURCE_STATUS_BADGE: Record<string, string> = {
   available: "bg-green-100 text-green-700",
   maintenance: "bg-yellow-100 text-yellow-700",
-  unavailable: "bg-gray-100 text-gray-500",
+  unavailable: "bg-neutral-100 text-neutral-500",
 };
 
 const RESOURCE_STATUS_LABEL: Record<string, string> = {
@@ -457,7 +457,7 @@ export default function ResourceMap() {
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="p-4 bg-white rounded-xl border border-gray-100 animate-pulse">
+                <div key={i} className="p-4 bg-white rounded-xl border border-neutral-100 animate-pulse">
                   <div className="h-4 bg-[var(--color-neutral-200)] rounded w-2/3 mb-2" />
                   <div className="h-3 bg-[var(--color-neutral-200)] rounded w-full mb-2" />
                   <div className="h-3 bg-[var(--color-neutral-200)] rounded w-1/2" />
@@ -473,7 +473,7 @@ export default function ResourceMap() {
           ) : (
             <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
               {resourcesWithDistance.map(({ resource: r, distance }) => {
-                const meta = RESOURCE_TYPE_META[r.type] || { label: r.type, bg: "bg-gray-100 text-gray-600" };
+                const meta = RESOURCE_TYPE_META[r.type] || { label: r.type, bg: "bg-neutral-100 text-neutral-600" };
                 const coord = parseLocation(r.location);
                 const isSelected = selectedId === r.id;
                 return (
@@ -483,7 +483,7 @@ export default function ResourceMap() {
                     className={`p-3.5 bg-white rounded-xl border transition-all ${
                       isSelected
                         ? "border-emerald-400 ring-1 ring-emerald-100"
-                        : "border-gray-100 hover:border-emerald-200"
+                        : "border-neutral-100 hover:border-emerald-200"
                     } ${coord ? "cursor-pointer" : "opacity-60 cursor-default"}`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -494,7 +494,7 @@ export default function ResourceMap() {
                     </div>
 
                     <div className="flex items-center gap-2 text-xs mb-1.5">
-                      <span className={`px-1.5 py-0.5 rounded-full ${RESOURCE_STATUS_BADGE[r.status] || "bg-gray-100 text-gray-500"}`}>
+                      <span className={`px-1.5 py-0.5 rounded-full ${RESOURCE_STATUS_BADGE[r.status] || "bg-neutral-100 text-neutral-500"}`}>
                         {RESOURCE_STATUS_LABEL[r.status] || r.status}
                       </span>
                       {distance != null && (

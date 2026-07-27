@@ -52,8 +52,8 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_BADGE: Record<string, string> = {
   open: "bg-green-100 text-green-700",
   responding: "bg-blue-100 text-blue-700",
-  resolved: "bg-gray-100 text-gray-600",
-  closed: "bg-gray-100 text-gray-500",
+  resolved: "bg-neutral-100 text-neutral-600",
+  closed: "bg-neutral-100 text-neutral-500",
   false_report: "bg-red-100 text-red-600",
 };
 
@@ -69,7 +69,7 @@ const RESOURCE_STATUS_LABEL: Record<string, string> = {
 const RESOURCE_STATUS_BADGE: Record<string, string> = {
   available: "bg-green-100 text-green-700",
   maintenance: "bg-yellow-100 text-yellow-700",
-  unavailable: "bg-gray-100 text-gray-500",
+  unavailable: "bg-neutral-100 text-neutral-500",
 };
 
 const CATEGORIES = [
@@ -359,7 +359,7 @@ function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
             <span className="text-sm text-[var(--color-text-secondary)]">匿名发布</span>
             <button
               onClick={() => setIsAnonymous(!isAnonymous)}
-              className={`w-11 h-6 rounded-full transition-colors relative ${isAnonymous ? "bg-emerald-500" : "bg-gray-300"}`}
+              className={`w-11 h-6 rounded-full transition-colors relative ${isAnonymous ? "bg-emerald-500" : "bg-neutral-300"}`}
             >
               <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isAnonymous ? "translate-x-5.5" : "translate-x-0.5"}`} />
             </button>
@@ -579,7 +579,7 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="p-4 bg-white rounded-lg animate-pulse border border-gray-100">
+              <div key={i} className="p-4 bg-white rounded-lg animate-pulse border border-neutral-100">
                 <div className="h-4 bg-[var(--color-neutral-200)] rounded w-2/3 mb-2" />
                 <div className="h-3 bg-[var(--color-neutral-200)] rounded w-full mb-2" />
                 <div className="h-3 bg-[var(--color-neutral-200)] rounded w-1/2" />
@@ -595,7 +595,7 @@ function ResourceModal({ onClose }: { onClose: () => void }) {
         ) : (
           <div className="space-y-3">
             {resources.map((r) => (
-              <div key={r.id} className="p-4 bg-white rounded-lg border border-gray-100">
+              <div key={r.id} className="p-4 bg-white rounded-lg border border-neutral-100">
                 <div className="flex items-start justify-between mb-1">
                   <h3 className="font-medium text-[var(--color-text-primary)] text-sm">{r.name}</h3>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${RESOURCE_STATUS_BADGE[r.status]}`}>
@@ -656,7 +656,7 @@ function ResponseItem({
         <span className="text-sm font-medium text-[var(--color-text-primary)]">
           {response.user?.nickname ?? "用户"}
         </span>
-        <span className={`text-xs px-2 py-0.5 rounded-full ${response.status === "accepted" ? "bg-blue-100 text-blue-700" : response.status === "arrived" ? "bg-green-100 text-green-700" : response.status === "completed" ? "bg-gray-100 text-gray-600" : "bg-yellow-100 text-yellow-700"}`}>
+        <span className={`text-xs px-2 py-0.5 rounded-full ${response.status === "accepted" ? "bg-blue-100 text-blue-700" : response.status === "arrived" ? "bg-green-100 text-green-700" : response.status === "completed" ? "bg-neutral-100 text-neutral-600" : "bg-yellow-100 text-yellow-700"}`}>
           {RESPONSE_STATUS_LABEL[response.status]}
         </span>
       </div>
@@ -851,8 +851,8 @@ function DetailView({ requestId }: { requestId: string }) {
           <span className={`px-2 py-0.5 rounded-full ${STATUS_BADGE[request.status]}`}>
             {STATUS_LABEL[request.status]}
           </span>
-          <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{request.category}</span>
-          <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+          <span className="px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">{request.category}</span>
+          <span className="px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
             {request.type === "emergency" ? "紧急求助" : "日常互助"}
           </span>
         </div>
@@ -968,7 +968,7 @@ function DetailView({ requestId }: { requestId: string }) {
         <div className="space-y-2">
           <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">评价</h2>
           {request.reviews.map((review) => (
-            <div key={review.id} className="p-3 bg-white rounded-lg border border-gray-100">
+            <div key={review.id} className="p-3 bg-white rounded-lg border border-neutral-100">
               <div className="flex items-center gap-1 mb-1">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <Star key={n} className={`w-3.5 h-3.5 ${n <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-[var(--color-neutral-300)]"}`} />
