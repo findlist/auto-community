@@ -23,6 +23,7 @@ const {
   mockRequestWithoutResponses,
   mockRequestOpenByOther,
   mockRequestWithArrivedResponse,
+  mockRequestWithNullArrays,
   getRequestMock,
   respondToRequestMock,
   updateResponseStatusMock,
@@ -175,6 +176,27 @@ const {
     reviews: [],
     createdAt: '2024-03-18T10:00:00Z',
     updatedAt: '2024-03-18T10:00:00Z',
+  } as unknown as EmergencyRequest,
+  // 兼容性场景：后端旧数据可能返回 images/responses/reviews 为 null
+  // 设计原因：DetailView 第 830/832 行直接 request.responses.find/.some，若不兜底会抛
+  // "Cannot read properties of null (reading 'find')"，触发 ErrorBoundary 白屏
+  mockRequestWithNullArrays: {
+    id: 'req-5',
+    userId: 'requester-1',
+    user: { id: 'requester-1', nickname: '求助发布者' },
+    type: 'emergency' as const,
+    category: 'medical',
+    title: '旧数据求助',
+    description: '字段为 null 的兼容性测试用例',
+    urgency: 'medium' as const,
+    isAnonymous: false,
+    // 三类数组字段均模拟后端返回 null（旧数据 / 未上传配图等场景）
+    images: null,
+    responses: null,
+    reviews: null,
+    status: 'open' as const,
+    createdAt: '2024-03-19T10:00:00Z',
+    updatedAt: '2024-03-19T10:00:00Z',
   } as unknown as EmergencyRequest,
   getRequestMock: vi.fn(),
   respondToRequestMock: vi.fn(),
@@ -601,5 +623,22 @@ describe('Emergency/Detail 应急邻里详情页（DetailView）', () => {
     });
     // 不应显示错误信息和返回列表按钮（"求助信息不存在"分支没有这些元素）
     expect(screen.queryByText('返回列表')).not.toBeInTheDocument();
+  });
+
+  it('images/responses/reviews 为 null 时不抛错（兼容旧数据）', async () => {
+    // 后端旧数据可能返回 images/responses/reviews 为 null（未上传配图 / 无响应 / 无评价）
+    // 前端 DetailView 在 .find/.some/.length/.map 前必须 ?? [] 兜底，否则触发 ErrorBoundary 白屏
+    // 设计原因：ca56752 commit 修复了 JSX 中的 .length/.map 兜底，但漏改了第 830/832 行的 .find/.some，
+    // 仍会在 request.responses.find 时抛 "Cannot read properties of null (reading 'find')"
+    getRequestMock.mockResolvedValueOnce({ code: 0, message: 'ok', data: mockRequestWithNullArrays });
+    renderPage();
+    await waitFor(() => {
+      // 标题正常渲染说明未触发 ErrorBoundary
+      expect(screen.getByText('旧数据求助')).toBeInTheDocument();
+    });
+    // 不应渲染图片列表、响应列表、评价列表（三字段均为 null，兜底为 [] 后 length=0）
+    expect(screen.queryByText('响应列表')).not.toBeInTheDocument();
+    expect(screen.queryByText('评价')).not.toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 });

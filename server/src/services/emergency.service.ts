@@ -203,7 +203,8 @@ function toRequestResponse(row: EmergencyRequestRow, isResponder: boolean = fals
     address: row.address,
     contactPhone,
     isAnonymous: row.is_anonymous,
-    images: row.images,
+    // 兜底空数组：数据库 images 字段可能为 null（旧数据未上传配图），统一返回 [] 避免下游每处都做 ?? [] 兜底
+    images: row.images ?? [],
     status: row.status,
     timeoutAt: row.timeout_at,
     // 字段名用 user 而非 requester，与前端 EmergencyRequest.user 类型定义对齐

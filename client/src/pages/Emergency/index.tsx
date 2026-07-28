@@ -755,7 +755,8 @@ function DetailView({ requestId }: { requestId: string }) {
   const handleComplete = async () => {
     // 入口守卫：弱网下用户连点"完成"会触发多次 updateResponseStatus，状态机可能跳过中间状态
     if (completing) return;
-    const acceptedResponse = request?.responses.find((r) => r.status === "arrived");
+    // responses 兜底：后端返回 null（极端兼容场景）时不至于在 .find 上抛错
+    const acceptedResponse = (request?.responses ?? []).find((r) => r.status === "arrived");
     if (!acceptedResponse) return;
     setCompleting(true);
     try {
@@ -825,9 +826,10 @@ function DetailView({ requestId }: { requestId: string }) {
   }
 
   const displayName = request.isAnonymous ? "匿名用户" : (request.user?.nickname ?? "未知用户");
-  const myResponse = request.responses.find((r) => r.userId === user?.id);
+  // responses 兜底：与 JSX 中的 (request.responses ?? []) 一致，防止后端返回 null 时 .find/.some 抛错
+  const myResponse = (request.responses ?? []).find((r) => r.userId === user?.id);
   const isRequester = user?.id === request.userId;
-  const hasArrivedResponse = request.responses.some((r) => r.status === "arrived");
+  const hasArrivedResponse = (request.responses ?? []).some((r) => r.status === "arrived");
   // 兼容后端 status：pending（老数据 / 部分写入路径） 与 open 等价，都视作可响应
   const canRespond = !myResponse && (request.status === "open" || request.status === "pending" || request.status === "responding") && user;
   // 后端 updateResponseStatus 在 completed 分支校验 request.status === 'responding'，
