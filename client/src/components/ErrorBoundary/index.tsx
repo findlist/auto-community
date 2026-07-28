@@ -52,11 +52,13 @@ export default class ErrorBoundary extends Component<Props, State> {
             <p className="text-sm text-[var(--color-text-secondary)] mb-6">
               页面遇到了意外错误，请刷新重试。如问题持续存在，请联系客服。
             </p>
-            {import.meta.env.DEV && (
-              <pre className="text-left text-xs text-[var(--color-error)] bg-red-50 p-3 rounded mb-4 overflow-auto max-h-40">
-                {this.state.error.message}
-              </pre>
-            )}
+            {/* 临时诊断：生产环境也展示错误信息，便于定位"应急帖子打不开"问题
+                设计原因：线上 ErrorBoundary 触发但只显示"出了点小问题"，用户/客服无法定位。
+                等问题修完后建议改回 import.meta.env.DEV only，或接入 Sentry 等远程上报 */}
+            <pre className="text-left text-xs text-[var(--color-error)] bg-red-50 p-3 rounded mb-4 overflow-auto max-h-40 whitespace-pre-wrap break-all">
+              {this.state.error.message}
+              {this.state.error.stack && '\n\nStack:\n' + this.state.error.stack.split('\n').slice(0, 6).join('\n')}
+            </pre>
             <button
               onClick={this.reset}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--color-primary-500)] text-white rounded-lg text-sm font-medium hover:bg-[var(--color-primary-600)] transition-colors"
