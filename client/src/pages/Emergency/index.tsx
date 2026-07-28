@@ -884,21 +884,22 @@ function DetailView({ requestId }: { requestId: string }) {
           </div>
         </div>
 
-        {request.images.length > 0 && (
+        {/* 后端 service 可能返回 images: null（旧数据或未上传配图），用 ?? [] 兜底避免 null.length 报错 */}
+        {(request.images ?? []).length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-1">
             {/* 配图 alt 使用序号，屏幕阅读器可识别多张求助配图 */}
-            {request.images.map((img, i) => (
+            {(request.images ?? []).map((img, i) => (
               <img key={i} src={img} alt={`求助配图${i + 1}`} className="w-24 h-24 rounded-lg object-cover flex-shrink-0" />
             ))}
           </div>
         )}
       </div>
 
-      {request.responses.length > 0 && (
+      {(request.responses ?? []).length > 0 && (
         <div className="space-y-2">
           <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">响应列表</h2>
           <div className="space-y-2">
-            {request.responses.map((resp) => (
+            {(request.responses ?? []).map((resp) => (
               <ResponseItem
                 key={resp.id}
                 response={resp}
@@ -968,10 +969,10 @@ function DetailView({ requestId }: { requestId: string }) {
         </div>
       )}
 
-      {request.reviews.length > 0 && (
+      {(request.reviews ?? []).length > 0 && (
         <div className="space-y-2">
           <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">评价</h2>
-          {request.reviews.map((review) => (
+          {(request.reviews ?? []).map((review) => (
             <div key={review.id} className="p-3 bg-white rounded-lg border border-neutral-100">
               <div className="flex items-center gap-1 mb-1">
                 {[1, 2, 3, 4, 5].map((n) => (
