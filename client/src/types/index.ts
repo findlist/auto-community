@@ -209,7 +209,8 @@ export interface EmergencyRequest {
   contactPhone?: string;
   isAnonymous: boolean;
   images: string[];
-  status: "open" | "responding" | "resolved" | "closed" | "false_report";
+  // 后端 service 用 'pending' 表示待响应，前端新增时按 open 写入（兼容旧数据）
+  status: "pending" | "open" | "responding" | "resolved" | "closed" | "false_report";
   responses: EmergencyResponse[];
   reviews: EmergencyReview[];
   createdAt: string;

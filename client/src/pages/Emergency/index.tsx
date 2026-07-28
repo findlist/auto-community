@@ -45,12 +45,15 @@ const URGENCY_BADGE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  open: "待响应", responding: "处理中", resolved: "已解决",
+  // 兼容后端 status 值：open / pending 视作同一状态（待响应），历史数据可能为 pending
+  open: "待响应", pending: "待响应", responding: "处理中", resolved: "已解决",
   closed: "已关闭", false_report: "虚假举报",
 };
 
 const STATUS_BADGE: Record<string, string> = {
+  // 兼容后端 status 值：open / pending 共享同一徽章样式
   open: "bg-green-100 text-green-700",
+  pending: "bg-green-100 text-green-700",
   responding: "bg-blue-100 text-blue-700",
   resolved: "bg-neutral-100 text-neutral-600",
   closed: "bg-neutral-100 text-neutral-500",
@@ -825,7 +828,8 @@ function DetailView({ requestId }: { requestId: string }) {
   const myResponse = request.responses.find((r) => r.userId === user?.id);
   const isRequester = user?.id === request.userId;
   const hasArrivedResponse = request.responses.some((r) => r.status === "arrived");
-  const canRespond = !myResponse && (request.status === "open" || request.status === "responding") && user;
+  // 兼容后端 status：pending（老数据 / 部分写入路径） 与 open 等价，都视作可响应
+  const canRespond = !myResponse && (request.status === "open" || request.status === "pending" || request.status === "responding") && user;
   // 后端 updateResponseStatus 在 completed 分支校验 request.status === 'responding'，
   // 前端需同步检查避免按钮显示但后端拒绝（求助已 resolved 后其他响应仍可能为 arrived 状态）
   const canComplete = isRequester && hasArrivedResponse && request.status === "responding";
