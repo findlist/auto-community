@@ -1,0 +1,1635 @@
+﻿
+ RUN  v4.1.10 E:/work/auto-community/client
+
+ ✓ src/pages/Auth/__tests__/Register.test.tsx > Auth/Register 注册页 > 渲染标题、表单字段与跳转链接 321ms
+ ✓ src/pages/Auth/__tests__/Register.test.tsx > Auth/Register 注册页 > 手机号格式错误显示字段错误且不提交 857ms
+ ✓ src/pages/Auth/__tests__/Register.test.tsx > Auth/Register 注册页 > 密码不足6位显示字段错误且不提交 694ms
+ ✓ src/pages/Auth/__tests__/Register.test.tsx > Auth/Register 注册页 > 两次密码不一致显示字段错误 921ms
+ ✓ src/pages/Auth/__tests__/Register.test.tsx > Auth/Register 注册页 > 昵称不足2字符显示字段错误 877ms
+ ✓ src/pages/Auth/__tests__/ResetPassword.test.tsx > Auth/ResetPassword 重置密码页（验证码版） > 渲染标题、副标题、表单字段与跳转链接 308ms
+ ✓ src/pages/Auth/__tests__/ResetPassword.test.tsx > Auth/ResetPassword 重置密码页（验证码版） > URL 携带 phone 参数时自动预填手机号 17ms
+ ✓ src/pages/Auth/__tests__/Register.test.tsx > Auth/Register 注册页 > 未勾选隐私政策显示字段错误 807ms
+ ✓ src/pages/Auth/__tests__/ResetPassword.test.tsx > Auth/ResetPassword 重置密码页（验证码版） > 手机号格式错误显示字段错误且不提交 826ms
+ ✓ src/pages/Auth/__tests__/Register.test.tsx > Auth/Register 注册页 > 注册成功后写入 token、调用 setAuth、提示成功并跳转首页 844ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 加载中显示 Loader2 旋转动画 74ms
+ ✓ src/pages/Auth/__tests__/ResetPassword.test.tsx > Auth/ResetPassword 重置密码页（验证码版） > 验证码非6位数字显示字段错误且不提交 903ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 加载失败显示错误提示 49ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 空列表显示"暂无配送地址"与"添加第一个地址"按钮 27ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 空列表点击"添加第一个地址"打开新增弹窗 266ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 列表加载成功显示地址数据（收件人/手机号/详细地址） 40ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 默认地址显示"默认"徽章 36ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 非默认地址显示"设为默认"按钮 105ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 点击"新增"打开弹窗显示"新增地址"标题 119ms
+ ✓ src/pages/Auth/__tests__/Register.test.tsx > Auth/Register 注册页 > 后端返回字段错误时映射到字段级提示 886ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 点击"编辑"打开弹窗显示"编辑地址"标题与预填数据 136ms
+ ✓ src/pages/Auth/__tests__/ResetPassword.test.tsx > Auth/ResetPassword 重置密码页（验证码版） > 密码不足6位显示字段错误且不提交 748ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 收件人为空时点击"保存"显示字段错误提示 205ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 加载中显示 Loader2 旋转动画 58ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 手机号格式错误时显示字段错误提示 467ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 加载成功显示分组配置（积分规则/超时与限额/通用配置） 170ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 加载成功显示配置键 118ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 加载成功显示配置值，空值显示"（空）"兜底 84ms
+ ✓ src/pages/Auth/__tests__/Register.test.tsx > Auth/Register 注册页 > 非字段错误时显示全局错误提示并 toast 940ms
+ ✓ src/pages/Auth/__tests__/ResetPassword.test.tsx > Auth/ResetPassword 重置密码页（验证码版） > 两次密码不一致显示字段错误 876ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 加载失败显示错误提示与重试按钮 23ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 点击重试按钮重新调用 getSettings 60ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 空列表显示"暂无配置项" 9ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 详细地址为空时显示字段错误提示 515ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 受保护配置键（homepage_hero_image）显示 Lock 图标且无删除按钮 440ms
+ ✓ src/pages/Auth/__tests__/Register.test.tsx > Auth/Register 注册页 > 提交期间按钮禁用并显示注册中状态 911ms
+ ✓ src/pages/Auth/__tests__/ResetPassword.test.tsx > Auth/ResetPassword 重置密码页（验证码版） > 重置成功显示成功页"密码重置成功" 874ms
+ ✓ src/pages/Auth/__tests__/ResetPassword.test.tsx > Auth/ResetPassword 重置密码页（验证码版） > 重置成功2秒后跳转到登录页 47ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 保存新增调用 createAddress 并刷新列表 714ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 点击"新增配置"打开弹窗显示"新增配置"标题 275ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > 未登录时跳转 /login 64ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > 加载中显示 Loader2 旋转动画 25ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 保存编辑调用 updateAddress 并刷新列表 357ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 新增弹窗配置键校验：非小写字母开头显示错误提示 395ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > 加载认证状态失败显示错误提示 55ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > verifyStatus=approved 显示已认证通过与真实姓名 210ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > verifyStatus=pending 显示认证审核中 62ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > verifyStatus=rejected 显示拒绝原因与重新提交表单 47ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > 未认证状态显示申请表单与提交按钮 53ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 新增弹窗配置值必填校验：为空显示"配置值不能为空" 359ms
+ ✓ src/pages/Auth/__tests__/ResetPassword.test.tsx > Auth/ResetPassword 重置密码页（验证码版） > ApiError 失败显示错误消息 903ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 保存失败显示错误提示 686ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 新增配置成功调用 setSetting 并 toast.success"配置已新增" 341ms
+ ✓ src/pages/Auth/__tests__/Login.test.tsx > Auth/Login 登录页 > 渲染品牌标题、表单字段与跳转链接 315ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > 真实姓名为空时提交显示"请填写完整信息" 499ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 新增配置失败显示 toast.error 错误提示 316ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 点击"编辑"打开弹窗显示"编辑配置"标题且 key 不可编辑 194ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 保存中显示 Loader2 旋转动画并禁用按钮 703ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 列表加载成功显示订单数据（服务标题/状态徽章） 177ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 加载中显示 Loader2 旋转动画 21ms
+ ✓ src/pages/Auth/__tests__/Login.test.tsx > Auth/Login 登录页 > 手机号格式错误时显示字段错误且不提交 504ms
+ ✓ src/pages/Auth/__tests__/ResetPassword.test.tsx > Auth/ResetPassword 重置密码页（验证码版） > 非 ApiError 失败显示兜底文案"重置密码失败" 935ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > 真实姓名不足2字符时显示长度错误 502ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 编辑配置成功调用 setSetting 并 toast.success"配置已更新" 315ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 加载失败显示错误提示与重试按钮 229ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 加载失败显示通用错误提示（非 ApiError 场景） 19ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 空列表显示"暂无订单"空状态 38ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 点击"取消"关闭弹窗不调用 API 248ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > pending + provider 视角显示"接受/取消"按钮 97ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > accepted + provider 视角显示"开始服务"按钮 94ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 解绑流程 > confirmed 状态显示"解除绑定"按钮 408ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 点击"设为默认"调用 setDefaultAddress 并刷新列表 112ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > 身份证号格式错误时显示"身份证号格式不正确" 307ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > in_progress + requester 视角显示"完成服务"按钮 67ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 点击"删除"打开确认弹窗显示配置键 196ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > completed + requester 视角显示"评价"按钮 64ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > cancelled 状态无操作按钮 52ms
+ ✓ src/pages/Auth/__tests__/Login.test.tsx > Auth/Login 登录页 > 密码不足6位时显示字段错误且不提交 468ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 设为默认失败显示错误提示 108ms
+ ✓ src/pages/Auth/__tests__/Login.test.tsx > Auth/Login 登录页 > 点击眼睛图标切换密码显示状态 104ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 解绑流程 > 点击"解除绑定"打开确认弹窗 261ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 点击"接受"调用 updateOrderStatus 并显示成功提示 136ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 删除弹窗点击"取消"关闭弹窗不调用 deleteSetting 295ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 设为默认进行中按钮显示加载态且重复点击不触发第二次 API 调用 252ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 点击"开始服务"调用 updateOrderStatus 107ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 点击"完成服务"调用 updateOrderStatus 94ms
+ ✓ src/pages/Auth/__tests__/ResetPassword.test.tsx > Auth/ResetPassword 重置密码页（验证码版） > 提交期间按钮禁用并显示"重置中..." 890ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 解绑流程 > 弹窗中点击"确认解绑"调用 unbindFamilyBinding 并显示成功提示 280ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > 提交成功后调用 submitVerification 并重新加载状态 515ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 点击"删除"在弹窗确认后调用 deleteAddress 189ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 确认删除调用 deleteSetting 并 toast.success"配置已删除" 274ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 点击"取消"调用 updateOrderStatus 95ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 点击"删除"在弹窗取消时不调用 deleteAddress 143ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 操作失败显示 toast.error 错误提示 111ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 解绑流程 > 弹窗中点击"取消"关闭弹窗，不调用 unbindFamilyBinding 212ms
+ ✓ src/pages/Auth/__tests__/Login.test.tsx > Auth/Login 登录页 > 登录成功后写入 token、调用 setAuth、提示成功并跳转首页 521ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 删除失败显示 toast.error 错误提示 271ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 删除失败显示错误提示 157ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 解绑流程 > 解绑失败显示 toast.error 错误提示 245ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 解绑流程 > unbound 状态显示"已解绑"标签，无解除绑定按钮 58ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 状态变更进行中按钮显示"处理中..."加载态且重复点击不触发第二次 API 调用 219ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > submitVerification 失败时显示错误提示 519ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 删除进行中按钮显示"删除中..."加载态且重复点击不触发第二次 API 调用 284ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 点击顶部返回按钮调用 navigate(-1) 92ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 点击"评价"打开评价表单 157ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx > AddressBook 配送地址簿 > 卸载后 loadAddresses resolve 不触发 setState（mountedRef 防御） 16ms
+ ✓ src/pages/Auth/__tests__/Login.test.tsx > Auth/Login 登录页 > 后端返回字段错误时映射到字段级提示 515ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 解绑流程 > 解绑请求中弹窗按钮显示"解绑中..."且禁用 246ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 状态展示与操作 > pending + isParent 状态显示"确认/拒绝"按钮 64ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 数值类配置（value 可解析为数字）显示滑块控件 167ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 浮点类配置（valueType=float）使用 0.01 步长 64ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 评价表单点击"提交评价"调用 createReview 239ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 状态展示与操作 > 列表为空显示空状态 42ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 状态展示与操作 > 加载失败显示错误状态与重新加载按钮 21ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 保存中显示 Loader2 旋转动画且按钮禁用 477ms
+node.exe : stderr | src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 卸载后 loadSettings reso
+lve 不触发 setState（mountedRef 防御）
+At C:\Users\Lenovo\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\node\npx.ps1:16 char:5
++     & "$basedir/node$exe"  "$basedir/node_modules/npm/bin/npx-cli.js" ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (stderr | src/pa...（mountedRef 防御）:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. Y
+ou can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/u
+pgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `
+v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/futur
+e#v7_relativesplatpath.
+
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 整数类配置（valueType=int）使用步长 1 166ms
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 卸载后 loadSettings resolve 不触发 setState（mountedRef 防御） 9ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > 非 ApiError 错误兜底显示"提交失败" 484ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 状态展示与操作 > 点击"全部/已绑定"Tab 切换筛选 97ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 评价表单点击"取消"关闭表单不调用 createReview 215ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 切换状态筛选 Tab 重新过滤列表 109ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 点击"加载更多"触发分页加载 139ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx > TimeBank/MyOrders 订单列表 > 卸载后 loadOrders resolve 不触发 setState（mountedRef 防御） 16ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 状态展示与操作 > 确认中按钮禁用且文案变为"确认中..."，避免重复提交 188ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 状态展示与操作 > 拒绝中按钮禁用且文案变为"拒绝中..."，避免重复提交 189ms
+ ✓ src/pages/Auth/__tests__/Login.test.tsx > Auth/Login 登录页 > 非字段错误时显示全局错误提示并 toast 578ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx > FamilyBinding 发起绑定入口守卫 > 弱网连点不产生多个绑定申请：入口 if 守卫阻断第二次 onClick 82ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证页 > 提交中按钮禁用并显示"提交中..." 530ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 实名认证入口守卫 > 弱网连点不产生多次认证申请：入口 if 守卫阻断第二次 onClick 66ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 卸载防御 > 卸载后 loadStatus resolve 不触发 setState（mountedRef 防御） 12ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx > Profile/Verify 卸载防御 > 卸载后 handleSubmit resolve 不触发 setState（mountedRef 防御） 62ms
+ ✓ src/pages/Auth/__tests__/Login.test.tsx > Auth/Login 登录页 > 提交期间按钮禁用并显示登录中状态 564ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 加载中显示骨架屏 animate-pulse 67ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 加载完成显示美食详情（标题/分类/价格/描述/位置） 91ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > price=0 显示"免费"文案 19ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 有图片时渲染 img 元素 18ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 无图片时渲染 emoji 占位符 24ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > need 类型无图渲染 🍜 emoji 19ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 有过敏原时渲染过敏原提醒 35ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 无过敏原时不渲染过敏原提醒 23ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > healthCert=true 显示"已认证"标识 36ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > healthCert=false 不显示"已认证"标识 16ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > offer + remaining>0 显示"立即预约"按钮 236ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > need 类型不显示"立即预约"按钮 55ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > remaining=0 不显示"立即预约"按钮 49ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 点击"查看评价"跳转到评价页 107ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 列表加载成功显示拼单数据（标题/金额/人数） 175ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 列表渲染多条拼单数据 63ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 点击"立即预约"打开预约弹窗 128ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 加载失败调用 console.error 兜底（持久错误占位 + 重试按钮） 227ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 加载失败显示重新加载重试按钮，点击后重新触发请求并渲染列表 79ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 预约弹窗点击"+/-"调整份数并更新总价 200ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 空列表显示'暂无拼单'空状态 24ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > open 状态'参与拼单'按钮可点击 80ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 未登录显示"请先登录"与"去登录"链接 73ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 非 open 状态'参与拼单'按钮禁用 58ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 已登录显示用户昵称与信誉分 48ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 已登录显示积分/时间币/信誉分三个统计卡片 46ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 已登录显示6个菜单项 39ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 预约弹窗份数不能超过剩余份数 203ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 点击'参与拼单'打开参与弹窗显示拼单标题与建议金额 94ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 预约弹窗份数不能小于 1 128ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 参与弹窗点击'确认参与'调用 joinGroupOrder 并 toast.success 127ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > delivery 类型显示"自取/配送"切换按钮 107ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > self_pickup 类型不显示"自取/配送"切换 65ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 列表加载成功显示举报数据（类型/原因/状态） 170ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 加载中显示 Loader2 旋转动画 16ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 加载失败显示错误提示 22ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 参与成功后关闭弹窗并刷新列表 109ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 点击退出登录调用 logout API + clearAuth + 跳转 /login 265ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 退出登录 API 失败时仍清除本地状态并跳转 74ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 参与失败显示 toast.error 错误提示 105ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 加载失败显示"重新加载"重试按钮，点击后重新触发请求 278ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 空列表显示"暂无数据" 33ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 点击"自取/配送"切换 pickupType 110ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 点击头像打开编辑弹窗 70ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 加载中显示加载动画与"加载中..."文案 105ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 加载完成显示历史消息，自己消息靠右、对方消息靠左 76ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 参与弹窗点击'取消'关闭弹窗不调用 API 129ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 点击'查看详情'跳转到详情页 57ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > pending 状态显示"处理"按钮 91ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > resolved/rejected 状态不显示"处理"按钮 40ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 备注 textarea 输入文本 202ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 弹窗内点击取消关闭弹窗 179ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 点击"处理"打开弹窗显示举报 ID 106ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 点击'发起拼单'打开创建弹窗 73ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 创建弹窗必填校验：标题为空提示'请填写必填信息' 98ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 加载失败显示 toast.error 错误提示 23ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 处理备注为空时"确认处理"按钮禁用 104ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 点击"确认预约"调用 createFoodOrder 168ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > 未登录跳转 /login 53ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > 加载中显示 Loader2 旋转动画 24ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > 加载中显示 Loader2 旋转动画 64ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 未上传头像点击保存显示"请先上传头像"错误 210ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 输入备注后"确认处理"按钮启用 100ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求 272ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 空消息列表显示"暂无消息"空状态 32ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 输入为空时发送按钮禁用 28ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 创建成功调用 createGroupOrder + toast.success + 关闭弹窗 + 刷新列表 150ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 预约成功显示 toast.success 并跳转订单页 157ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 创建失败显示 toast.error 错误提示 110ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 切换处理结果（已解决/已驳回） 154ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 上传头像后点击保存调用 updateProfile + setUser + toast.success 231ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > getOrder 失败显示 ApiError 错误提示条 47ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > getOrder 失败且非 ApiError 时显示"加载订单失败"兜底文案 14ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > 加载失败显示错误提示 53ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 输入消息后发送按钮启用 174ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 预约失败显示 toast.error 错误提示 158ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 创建弹窗点击'取消'关闭弹窗不调用 API 112ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > hasMore=true 时显示'加载更多'按钮，点击触发分页加载 69ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 点击"确认处理"调用 handleReport 并刷新列表 128ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > 订单不存在显示"订单不存在"与"返回订单列表"按钮，点击调用 navigate 241ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > 无注销申请时显示申请表单与"提交注销申请"按钮 236ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > hasMore=false 时不显示'加载更多'按钮 42ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 点击"取消"关闭弹窗不调用 API 108ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 点击"取消"关闭弹窗不调用 API 140ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 加载失败显示错误提示与"返回列表"按钮 20ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx > SharedKitchen/Detail 美食详情 > 重复提交守卫：弱网下连点"确认预约"只触发一次 createFoodOrder 121ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 点击发送按钮调用 wsClient.send 并清空输入框 185ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > 顶部返回按钮点击调用 navigate("/skills/orders") 77ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > 订单信息卡片渲染标题、状态徽章、对方昵称、积分 26ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > status=disputed 显示"争议处理中"卡片，含 disputeReason 与提示文案 47ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > 有 resolution 时显示"裁决结果"卡片，含处理结果与订单状态徽章 17ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 保存头像失败显示错误提示 239ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 创建中按钮禁用且文案变为'创建中...'，避免重复提交 133ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx > SharedKitchen/GroupOrders 拼单列表 > 参与中按钮禁用且文案变为'参与中...'，避免重复提交 111ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 处理失败显示错误提示 103ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理弹窗 > 切换状态筛选重新加载列表 54ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > 未争议未裁决时显示"发起争议"表单，含 4 个预设原因 + textarea + 提交按钮 44ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx > ReportManagement 处理举报入口守卫 > 弱网连点不产生多次举报处理：入口 if 守卫阻断第二次 onClick 111ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 按 Enter 键发送消息 173ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > 输入注销原因后可点击"提交注销申请"打开确认弹窗 281ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 保存头像失败非 ApiError 显示兜底错误 183ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 按 Shift+Enter 不触发发送 183ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > 选择某个预设原因后 textarea 被清空，提交按钮启用 219ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > 弹窗点击"取消"关闭弹窗不调用 API 175ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 保存中显示 Loader2 旋转动画且按钮禁用 180ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 点击返回按钮调用 navigate(-1) 94ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > WebSocket 接收 chat 类型消息追加到列表 23ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > WebSocket 非 chat 类型消息不追加到列表 24ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > WebSocket 重连状态显示"重连中"提示 36ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 遮罩点击关闭弹窗（非保存中） 123ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > WebSocket 断开状态显示"连接已断开"提示 26ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > orderType 从 URL 解析为 kitchen 46ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 非法 orderType 回退为 skill 31ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > 在 textarea 输入文本后 radio 取消选中，提交按钮启用 218ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > reason 与 selectedReason 均为空时提交按钮禁用 23ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > 组件卸载时调用 wsClient.close 清理连接 31ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx > Chat 聊天交互 > WebSocketClient 构造使用正确 URL 与 authMessage 认证 20ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > 弹窗点击"确认注销"调用 submitDeletionRequest 并切换到审核中状态 249ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 保存中遮罩点击不关闭弹窗 238ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > 点击提交调用 disputeOrder，提交中按钮显示"提交中..."且禁用 156ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx > Profile 个人中心页 > 弹窗关闭按钮（X 图标）关闭弹窗 119ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > 提交失败显示错误提示 187ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > pending 状态显示"注销申请审核中"与"取消注销申请"按钮 28ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > 提交成功显示"争议已提交"成功卡片，含"返回订单列表"和"查看详情"按钮 166ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > pending 状态点击"取消注销申请"调用 cancelDeletionRequest 并切换到表单 112ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > 取消注销失败显示错误提示 94ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > approved 状态显示"注销申请已通过"提示 16ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > rejected 状态显示"注销申请被拒绝"与"重新申请注销"按钮 24ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > rejected 状态点击"重新申请注销"回到申请表单 99ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > completed 状态调用 logout 清除本地状态并跳转 /login 18ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > 成功卡片点击"返回订单列表"调用 navigate("/skill-exchange/orders") 226ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > 点击"返回"按钮调用 navigate 跳转 /profile 63ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > 成功卡片点击"查看详情"回到详情视图（setSuccess(false)） 203ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > 提交中按钮禁用并显示 Loader2 140ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > disputeOrder 失败显示错误提示条，submitting 复位 133ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 账号注销流程 > 取消注销申请中按钮显示 Loader2 并禁用 95ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 注销申请入口守卫 > 弱网连点不产生多次注销申请：入口 if 守卫阻断第二次 onClick 68ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 卸载防御 > 卸载后 loadStatus resolve 不触发 setState（mountedRef 防御） 12ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 卸载防御 > 卸载后 handleSubmit resolve 不触发 setState（mountedRef 防御） 48ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx > DeleteAccount 卸载防御 > 卸载后 handleCancel resolve 不触发 setState（mountedRef 防御） 28ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx > SkillExchange/Dispute 订单争议 > disputeOrder 失败且非 ApiError 时显示"发起争议失败"兜底文案 166ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 编辑弹窗 > 发布者本人且 active 状态显示"编辑"按钮 305ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 编辑弹窗 > 非发布者不显示"编辑"按钮 44ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 编辑弹窗 > 发布者本人但状态非 active 不显示"编辑"按钮 29ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 编辑弹窗 > 点击"编辑"打开弹窗，预填当前服务数据 94ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 编辑弹窗 > 修改标题并点击"保存"，调用 updateService 并显示成功提示 138ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 编辑弹窗 > 清空标题后显示"标题不能为空"错误提示 82ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 编辑弹窗 > 时长超出范围显示错误提示 78ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 编辑弹窗 > 提交失败显示 toast.error 错误提示 80ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 编辑弹窗 > 点击"取消"关闭弹窗，不调用 updateService 89ms
+stderr | src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 加载失败显示"服务不存在"与返回列表按钮
+加载时间银行服务详情失败: Error: 网络错误
+    at E:/work/auto-community/client/src/pages/TimeBank/__tests__/ServiceDetail.test.tsx:490:45
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 编辑弹窗 > 保存中按钮禁用并显示"保存中..." 103ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 加载中显示骨架屏 5ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 加载失败显示"服务不存在"与返回列表按钮 22ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 服务数据为 null 时显示"服务不存在" 9ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 渲染 provide 类型服务的标题、标签、分类、时长、描述 21ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 渲染 request 类型服务的"需要服务"标签 29ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 有配图时渲染"服务配图"区域与图片 20ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 无配图时不渲染"服务配图"区域 13ms
+stderr | src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 加载失败时点击"返回列表"跳转到 /time-bank
+加载时间银行服务详情失败: Error: 网络错误
+    at E:/work/auto-community/client/src/pages/TimeBank/__tests__/ServiceDetail.test.tsx:604:45
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 有地址时渲染地址行 12ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 无地址时不渲染地址行 15ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 渲染发布者信息（昵称与信誉分） 17ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 点击返回按钮调用 navigate(-1) 17ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 加载失败时点击"返回列表"跳转到 /time-bank 14ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 订单创建 > 未登录时底部显示"请先登录后再发起请求" 18ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 订单创建 > 已登录且服务 active 时显示"发起请求"按钮 15ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 订单创建 > 服务非 active 状态时"发起请求"按钮禁用 14ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 订单创建 > 点击"发起请求"调用 createOrder 且参数包含 serviceId 21ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 订单创建 > 提交中按钮显示"提交中..."并禁用 41ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 订单创建 > 提交成功显示"请求已发起成功！" 32ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 订单创建 > 提交失败显示 toast.error 错误信息 30ms
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 订单创建 > 发起请求进行中 fireEvent 绕过 disabled 重复点击不触发第二次 createOrder 52ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 加载中显示 Loader2 旋转动画 69ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求 325ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > getUnreadCount 失败时调用 console.error 19ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 空列表显示"暂无通知"与 Bell 图标 14ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 列表渲染通知标题与内容 40ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 未读数量>0 时标题旁显示徽章 + "全部已读"按钮 37ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 未读数量=0 时不显示徽章与"全部已读"按钮 28ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 未读通知显示小红点 + 标题加粗（text-gray-900） 35ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 已读通知无小红点 + 标题变浅（text-gray-600） 31ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 4 种类型图标均渲染（order_status/emergency_response/report_result/system） 26ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 点击未读通知调用 markAsRead 并更新未读数量 112ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 点击已读通知不调用 markAsRead 79ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 点击"全部已读"调用 markAllAsRead 并清空未读数量 93ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > referenceType=skill_order 渲染"/skills/orders"跳转链接 24ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > referenceType=emergency_request 渲染"/emergency/{referenceId}"跳转链接 21ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 无 referenceId 时不渲染"查看"链接 16ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > hasMore=true 时显示"加载更多"按钮，点击触发分页加载 113ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > hasMore=false 时不显示"加载更多"按钮 27ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 标记单条已读进行中图标显示 Loader2 且重复点击不触发第二次 API 调用 221ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx > Notifications 通知中心 > 全部标记已读进行中按钮显示"处理中..."加载态且重复点击不触发第二次 API 调用 203ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 列表加载成功显示订单数据（标题/买家昵称/份数/总价/状态徽章） 156ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 默认 buyer Tab 显示买家视角（卖家: xxx） 29ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 加载中显示 animate-spin 旋转动画 11ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 空列表显示"暂无订单"空状态 19ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 切换至 seller Tab 显示卖家视角（买家: xxx）并重新加载 264ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > seller Tab + pending 状态显示"确认"按钮 107ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > buyer Tab + confirmed 状态显示"完成"按钮 41ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > pending/confirmed 状态显示"取消"按钮 37ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > completed/cancelled 状态不显示操作按钮 43ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 点击"确认"触发 confirm 对话框，确认后调用 confirmFoodOrder 110ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 点击"取消"打开弹窗，确认后调用 cancelFoodOrder 49ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 弹窗取消时不调用 confirmFoodOrder 89ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 切换状态筛选重新加载列表 55ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > hasMore 为 true 时显示"加载更多"按钮，点击触发分页加载 55ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 操作失败显示 toast.error 错误提示 75ms
+stderr | src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 首次加载失败显示 Empty error 与重新加载按钮，点击后
+重新触发请求
+加载失败: ApiError: 网络错误
+    at E:/work/auto-community/client/src/pages/SharedKitchen/__tests__/Orders.test.tsx:495:52
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64 {
+  code: 500,
+  fieldErrors: undefined
+}
+
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 重复提交守卫：状态变更进行中按钮显示"处理中..."且禁用所有操作 112ms
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求 57ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 渲染表单显示提交按钮"立即发布" 325ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 默认类型为"我要分享"，点击切换为"我有需求" 101ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > offer 类型显示领取地点/领取时间/领取方式/过敏原，切换到 need 类型隐藏 89ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 标题为空时校验失败显示"请填写标题" 25ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 标题少于2字符校验失败显示"标题至少需要2个字符" 28ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > offer 类型领取地点为空时校验失败显示"请填写领取地点" 97ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 表单校验不通过时不调用 createFoodShare 58ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 填写完整有效数据点击发布调用 createFoodShare 并跳转 109ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 提交成功时 images 与 allergens 为空数组转 undefined 111ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 点击过敏原按钮选中并高亮，再次点击取消选中 43ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 选中过敏原后提交 allergens 数组传给后端 139ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 点击领取方式"可配送"切换 pickupType 为 delivery 22ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > need 类型不显示分享份数字段 41ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 提交失败显示 toast.error 错误提示，不跳转 84ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 提交中按钮显示"发布中..." 103ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 渲染 ImageUpload 图片上传组件 10ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 点击分类按钮选中并高亮显示 35ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx > SharedKitchen/Create 发布美食表单 > 发布进行中 fireEvent 绕过 disabled 重复点击不触发第二次 createFoodShare 124ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 列表加载成功显示内容数据（标题/状态） 167ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 加载中显示 Loader2 旋转动画 14ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 加载失败显示错误提示 23ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 加载失败显示"重新加载"重试按钮，点击后重新触发请求 282ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 空列表显示"暂无数据" 29ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 单选一条内容后显示批量操作工具栏与选中数量 57ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 全选当前页内容 47ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 点击"批量上架"打开确认弹窗显示选中数量 183ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 点击"批量下架"打开确认弹窗显示选中数量 140ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 点击"清除选择"清空选中并隐藏工具栏 104ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 确认弹窗点击"取消"关闭弹窗不调用 API 175ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 确认弹窗点击"确认"调用 batchUpdateContentStatus 并刷新列表 157ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 列表加载成功显示认证申请数据（申请人/手机号/真实姓名/状态） 192ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 加载中显示 Loader2 旋转动画 13ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 批量操作失败显示错误提示 157ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 切换内容类型重新加载列表 77ms
+ ✓ src/pages/Auth/__tests__/ForgotPassword.test.tsx > Auth/ForgotPassword 忘记密码页（发送验证码） > 渲染标题、副标题、表单字段与跳转链接 312ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 批量操作 > 切换状态筛选重新加载列表 74ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx > ContentReview 单条上下架入口守卫 > 弱网连点不产生多次上下架切换：入口 if 守卫阻断第二次 onClick 87ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 加载失败显示错误提示 28ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 加载失败显示"重新加载"重试按钮，点击后重新触发请求 245ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 空列表显示"暂无认证申请" 10ms
+ ✓ src/pages/Auth/__tests__/ForgotPassword.test.tsx > Auth/ForgotPassword 忘记密码页（发送验证码） > 手机号格式错误显示字段错误且不提交 244ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > pending 状态显示"通过"和"拒绝"按钮 58ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > approved/rejected 状态不显示操作按钮（仅 pending 显示） 30ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 点击"通过"打开弹窗显示申请人真实姓名 82ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 点击"拒绝"打开弹窗显示拒绝原因输入框 94ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 加载中显示骨架屏 animate-pulse 65ms
+ ✓ src/pages/Auth/__tests__/ForgotPassword.test.tsx > Auth/ForgotPassword 忘记密码页（发送验证码） > 发送成功显示成功页"验证码已发送" 358ms
+ ✓ src/pages/Auth/__tests__/ForgotPassword.test.tsx > Auth/ForgotPassword 忘记密码页（发送验证码） > 发送成功2秒后带 phone 参数跳转到重置密码页 35ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 拒绝原因为空时点击"确认拒绝"显示错误提示 152ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 加载完成显示帖子详情（标题/分类/积分/描述/位置） 113ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > offer 类型显示"提供技能"文案 34ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > request 类型显示"需求技能"文案 22ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 输入拒绝原因后点击"确认拒绝"调用 reviewVerification 并刷新列表 122ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 加载失败显示错误提示与"返回列表"按钮 197ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 发布者本人 + active 状态显示"编辑/删除"按钮 76ms
+ ✓ src/pages/Auth/__tests__/ForgotPassword.test.tsx > Auth/ForgotPassword 忘记密码页（发送验证码） > ApiError 失败显示错误消息 273ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 点击"确认通过"调用 reviewVerification(approve) 并刷新列表 110ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 点击"取消"关闭弹窗不调用 API 78ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 非发布者显示"发起交易"按钮 32ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > active 状态"发起交易"按钮可点击 32ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > closed 状态"发起交易"按钮禁用 49ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 切换状态筛选重新加载列表 80ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 实名认证审核 > 点击下一页触发分页加载 36ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx > VerificationReview 审核入口守卫 > 弱网连点不产生多次审核：入口 if 守卫阻断第二次 onClick 113ms
+ ✓ src/pages/Auth/__tests__/ForgotPassword.test.tsx > Auth/ForgotPassword 忘记密码页（发送验证码） > 非 ApiError 失败显示兜底文案"验证码发送失败" 281ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 点击"发起交易"调用 createOrder 并跳转 167ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 交易失败显示 toast.error 错误提示 91ms
+ ✓ src/pages/Auth/__tests__/ForgotPassword.test.tsx > Auth/ForgotPassword 忘记密码页（发送验证码） > 提交期间按钮禁用并显示"发送中..." 280ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 点击"编辑"跳转到编辑页 94ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 点击"删除"打开弹窗，确认后调用 deletePost 并跳转 204ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 点击"删除"打开弹窗，取消时不调用 deletePost 172ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 删除进行中按钮显示"删除中..."加载态且重复点击不触发第二次 API 调用 252ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > location 不存在时不渲染位置信息 17ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 渲染 AI 推荐组件 20ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx > SkillExchange/Detail 帖子详情 > 发起交易进行中按钮显示"提交中..."且 fireEvent 绕过 disabled 重复点击不触发第二次 createOrder 96ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > 列表加载成功显示用户数据（昵称/手机号/角色/状态） 200ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > 加载中显示 Loader2 旋转动画 22ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > 加载失败显示错误提示 31ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > 加载失败显示"重新加载"重试按钮，点击后重新触发请求 281ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > 空列表显示"暂无数据" 33ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > active 状态用户显示"封禁"按钮 135ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > banned 状态用户显示"解封"按钮 76ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > 普通用户显示"设为管理员"按钮 66ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > admin 角色显示"取消管理员"按钮 85ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > 点击"封禁"打开弹窗，显示用户昵称 75ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > 点击"确认封禁"调用 banUser 并刷新列表 120ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > 点击"取消"按钮关闭弹窗，不调用 banUser 94ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > 封禁失败显示错误提示 91ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > 解封流程：点击"解禁"调用 unbanUser 并刷新列表 114ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 封禁/解封弹窗 > 搜索框输入并回车触发查询 50ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx > UserManagement 确认操作入口守卫 > 弱网连点不产生多次封禁：入口 if 守卫阻断第二次 onClick 94ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > 列表加载成功显示订单数据（买方/卖方昵称/金额/状态） 191ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > completed 与 cancelled 状态不显示"强制取消"按钮 235ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > pending/in_progress 状态显示"强制取消"按钮 114ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > 点击"强制取消"打开弹窗，显示订单 ID 118ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > 取消原因为空时"确认取消"按钮禁用 138ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 渲染显示标题"今天，谁在开火"（默认 offer Tab） 111ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 点击"美食需求"Tab 切换标题为"邻居们想吃啥"并传 type=need 79ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > 输入取消原因后"确认取消"按钮启用 107ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 点击"拼单买菜"Tab 切换标题为"一起买，更便宜"并调用 getGroupOrders 77ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > 点击"确认取消"调用 forceCancelOrder 并刷新列表 108ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 拼单 Tab 不显示类别筛选按钮 60ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 首次加载中显示骨架屏（offer Tab 用 SkeletonCard + showImage） 14ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 美食列表渲染数据（标题、价格、描述、用户昵称、剩余份数、过敏原） 47ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 价格为 0 显示"免费" 25ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 渲染显示标题"邻居能提供什么"（默认 offer Tab） 122ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 点击"需求技能"Tab 切换标题为"邻居需要什么" 75ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 首次加载中显示骨架屏 20ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > 点击"取消"按钮关闭弹窗，不调用 forceCancelOrder 126ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 列表渲染帖子数据（标题、价格、描述、分类、位置、用户昵称、信誉分） 62ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 空列表显示"暂无相关技能" 24ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 点击列表项跳转详情页 48ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 图片缺失时用 emoji 占位（offer Tab 显示 🍲） 24ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 拼单列表渲染数据（标题、百分比、金额、人数） 49ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 空列表显示"暂无美食"（offer Tab 空列表） 25ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > 取消失败显示错误提示 127ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > 加载中显示 Loader2 旋转动画 19ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > 加载失败显示错误提示 13ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 拼单空列表显示"暂无拼单" 44ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 点击美食列表项跳转详情页 /kitchen/:id 26ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 点击拼单列表项跳转 /kitchen/group-orders/:id 59ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 点击"发布"按钮跳转创建页 38ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 切换分类筛选重新加载列表 57ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > 加载失败显示"重新加载"重试按钮，点击后重新触发请求 72ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 点击"发布"按钮跳转创建页 /kitchen/create 24ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 切换类别筛选重新加载列表（getFoodShares 传 category） 31ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 类别为"全部"时不传 category 参数 13ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > 切换订单类型重新加载列表 116ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx > OrderManagement 强制取消订单弹窗 > 切换状态筛选重新加载列表 93ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 渲染显示标题"全部求助"（默认空 Tab） 136ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 点击"紧急"Tab 切换标题为"紧急求助"并传 type=emergency 333ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 点击"日常"Tab 切换标题为"日常互助"并传 type=daily 67ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 首次加载中显示骨架屏 SkeletonListCard 9ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 列表渲染求助数据（标题、描述、用户名、类别） 32ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 紧急程度标签渲染（high 显示"较高"） 29ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 状态标签渲染（open 显示"待响应"，responding 显示"处理中"） 31ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 匿名用户显示"匿名用户" 28ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 搜索框输入触发防抖加载 363ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 搜索框 X 清除按钮清空搜索 45ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 加载更多按钮点击加载第二页（offer Tab） 68ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > hasMore=false 时不显示加载更多按钮 34ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 加载失败调用 console.error 兜底 15ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 空列表显示"暂无求助信息" 29ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 点击求助列表项跳转详情页 /emergency/:id 40ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 点击"资源地图"按钮跳转 /emergency/resources/map 32ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求 292ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx > SharedKitchen/index 共享厨房列表页 > 拼单 Tab 首次加载失败显示 Empty error 与重新加载按钮 81ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 点击"求助"按钮打开 CreateModal（显示"发布求助"标题） 71ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 点击"资源"按钮打开 ResourceModal（显示"应急资源"标题） 49ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 加载更多按钮点击加载第二页 71ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > hasMore=false 时不显示加载更多按钮 42ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 加载失败调用 console.error 兜底 21ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > Tab 切换后 getRequests 被调用2次（全部 + emergency） 76ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 点击"加载更多"按钮触发下一页请求并追加数据 63ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 加载完成后不显示骨架屏 30ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求 255ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 位置不存在时不渲染位置 21ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx > SkillExchange/index 技能交换列表页 > 信誉分不存在时不渲染 37ms
+stderr | src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 加载失败显示 Empty error 与重新加载按钮，点击后重新
+触发请求
+加载失败: ApiError: 加载订单失败
+    at E:/work/auto-community/client/src/pages/SkillExchange/__tests__/Orders.test.tsx:248:48
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64 {
+  code: 500,
+  fieldErrors: undefined
+}
+
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > 列表加载成功显示日志数据（操作者/操作/状态/IP/时间） 225ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > 重复提交守卫：弱网下连点"提交"只触发一次 createRequest 220ms
+ ✓ src/pages/Emergency/__tests__/index.test.tsx > Emergency/index 应急邻里列表页（ListView） > ResourceModal typeFilter 快速切换时旧响应不覆盖新响应（activeRequestKeyRef 防御） 78ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 列表加载成功显示订单数据（标题/买方昵称/积分/状态徽章） 165ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 加载中显示 animate-spin 旋转动画 15ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求 281ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 空列表显示"暂无订单"空状态 16ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > pending 状态 + 卖方视角 显示"接受/拒绝"按钮 68ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > userId 缺失时操作者显示"系统"兜底文案 70ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > 加载中显示 Loader2 旋转动画 26ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > 加载失败显示错误提示 46ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > pending 状态 + 买方视角 显示"取消"按钮 58ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > accepted 状态 显示"开始服务/取消/发起争议"按钮 66ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > in_progress 状态 显示"完成/发起争议"按钮 50ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > 加载失败显示"重新加载"重试按钮，点击后重新触发请求 313ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > 空列表显示"暂无日志记录" 45ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > disputed 状态 显示"查看争议"按钮 62ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > completed 状态 显示"去聊天"按钮 35ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 点击"接受"调用 updateOrderStatus 并刷新列表 55ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > 切换操作类型筛选重新加载列表 63ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > 切换状态筛选重新加载列表 62ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > 设置开始日期重新加载列表 64ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 点击"取消"打开确认弹窗，确认后调用 updateOrderStatus 62ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 点击"拒绝"打开确认弹窗，确认后调用 updateOrderStatus 62ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 弹窗点击"取消"按钮不调用 updateOrderStatus 57ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > 点击"查询"按钮触发加载 78ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > 点击下一页触发分页加载 49ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > 首页时上一页按钮禁用 48ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx > AuditLog 筛选查询 > 末页时下一页按钮禁用 41ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 切换状态筛选重新过滤列表显示对应订单 70ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 操作失败显示 toast.error 错误提示 43ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 重复提交守卫：状态变更进行中按钮显示"处理中..."且禁用所有操作 70ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 加载中显示骨架屏 SkeletonDetail 49ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 详情渲染标题、描述、紧急标签、状态标签 110ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 详情渲染类别与类型标签 33ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 详情渲染实名用户昵称 42ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 详情渲染地址与联系电话 34ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 详情渲染图片列表（images.length > 0） 180ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 无图片时不渲染图片列表 15ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 匿名用户显示"匿名用户" 12ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 响应列表渲染（响应者昵称、状态标签、留言、ETA） 48ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 空响应列表不渲染"响应列表"标题 24ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 响应者本人且 status=accepted 显示"确认到达"按钮 32ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 未登录用户不显示"立即响应"按钮（canRespond=false） 31ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 已登录用户且 request.status=open 显示"立即响应"按钮（canRespond=true） 13ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 点击"立即响应"展开留言输入框，留言为空时"确认响应"按钮禁用 28ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 填写留言后点击"确认响应"调用 respondToRequest 并刷新详情 43ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 发布者本人且有 arrived 响应显示"完成互助"按钮（canComplete=true） 23ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 非发布者不显示"完成互助"按钮（canComplete=false） 31ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 评价列表渲染（星标与评价内容） 22ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 点击"举报虚假信息"展开举报输入框 29ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 举报原因为空时"提交举报"按钮禁用 29ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 填写举报原因后点击"提交举报"调用 submitFalseReport 并关闭输入框 43ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 举报提交中按钮禁用且文案变为"提交中..."，避免重复提交 52ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 点击"返回列表"按钮调用 navigate("/emergency") 21ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 加载错误显示错误信息与"返回列表"按钮 6ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx > Emergency/Detail 应急邻里详情页（DetailView） > 详情不存在显示"求助信息不存在"（无错误且 request 为 null） 4ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > 加载成功显示数据库/Redis/服务器状态卡片 180ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > 加载成功显示服务器运行时间与内存使用率 56ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > 加载中显示 Loader2 旋转动画 7ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > 加载失败显示错误提示与重试按钮 174ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > 点击"重试"按钮重新调用 getSystemMetrics 61ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > 数据库异常状态显示"异常"标签 42ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > Redis 断开状态显示"断开" 27ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > 告警日志列表显示告警项与数量徽章 44ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > 空告警显示"暂无告警日志"且"清除告警"按钮禁用 65ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > 点击"刷新"按钮重新加载指标 63ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > 点击"清除告警"清除告警列表 108ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > 清除告警失败显示错误提示 93ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx > SystemStatus 系统状态监控 > setInterval 触发的新请求完成后，旧慢请求的 setState 被竞态守卫跳过 29ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 渲染表单显示标题"发布技能"与提交按钮"立即发布" 278ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 默认类型为"提供技能"，点击切换为"需求技能" 58ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > offer 类型显示积分价格输入框，切换到 request 类型隐藏 40ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > request 类型不显示积分价格，提交时 creditPrice 为 0 校验 96ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 标题为空时校验失败显示"请填写标题" 20ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 标题少于2字符校验失败显示"标题至少需要2个字符" 17ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 描述少于10字符校验失败显示"详细描述至少需要10个字符" 13ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 未选择分类时校验失败显示"请填写分类" 28ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > offer 类型积分为空时校验失败显示"请填写积分价格" 56ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 表单校验不通过时不调用 createPost 27ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 填写完整有效数据点击发布调用 createPost 并跳转 79ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 提交成功时 images 为空数组转 undefined 避免发送空数组 63ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 提交失败(ApiError)显示 toast.error 错误提示，不跳转 53ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 提交失败(普通Error)显示兜底文案"发布失败" 58ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 提交中按钮显示"发布中..." 59ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 点击返回按钮调用 navigate(-1) 返回上一页 19ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 渲染 ImageUpload 图片上传组件 7ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx > SkillExchange/Create 发布技能表单 > 点击分类按钮选中并高亮显示 22ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 未登录显示"请先登录"与"去登录"链接 73ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 加载中显示 spinner 旋转动画 17ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 加载完成显示积分余额 17ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 空列表显示"暂无交易记录" 23ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 列表渲染交易数据（描述、时间、金额、余额） 39ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 收入类型（earn）显示 + 前缀 31ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 支出类型（spend）显示 - 前缀 14ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 冻结类型（freeze）显示 - 前缀 17ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 解冻类型（unfreeze）显示 + 前缀 31ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 退款类型（refund）显示 + 前缀 16ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 时间收入（time_earn）显示 + 前缀 15ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 时间支出（time_spend）显示 - 前缀 16ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 描述为空时显示类型中文标签 16ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 总数显示"共 N 条" 29ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > totalPages > 1 显示分页控件与页码 208ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 首页时上一页按钮禁用 38ms
+stderr | src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 加载失败显示 Empty error 与重新加载按钮，点击
+后重新触发请求
+加载积分明细失败: Error: 网络错误
+    at E:/work/auto-community/client/src/pages/Profile/__tests__/PointsDetail.test.tsx:313:48
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 点击下一页加载第二页数据 67ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 点击返回按钮调用 navigate(-1) 19ms
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求 58ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 未登录跳转 /login 42ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 加载中显示 Loader2 旋转动画 27ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 账户加载失败显示错误提示与重试按钮 93ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 交易记录加载失败显示错误提示 24ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 点击重试按钮重新加载账户与交易记录 41ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 加载成功显示账户余额（formatTime 转换 120 分钟 = 2小时） 21ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 加载成功显示累计赚取（300 分钟 = 5小时） 19ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 加载成功显示累计消费（180 分钟 = 3小时） 28ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 加载成功显示交易记录列表 40ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 交易记录类型标签渲染（赚取/消费/转赠/捐赠） 49ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > spend 类型金额显示 - 号，其他类型显示 + 号 25ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 空交易记录显示'暂无交易记录' 17ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 点击'转赠时间'打开 TransferModal 218ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > 点击'捐赠时间'打开 DonateModal 51ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > TransferModal 成功后刷新账户与交易记录 64ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > DonateModal 成功后刷新账户与交易记录 52ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > hasMore=true 显示'加载更多'按钮，点击触发分页加载 65ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx > TimeBank/TimeAccount 时间账户 > hasMore=false 不显示'加载更多'按钮 35ms
+ ✓ src/api/__tests__/client.test.ts > api client > 基础配置 > baseURL 应配置为 /api 4ms
+ ✓ src/api/__tests__/client.test.ts > api client > 基础配置 > timeout 应配置为 10000ms 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 请求拦截器 > 当 zustand store 存在 token 时，应正确注入 Authorization header 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 请求拦截器 > 当 store 无 token 时，不应设置 Authorization header 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - 401 处理 > 收到 401 响应时，应通过 store logout 清除登录态并跳转到 /login 5ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - 401 处理 > 401 响应应抛出 ApiError 且 code 为 401 3ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - 401 处理 > 当 401 响应无 message 时，应使用默认提示文案 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - 其他错误 > 非 401 错误应抛出 ApiError 并携带状态码 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - 其他错误 > 无 response 的错误应使用 500 作为默认状态码 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - 其他错误 > 无 response 且无 error.code 应保持 500 默认码（向后兼容） 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - 其他错误 > 422 验证错误应正确提取字段级错误 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 字段命名转换拦截器 > 请求拦截器应将 data 的 camelCase 键转为 snake_case 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 字段命名转换拦截器 > 请求拦截器应递归转换嵌套 data 的键名 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 字段命名转换拦截器 > 请求拦截器无 data 时不应报错 0ms
+ ✓ src/api/__tests__/client.test.ts > api client > 字段命名转换拦截器 > 请求拦截器应原样保留 FormData（不转换二进制表单） 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 字段命名转换拦截器 > 响应拦截器应将 response.data 的 snake_case 键转为 camelCase 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 字段命名转换拦截器 > 响应拦截器应递归转换嵌套响应数据 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 字段命名转换拦截器 > 响应拦截器应原样返回 Blob 响应（CSV 导出场景） 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 字段命名转换拦截器 > 响应拦截器对已是 camelCase 的响应应幂等不变 0ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - 网络错误码区分 > error.code=ECONNABORTED 应返回 408 超时错误 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - 网络错误码区分 > error.code=ERR_NETWORK 应返回 503 网络错误 0ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - 网络错误码区分 > error.code=ECONNREFUSED 应保持 500 默认码（未覆盖的错误类型） 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - 网络错误码区分 > ECONNABORTED 携带后端 message 应优先使用后端文案 1ms
+ ✓ src/pages/Emergency/__tests__/ResourceMap.test.tsx > ResourceMap 组件 > 降级模式：无 _AMAP_KEY 时显示降级提示卡片而非地图容器 126ms
+ ✓ src/pages/Emergency/__tests__/ResourceMap.test.tsx > ResourceMap 组件 > 降级模式：资源列表完整渲染，业务逻辑保留 79ms
+ ✓ src/pages/Emergency/__tests__/ResourceMap.test.tsx > ResourceMap 组件 > 资源加载中显示骨架屏 16ms
+ ✓ src/pages/Emergency/__tests__/ResourceMap.test.tsx > ResourceMap 组件 > 资源加载失败显示错误提示与重试按钮 35ms
+ ✓ src/pages/Emergency/__tests__/ResourceMap.test.tsx > ResourceMap 组件 > 资源列表为空显示空状态 43ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - GET 请求重试 > GET 请求遇 5xx 应触发重试（调用 client.request） 506ms
+ ✓ src/pages/Emergency/__tests__/ResourceMap.test.tsx > ResourceMap 组件 > 点击类型筛选按钮触发 getResources 重新拉取 253ms
+ ✓ src/pages/Emergency/__tests__/ResourceMap.test.tsx > ResourceMap 组件 > 坐标缺失的资源显示"未设置位置"提示 36ms
+ ✓ src/pages/Emergency/__tests__/ResourceMap.test.tsx > ResourceMap 组件 > 点击"全部"筛选按钮触发无 type 参数的 getResources 调用 108ms
+ ✓ src/pages/Emergency/__tests__/ResourceMap.test.tsx > ResourceMap 组件 > 快速切换类型筛选时旧请求的 setResources 被跳过，避免覆盖新数据 172ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - GET 请求重试 > GET 请求遇网络错误（无 response）应触发重试 513ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - GET 请求重试 > POST 请求遇 5xx 不应触发重试 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - GET 请求重试 > GET 请求遇 4xx 不应触发重试 1ms
+ ✓ src/api/__tests__/client.test.ts > api client > 响应拦截器 - GET 请求重试 > 重试次数达上限后不再重试，直接抛出 ApiError 1ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 已登录用户渲染表单显示标题与提交按钮 289ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 未登录用户跳转 /login 不渲染表单 6ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 默认服务类型为"提供服务"，点击切换为"需求服务" 48ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 标题为空时校验失败显示"请填写标题" 23ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 标题少于2字符校验失败显示"标题至少需要2个字符" 20ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 分类为空时校验失败显示"请填写分类" 18ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 描述少于10字符校验失败显示"描述至少需要10个字符" 17ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 服务时长为空时校验失败显示"请填写服务时长" 14ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 服务时长超出范围(>480)校验失败显示"服务时长必须在1到480之间" 17ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 表单校验不通过时不调用 createService 32ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 填写完整有效数据点击发布调用 createService 并跳转 62ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 提交成功时 images 为空数组转 undefined 避免发送空数组 57ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 提交失败显示红色背景错误提示，不跳转 47ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 提交失败为非 ApiError 时显示兜底文案"发布失败，请重试" 61ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 提交中按钮禁用显示"提交中..." 53ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 点击返回按钮调用 navigate(-1) 返回上一页 18ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx > TimeBank/CreateService 发布服务表单 > 渲染 ImageUpload 服务配图上传组件 8ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > FoodReviewPage 评价列表页 > 加载中显示 spinner 85ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > FoodReviewPage 评价列表页 > 加载成功显示帖子信息、平均分与评价列表 128ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > FoodReviewPage 评价列表页 > 首次加载时 getFoodReviews 收到帖子提供者 userId（stale closure 回归守护） 23ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > FoodReviewPage 评价列表页 > 无评价时显示空状态 33ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > FoodReviewPage 评价列表页 > 加载帖子失败（ApiError）显示错误信息 31ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > FoodReviewPage 评价列表页 > 加载评价失败（非 ApiError）显示兜底错误 23ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > FoodReviewPage 评价列表页 > 分页按钮正常翻页 271ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > ReviewSubmitModal 评价提交弹窗 > visible=false 时不渲染 3ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > ReviewSubmitModal 评价提交弹窗 > visible=true 时渲染弹窗标题与表单 17ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > ReviewSubmitModal 评价提交弹窗 > 选择评分后提交成功调用 completeFoodOrder 与回调 60ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > ReviewSubmitModal 评价提交弹窗 > 提交失败（ApiError）显示错误信息 30ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > ReviewSubmitModal 评价提交弹窗 > 提交失败（非 ApiError）显示兜底错误 30ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > ReviewSubmitModal 评价提交弹窗 > 提交中按钮禁用并显示提交中文案 17ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx > ReviewSubmitModal 评价提交弹窗 > 弱网连点不产生多个评价：入口 if 守卫阻断第二次 onClick 16ms
+ ✓ src/pages/Home/__tests__/index.test.tsx > Home 首页 > 渲染品牌字标、承诺句、四大模块与 CTA 链接 533ms
+ ✓ src/pages/Home/__tests__/index.test.tsx > Home 首页 > 拉取 /public/stats 成功后格式化展示用户数与互助数 55ms
+stderr | src/pages/Home/__tests__/index.test.tsx > Home 首页 > /public/stats 接口失败时显示默认占位 "——"
+加载首页统计失败: Error: network error
+    at Object.<anonymous> (E:/work/auto-community/client/src/pages/Home/__tests__/index.test.tsx:177:31)
+    at Object.Mock [as get] (file:///E:/work/auto-community/node_modules/@vitest/spy/dist/index.js:332:34)
+    at E:/work/auto-community/client/src/pages/Home/index.tsx:132:8
+    at commitHookEffectListMount (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:23189:26)
+    at commitPassiveMountOnFiber (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:24970:11)
+    at commitPassiveMountEffects_complete (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:2
+4930:9)
+    at commitPassiveMountEffects_begin (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:2491
+7:7)
+    at commitPassiveMountEffects (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:24905:3)
+    at flushPassiveEffectsImpl (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:27078:3)
+    at flushPassiveEffects (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:27023:14)
+
+ ✓ src/pages/Home/__tests__/index.test.tsx > Home 首页 > formatCount 边界：1000 显示 1k+，999 显示 999+ 62ms
+ ✓ src/pages/Home/__tests__/index.test.tsx > Home 首页 > 拉取 /public/homepage-image 成功且 url 非空时覆盖 hero 图 src 43ms
+ ✓ src/pages/Home/__tests__/index.test.tsx > Home 首页 > /public/stats 接口失败时显示默认占位 "——" 47ms
+ ✓ src/pages/Home/__tests__/index.test.tsx > Home 首页 > 四大模块链接指向正确路径 143ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 渲染显示标题"邻居愿意花时间帮你"（默认 provide Tab） 114ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 点击"请求服务"Tab 切换标题为"邻居需要你的一小时"并传 type=request 64ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 首次加载中显示骨架屏 SkeletonCompactList 17ms
+stderr | src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 加载失败显示"加载失败，请稍后重试"
+加载服务列表失败: Error: 网络错误
+    at E:/work/auto-community/client/src/pages/TimeBank/__tests__/index.test.tsx:203:43
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 列表渲染服务数据（通过 ServiceCard mock 验证 service 传递） 23ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 空列表显示"暂无服务" 24ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 加载失败显示"加载失败，请稍后重试" 39ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 点击服务项跳转详情页 /time-bank/:id 33ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 点击"发布"按钮跳转创建页 /time-bank/create 28ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 点击"时间账户"入口跳转 /time-bank/account 29ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 点击"我的订单"入口跳转 /time-bank/orders 37ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 点击"亲情绑定"入口跳转 /time-bank/family 24ms
+stderr | src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 错误状态下不渲染服务列表
+加载服务列表失败: Error: 网络错误
+    at E:/work/auto-community/client/src/pages/TimeBank/__tests__/index.test.tsx:353:43
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 二级功能入口渲染3个按钮（时间账户/我的订单/亲情绑定） 31ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > Tab 切换后 getServices 被调用2次（provide + request） 24ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 点击"加载更多"按钮触发下一页请求并追加数据 47ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 加载中不渲染服务列表 10ms
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 错误状态下不渲染服务列表 24ms
+stderr | src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 渲染默认标题「AI 智能推荐」
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. Y
+ou can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/u
+pgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `
+v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/futur
+e#v7_relativesplatpath.
+
+stderr | src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 渲染自定义标题
+Warning: An update to AIRecommend inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link
+/wrap-tests-with-act
+    at AIRecommend (E:/work/auto-community/client/src/components/AIRecommend/index.tsx:158:24)
+    at Router (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+    at MemoryRouter (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+Warning: An update to AIRecommend inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link
+/wrap-tests-with-act
+    at AIRecommend (E:/work/auto-community/client/src/components/AIRecommend/index.tsx:158:24)
+    at Router (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+    at MemoryRouter (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 渲染默认标题「AI 智能推荐」 87ms
+stderr | src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 渲染副标题「基于语义匹配 · 距离 · 信誉」
+Warning: An update to AIRecommend inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link
+/wrap-tests-with-act
+    at AIRecommend (E:/work/auto-community/client/src/components/AIRecommend/index.tsx:158:24)
+    at Router (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+    at MemoryRouter (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+Warning: An update to AIRecommend inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link
+/wrap-tests-with-act
+    at AIRecommend (E:/work/auto-community/client/src/components/AIRecommend/index.tsx:158:24)
+    at Router (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+    at MemoryRouter (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 渲染自定义标题 15ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 渲染副标题「基于语义匹配 · 距离 · 信誉」 9ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > loading 态显示「正在匹配中...」 8ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > type=skill 调用 matchSkill 接口 64ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > type=time-bank 调用 matchTimeService 接口 29ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 正常数据渲染候选卡片（含昵称/匹配度/距离） 47ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 限制最多渲染 5 个候选卡片 55ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 无数据时显示「暂无符合条件的推荐」 24ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 接口异常时显示「暂无推荐」错误兜底 15ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 接口异常时使用错误消息（如有 response.data.message） 16ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 有数据时触发 impression 事件追踪 33ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 无数据时不触发 impression 事件 14ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 渲染候选帖子标题 31ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 候选卡片渲染「查看」链接（type=skill 指向 /skills/{id}） 24ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > type=time-bank 时查看链接指向 /time-bank/{id} 23ms
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx > Metrics 效果度量页 > 加载中显示加载文案 66ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 无 post 的候选不渲染「查看」链接 32ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > distance 为 null 时不渲染距离信息 16ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > postId 变化触发重新拉取 20ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 信誉分渲染星级（满 5 星） 25ms
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx > Metrics 效果度量页 > 加载成功渲染 5 个指标卡片与格式化值 108ms
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx > Metrics 效果度量页 > 未展开指标时显示提示文案 34ms
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx > Metrics 效果度量页 > 点击指标卡片展开趋势图并加载趋势数据 63ms
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx > Metrics 效果度量页 > 再次点击已展开的指标卡片收起趋势图 50ms
+Not implemented: navigation to another Document
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx > Metrics 效果度量页 > 点击导出 CSV 按钮触发下载 65ms
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx > Metrics 效果度量页 > CSV 导出内容含「最后更新时间」表头与 recordedAt 值 31ms
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx > Metrics 效果度量页 > 指标数据 stale（超过 2 小时）时显示「可能过期」标签与相对时间文案 23ms
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx > Metrics 效果度量页 > 指标数据 fresh（2 小时内）时不显示「可能过期」标签且显示「刚刚更新」 25ms
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx > Metrics 效果度量页 > recordedAt 缺失时显示「暂无数据」与「可能过期」标签 23ms
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx > Metrics 效果度量页 > dashboard 加载失败时展示错误 UI 与重试按钮 14ms
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx > Metrics 效果度量页 > 点击重新加载按钮触发 retryKey 递增并重新请求 dashboard 31ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > 加载中显示"加载中..."提示 62ms
+ ✓ src/components/__tests__/ExportButton.test.tsx > ExportButton 下拉导出 > 渲染触发按钮，默认文案为"导出数据" 252ms
+ ✓ src/components/__tests__/ExportButton.test.tsx > ExportButton 下拉导出 > 点击触发按钮展开菜单，显示 CSV 与 Excel 两个选项 65ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > 加载成功显示页面标题"A/B 测试结果" 276ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > 加载成功显示测试信息卡片（testName） 64ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > active 状态显示"进行中"标签 33ms
+ ✓ src/components/__tests__/ExportButton.test.tsx > ExportButton 下拉导出 > 点击"导出 CSV"以 format=csv 调用 exportData 并提示成功 54ms
+ ✓ src/components/__tests__/ExportButton.test.tsx > ExportButton 下拉导出 > 点击"导出 Excel"以 format=xlsx 调用 exportData 38ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > paused 状态显示"已暂停"标签 30ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > completed 状态显示"已结束"标签 31ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > 加载成功显示变体对比表格的 Control 与 Treatment 行 31ms
+ ✓ src/components/__tests__/ExportButton.test.tsx > ExportButton 下拉导出 > 导出中按钮禁用并显示"导出CSV中..."，完成后恢复 73ms
+ ✓ src/components/__tests__/ExportButton.test.tsx > ExportButton 下拉导出 > 导出失败为 ApiError 时显示其 message 43ms
+ ✓ src/components/__tests__/ExportButton.test.tsx > ExportButton 下拉导出 > 导出失败为未知错误时显示通用提示 31ms
+ ✓ src/components/__tests__/ExportButton.test.tsx > ExportButton 下拉导出 > 点击组件外部关闭菜单 30ms
+ ✓ src/components/__tests__/ExportButton.test.tsx > ExportButton 下拉导出 > 自定义 label 作为触发按钮文案 12ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > 变体对比表格正确渲染曝光数、点击数、转化数 37ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > 点击率计算正确：Control 10.00%、Treatment 15.00% 41ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > 加载成功显示统计显著性卡片（点击率差异、转化率差异） 27ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > 加载成功显示结论与建议区域 43ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > config 失败但 results 成功时，显示错误条但结果表格正常渲染 26ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > results 失败但 config 成功时，显示错误条但配置卡片正常渲染 29ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > config 与 results 都失败时，错误条优先展示 config 错误（configError ?? resultsError） 15ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > 点击重试按钮重新加载 config 与 results 60ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > 样本量不足时（< 100 次曝光）结论显示"样本量不足"提示 21ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > 无变体数据时（variants 空数组）表格仍渲染但数据全为 0 59ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx > ABTestResults 端到端测试 > 卸载后 loadData resolve 不触发 setState（mountedRef 防御） 17ms
+ ✓ src/pages/Admin/__tests__/Dashboard.test.tsx > Dashboard 页面 > 统计卡片加载中显示 loading 208ms
+ ✓ src/pages/Admin/__tests__/Dashboard.test.tsx > Dashboard 页面 > 统计卡片加载成功显示数据 101ms
+ ✓ src/pages/Admin/__tests__/Dashboard.test.tsx > Dashboard 页面 > 统计卡片加载失败显示页面错误状态 21ms
+ ✓ src/pages/Admin/__tests__/Dashboard.test.tsx > Dashboard 页面 > 图表加载成功显示图表组件 32ms
+ ✓ src/pages/Admin/__tests__/Dashboard.test.tsx > Dashboard 页面 > 图表加载失败显示错误提示与重试按钮 28ms
+ ✓ src/pages/Admin/__tests__/Dashboard.test.tsx > Dashboard 页面 > 点击重试按钮重新调用图表接口 67ms
+ ✓ src/pages/Admin/__tests__/Dashboard.test.tsx > Dashboard 页面 > 图表加载中显示 loading 文案 25ms
+stderr | src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 渲染品牌字标「邻里圈」与英文副标「NEIGHBOR」
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. Y
+ou can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/u
+pgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `
+v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/futur
+e#v7_relativesplatpath.
+
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 渲染品牌字标「邻里圈」与英文副标「NEIGHBOR」 93ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 渲染 5 个导航项（首页/技能/厨房/时间银行/应急） 28ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 未认证用户渲染「登录」按钮 14ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 认证用户不渲染「登录」按钮，渲染头像链接（aria-label 含「个人中心」） 21ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 认证用户触发 getUnreadCount 接口调用 23ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 未认证用户不触发 getUnreadCount 接口调用 11ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 未读数 > 0 时渲染徽章数字 36ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 未读数 > 9 时徽章显示「9+」 39ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 未读数 = 0 时不渲染徽章 19ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > admin 用户渲染「管理」后台入口 17ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 普通用户不渲染「管理」入口 14ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 桌面端不渲染底部 Tab 导航 15ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 移动端渲染底部 Tab 导航（5 个 Tab） 17ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 首页路径使用透明头部（useTransparent=true） 14ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 非首页路径使用实色头部（BrandMark 为深色） 13ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 认证用户头像有图片时渲染 img 12ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 认证用户无头像时渲染默认用户图标（不渲染 img） 10ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 首页滚动后头部由透明转为实色 14ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 渲染 ToastContainer 11ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 导航项 aria-label 包含目标 label（移动端 Tab） 15ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 通知链接 aria-label 含未读数（认证用户且有未读） 32ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 导航激活态：当前路径为 /skills 时「技能」导航项激活 13ms
+ ✓ src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 导航非激活态使用次要文本色 15ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > open=false 时不渲染任何内容 46ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > open=true 时渲染弹窗标题与三个输入框 40ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 字段级校验 > 受赠用户ID 为空时点击确认捐赠显示「请输入对方用户ID」错误且不调用 API 31ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 字段级校验 > 金额为 0/负数/浮点数时点击确认捐赠均校验失败（仅允许正整数） 45ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 字段级校验 > 金额超过 currentBalance 时点击确认捐赠显示「捐赠金额不能超过当前余额」错误 19ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 字段级校验 > 金额等于 currentBalance 时校验通过（边界值） 13ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 字段级校验 > 未传 currentBalance 时不进行余额校验 14ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 提交流程 > 提交成功：调用 donateTime 透传参数，触发 toast.success/onSuccess/onClose，清空表单 25ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 提交流程 > 备注为纯空格时传 undefined（trim 后为空走 || undefined 分支） 19ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 提交流程 > 备注含前后空格时传 trim 后的值 15ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 提交流程 > 提交失败为 ApiError 时显示 ApiError.message 45ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 提交流程 > 提交失败为普通 Error 时显示兜底文案「捐赠失败，请重试」 25ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 提交流程 > 提交中按钮禁用并显示 Loader2 旋转动画与「提交中...」文案 28ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 关闭与状态清理 > 点击关闭按钮触发 onClose 9ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx > DonateModal 捐赠时间币弹窗 > 关闭与状态清理 > 提交失败后点击关闭按钮触发 onClose（handleClose 清空 formError） 35ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > open=false 时不渲染任何内容 47ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > open=true 时渲染弹窗标题与三个输入框 43ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 字段级校验 > 对方用户ID 为空时点击确认转赠显示「请输入对方用户ID」错误且不调用 API 32ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 字段级校验 > 金额为空时点击确认转赠显示「转赠金额必须为正整数」错误 19ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 字段级校验 > 金额为 0 时点击确认转赠校验失败（必须为正整数） 22ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 字段级校验 > 金额为负数时点击确认转赠校验失败 19ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 字段级校验 > 金额为浮点数时点击确认转赠校验失败（与后端口径一致：仅允许整数） 16ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 字段级校验 > 金额超过 currentBalance 时点击确认转赠显示「转赠金额不能超过当前余额」错误 17ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 字段级校验 > 金额等于 currentBalance 时校验通过（边界值：等于余额允许转赠） 19ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 字段级校验 > 未传 currentBalance 时不进行余额校验（允许任意正整数） 15ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 字段级校验 > 对方用户ID 仅含空格时点击确认转赠校验失败（trim 后为空） 16ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 提交流程 > 提交成功：调用 transferTime 透传参数，触发 toast.success/onSuccess/onClose，清空表单 24ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 提交流程 > 备注为空字符串时传 undefined（trim 后为空走 || undefined 分支） 19ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 提交流程 > 备注非空时传 trim 后的值 16ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 提交流程 > 提交失败为 ApiError 时显示 ApiError.message 30ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 提交流程 > 提交失败为普通 Error 时显示兜底文案「转赠失败，请重试」 35ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 提交流程 > 提交中按钮禁用并显示 Loader2 旋转动画与「提交中...」文案 37ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 提交流程 > 提交完成后按钮恢复可点击（submitting 重置为 false） 17ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 关闭与状态清理 > 点击关闭按钮触发 onClose 9ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx > TransferModal 转赠时间币弹窗 > 关闭与状态清理 > 提交失败后点击关闭按钮清空 formError（避免下次打开残留错误） 29ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx > HomepageImage 首页图片配置页 > 加载中显示 spinner 70ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx > HomepageImage 首页图片配置页 > 加载成功且 URL 非空时显示图片预览 38ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx > HomepageImage 首页图片配置页 > 加载成功但 URL 为空时显示占位文案 26ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx > HomepageImage 首页图片配置页 > 加载失败（ApiError）显示错误信息 27ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx > HomepageImage 首页图片配置页 > 加载失败（非 ApiError）显示兜底错误 15ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx > HomepageImage 首页图片配置页 > 保存空 URL 时显示校验提示 35ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx > HomepageImage 首页图片配置页 > 保存成功显示成功提示 29ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx > HomepageImage 首页图片配置页 > 保存失败（ApiError）显示错误信息 31ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx > HomepageImage 首页图片配置页 > 上传成功后回填 URL 到输入框 31ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx > HomepageImage 首页图片配置页 > 上传失败（ApiError）显示错误信息 32ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx > HomepageImage 首页图片配置页 > 保存中按钮显示'保存中...'加载态、disabled 且重复点击不触发第二次 API 调用 33ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx > HomepageImage 首页图片配置页 > 卸载后 loadImage resolve 不触发 setState（mountedRef 防御） 15ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > LoadingButton 加载按钮 > 非加载态渲染 children 文本 226ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > LoadingButton 加载按钮 > 加载态显示默认 loadingText「处理中...」并禁用按钮 21ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > LoadingButton 加载按钮 > 加载态显示自定义 loadingText 12ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > LoadingButton 加载按钮 > 加载态渲染 animate-spin 旋转动画 8ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > LoadingButton 加载按钮 > disabled 属性独立禁用按钮但不显示 loading 文案 11ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > LoadingButton 加载按钮 > 各变体应用对应样式类 25ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > LoadingButton 加载按钮 > 各尺寸应用对应 padding 样式 17ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > LoadingButton 加载按钮 > fullWidth 应用 w-full 类 8ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > LoadingButton 加载按钮 > 透传 onClick 等原生按钮属性 18ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > LoadingButton 加载按钮 > 加载态点击不触发 onClick（按钮已禁用） 7ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > Spinner 旋转指示器 > 默认 md 尺寸渲染 animate-spin 3ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > Spinner 旋转指示器 > sm 尺寸应用 w-4 类 2ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > InlineLoader 内联加载器 > 默认显示「加载中...」文案 6ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > InlineLoader 内联加载器 > 自定义 text 文案 3ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx > InlineLoader 内联加载器 > 渲染 animate-spin 旋转图标 3ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 渲染搜索框（showSearch 默认 true） 104ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > showSearch=false 不渲染搜索框 10ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 渲染「拖拽地图上的标记点选择位置」提示 11ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 无初始位置时显示「未选择位置」 10ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 提供 initialLocation 时显示经纬度 9ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 提供 initialAddress 时显示初始地址 9ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 输入搜索文本后启用搜索按钮 19ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 输入文本后显示清除按钮（X） 12ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 点击搜索按钮调用 geocode 接口 27ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > geocode 返回 null 时显示「未找到该地址」错误 30ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > geocode 异常时显示「搜索失败，请重试」 28ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 搜索成功后调用 onLocationChange 回调 18ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > Enter 键触发搜索 14ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 自定义 height 应用到地图容器 9ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 无 window.AMap 时显示加载状态（Loader2 旋转图标） 14ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 无 window.AMap 时挂载 script 标签到 head（触发 SDK 加载流程） 11ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > 调用 regeo 接口（dragend 事件触发后） 26ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > onLocationChange 在拖拽后被调用 16ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx > LocationPicker 位置选择器 > dragend 期间卸载组件不触发 setState 泄漏 18ms
+ ✓ src/pages/__tests__/NotFound.test.tsx > NotFound 404 页面 > 渲染 404 数字、标题与说明文案 77ms
+ ✓ src/pages/__tests__/NotFound.test.tsx > NotFound 404 页面 > 渲染返回首页链接指向 / 202ms
+ ✓ src/pages/__tests__/NotFound.test.tsx > NotFound 404 页面 > 点击返回上一页按钮调用 navigate(-1) 77ms
+ ✓ src/pages/Admin/__tests__/AdminLayout.test.tsx > AdminLayout 管理后台布局 > 渲染标题与返回前台链接 109ms
+ ✓ src/pages/Admin/__tests__/AdminLayout.test.tsx > AdminLayout 管理后台布局 > 渲染全部 11 个导航项 66ms
+ ✓ src/pages/Admin/__tests__/AdminLayout.test.tsx > AdminLayout 管理后台布局 > Outlet 渲染子路由内容 27ms
+stderr | src/pages/Admin/__tests__/AdminLayout.test.tsx > AdminLayout 管理后台布局 > 移动端点击导航项关闭抽屉
+No routes matched location "/admin/settings" 
+
+ ✓ src/pages/Admin/__tests__/AdminLayout.test.tsx > AdminLayout 管理后台布局 > 当前路由为 /admin 时 Dashboard 高亮 28ms
+ ✓ src/pages/Admin/__tests__/AdminLayout.test.tsx > AdminLayout 管理后台布局 > 当前路由为 /admin/users 时用户管理高亮 26ms
+ ✓ src/pages/Admin/__tests__/AdminLayout.test.tsx > AdminLayout 管理后台布局 > 点击移动端菜单按钮展开/收起抽屉 71ms
+ ✓ src/pages/Admin/__tests__/AdminLayout.test.tsx > AdminLayout 管理后台布局 > 移动端点击导航项关闭抽屉 58ms
+ ✓ src/components/__tests__/Empty.test.tsx > Empty 空状态组件 > default 变体渲染默认图标、标题和描述 224ms
+ ✓ src/components/__tests__/Empty.test.tsx > Empty 空状态组件 > error 变体渲染错误图标和加载失败文案 9ms
+ ✓ src/components/__tests__/Empty.test.tsx > Empty 空状态组件 > permission 变体渲染权限提示 7ms
+ ✓ src/components/__tests__/Empty.test.tsx > Empty 空状态组件 > search 变体渲染搜索无结果提示 6ms
+ ✓ src/components/__tests__/Empty.test.tsx > Empty 空状态组件 > 自定义 title 和 description 覆盖默认配置 7ms
+ ✓ src/components/__tests__/Empty.test.tsx > Empty 空状态组件 > 自定义 icon 覆盖默认图标 4ms
+ ✓ src/components/__tests__/Empty.test.tsx > Empty 空状态组件 > action 插槽渲染操作按钮 30ms
+ ✓ src/components/__tests__/Empty.test.tsx > Empty 空状态组件 > 具备 aria-live=polite 属性，确保辅助技术播报状态变化 10ms
+ ✓ src/components/__tests__/Empty.test.tsx > Empty 空状态组件 > compact 模式应用紧凑内边距类名，用于限高滚动容器 6ms
+ ✓ src/components/__tests__/Charts.test.tsx > LineChart 折线图 > 无 labels 时显示「暂无数据」 53ms
+ ✓ src/components/__tests__/Charts.test.tsx > LineChart 折线图 > 无 series 时显示「暂无数据」 6ms
+ ✓ src/components/__tests__/Charts.test.tsx > LineChart 折线图 > 渲染 SVG 折线图容器（role=img, aria-label=折线图） 45ms
+ ✓ src/components/__tests__/Charts.test.tsx > LineChart 折线图 > 渲染 polyline 折线 12ms
+ ✓ src/components/__tests__/Charts.test.tsx > LineChart 折线图 > 每个数据点渲染 1 个 circle（点状指示） 12ms
+ ✓ src/components/__tests__/Charts.test.tsx > LineChart 折线图 > showLegend=true 渲染图例 10ms
+ ✓ src/components/__tests__/Charts.test.tsx > LineChart 折线图 > showLegend=false 不渲染图例 8ms
+ ✓ src/components/__tests__/Charts.test.tsx > LineChart 折线图 > 多 series 渲染多条 polyline 17ms
+ ✓ src/components/__tests__/Charts.test.tsx > LineChart 折线图 > hover 数据点显示 tooltip 57ms
+ ✓ src/components/__tests__/Charts.test.tsx > PieChart 饼图 > 无 data 时显示「暂无数据」 4ms
+ ✓ src/components/__tests__/Charts.test.tsx > PieChart 饼图 > 渲染 SVG path 切片 9ms
+ ✓ src/components/__tests__/Charts.test.tsx > PieChart 饼图 > 渲染总计标签 9ms
+ ✓ src/components/__tests__/Charts.test.tsx > PieChart 饼图 > 渲染图例列表（名称 + 百分比） 11ms
+ ✓ src/components/__tests__/Charts.test.tsx > PieChart 饼图 > hover 切片显示 title 元素提示 11ms
+ ✓ src/components/__tests__/Charts.test.tsx > BarChart 条形图 > 无 data 时显示「暂无数据」 3ms
+ ✓ src/components/__tests__/Charts.test.tsx > BarChart 条形图 > 渲染条形列表（li 结构） 7ms
+ ✓ src/components/__tests__/Charts.test.tsx > BarChart 条形图 > 渲染名称和数值 4ms
+ ✓ src/components/__tests__/Charts.test.tsx > BarChart 条形图 > 自定义颜色生效 7ms
+ ✓ src/components/__tests__/Charts.test.tsx > BarChart 条形图 > maxValue 限制进度条宽度 5ms
+ ✓ src/components/__tests__/Charts.test.tsx > BarChart 条形图 > hover 条形显示数值 tooltip 15ms
+ ✓ src/components/__tests__/Charts.test.tsx > ProgressBar 进度条 > 渲染进度填充（width 百分比） 4ms
+ ✓ src/components/__tests__/Charts.test.tsx > ProgressBar 进度条 > value 超过 max 时进度条封顶 100% 3ms
+ ✓ src/components/__tests__/Charts.test.tsx > ProgressBar 进度条 > 有 label 时渲染标签和数值 4ms
+ ✓ src/components/__tests__/Charts.test.tsx > ProgressBar 进度条 > 无 label 时不渲染标签 12ms
+ ✓ src/components/__tests__/Charts.test.tsx > ProgressBar 进度条 > showValue=false 不显示数值 3ms
+ ✓ src/components/__tests__/Charts.test.tsx > ProgressBar 进度条 > 自定义 color 应用到进度条 2ms
+ ✓ src/components/__tests__/Charts.test.tsx > ProgressBar 进度条 > 默认 max=100 3ms
+ ✓ src/components/__tests__/Charts.test.tsx > ChartCard 图表卡片容器 > 渲染标题 4ms
+ ✓ src/components/__tests__/Charts.test.tsx > ChartCard 图表卡片容器 > 渲染副标题 3ms
+ ✓ src/components/__tests__/Charts.test.tsx > ChartCard 图表卡片容器 > 无 subtitle 时不渲染副标题 4ms
+ ✓ src/components/__tests__/Charts.test.tsx > ChartCard 图表卡片容器 > 渲染 action 插槽 3ms
+ ✓ src/components/__tests__/Charts.test.tsx > ChartCard 图表卡片容器 > 渲染 children 内容 3ms
+ ✓ src/components/__tests__/Toast.test.tsx > Toast 全局通知组件 > showToast 添加提示到 store 9ms
+ ✓ src/components/__tests__/Toast.test.tsx > Toast 全局通知组件 > toast.success/error/warning/info 便捷方法调用 showToast 并传递正确类型 3ms
+ ✓ src/components/__tests__/Toast.test.tsx > Toast 全局通知组件 > ToastContainer 渲染所有提示项 257ms
+ ✓ src/components/__tests__/Toast.test.tsx > Toast 全局通知组件 > 无提示时 ToastContainer 不渲染提示项 4ms
+ ✓ src/components/__tests__/Toast.test.tsx > Toast 全局通知组件 > duration 后自动移除提示 12ms
+ ✓ src/components/__tests__/Toast.test.tsx > Toast 全局通知组件 > 点击关闭按钮手动移除提示 18ms
+ ✓ src/components/__tests__/Toast.test.tsx > Toast 全局通知组件 > store.remove 直接移除指定 ID 的提示 1ms
+ ✓ src/components/__tests__/Toast.test.tsx > Toast 全局通知组件 > duration=0 时不会自动移除（不设定时器） 8ms
+ ✓ src/components/__tests__/Toast.test.tsx > Toast 全局通知组件 > 多个 toast 共存时各自按自身 duration 准时消失（闭包稳定不互相影响） 18ms
+stderr | src/__tests__/App.test.tsx > App 根路由集成 > 公开路由 / 渲染 Home 页面（未登录可访问）
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. Y
+ou can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/u
+pgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `
+v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/futur
+e#v7_relativesplatpath.
+
+ ✓ src/__tests__/App.test.tsx > App 根路由集成 > 公开路由 / 渲染 Home 页面（未登录可访问） 82ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > 渲染服务标题、描述、分类 82ms
+ ✓ src/__tests__/App.test.tsx > App 根路由集成 > 公开路由 /skills 渲染技能交换页（未登录可访问） 19ms
+ ✓ src/__tests__/App.test.tsx > App 根路由集成 > 公开路由 /login 渲染登录页（未登录可访问） 16ms
+ ✓ src/__tests__/App.test.tsx > App 根路由集成 > 未登录访问受保护路由 /profile 跳转到 /login 16ms
+ ✓ src/__tests__/App.test.tsx > App 根路由集成 > 未登录访问 /admin 跳转到 /（AdminRoute 兜底，未认证不强制跳登录） 15ms
+ ✓ src/__tests__/App.test.tsx > App 根路由集成 > 已登录普通用户访问 /admin 跳转到 /（权限不足） 16ms
+ ✓ src/__tests__/App.test.tsx > App 根路由集成 > 已登录管理员访问 /admin 进入 AdminLayout 并渲染 Dashboard 15ms
+ ✓ src/__tests__/App.test.tsx > App 根路由集成 > 访问不存在的路由 /xxx-yyy 显示 NotFound 404 页 16ms
+ ✓ src/__tests__/App.test.tsx > App 根路由集成 > 已登录用户访问受保护路由 /profile 正常渲染（不被守卫拦截） 11ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > type=provide 时显示「提供」标签与 emerald 竖条 15ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > type=request 时显示「需求」标签与 violet 竖条 10ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > durationMinutes=60 时 formatTime 转换为「1小时」 8ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > durationMinutes=90 时 formatTime 转换为「1小时30分钟」（非整小时分支） 10ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > durationMinutes=30 时 formatTime 转换为「30分钟」（<60 分钟分支） 9ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > location 存在时显示 location（优先于 address） 9ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > location 为空但 address 存在时显示 address 8ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > location 与 address 均为空时不显示位置信息 10ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > user.nickname 存在时显示昵称 9ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > user.reputationScore 存在时显示 Star 图标与分数 7ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > user.reputationScore 为 null 时不显示分数 7ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > user 为 undefined 时不崩溃，不显示昵称与信誉分 7ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > 点击卡片触发 onClick 回调 13ms
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx > ServiceCard 时间银行服务列表项 > 未传 onClick 时不崩溃（点击无副作用） 7ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > 无图片时渲染上传区域 72ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > value 非空时渲染已有图片预览 15ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > 上传成功后调用 onChange 回传 URL 列表 34ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > 上传中显示 loading 动画 14ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > 不支持的文件类型触发 onError 7ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > 文件超过 5MB 触发 onError 8ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > 达到最大数量后隐藏上传区域 11ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > 上传失败（ApiError）调用 onError 并传递错误消息 21ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > 上传失败（非 ApiError）调用 onError 并显示兜底消息 16ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > 点击删除按钮移除图片并调用 onChange 10ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > disabled 时隐藏上传区域与删除按钮 4ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > 组件卸载时应释放所有本地预览 ObjectURL 8ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx > ImageUpload 图片上传组件 > 组件卸载时不应重复释放已上传成功的预览（无 file） 25ms
+stderr | src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 渲染标题和描述
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. Y
+ou can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/u
+pgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `
+v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/futur
+e#v7_relativesplatpath.
+
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 渲染标题和描述 64ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 提供 to 时使用 Link 包装（href 包含目标路径） 11ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 未提供 to 但提供 onClick 时使用 div + onClick 13ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 提供 image 时显示图片 9ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 无 image 时显示 emoji 占位符（默认 📋） 6ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 自定义 imagePlaceholder 生效 3ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 渲染标签列表 8ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 无 tags 时不渲染标签容器 5ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 渲染徽章文本 5ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > leftBorder=red 应用红色左边框样式 4ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > leftBorder=none 不应用左边框 4ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 提供 user 时渲染昵称 9ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > user.reputationScore 为 null 时不渲染信誉分 4ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 提供 meta 时渲染元数据 4ms
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 渲染 children 插槽内容 6ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > 渲染标题和单位 64ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > 无 unit 时不渲染单位标签 8ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > 默认 timeRange 为 7d（高亮 7天 按钮） 7ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > 点击 30天 按钮切换内部 timeRange 19ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > 点击 90天 按钮切换内部 timeRange 8ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > 受控模式调用 onTimeRangeChange 回调 9ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > 受控模式不更新内部状态（点击 30天 不改变 7天 高亮） 7ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > 将 data 转换为 labels（月/日 格式）和 series 7ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > 将数据 values 传递给 LineChart series 7ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > 自定义 color 传递给 series 3ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > showLegend 固定为 false 传递给 LineChart 3ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > height 固定为 200 传递给 LineChart 3ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx > MetricsChart 指标图表 > 渲染 3 个时间范围按钮 5ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonList 通用列表骨架屏 > 默认渲染 3 项 50ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonList 通用列表骨架屏 > count=1 渲染 1 项 6ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonList 通用列表骨架屏 > showAvatar=true（默认）渲染圆形头像占位 16ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonList 通用列表骨架屏 > showAvatar=false 不渲染头像占位 8ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonList 通用列表骨架屏 > showTags=true（默认）渲染标签占位 8ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonList 通用列表骨架屏 > showTags=false 不渲染标签占位行 5ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonList 通用列表骨架屏 > 外层容器含 space-y-3 垂直间距 8ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonHorizontalList 横向滚动列表骨架屏 > 默认渲染 3 项 4ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonHorizontalList 横向滚动列表骨架屏 > count=5 渲染 5 项 6ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonHorizontalList 横向滚动列表骨架屏 > 外层容器含 overflow-x-auto 横向滚动 4ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonGridList 网格列表骨架屏 > 默认渲染 4 项 6ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonGridList 网格列表骨架屏 > count=2 渲染 2 项 4ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonGridList 网格列表骨架屏 > 外层容器为 grid grid-cols-2 双列布局 7ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx > SkeletonGridList 网格列表骨架屏 > 每项含图片占位 h-32 6ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonDetail 详情页骨架屏 > 默认渲染图片占位（showImage=true） 45ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonDetail 详情页骨架屏 > showImage=false 不渲染图片占位 7ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonDetail 详情页骨架屏 > showTags=true（默认）渲染标签占位 13ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonDetail 详情页骨架屏 > showTags=false 不渲染标签占位 5ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonDetail 详情页骨架屏 > showActions=false（默认）不渲染操作按钮占位 7ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonDetail 详情页骨架屏 > showActions=true 渲染操作按钮占位 4ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonDetail 详情页骨架屏 > className 自定义类名应用到外层容器 4ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonUserInfo 用户信息骨架屏 > 渲染头像占位（h-14 w-14 rounded-full） 3ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonUserInfo 用户信息骨架屏 > 渲染用户名和副标题占位 6ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonProfile 个人中心骨架屏 > 渲染居中大头像占位（h-20 w-20） 5ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonProfile 个人中心骨架屏 > 渲染统计标签占位行 7ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonProfile 个人中心骨架屏 > 渲染分隔线后的详情占位 3ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonForm 表单骨架屏 > 渲染 2 个普通输入框占位（h-10 w-full） 4ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonForm 表单骨架屏 > 渲染底部双按钮占位 4ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx > SkeletonForm 表单骨架屏 > 最后一个字段为大文本域（h-24） 4ms
+Error: 测试错误：组件渲染失败
+    at MaybeThrow (E:/work/auto-community/client/src/components/__tests__/ErrorBoundary.test.tsx:8:11)
+    at renderWithHooks (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:20103:13
+)
+    at beginWork (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:4164
+:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (E:\work\auto-community\node_modules\jsdom\lib\generated\idl\Even
+tListener.js:26:30)
+    at innerInvokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js
+:360:16)
+    at invokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:
+3)
+    at HTMLUnknownElementImpl._dispatch (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-
+impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTar
+get-impl.js:114:17)
+Error: 测试错误：组件渲染失败
+    at MaybeThrow (E:/work/auto-community/client/src/components/__tests__/ErrorBoundary.test.tsx:8:11)
+    at renderWithHooks (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:20103:13
+)
+    at beginWork (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:4164
+:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (E:\work\auto-community\node_modules\jsdom\lib\generated\idl\Even
+tListener.js:26:30)
+    at innerInvokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js
+:360:16)
+    at invokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:
+3)
+    at HTMLUnknownElementImpl._dispatch (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-
+impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTar
+get-impl.js:114:17)
+ ✓ src/components/__tests__/ErrorBoundary.test.tsx > ErrorBoundary 错误边界 > 无错误时渲染子组件内容 64ms
+Error: 测试错误：组件渲染失败
+    at MaybeThrow (E:/work/auto-community/client/src/components/__tests__/ErrorBoundary.test.tsx:8:11)
+    at renderWithHooks (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:20103:13
+)
+    at beginWork (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:4164
+:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (E:\work\auto-community\node_modules\jsdom\lib\generated\idl\Even
+tListener.js:26:30)
+    at innerInvokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js
+:360:16)
+    at invokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:
+3)
+    at HTMLUnknownElementImpl._dispatch (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-
+impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTar
+get-impl.js:114:17)
+Error: 测试错误：组件渲染失败
+    at MaybeThrow (E:/work/auto-community/client/src/components/__tests__/ErrorBoundary.test.tsx:8:11)
+    at renderWithHooks (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:20103:13
+)
+    at beginWork (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:4164
+:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (E:\work\auto-community\node_modules\jsdom\lib\generated\idl\Even
+tListener.js:26:30)
+    at innerInvokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js
+:360:16)
+    at invokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:
+3)
+    at HTMLUnknownElementImpl._dispatch (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-
+impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTar
+get-impl.js:114:17)
+Error: 测试错误：组件渲染失败
+    at MaybeThrow (E:/work/auto-community/client/src/components/__tests__/ErrorBoundary.test.tsx:8:11)
+    at renderWithHooks (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:20103:13
+)
+    at beginWork (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:4164
+:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (E:\work\auto-community\node_modules\jsdom\lib\generated\idl\Even
+tListener.js:26:30)
+    at innerInvokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js
+:360:16)
+    at invokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:
+3)
+    at HTMLUnknownElementImpl._dispatch (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-
+impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTar
+get-impl.js:114:17)
+Error: 测试错误：组件渲染失败
+    at MaybeThrow (E:/work/auto-community/client/src/components/__tests__/ErrorBoundary.test.tsx:8:11)
+    at renderWithHooks (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:20103:13
+)
+    at beginWork (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:4164
+:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (E:\work\auto-community\node_modules\jsdom\lib\generated\idl\Even
+tListener.js:26:30)
+    at innerInvokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js
+:360:16)
+    at invokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:
+3)
+    at HTMLUnknownElementImpl._dispatch (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-
+impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTar
+get-impl.js:114:17)
+ ✓ src/components/__tests__/ErrorBoundary.test.tsx > ErrorBoundary 错误边界 > 子组件抛出错误时显示默认 fallback UI 42ms
+ ✓ src/components/__tests__/ErrorBoundary.test.tsx > ErrorBoundary 错误边界 > 提供自定义 fallback 时使用自定义渲染 8ms
+ ✓ src/components/__tests__/ErrorBoundary.test.tsx > ErrorBoundary 错误边界 > componentDidCatch 调用 console.error 记录错误 10ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx > SkeletonCard 卡片骨架屏 > 默认渲染 1 张卡片 49ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx > SkeletonCard 卡片骨架屏 > count=3 渲染 3 张卡片 10ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx > SkeletonCard 卡片骨架屏 > showImage=true 渲染图片占位区域 13ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx > SkeletonCard 卡片骨架屏 > showImage=false 不渲染图片占位 7ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx > SkeletonCard 卡片骨架屏 > 所有骨架元素均含 animate-pulse 动画 6ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx > SkeletonListCard 列表项骨架屏 > 默认渲染 1 项 3ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx > SkeletonListCard 列表项骨架屏 > count=5 渲染 5 项 9ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx > SkeletonListCard 列表项骨架屏 > showLeftBorder=true 添加 border-l-4 左边框 4ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx > SkeletonListCard 列表项骨架屏 > showLeftBorder=false 不添加左边框 4ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx > SkeletonCompactList 紧凑列表骨架屏 > 默认渲染 3 项 6ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx > SkeletonCompactList 紧凑列表骨架屏 > count=2 渲染 2 项 4ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx > SkeletonCompactList 紧凑列表骨架屏 > 外层容器含 space-y-3 垂直间距 4ms
+ ✓ src/components/__tests__/AdminRoute.test.tsx > AdminRoute 管理后台路由守卫 > 未认证时跳转首页并显示警告 65ms
+ ✓ src/components/__tests__/AdminRoute.test.tsx > AdminRoute 管理后台路由守卫 > 已认证但非 admin 角色时跳转首页并显示警告 7ms
+ ✓ src/components/__tests__/AdminRoute.test.tsx > AdminRoute 管理后台路由守卫 > 已认证且 admin 角色时渲染管理后台内容 5ms
+ ✓ src/components/__tests__/AdminRoute.test.tsx > AdminRoute 管理后台路由守卫 > user 为 null 时视为无权限（短路判断） 6ms
+ ✓ src/components/__tests__/AdminRoute.test.tsx > AdminRoute 管理后台路由守卫 > token 已过期时跳转 /login 并提示「登录已过期」 6ms
+ ✓ src/components/__tests__/AdminRoute.test.tsx > AdminRoute 管理后台路由守卫 > token 已过期时调用 logout 清理 zustand 状态 4ms
+ ✓ src/components/__tests__/ProtectedRoute.test.tsx > ProtectedRoute 路由守卫 > 未认证时跳转 /login 并显示警告提示 65ms
+ ✓ src/components/__tests__/ProtectedRoute.test.tsx > ProtectedRoute 路由守卫 > 已认证且 token 未过期时渲染受保护内容（Outlet） 6ms
+ ✓ src/components/__tests__/ProtectedRoute.test.tsx > ProtectedRoute 路由守卫 > toast.warning 仅触发一次（hasWarned ref 防重复） 8ms
+ ✓ src/components/__tests__/ProtectedRoute.test.tsx > ProtectedRoute 路由守卫 > token 已过期时跳转 /login 并提示「登录已过期」 5ms
+ ✓ src/components/__tests__/ProtectedRoute.test.tsx > ProtectedRoute 路由守卫 > token 已过期时调用 logout 清理 zustand 状态 4ms
+ ✓ src/hooks/__tests__/useScrollReveal.test.tsx > useScrollReveal > 初始 visible 为 false 55ms
+ ✓ src/hooks/__tests__/useScrollReveal.test.tsx > useScrollReveal > 元素进入视口时 visible 变为 true 10ms
+ ✓ src/hooks/__tests__/useScrollReveal.test.tsx > useScrollReveal > 元素未进入视口时 visible 保持 false 6ms
+ ✓ src/hooks/__tests__/useScrollReveal.test.tsx > useScrollReveal > visible 变为 true 后调用 disconnect 6ms
+ ✓ src/hooks/__tests__/useScrollReveal.test.tsx > useScrollReveal > 尊重 prefers-reduced-motion 偏好：直接 visible=true 5ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > constructor > 未传 options 时使用默认值（重连上限 5、间隔序列 [1000,2000,5000]） 8ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > constructor > 自定义 options 覆盖默认值并透传回调 6ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > connect > 已处于 OPEN 状态时不重复创建连接 2ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > connect > 正常连接触发 onStatusChange("connecting") 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > connect > WebSocket 构造抛错时进入重连流程 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > onopen 事件 > 首次连接成功触发 connected 状态与 onOpen 回调 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > onopen 事件 > 重连成功后恢复之前的订阅 3ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > onopen 事件 > authMessage 在 onOpen 前发送（认证消息优先于业务回调） 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > onopen 事件 > 未设置 authMessage 时不发送额外消息 3ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > onmessage 事件 > 合法 JSON 消息触发 onMessage 回调 2ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > onmessage 事件 > 非法 JSON 不抛错（catch 吞错，不触发 onMessage） 2ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > onerror 事件 > 触发 onError 回调 2ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > onclose 事件 > 非手动关闭时触发重连（状态变为 reconnecting） 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > onclose 事件 > 手动关闭时不触发重连 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > handleReconnect > 达到最大重连次数后停止并标记 disconnected 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > handleReconnect > 重连成功后重置重连计数 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > subscribe > 已连接时立即发送订阅消息 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > subscribe > 重复订阅不重复添加到订阅列表（重连后只恢复一条） 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > subscribe > 未连接时记录订阅但不发送 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > unsubscribe > 按类型+data 精确移除指定订阅 2ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > unsubscribe > 不传 data 时按类型移除全部订阅 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > unsubscribe > 已连接且传 data 时发送取消订阅消息 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > unsubscribe > 已连接但不传 data 时不发送取消订阅消息 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > send > 已连接时发送成功返回 true 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > send > 未连接时返回 false 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > getReadyState > 无连接时返回 CLOSED 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > getReadyState > 已连接时返回 OPEN 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > getReconnectAttempts > 返回当前重连次数 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > close > 手动关闭触发 disconnected 状态 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > close > 关闭后不再触发重连 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > reset > 清空订阅并重置重连计数 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > 心跳机制 > 连接成功后按 heartbeatInterval 周期性发送 ping 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > 心跳机制 > 收到任意消息重置 pong 等待定时器，pongTimeout 内不主动断连 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > 心跳机制 > pong 超时主动 close 触发重连（onStatusChange 触发 reconnecting） 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > 心跳机制 > 心跳发送失败立即 close 触发重连（无需等待 pong 超时） 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > 心跳机制 > 手动 close 清理心跳定时器，关闭后不再发送 ping 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > 心跳机制 > 重连成功后重新启动心跳 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > 心跳机制 > 自定义 heartbeatInterval 与 pongTimeout 生效（默认 25s/10s 可被覆盖） 1ms
+ ✓ src/utils/__tests__/websocket.test.ts > WebSocketClient > 心跳机制 > 连接关闭时清理心跳定时器（onclose 内清理，避免对已关闭 ws 调用 send） 2ms
+ ✓ src/hooks/__tests__/useFormValidation.test.ts > useFormValidation > 初始状态：无错误、无 touched 26ms
+ ✓ src/hooks/__tests__/useFormValidation.test.ts > useFormValidation > validateField：验证通过时返回 true 且无错误 5ms
+ ✓ src/hooks/__tests__/useFormValidation.test.ts > useFormValidation > validateField：验证失败时返回 false 且有错误消息 4ms
+ ✓ src/hooks/__tests__/useFormValidation.test.ts > useFormValidation > validateField：未知字段返回 true 3ms
+ ✓ src/hooks/__tests__/useFormValidation.test.ts > useFormValidation > validateAll：全部通过时返回 true 并标记所有字段 touched 3ms
+ ✓ src/hooks/__tests__/useFormValidation.test.ts > useFormValidation > validateAll：任一字段失败时返回 false 2ms
+ ✓ src/hooks/__tests__/useFormValidation.test.ts > useFormValidation > getFieldError：未 touched 时返回 null 2ms
+ ✓ src/hooks/__tests__/useFormValidation.test.ts > useFormValidation > getFieldError：touched 后返回错误消息 2ms
+ ✓ src/hooks/__tests__/useFormValidation.test.ts > useFormValidation > setTouched：标记字段为 touched 并触发验证 4ms
+ ✓ src/hooks/__tests__/useFormValidation.test.ts > useFormValidation > hasErrors：有错误时返回 true，无错误时返回 false 2ms
+ ✓ src/hooks/__tests__/useFormValidation.test.ts > useFormValidation > reset：清空所有错误和 touched 状态 3ms
+ ✓ src/hooks/__tests__/useSafeTimeout.test.ts > useSafeTimeout > 调用 safeSetTimeout 后指定 delay 触发 callback 28ms
+ ✓ src/hooks/__tests__/useSafeTimeout.test.ts > useSafeTimeout > 快速连续调用时仅触发最后一个 callback（调用前清理上一个） 6ms
+ ✓ src/hooks/__tests__/useSafeTimeout.test.ts > useSafeTimeout > 组件卸载时自动清理定时器，callback 不被调用 4ms
+ ✓ src/hooks/__tests__/useSafeTimeout.test.ts > useSafeTimeout > safeSetTimeout 引用稳定，多次 render 返回相同引用 8ms
+ ✓ src/hooks/__tests__/useSafeTimeout.test.ts > useSafeTimeout > 触发后再调用新定时器正常工作（清理已归零的 ref） 3ms
+ ✓ src/hooks/__tests__/useMediaQuery.test.ts > useMediaQuery > 返回 matchMedia 的初始匹配状态（true） 23ms
+ ✓ src/hooks/__tests__/useMediaQuery.test.ts > useMediaQuery > 返回 matchMedia 的初始匹配状态（false） 4ms
+ ✓ src/hooks/__tests__/useMediaQuery.test.ts > useMediaQuery > matchMedia change 事件触发后更新匹配状态 5ms
+ ✓ src/hooks/__tests__/useMediaQuery.test.ts > useMediaQuery > query 变化时重新注册监听并更新状态 6ms
+ ✓ src/hooks/__tests__/useMediaQuery.test.ts > useIsDesktop > 桌面端（>= 1024px）返回 true 3ms
+ ✓ src/hooks/__tests__/useMediaQuery.test.ts > useIsDesktop > 移动端（< 1024px）返回 false 2ms
+ ✓ src/hooks/__tests__/useAuth.test.ts > useAuth > 初始状态应返回未认证的认证状态 25ms
+ ✓ src/hooks/__tests__/useAuth.test.ts > useAuth > 调用 login 后应返回正确的认证状态 7ms
+ ✓ src/hooks/__tests__/useAuth.test.ts > useAuth > 调用 logout 后应清除认证状态 5ms
+ ✓ src/hooks/__tests__/useAuth.test.ts > useAuth > login/logout 应为 store 中对应函数的引用 4ms
+ ✓ src/hooks/__tests__/useAuth.test.ts > useAuth > setUser 应正确更新用户信息 4ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - setupMockInterceptor 环境判断 > DEV 环境且无 token 时设置 mockAdapter（client.defaults.adapter 被替换为函数） 7ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - setupMockInterceptor 环境判断 > DEV 环境但 zustand store 存在 token 时不设置 mockAdapter（已登录用户走真实接口） 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - setupMockInterceptor 环境判断 > 非 DEV 环境直接 return（生产环境不启用 mock） 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - mockAdapter 方法判断 > GET 请求走 mock 逻辑（命中路由返回 mock 数据） 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - mockAdapter 方法判断 > POST 请求透传给 fallbackAdapter（mock 仅拦截 GET） 2ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > GET skills/posts 返回技能帖子分页列表 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > GET skills/posts/:id 返回单条帖子详情 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > GET skills/posts/不存在的id 返回 null 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > GET kitchen/posts 返回厨房帖子分页列表 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > GET kitchen/posts/:id 返回单条详情 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > GET kitchen/group-orders 返回拼单分页列表 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > GET kitchen/group-orders/:id 返回拼单详情 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > GET time-bank/services 返回时间银行服务分页列表 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > GET time-bank/services/:id 返回服务详情 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > GET emergency/requests 返回应急请求分页列表 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > GET emergency/requests/:id 返回应急请求详情 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > GET notifications 返回通知分页列表 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > 未命中 mock 路由时透传给 fallbackAdapter 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > URL 含前导斜杠时正常匹配（规范化处理） 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 路由匹配 > URL 含多斜杠前缀时正常匹配 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 分页逻辑 > 默认 page=1/pageSize=20，返回首页数据 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 分页逻辑 > 自定义 page=2/pageSize=2 时返回第二页数据 2ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 分页逻辑 > pageSize 超过总数时 hasNext=false（无下一页） 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 分页逻辑 > 空列表数据 totalPages 兜底为 1（Math.max(1, ...)） 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 过滤逻辑 > skills/posts 按 type=offer 过滤（仅返回 offer 类型） 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 过滤逻辑 > skills/posts 按 category 过滤 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 过滤逻辑 > skills/posts 按 keyword 过滤（title/description 模糊匹配，不区分大小写） 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 过滤逻辑 > time-bank/services 按 type=provide 过滤 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 过滤逻辑 > emergency/requests 按 type 过滤 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 响应结构 > mock 响应 status=200/statusText=OK/headers={}/config 透传 1ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts > mockInterceptor - 响应结构 > mock 响应 data 结构为 { code: 0, message: 'ok', data: ... } 1ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateRequired（必填校验） > 有内容应通过 3ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateRequired（必填校验） > 空字符串应返回错误 1ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateRequired（必填校验） > 纯空格应返回错误（trim 后判定） 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateMinLength（最小长度校验） > 空字符串应跳过返回 null（与 required 配合使用） 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateMinLength（最小长度校验） > 长度不足应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateMinLength（最小长度校验） > 长度等于最小值应通过 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateMinLength（最小长度校验） > 长度超过最小值应通过 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateMinLength（最小长度校验） > 应先 trim 再计算长度 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateMaxLength（最大长度校验） > 空字符串应跳过返回 null 1ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateMaxLength（最大长度校验） > 超长应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateMaxLength（最大长度校验） > 长度等于最大值应通过 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateMaxLength（最大长度校验） > 应先 trim 再计算长度 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateRange（数值范围校验） > NaN 应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateRange（数值范围校验） > 小于最小值应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateRange（数值范围校验） > 大于最大值应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateRange（数值范围校验） > 等于最小值应通过 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateRange（数值范围校验） > 等于最大值应通过 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateRange（数值范围校验） > 范围内应通过 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePhone（手机号校验） > 空字符串应跳过返回 null 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePhone（手机号校验） > 合法手机号应通过 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePhone（手机号校验） > 不足11位应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePhone（手机号校验） > 超过11位应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePhone（手机号校验） > 以 10/11/12 开头应返回错误（第二位必须是3-9） 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePhone（手机号校验） > 含非数字字符应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePhone（手机号校验） > 应先 trim 再校验 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateEmail（邮箱校验） > 空字符串应跳过返回 null 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateEmail（邮箱校验） > 合法邮箱应通过 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateEmail（邮箱校验） > 无 @ 应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateEmail（邮箱校验） > 无域名应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateEmail（邮箱校验） > 无用户名应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateEmail（邮箱校验） > 无点号分隔的顶级域应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateEmail（邮箱校验） > 含空格应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePrice（价格校验） > 空字符串应跳过返回 null 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePrice（价格校验） > 整数应通过 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePrice（价格校验） > 一位小数应通过 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePrice（价格校验） > 两位小数应通过 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePrice（价格校验） > 零应返回错误（必须为正数） 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePrice（价格校验） > 负数应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePrice（价格校验） > 三位小数应返回错误（最多2位小数） 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validatePrice（价格校验） > 非数字字符串应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateDate（日期校验） > 空字符串应跳过返回 null 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateDate（日期校验） > 合法日期应通过 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateDate（日期校验） > 非法日期字符串应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateDate（日期校验） > 空字符串类型的非法值应返回错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateFutureDate（未来日期校验） > 空字符串应跳过返回 null 4ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateFutureDate（未来日期校验） > 非法日期应返回错误 1ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateFutureDate（未来日期校验） > 过去日期应返回错误 1ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > validateFutureDate（未来日期校验） > 未来日期应通过 1ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > composeValidators（组合校验） > 全部通过应返回 null 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > composeValidators（组合校验） > 第一个校验失败应返回第一个错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > composeValidators（组合校验） > 中间校验失败应返回该中间错误 0ms
+ ✓ src/utils/__tests__/formValidation.test.ts > formValidation - 表单校验工具 > composeValidators（组合校验） > 空校验器列表应始终返回 null 0ms
+ ✓ src/utils/__tests__/jwt.test.ts > decodeJwt > 正常解码标准 JWT payload 5ms
+ ✓ src/utils/__tests__/jwt.test.ts > decodeJwt > 支持 base64url 字符集（- 与 _） 1ms
+ ✓ src/utils/__tests__/jwt.test.ts > decodeJwt > 非 JWT 格式（段数不为 3）返回 null 0ms
+ ✓ src/utils/__tests__/jwt.test.ts > decodeJwt > payload 非法 JSON 返回 null 0ms
+ ✓ src/utils/__tests__/jwt.test.ts > isTokenExpired > null / undefined / 空字符串返回 false（保守策略） 4ms
+ ✓ src/utils/__tests__/jwt.test.ts > isTokenExpired > 未过期 token 返回 false 1ms
+ ✓ src/utils/__tests__/jwt.test.ts > isTokenExpired > 已过期 token 返回 true 1ms
+ ✓ src/utils/__tests__/jwt.test.ts > isTokenExpired > 距过期 30 秒内（含 30 秒缓冲）视为已过期 1ms
+ ✓ src/utils/__tests__/jwt.test.ts > isTokenExpired > 距过期 60 秒外视为未过期 1ms
+ ✓ src/utils/__tests__/jwt.test.ts > isTokenExpired > 无 exp 字段返回 false（保守策略，交给后端鉴权） 1ms
+ ✓ src/utils/__tests__/jwt.test.ts > isTokenExpired > exp 字段类型异常返回 false（保守策略） 1ms
+ ✓ src/utils/__tests__/jwt.test.ts > isTokenExpired > 非法 token 返回 false（保守策略） 1ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > toCamelCase（snake_case → camelCase） > 应将下划线命名转为驼峰 4ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > toCamelCase（snake_case → camelCase） > 已是 camelCase 的键应幂等不变 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > toCamelCase（snake_case → camelCase） > 无下划线的简单键应原样返回 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > toCamelCase（snake_case → camelCase） > 连续下划线应正确处理 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > toCamelCase（snake_case → camelCase） > 全大写键名应保持原样（无下划线触发转换） 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > toSnakeCase（camelCase → snake_case） > 应将驼峰命名转为下划线 1ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > toSnakeCase（camelCase → snake_case） > 已是 snake_case 的键应幂等不变 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > toSnakeCase（camelCase → snake_case） > 无大写字母的简单键应原样返回 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > toSnakeCase（camelCase → snake_case） > 首字符大写的键应仅转小写首字符，不加下划线前缀 1ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > toSnakeCase（camelCase → snake_case） > 连续大写字母应每个都加下划线 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > convertKeys - 递归转换 > 应递归转换嵌套对象的键名 2ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > convertKeys - 递归转换 > 应递归转换数组内对象的键名 1ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > convertKeys - 递归转换 > 应保留基本类型与 null/undefined 不转换 1ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > convertKeys - 递归转换 > 应原样返回 Date/RegExp 等类实例，不破坏其语义 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > convertKeys - 递归转换 > 应原样返回 Blob/File/FormData 等二进制或表单对象 1ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > convertKeys - 递归转换 > 数组应仅递归转换元素，不转换数组索引 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > convertKeys - 递归转换 > Object.create(null) 创建的无原型对象应可被转换 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > convertKeys - 递归转换 > 请求方向：camelCase → snake_case 完整示例 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > convertKeys - 递归转换 > 响应方向：snake_case → camelCase 完整示例 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > convertKeys - 递归转换 > 已是目标命名风格的键应幂等不变（避免双重转换） 0ms
+ ✓ src/api/__tests__/caseConverter.test.ts > caseConverter - 键名转换工具 > convertKeys - 递归转换 > 混合命名风格应统一转换（幂等性保障向后兼容） 0ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatDate（相对时间格式化） > 1分钟内应返回'刚刚' 6ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatDate（相对时间格式化） > 1-59分钟应返回'X分钟前' 1ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatDate（相对时间格式化） > 1-23小时应返回'X小时前' 1ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatDate（相对时间格式化） > 1-6天应返回'X天前' 1ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatDate（相对时间格式化） > 7天以上当年应返回 MM-DD 1ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatDate（相对时间格式化） > 跨年应返回 YYYY-MM-DD 1ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatPhone（手机号脱敏） > 11位手机号应脱敏中间4位 0ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatPhone（手机号脱敏） > 非11位应原样返回 0ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatCredits（积分格式化） > >=10000 应格式化为'X.X万' 1ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatCredits（积分格式化） > <10000 应原样返回数字字符串 0ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatTime（时长格式化） > <60分钟应返回'X分钟' 0ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatTime（时长格式化） > 整小时应返回'X小时' 0ms
+ ✓ src/utils/__tests__/format.test.ts > format - 格式化工具 > formatTime（时长格式化） > 非整小时应返回'X小时X分钟' 0ms
+ ✓ src/utils/__tests__/ab-test.test.ts > ab-test - A/B 测试变体分配工具 > getVariant（获取变体） > 缓存命中时应直接返回缓存值，不调用 API 4ms
+ ✓ src/utils/__tests__/ab-test.test.ts > ab-test - A/B 测试变体分配工具 > getVariant（获取变体） > 缓存未命中时应调用 API 并将结果写入缓存 3ms
+ ✓ src/utils/__tests__/ab-test.test.ts > ab-test - A/B 测试变体分配工具 > getVariant（获取变体） > 缓存过期时应清除旧缓存并重新调用 API 1ms
+ ✓ src/utils/__tests__/ab-test.test.ts > ab-test - A/B 测试变体分配工具 > getVariant（获取变体） > 缓存 JSON 损坏时应回退到 API 调用 0ms
+ ✓ src/utils/__tests__/ab-test.test.ts > ab-test - A/B 测试变体分配工具 > trackEvent（记录事件） > 应先获取变体再调用 recordEvent 2ms
+ ✓ src/utils/__tests__/ab-test.test.ts > ab-test - A/B 测试变体分配工具 > trackEvent（记录事件） > 无 metadata 时应传 undefined 给 recordEvent 1ms
+ ✓ src/utils/__tests__/ab-test.test.ts > ab-test - A/B 测试变体分配工具 > clearVariantCache（清除缓存） > 指定 testName 时应仅清除该 testName 的缓存 1ms
+ ✓ src/utils/__tests__/ab-test.test.ts > ab-test - A/B 测试变体分配工具 > clearVariantCache（清除缓存） > 不传参数时应清除所有 ab_variant_ 前缀的缓存 1ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > ApiError 实例 > 应返回 ApiError 的 message 字段 2ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > ApiError 实例 > ApiError.message 为空字符串时应返回 fallback 0ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > ApiError 实例 > 应使用自定义 fallback 兜底 0ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > ApiError 实例 > 应保留 ApiError 的 fieldErrors 元数据（不丢失上下文） 1ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > 原生 Error 实例 > 应返回 fallback 而非 Error.message（避免技术性信息泄露） 0ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > 原生 Error 实例 > Error.message 为空时应返回 fallback 0ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > 字符串错误 > 应原样返回字符串 0ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > 字符串错误 > 空字符串应返回 fallback 0ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > 未知类型 > number 类型应返回 fallback 1ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > 未知类型 > null 应返回 fallback 0ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > 未知类型 > undefined 应返回 fallback 0ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > 未知类型 > 对象应返回 fallback 0ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > 未知类型 > 应支持自定义 fallback 0ms
+ ✓ src/utils/__tests__/error.test.ts > getErrorMessage - 错误信息提取 > 默认 fallback > 未传 fallback 时应使用默认文案 0ms
+ ✓ src/stores/__tests__/authStore.test.ts > authStore > login action > 应正确设置 token 和 user 3ms
+ ✓ src/stores/__tests__/authStore.test.ts > authStore > login action > 登录后 isAuthenticated 应为 true 0ms
+ ✓ src/stores/__tests__/authStore.test.ts > authStore > logout action > 应正确清除 token 和 user 1ms
+ ✓ src/stores/__tests__/authStore.test.ts > authStore > logout action > 登出后 isAuthenticated 应为 false 0ms
+ ✓ src/stores/__tests__/authStore.test.ts > authStore > isAuthenticated getter > 有 token 时（登录后）应返回 true 0ms
+ ✓ src/stores/__tests__/authStore.test.ts > authStore > isAuthenticated getter > 无 token 时（初始状态）应返回 false 0ms
+
+ Test Files  82 passed (82)
+      Tests  1292 passed (1292)
+   Start at  01:52:35
+   Duration  282.18s (transform 6.43s, setup 130.82s, import 112.49s, tests 95.03s, environment 3646.57s)
+

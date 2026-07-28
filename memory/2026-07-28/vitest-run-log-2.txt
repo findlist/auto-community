@@ -1,0 +1,492 @@
+﻿
+ RUN  v4.1.10 E:/work/auto-community/client
+
+ ✓ src/pages/Auth/__tests__/Register.test.tsx (10 tests) 8110ms
+     ✓ 渲染标题、表单字段与跳转链接  323ms
+     ✓ 手机号格式错误显示字段错误且不提交  837ms
+     ✓ 密码不足6位显示字段错误且不提交  718ms
+     ✓ 两次密码不一致显示字段错误  866ms
+     ✓ 昵称不足2字符显示字段错误  871ms
+     ✓ 未勾选隐私政策显示字段错误  856ms
+     ✓ 注册成功后写入 token、调用 setAuth、提示成功并跳转首页  852ms
+     ✓ 后端返回字段错误时映射到字段级提示  934ms
+     ✓ 非字段错误时显示全局错误提示并 toast  902ms
+     ✓ 提交期间按钮禁用并显示注册中状态  944ms
+ ✓ src/pages/Auth/__tests__/ResetPassword.test.tsx (11 tests) 7334ms
+     ✓ 渲染标题、副标题、表单字段与跳转链接  326ms
+     ✓ 手机号格式错误显示字段错误且不提交  831ms
+     ✓ 验证码非6位数字显示字段错误且不提交  904ms
+     ✓ 密码不足6位显示字段错误且不提交  713ms
+     ✓ 两次密码不一致显示字段错误  892ms
+     ✓ 重置成功显示成功页"密码重置成功"  902ms
+     ✓ ApiError 失败显示错误消息  887ms
+     ✓ 非 ApiError 失败显示兜底文案"重置密码失败"  934ms
+     ✓ 提交期间按钮禁用并显示"重置中..."  875ms
+node.exe : stderr | src/pages/Admin/__tests__/SystemConfig.test.tsx > Admin/SystemConfig 系统配置管理 > 卸载后 loadSettings reso
+lve 不触发 setState（mountedRef 防御）
+At C:\Users\Lenovo\AppData\Roaming\TRAE SOLO CN\ModularData\ai-agent\vm\tools\node\npx.ps1:16 char:5
++     & "$basedir/node$exe"  "$basedir/node_modules/npm/bin/npx-cli.js" ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (stderr | src/pa...（mountedRef 防御）:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. Y
+ou can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/u
+pgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `
+v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/futur
+e#v7_relativesplatpath.
+
+ ✓ src/pages/Admin/__tests__/SystemConfig.test.tsx (24 tests) 5495ms
+     ✓ 受保护配置键（homepage_hero_image）显示 Lock 图标且无删除按钮  490ms
+     ✓ 新增弹窗配置键校验：非小写字母开头显示错误提示  394ms
+     ✓ 新增弹窗配置值必填校验：为空显示"配置值不能为空"  358ms
+     ✓ 新增配置成功调用 setSetting 并 toast.success"配置已新增"  389ms
+     ✓ 新增配置失败显示 toast.error 错误提示  342ms
+     ✓ 编辑配置成功调用 setSetting 并 toast.success"配置已更新"  374ms
+     ✓ 删除弹窗点击"取消"关闭弹窗不调用 deleteSetting  329ms
+     ✓ 保存中显示 Loader2 旋转动画且按钮禁用  504ms
+ ✓ src/pages/SharedKitchen/__tests__/Detail.test.tsx (28 tests) 2956ms
+ ✓ src/pages/Profile/__tests__/Verify.test.tsx (17 tests) 4195ms
+     ✓ 真实姓名为空时提交显示"请填写完整信息"  459ms
+     ✓ 真实姓名不足2字符时显示长度错误  516ms
+     ✓ 身份证号格式错误时显示"身份证号格式不正确"  346ms
+     ✓ 提交成功后调用 submitVerification 并重新加载状态  454ms
+     ✓ submitVerification 失败时显示错误提示  529ms
+     ✓ 非 ApiError 错误兜底显示"提交失败"  517ms
+     ✓ 提交中按钮禁用并显示"提交中..."  637ms
+ ✓ src/pages/SharedKitchen/__tests__/AddressBook.test.tsx (26 tests) 6560ms
+     ✓ 手机号格式错误时显示字段错误提示  449ms
+     ✓ 详细地址为空时显示字段错误提示  574ms
+     ✓ 保存新增调用 createAddress 并刷新列表  775ms
+     ✓ 保存编辑调用 updateAddress 并刷新列表  364ms
+     ✓ 保存失败显示错误提示  729ms
+     ✓ 保存中显示 Loader2 旋转动画并禁用按钮  754ms
+     ✓ 删除进行中按钮显示"删除中..."加载态且重复点击不触发第二次 API 调用  321ms
+ ✓ src/pages/Auth/__tests__/Login.test.tsx (8 tests) 3715ms
+     ✓ 渲染品牌标题、表单字段与跳转链接  317ms
+     ✓ 手机号格式错误时显示字段错误且不提交  445ms
+     ✓ 密码不足6位时显示字段错误且不提交  438ms
+     ✓ 登录成功后写入 token、调用 setAuth、提示成功并跳转首页  594ms
+     ✓ 后端返回字段错误时映射到字段级提示  502ms
+     ✓ 非字段错误时显示全局错误提示并 toast  683ms
+     ✓ 提交期间按钮禁用并显示登录中状态  590ms
+ ✓ src/pages/TimeBank/__tests__/MyOrders.test.tsx (22 tests) 2685ms
+ ✓ src/pages/TimeBank/__tests__/FamilyBinding.test.tsx (14 tests) 2661ms
+     ✓ confirmed 状态显示"解除绑定"按钮  451ms
+     ✓ 弹窗中点击"确认解绑"调用 unbindFamilyBinding 并显示成功提示  318ms
+     ✓ 解绑失败显示 toast.error 错误提示  307ms
+ ✓ src/pages/SharedKitchen/__tests__/GroupOrders.test.tsx (22 tests) 2308ms
+ ✓ src/pages/Admin/__tests__/ContentReview.test.tsx (16 tests) 1876ms
+ ✓ src/pages/SkillExchange/__tests__/Detail.test.tsx (18 tests) 1577ms
+ ✓ src/pages/Auth/__tests__/ForgotPassword.test.tsx (7 tests) 1804ms
+     ✓ 渲染标题、副标题、表单字段与跳转链接  346ms
+     ✓ 发送成功显示成功页"验证码已发送"  306ms
+     ✓ 提交期间按钮禁用并显示"发送中..."  315ms
+ ✓ src/pages/Profile/__tests__/Profile.test.tsx (16 tests) 2305ms
+ ✓ src/pages/SkillExchange/__tests__/Dispute.test.tsx (18 tests) 2251ms
+ ✓ src/pages/Profile/__tests__/DeleteAccount.test.tsx (22 tests) 2079ms
+ ✓ src/pages/Admin/__tests__/ReportManagement.test.tsx (16 tests) 1542ms
+ ✓ src/pages/Messages/__tests__/Chat.test.tsx (19 tests) 1504ms
+ ✓ src/pages/Admin/__tests__/OrderManagement.test.tsx (14 tests) 1501ms
+ ✓ src/pages/Admin/__tests__/UserManagement.test.tsx (16 tests) 1590ms
+ ✓ src/pages/SharedKitchen/__tests__/Create.test.tsx (18 tests) 1662ms
+     ✓ 渲染表单显示提交按钮"立即发布"  340ms
+stderr | src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 加载失败显示"服务不存在"与返回列表按钮
+加载时间银行服务详情失败: Error: 网络错误
+    at E:/work/auto-community/client/src/pages/TimeBank/__tests__/ServiceDetail.test.tsx:490:45
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+stderr | src/pages/TimeBank/__tests__/ServiceDetail.test.tsx > ServiceDetail 详情渲染与加载状态 > 加载失败时点击"返回列表"跳转到 /time-bank
+加载时间银行服务详情失败: Error: 网络错误
+    at E:/work/auto-community/client/src/pages/TimeBank/__tests__/ServiceDetail.test.tsx:604:45
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+ ✓ src/pages/TimeBank/__tests__/ServiceDetail.test.tsx (30 tests) 1646ms
+     ✓ 发布者本人且 active 状态显示"编辑"按钮  323ms
+ ✓ src/pages/Admin/__tests__/VerificationReview.test.tsx (16 tests) 1769ms
+     ✓ 加载失败显示"重新加载"重试按钮，点击后重新触发请求  321ms
+ ✓ src/pages/SkillExchange/__tests__/index.test.tsx (16 tests) 1573ms
+     ✓ 搜索框输入触发防抖加载  375ms
+     ✓ 首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求  321ms
+ ✓ src/pages/Notifications/__tests__/index.test.tsx (20 tests) 1934ms
+     ✓ 首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求  408ms
+ ✓ src/pages/SharedKitchen/__tests__/index.test.tsx (21 tests) 1471ms
+     ✓ 首次加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求  361ms
+stderr | src/pages/SkillExchange/__tests__/Orders.test.tsx > SkillExchange 订单列表与状态操作 > 加载失败显示 Empty error 与重新加载按钮，点击后重新
+触发请求
+加载失败: ApiError: 加载订单失败
+    at E:/work/auto-community/client/src/pages/SkillExchange/__tests__/Orders.test.tsx:248:48
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64 {
+  code: 500,
+  fieldErrors: undefined
+}
+
+ ✓ src/pages/Emergency/__tests__/index.test.tsx (18 tests) 1529ms
+     ✓ 点击"紧急"Tab 切换标题为"紧急求助"并传 type=emergency  362ms
+stderr | src/pages/SharedKitchen/__tests__/Orders.test.tsx > SharedKitchen 订单列表与状态操作 > 首次加载失败显示 Empty error 与重新加载按钮，点击后
+重新触发请求
+加载失败: ApiError: 网络错误
+    at E:/work/auto-community/client/src/pages/SharedKitchen/__tests__/Orders.test.tsx:495:52
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64 {
+  code: 500,
+  fieldErrors: undefined
+}
+
+ ✓ src/pages/SharedKitchen/__tests__/Orders.test.tsx (17 tests) 1737ms
+     ✓ 切换至 seller Tab 显示卖家视角（买家: xxx）并重新加载  338ms
+ ✓ src/pages/Admin/__tests__/AuditLog.test.tsx (13 tests) 1161ms
+ ✓ src/pages/SkillExchange/__tests__/Orders.test.tsx (17 tests) 1351ms
+     ✓ 加载失败显示 Empty error 与重新加载按钮，点击后重新触发请求  326ms
+ ✓ src/api/__tests__/client.test.ts (28 tests) 1047ms
+       ✓ GET 请求遇 5xx 应触发重试（调用 client.request）  513ms
+       ✓ GET 请求遇网络错误（无 response）应触发重试  502ms
+ ✓ src/pages/SkillExchange/__tests__/Create.test.tsx (18 tests) 1035ms
+ ✓ src/pages/Emergency/__tests__/Detail.test.tsx (25 tests) 1028ms
+ ✓ src/pages/Admin/__tests__/SystemStatus.test.tsx (13 tests) 960ms
+ ✓ src/pages/TimeBank/__tests__/TimeAccount.test.tsx (18 tests) 917ms
+ ✓ src/pages/Admin/__tests__/ABTestResults.test.tsx (18 tests) 836ms
+stderr | src/pages/Home/__tests__/index.test.tsx > Home 首页 > /public/stats 接口失败时显示默认占位 "——"
+加载首页统计失败: Error: network error
+    at Object.<anonymous> (E:/work/auto-community/client/src/pages/Home/__tests__/index.test.tsx:177:31)
+    at Object.Mock [as get] (file:///E:/work/auto-community/node_modules/@vitest/spy/dist/index.js:332:34)
+    at E:/work/auto-community/client/src/pages/Home/index.tsx:132:8
+    at commitHookEffectListMount (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:23189:26)
+    at commitPassiveMountOnFiber (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:24970:11)
+    at commitPassiveMountEffects_complete (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:2
+4930:9)
+    at commitPassiveMountEffects_begin (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:2491
+7:7)
+    at commitPassiveMountEffects (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:24905:3)
+    at flushPassiveEffectsImpl (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:27078:3)
+    at flushPassiveEffects (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:27023:14)
+
+ ✓ src/pages/Home/__tests__/index.test.tsx (6 tests) 861ms
+     ✓ 渲染品牌字标、承诺句、四大模块与 CTA 链接  498ms
+ ✓ src/pages/Emergency/__tests__/ResourceMap.test.tsx (9 tests) 890ms
+ ✓ src/pages/TimeBank/__tests__/CreateService.test.tsx (17 tests) 852ms
+ ✓ src/pages/SharedKitchen/__tests__/FoodReview.test.tsx (14 tests) 770ms
+ ✓ src/components/__tests__/ExportButton.test.tsx (9 tests) 635ms
+stderr | src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 加载失败显示"加载失败，请稍后重试"
+加载服务列表失败: Error: 网络错误
+    at E:/work/auto-community/client/src/pages/TimeBank/__tests__/index.test.tsx:203:43
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+stderr | src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 渲染默认标题「AI 智能推荐」
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. Y
+ou can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/u
+pgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `
+v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/futur
+e#v7_relativesplatpath.
+
+stderr | src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 渲染自定义标题
+Warning: An update to AIRecommend inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link
+/wrap-tests-with-act
+    at AIRecommend (E:/work/auto-community/client/src/components/AIRecommend/index.tsx:158:24)
+    at Router (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+    at MemoryRouter (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+Warning: An update to AIRecommend inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link
+/wrap-tests-with-act
+    at AIRecommend (E:/work/auto-community/client/src/components/AIRecommend/index.tsx:158:24)
+    at Router (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+    at MemoryRouter (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+
+stderr | src/components/__tests__/AIRecommend.test.tsx > AIRecommend AI 智能推荐组件 > 渲染副标题「基于语义匹配 · 距离 · 信誉」
+Warning: An update to AIRecommend inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link
+/wrap-tests-with-act
+    at AIRecommend (E:/work/auto-community/client/src/components/AIRecommend/index.tsx:158:24)
+    at Router (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+    at MemoryRouter (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+Warning: An update to AIRecommend inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link
+/wrap-tests-with-act
+    at AIRecommend (E:/work/auto-community/client/src/components/AIRecommend/index.tsx:158:24)
+    at Router (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1203:17)
+    at MemoryRouter (E:\work\auto-community\node_modules\react-router\dist\umd\react-router.development.js:1097:7)
+
+stderr | src/pages/Profile/__tests__/PointsDetail.test.tsx > Profile/PointsDetail 积分明细页 > 加载失败显示 Empty error 与重新加载按钮，点击
+后重新触发请求
+加载积分明细失败: Error: 网络错误
+    at E:/work/auto-community/client/src/pages/Profile/__tests__/PointsDetail.test.tsx:313:48
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+ ✓ src/pages/Profile/__tests__/PointsDetail.test.tsx (19 tests) 985ms
+stderr | src/pages/TimeBank/__tests__/index.test.tsx > TimeBank/index 时间银行列表页 > 错误状态下不渲染服务列表
+加载服务列表失败: Error: 网络错误
+    at E:/work/auto-community/client/src/pages/TimeBank/__tests__/index.test.tsx:353:43
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)
+    at file:///E:/work/auto-community/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64
+
+ ✓ src/pages/TimeBank/__tests__/index.test.tsx (16 tests) 634ms
+ ✓ src/components/__tests__/AIRecommend.test.tsx (20 tests) 611ms
+Not implemented: navigation to another Document
+ ✓ src/pages/Admin/__tests__/Metrics.test.tsx (12 tests) 614ms
+stderr | src/components/__tests__/Layout.test.tsx > Layout 主布局组件 > 渲染品牌字标「邻里圈」与英文副标「NEIGHBOR」
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. Y
+ou can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/u
+pgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `
+v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/futur
+e#v7_relativesplatpath.
+
+ ✓ src/components/__tests__/Layout.test.tsx (23 tests) 523ms
+ ✓ src/pages/Admin/__tests__/Dashboard.test.tsx (7 tests) 539ms
+ ✓ src/pages/TimeBank/__tests__/TransferModal.test.tsx (20 tests) 506ms
+ ✓ src/pages/TimeBank/__tests__/DonateModal.test.tsx (15 tests) 407ms
+ ✓ src/components/__tests__/LocationPicker.test.tsx (19 tests) 427ms
+stderr | src/pages/Admin/__tests__/AdminLayout.test.tsx > AdminLayout 管理后台布局 > 移动端点击导航项关闭抽屉
+No routes matched location "/admin/settings" 
+
+ ✓ src/pages/Admin/__tests__/AdminLayout.test.tsx (7 tests) 378ms
+ ✓ src/pages/Admin/__tests__/HomepageImage.test.tsx (12 tests) 418ms
+ ✓ src/components/__tests__/LoadingButton.test.tsx (15 tests) 394ms
+ ✓ src/components/__tests__/Charts.test.tsx (32 tests) 354ms
+ ✓ src/pages/__tests__/NotFound.test.tsx (3 tests) 361ms
+ ✓ src/components/__tests__/Toast.test.tsx (9 tests) 324ms
+ ✓ src/components/__tests__/Empty.test.tsx (9 tests) 343ms
+stderr | src/__tests__/App.test.tsx > App 根路由集成 > 公开路由 / 渲染 Home 页面（未登录可访问）
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. Y
+ou can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/u
+pgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `
+v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/futur
+e#v7_relativesplatpath.
+
+ ✓ src/pages/TimeBank/__tests__/ServiceCard.test.tsx (15 tests) 228ms
+ ✓ src/__tests__/App.test.tsx (9 tests) 231ms
+ ✓ src/components/__tests__/ImageUpload.test.tsx (13 tests) 244ms
+stderr | src/components/__tests__/ResponsiveCard.test.tsx > ResponsiveCard 通用响应式卡片 > 渲染标题和描述
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. Y
+ou can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/u
+pgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `
+v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/futur
+e#v7_relativesplatpath.
+
+ ✓ src/components/__tests__/ResponsiveCard.test.tsx (15 tests) 176ms
+ ✓ src/components/__tests__/MetricsChart.test.tsx (13 tests) 166ms
+ ✓ src/components/__tests__/SkeletonList.test.tsx (14 tests) 155ms
+Error: 测试错误：组件渲染失败
+    at MaybeThrow (E:/work/auto-community/client/src/components/__tests__/ErrorBoundary.test.tsx:8:11)
+    at renderWithHooks (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:20103:13
+)
+    at beginWork (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:4164
+:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (E:\work\auto-community\node_modules\jsdom\lib\generated\idl\Even
+tListener.js:26:30)
+    at innerInvokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js
+:360:16)
+    at invokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:
+3)
+    at HTMLUnknownElementImpl._dispatch (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-
+impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTar
+get-impl.js:114:17)
+Error: 测试错误：组件渲染失败
+    at MaybeThrow (E:/work/auto-community/client/src/components/__tests__/ErrorBoundary.test.tsx:8:11)
+    at renderWithHooks (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:20103:13
+)
+    at beginWork (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:4164
+:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (E:\work\auto-community\node_modules\jsdom\lib\generated\idl\Even
+tListener.js:26:30)
+    at innerInvokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js
+:360:16)
+    at invokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:
+3)
+    at HTMLUnknownElementImpl._dispatch (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-
+impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTar
+get-impl.js:114:17)
+Error: 测试错误：组件渲染失败
+    at MaybeThrow (E:/work/auto-community/client/src/components/__tests__/ErrorBoundary.test.tsx:8:11)
+    at renderWithHooks (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:20103:13
+)
+    at beginWork (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:4164
+:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (E:\work\auto-community\node_modules\jsdom\lib\generated\idl\Even
+tListener.js:26:30)
+    at innerInvokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js
+:360:16)
+    at invokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:
+3)
+    at HTMLUnknownElementImpl._dispatch (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-
+impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTar
+get-impl.js:114:17)
+Error: 测试错误：组件渲染失败
+    at MaybeThrow (E:/work/auto-community/client/src/components/__tests__/ErrorBoundary.test.tsx:8:11)
+    at renderWithHooks (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:20103:13
+)
+    at beginWork (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:4164
+:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (E:\work\auto-community\node_modules\jsdom\lib\generated\idl\Even
+tListener.js:26:30)
+    at innerInvokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js
+:360:16)
+    at invokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:
+3)
+    at HTMLUnknownElementImpl._dispatch (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-
+impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTar
+get-impl.js:114:17)
+Error: 测试错误：组件渲染失败
+    at MaybeThrow (E:/work/auto-community/client/src/components/__tests__/ErrorBoundary.test.tsx:8:11)
+    at renderWithHooks (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:20103:13
+)
+    at beginWork (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:4164
+:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (E:\work\auto-community\node_modules\jsdom\lib\generated\idl\Even
+tListener.js:26:30)
+    at innerInvokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js
+:360:16)
+    at invokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:
+3)
+    at HTMLUnknownElementImpl._dispatch (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-
+impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTar
+get-impl.js:114:17)
+Error: 测试错误：组件渲染失败
+    at MaybeThrow (E:/work/auto-community/client/src/components/__tests__/ErrorBoundary.test.tsx:8:11)
+    at renderWithHooks (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:20103:13
+)
+    at beginWork (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (E:\work\auto-community\node_modules\react-dom\cjs\react-dom.development.js:4164
+:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (E:\work\auto-community\node_modules\jsdom\lib\generated\idl\Even
+tListener.js:26:30)
+    at innerInvokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js
+:360:16)
+    at invokeEventListeners (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-impl.js:296:
+3)
+    at HTMLUnknownElementImpl._dispatch (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTarget-
+impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (E:\work\auto-community\node_modules\jsdom\lib\jsdom\living\events\EventTar
+get-impl.js:114:17)
+ ✓ src/components/__tests__/ErrorBoundary.test.tsx (4 tests) 132ms
+ ✓ src/components/__tests__/SkeletonDetail.test.tsx (15 tests) 130ms
+ ✓ src/components/__tests__/SkeletonCard.test.tsx (12 tests) 130ms
+ ✓ src/components/__tests__/AdminRoute.test.tsx (6 tests) 91ms
+ ✓ src/components/__tests__/ProtectedRoute.test.tsx (5 tests) 98ms
+ ✓ src/utils/__tests__/websocket.test.ts (39 tests) 68ms
+ ✓ src/hooks/__tests__/useScrollReveal.test.tsx (5 tests) 87ms
+ ✓ src/hooks/__tests__/useFormValidation.test.ts (11 tests) 66ms
+ ✓ src/hooks/__tests__/useSafeTimeout.test.ts (5 tests) 66ms
+ ✓ src/utils/__tests__/formValidation.test.ts (52 tests) 24ms
+ ✓ src/hooks/__tests__/useAuth.test.ts (5 tests) 50ms
+ ✓ src/hooks/__tests__/useMediaQuery.test.ts (6 tests) 49ms
+ ✓ src/utils/__tests__/mockInterceptor.test.ts (31 tests) 38ms
+ ✓ src/utils/__tests__/jwt.test.ts (12 tests) 20ms
+ ✓ src/utils/__tests__/format.test.ts (13 tests) 18ms
+ ✓ src/api/__tests__/caseConverter.test.ts (21 tests) 14ms
+ ✓ src/utils/__tests__/ab-test.test.ts (8 tests) 16ms
+ ✓ src/utils/__tests__/error.test.ts (14 tests) 11ms
+ ✓ src/stores/__tests__/authStore.test.ts (6 tests) 8ms
+
+ Test Files  82 passed (82)
+      Tests  1292 passed (1292)
+   Start at  02:07:36
+   Duration  295.02s (transform 6.59s, setup 145.51s, import 122.76s, tests 99.84s, environment 3834.54s)
+
