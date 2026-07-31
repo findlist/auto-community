@@ -146,7 +146,10 @@ function RequestCard({ request }: { request: EmergencyRequest }) {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={() => navigate(`/emergency/${request.id}`)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/emergency/${request.id}`); } }}
       className="group flex items-start gap-3.5 lg:gap-5 border-b border-neutral-200 py-5 lg:py-6 cursor-pointer transition-colors duration-200 hover:bg-neutral-50/60 -mx-4 px-4 lg:-mx-6 lg:px-6"
     >
       {/* 左侧：紧急程度色点 */}
